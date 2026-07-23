@@ -245,7 +245,7 @@
     <div class="grid" id="cardsGrid"></div>
   </div>
 
-  <p class="footer-note">Umbral de alerta: 2% bajo el promedio histórico de 90 días · actualiza cada 2s</p>
+  <p class="footer-note">Umbral de alerta: 4% bajo el promedio histórico de 90 días · actualiza cada 2s</p>
 
   <div class="overlay" id="overlay">
     <div class="detail" id="detailPanel"></div>
@@ -297,9 +297,12 @@ const stocks = [
   {ticker:'BLUMAR',  name:'Pesquera',            base:220,   dec:0},
   {ticker:'ORO-BLANCO', name:'Holding (SQM)',    base:10.3,  dec:2},
   {ticker:'AAISA',   name:'Holding (ILC)',       base:1900,  dec:0},
+  {ticker:'ENJOY',   name:'Casinos (en reorganización judicial)', base:0.6, dec:2},
+  {ticker:'INDISA',  name:'Clínica Indisa · Salud', base:2900, dec:0},
+  {ticker:'SOCOVESA', name:'Inmobiliaria/Construcción', base:156, dec:0},
 ];
 
-const ALERT_THRESHOLD = 0.98;
+const ALERT_THRESHOLD = 0.96; // 4% bajo el promedio
 const HISTORY_LEN = 40;
 
 function fmt(v, dec){ return v.toLocaleString('es-CL', {minimumFractionDigits:dec, maximumFractionDigits:dec}); }
