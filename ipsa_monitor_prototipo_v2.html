@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPSA Monitor · Prototipo v2</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="IPSA Monitor">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#14171A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-deep:#14171A;
+    --bg-panel:#1C2024;
+    --bg-panel-alt:#20252A;
+    --bg-field:#191D21;
+    --ink:#ECE9E2;
+    --ink-dim:#8B9096;
+    --ink-faint:#585E63;
+    --copper:#C1543A;
+    --copper-soft:rgba(193,84,58,0.14);
+    --copper-glow:rgba(193,84,58,0.45);
+    --verdigris:#4F9C8E;
+    --verdigris-soft:rgba(79,156,142,0.10);
+    --gold:#C9A66B;
+    --hairline:#2A2F34;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg-deep);
+    color:var(--ink);
+    font-family:'IBM Plex Sans',sans-serif;
+    min-height:100vh;
+    padding:20px 20px 40px;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  /* ---- Header ---- */
+  .topbar{
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px;
+    padding:18px 22px; background:var(--bg-panel); border:1px solid var(--hairline);
+    border-radius:10px; margin-bottom:22px;
+  }
+  .brand{display:flex; align-items:center; gap:12px;}
+  .brand-mark{width:10px;height:10px;border-radius:50%; background:var(--gold); box-shadow:0 0 10px rgba(201,166,107,0.7);}
+  .brand-text .eyebrow{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 2px;}
+  .brand-text .title{font-size:16px; font-weight:600; margin:0; color:var(--ink);}
+  .index-block{display:flex; align-items:baseline; gap:14px;}
+  .index-value{font-size:30px; font-weight:600; letter-spacing:-0.01em;}
+  .index-delta{font-size:14px; font-weight:500; padding:3px 8px; border-radius:5px;}
+  .up{color:var(--verdigris); background:var(--verdigris-soft);}
+  .down{color:var(--copper); background:var(--copper-soft);}
+  .status{display:flex; align-items:center; gap:18px;}
+  .live-pill{
+    display:flex; align-items:center; gap:7px; font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--verdigris); border:1px solid rgba(79,156,142,0.35); padding:5px 10px; border-radius:20px;
+  }
+  .live-dot{width:6px;height:6px;border-radius:50%;background:var(--verdigris); animation:pulse 1.8s ease-in-out infinite;}
+  .market-open{color:var(--verdigris); border-color:rgba(79,156,142,0.35) !important;}
+  .market-closed{color:var(--copper); border-color:rgba(193,84,58,0.35) !important;}
+  .clock{font-size:13px; color:var(--ink-dim);}
+
+  .disclaimer{
+    font-size:12px; color:var(--ink-faint); margin:0 0 22px; line-height:1.5;
+    padding:10px 14px; border:1px dashed var(--hairline); border-radius:8px;
+  }
+  .disclaimer b{color:var(--ink-dim);}
+
+  .search-row{display:flex; align-items:center; gap:12px; margin-bottom:16px;}
+  .search-input{
+    flex:1; background:var(--bg-panel); border:1px solid var(--hairline); color:var(--ink);
+    padding:10px 14px; border-radius:8px; font-size:13px; outline:none;
+  }
+  .search-input::placeholder{color:var(--ink-faint);}
+  .search-input:focus{border-color:var(--gold);}
+  .search-hint{font-size:11px; color:var(--ink-faint); white-space:nowrap;}
+
+  .fav-btn{
+    background:none; border:none; cursor:pointer; font-size:16px; line-height:1;
+    color:var(--ink-faint); padding:2px 4px; margin-left:6px;
+  }
+  .fav-btn.active{color:var(--gold);}
+  .card.is-favorite{border-color:rgba(201,166,107,0.4);}
+
+  /* ---- Grid ---- */
+  .layout{display:block;}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:14px; align-content:start;}
+  .card{
+    background:var(--bg-panel); border:1px solid var(--hairline); border-radius:10px;
+    padding:16px 16px 12px; transition:border-color .3s ease, box-shadow .3s ease, transform .15s ease;
+    position:relative; overflow:hidden; cursor:pointer;
+  }
+  .card:hover{transform:translateY(-2px); border-color:#3A4148;}
+  .card.alert{
+    border-color:rgba(193,84,58,0.55);
+    box-shadow:0 0 0 1px rgba(193,84,58,0.15), 0 0 22px -6px var(--copper-glow);
+  }
+  .card-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;}
+  .ticker{font-size:15px; font-weight:700; letter-spacing:.01em;}
+  .company{font-size:11px; color:var(--ink-dim); margin-top:2px;}
+  .price-block{text-align:right;}
+  .price{font-size:19px; font-weight:600;}
+  .delta{font-size:11px; font-weight:500;}
+  .spark-wrap{position:relative; margin:4px 0 6px;}
+  .flag{
+    position:absolute; top:8px; right:10px; font-size:9.5px; letter-spacing:.07em; text-transform:uppercase;
+    color:var(--copper); background:rgba(193,84,58,0.16); padding:3px 7px; border-radius:20px;
+    display:none; align-items:center; gap:5px;
+  }
+  .card.alert .flag{display:inline-flex;}
+  .flag-dot{width:5px;height:5px;border-radius:50%;background:var(--copper); animation:pulse 1.4s ease-in-out infinite;}
+  .avg-line{font-size:10.5px; color:var(--ink-faint); display:flex; justify-content:space-between;}
+  .tap-hint{font-size:9.5px; color:var(--ink-faint); text-align:center; margin-top:8px; letter-spacing:.04em; text-transform:uppercase;}
+
+  @keyframes pulse{ 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:.4; transform:scale(1.3);} }
+
+  /* ---- Alert feed ---- */
+  .feed-panel{
+    background:var(--bg-panel); border:1px solid var(--hairline); border-radius:10px;
+    padding:16px 16px 6px; max-height:220px; display:flex; flex-direction:column;
+    margin-bottom:22px;
+  }
+  .feed-title{
+    font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 12px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .feed-count{font-family:'IBM Plex Mono',monospace; color:var(--copper); background:var(--copper-soft); padding:1px 7px; border-radius:10px; font-size:11px;}
+  .feed-list{list-style:none; margin:0; padding:0; overflow-y:auto; flex:1;}
+  .feed-empty{color:var(--ink-faint); font-size:12.5px; padding:20px 0; text-align:center;}
+  .feed-item{padding:10px 0; border-bottom:1px solid var(--hairline); animation:slidein .35s ease;}
+  .feed-item:last-child{border-bottom:none;}
+  .feed-item .fi-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px;}
+  .feed-item .fi-ticker{font-weight:700; font-size:13px; color:var(--copper);}
+  .feed-item .fi-time{font-size:10.5px; color:var(--ink-faint);}
+  .feed-item .fi-msg{font-size:12px; color:var(--ink-dim); line-height:1.4;}
+  @keyframes slidein{ from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:translateY(0);} }
+
+  .footer-note{margin-top:26px; font-size:11.5px; color:var(--ink-faint); text-align:center;}
+
+  /* ---- Detail modal ---- */
+  .overlay{
+    display:none; position:fixed; inset:0; background:rgba(10,12,13,0.72);
+    z-index:50; align-items:flex-start; justify-content:center; padding:20px; overflow-y:auto;
+  }
+  .overlay.open{display:flex;}
+  .detail{
+    background:var(--bg-panel); border:1px solid var(--hairline); border-radius:12px;
+    max-width:640px; width:100%; padding:22px 22px 18px; margin-top:10px;
+  }
+  .detail-top{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;}
+  .detail-name{font-size:17px; font-weight:700;}
+  .detail-sub{font-size:12px; color:var(--ink-dim); margin-top:2px;}
+  .close-btn{
+    background:var(--bg-field); border:1px solid var(--hairline); color:var(--ink-dim);
+    width:28px; height:28px; border-radius:50%; cursor:pointer; font-size:14px; line-height:1;
+  }
+  .close-btn:hover{color:var(--ink); border-color:#3A4148;}
+  .sim-badge{
+    display:inline-flex; align-items:center; gap:6px; font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-dim); background:var(--bg-field); border:1px solid var(--hairline);
+    padding:3px 9px; border-radius:20px; margin-top:6px;
+  }
+  .sim-badge .dot{width:5px;height:5px;border-radius:50%; background:var(--ink-faint);}
+
+  .value-row{display:flex; gap:26px; flex-wrap:wrap; margin:14px 0 18px; padding:14px 16px; background:var(--bg-field); border-radius:8px;}
+  .value-row .vitem .vlabel{font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px;}
+  .value-row .vitem .vval{font-size:18px; font-weight:600;}
+
+  .detail-chart{margin-bottom:18px;}
+
+  .section-title{
+    font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--gold); margin:0 0 8px;
+    border-bottom:1px solid var(--hairline); padding-bottom:6px;
+  }
+  .detail-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px;}
+  @media(max-width:520px){ .detail-grid{grid-template-columns:1fr;} }
+  .mini-table{width:100%; border-collapse:collapse; font-size:12px;}
+  .mini-table td{padding:5px 0; border-bottom:1px solid var(--hairline); color:var(--ink-dim);}
+  .mini-table td:last-child{text-align:right; color:var(--ink); font-family:'IBM Plex Mono',monospace;}
+  .mini-table tr:last-child td{border-bottom:none;}
+
+  .puntas-row{display:flex; gap:12px;}
+  .punta-box{flex:1; background:var(--bg-field); border-radius:8px; padding:10px 12px;}
+  .punta-box .plabel{font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); margin-bottom:4px;}
+  .punta-box .pval{font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600;}
+  .punta-box .pqty{font-size:10.5px; color:var(--ink-dim); margin-top:2px;}
+  .punta-box.compra .pval{color:var(--verdigris);}
+  .punta-box.venta .pval{color:var(--copper);}
+
+  .rent-row{display:flex; gap:12px;}
+  .rent-box{flex:1; text-align:center; background:var(--bg-field); border-radius:8px; padding:10px;}
+  .rent-box .rlabel{font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); margin-bottom:4px;}
+  .rent-box .rval{font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:600;}
+
+  .tx-table{width:100%; border-collapse:collapse; font-size:11.5px;}
+  .tx-table th{text-align:left; font-weight:500; color:var(--ink-faint); text-transform:uppercase; font-size:9.5px; letter-spacing:.05em; padding-bottom:6px;}
+  .tx-table td{padding:5px 0; border-top:1px solid var(--hairline); font-family:'IBM Plex Mono',monospace; color:var(--ink-dim);}
+  .tx-table td:first-child{color:var(--ink);}
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-text">
+        <p class="eyebrow">Bolsa de Santiago</p>
+        <p class="title">IPSA Monitor</p>
+      </div>
+    </div>
+    <div class="index-block">
+      <span class="mono index-value" id="idxValue">6.412</span>
+      <span class="mono index-delta" id="idxDelta">+0,00%</span>
+    </div>
+    <div class="status">
+      <span class="live-pill mono" id="marketStatus" style="border-color:transparent;">···</span>
+      <button id="notifyBtn" class="live-pill" style="cursor:pointer; background:none;">🔔 Activar notificaciones</button>
+      <span class="live-pill"><span class="live-dot"></span>Simulación en vivo</span>
+      <span class="mono clock" id="clock">--:--:--</span>
+    </div>
+  </div>
+
+  <p class="disclaimer">
+    <b>Prototipo con datos simulados.</b> Toca cualquier tarjeta para ver el detalle de la acción, inspirado en la ficha de instrumento de bolsadesantiago.com (valor, puntas de compra/venta, rentabilidad, últimas transacciones).
+  </p>
+
+  <div class="feed-panel">
+    <p class="feed-title">Alertas de caída <span class="feed-count" id="feedCount">0</span></p>
+    <ul class="feed-list" id="feedList">
+      <li class="feed-empty">Sin alertas por ahora. Aparecerán aquí apenas una acción rompa su banda histórica.</li>
+    </ul>
+  </div>
+
+  <div class="search-row">
+    <input type="text" id="searchInput" class="search-input mono" placeholder="Buscar acción por ticker o nombre...">
+    <span class="search-hint" id="searchHint"></span>
+  </div>
+
+  <div class="layout">
+    <div class="grid" id="cardsGrid"></div>
+  </div>
+
+  <p class="footer-note">Umbral de alerta: 2% bajo el promedio histórico de 90 días · actualiza cada 2s</p>
+
+  <div class="overlay" id="overlay">
+    <div class="detail" id="detailPanel"></div>
+  </div>
+
+<script>
+const stocks = [
+  {ticker:'AGUAS-A', name:'Aguas Andinas',       base:339,   dec:0},
+  {ticker:'ANDINA-B', name:'Embotelladora Andina', base:2350, dec:0},
+  {ticker:'BCI',     name:'Banco de Crédito e Inversiones', base:38500, dec:0},
+  {ticker:'BSANTANDER', name:'Banco Santander Chile', base:79.5, dec:2},
+  {ticker:'CAP',     name:'Minería',             base:6900,  dec:0},
+  {ticker:'CCU',     name:'Bebidas',             base:6950,  dec:0},
+  {ticker:'CENCOSUD', name:'Retail',             base:2580,  dec:0},
+  {ticker:'CHILE',   name:'Banco de Chile',      base:129,   dec:2},
+  {ticker:'CMPC',    name:'Forestal/Celulosa',   base:1210,  dec:0},
+  {ticker:'COLBUN',  name:'Electricidad',        base:145,   dec:2},
+  {ticker:'CONCHATORO', name:'Viña Concha y Toro', base:1090, dec:0},
+  {ticker:'COPEC',   name:'Combustibles/Forestal', base:7280, dec:0},
+  {ticker:'ECL',     name:'Engie Energía Chile', base:520,   dec:0},
+  {ticker:'ENELAM',  name:'Enel Américas',       base:85,    dec:2},
+  {ticker:'ENELCHILE', name:'Enel Chile',        base:68,    dec:2},
+  {ticker:'ENTEL',   name:'Telecomunicaciones',  base:5750,  dec:0},
+  {ticker:'FALABELLA', name:'Retail',           base:3150,  dec:0},
+  {ticker:'IAM',     name:'Inversiones Aguas Metropolitanas', base:1180, dec:0},
+  {ticker:'LTM',     name:'LATAM Airlines',      base:23.4,  dec:2},
+  {ticker:'MALLPLAZA', name:'Mallplaza',         base:1620,  dec:0},
+  {ticker:'PARAUCO', name:'Parque Arauco',       base:1980,  dec:0},
+  {ticker:'RIPLEY',  name:'Ripley',              base:340,   dec:0},
+  {ticker:'SMU',     name:'Supermercados',       base:145,   dec:0},
+  {ticker:'SONDA',   name:'Software/TI',         base:960,   dec:0},
+  {ticker:'SQM-B',   name:'SQM · Litio',        base:65000, dec:0},
+  {ticker:'VAPORES', name:'Naviera',             base:49,    dec:0},
+  {ticker:'ANTARCHILE', name:'Holding Forestal/Combustibles', base:7690, dec:0},
+  {ticker:'QUINENCO', name:'Holding (Banca/Industria)', base:4300, dec:0},
+  {ticker:'HABITAT', name:'AFP Habitat',         base:1225,  dec:0},
+  {ticker:'CUPRUM',  name:'AFP Cuprum',          base:20500, dec:0},
+  {ticker:'PROVIDA', name:'AFP Provida',         base:1450,  dec:0},
+  {ticker:'PLANVITAL', name:'AFP PlanVital',     base:135,   dec:0},
+  {ticker:'SK',      name:'Sigdo Koppers · Industrial', base:1790, dec:0},
+  {ticker:'CAMANCHACA', name:'Pesquera Camanchaca', base:62, dec:0},
+  {ticker:'ALMENDRAL', name:'Holding (controla Entel)', base:35, dec:0},
+  {ticker:'ENELGXCH', name:'Enel Generación Chile', base:340, dec:0},
+  {ticker:'WATTS',   name:'Alimentos/Lácteos',   base:410,   dec:0},
+  {ticker:'CRISTALES', name:'Cristalerías de Chile', base:2050, dec:0},
+  {ticker:'BESALCO', name:'Construcción',        base:1265,  dec:0},
+  {ticker:'PUCOBRE', name:'Minería · Cobre',     base:2900,  dec:0},
+  {ticker:'LIPIGAS', name:'Gas licuado',         base:410,   dec:0},
+  {ticker:'BLUMAR',  name:'Pesquera',            base:220,   dec:0},
+  {ticker:'ORO-BLANCO', name:'Holding (SQM)',    base:10.3,  dec:2},
+  {ticker:'AAISA',   name:'Holding (ILC)',       base:1900,  dec:0},
+];
+
+const ALERT_THRESHOLD = 0.98;
+const HISTORY_LEN = 40;
+
+function fmt(v, dec){ return v.toLocaleString('es-CL', {minimumFractionDigits:dec, maximumFractionDigits:dec}); }
+function fmtPct(v){ const s = v>=0 ? '+' : ''; return s + (v*100).toLocaleString('es-CL',{minimumFractionDigits:1,maximumFractionDigits:1}) + '%'; }
+function fmtCLP0(v){ return Math.round(v).toLocaleString('es-CL'); }
+
+function seedRand(str){
+  let h = 0;
+  for(let i=0;i<str.length;i++){ h = (h*31 + str.charCodeAt(i)) >>> 0; }
+  return () => { h = (h*1103515245 + 12345) >>> 0; return (h % 10000)/10000; };
+}
+
+const state = stocks.map(s => ({
+  ...s,
+  avg: s.base,
+  price: s.base,
+  drift: 0,
+  history: Array(HISTORY_LEN).fill(s.base),
+  inAlert: false,
+  rand: seedRand(s.ticker),
+}));
+
+let indexHistory = Array(HISTORY_LEN).fill(6412);
+let indexPrev = 6412;
+
+const grid = document.getElementById('cardsGrid');
+const cardEls = {};
+
+// ---- Favoritos (persisten en este dispositivo/navegador) ----
+function loadFavorites(){
+  try {
+    const raw = localStorage.getItem('ipsa_favoritos');
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch(e){
+    return new Set(); // si el navegador bloquea localStorage, seguimos sin favoritos guardados
+  }
+}
+function saveFavorites(){
+  try { localStorage.setItem('ipsa_favoritos', JSON.stringify([...favoritos])); }
+  catch(e){ /* si falla, los favoritos solo duran mientras la app siga abierta */ }
+}
+const favoritos = loadFavorites();
+
+state.forEach(s => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <div class="flag"><span class="flag-dot"></span>Bajo promedio</div>
+    <div class="card-head">
+      <div>
+        <div class="ticker mono">${s.ticker} <button class="fav-btn" data-el="fav" title="Marcar como favorita">☆</button></div>
+        <div class="company">${s.name}</div>
+      </div>
+      <div class="price-block">
+        <div class="price mono" data-el="price">${fmt(s.price, s.dec)}</div>
+        <div class="delta mono" data-el="delta">+0,0%</div>
+      </div>
+    </div>
+    <div class="spark-wrap">
+      <svg viewBox="0 0 300 74" width="100%" height="74" preserveAspectRatio="none" data-el="svg"></svg>
+    </div>
+    <div class="avg-line">
+      <span>Promedio 90d</span>
+      <span class="mono">${fmt(s.avg, s.dec)}</span>
+    </div>
+    <div class="tap-hint">Toca para ver detalle</div>
+  `;
+  card.addEventListener('click', () => openDetail(s.ticker));
+  const favBtn = card.querySelector('[data-el="fav"]');
+  favBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // que no abra el detalle al tocar la estrella
+    if(favoritos.has(s.ticker)){
+      favoritos.delete(s.ticker);
+      favBtn.textContent = '☆';
+      favBtn.classList.remove('active');
+      card.classList.remove('is-favorite');
+    } else {
+      favoritos.add(s.ticker);
+      favBtn.textContent = '★';
+      favBtn.classList.add('active');
+      card.classList.add('is-favorite');
+    }
+    saveFavorites();
+    renderGridOrder();
+  });
+  grid.appendChild(card);
+  cardEls[s.ticker] = card;
+});
+
+// Pintar el estado inicial de las estrellas (por si ya había favoritos guardados)
+state.forEach(s => {
+  const favBtn = cardEls[s.ticker].querySelector('[data-el="fav"]');
+  if(favoritos.has(s.ticker)){
+    favBtn.textContent = '★';
+    favBtn.classList.add('active');
+    cardEls[s.ticker].classList.add('is-favorite');
+  }
+});
+
+function renderGridOrder(){
+  const query = document.getElementById('searchInput').value.trim().toLowerCase();
+
+  const visibles = state.filter(s =>
+    !query || s.ticker.toLowerCase().includes(query) || s.name.toLowerCase().includes(query)
+  );
+
+  // Favoritas primero (en el orden en que se marcaron no importa, mantenemos
+  // el orden original de la lista dentro de cada grupo), despues el resto.
+  const favoritas = visibles.filter(s => favoritos.has(s.ticker));
+  const resto = visibles.filter(s => !favoritos.has(s.ticker));
+  const ordenFinal = favoritas.concat(resto);
+
+  ordenFinal.forEach(s => grid.appendChild(cardEls[s.ticker])); // reordena moviendo los nodos existentes
+
+  // Ocultar las que no calzan con la búsqueda
+  state.forEach(s => {
+    cardEls[s.ticker].style.display = visibles.includes(s) ? '' : 'none';
+  });
+
+  const hint = document.getElementById('searchHint');
+  if(query){
+    hint.textContent = `${visibles.length} de ${state.length} acciones`;
+  } else {
+    hint.textContent = favoritos.size ? `${favoritos.size} favorita${favoritos.size>1?'s':''}` : '';
+  }
+}
+
+document.getElementById('searchInput').addEventListener('input', renderGridOrder);
+renderGridOrder();
+
+function pseudoRand(seed){
+  const x = Math.sin(seed*9301+49297)*233280;
+  return x - Math.floor(x);
+}
+
+function buildSpark(svgEl, history, avg, threshold, dec, h){
+  h = h || 74;
+  const w = 300;
+  const n = history.length;
+
+  // Sintetizamos velas OHLC a partir de la serie de cierres simulados
+  // (open = cierre anterior). En el backend real, esto se reemplazaria
+  // por OHLC real de Yahoo Finance (Ticker.history()).
+  const candles = history.map((close, i) => {
+    const open = i === 0 ? close : history[i-1];
+    const bodyRange = Math.abs(close - open) || (close * 0.002);
+    const wickUp = bodyRange * (0.4 + pseudoRand(i*7.13 + close) * 0.8);
+    const wickDown = bodyRange * (0.4 + pseudoRand(i*3.71 + close) * 0.8);
+    return {
+      open, close,
+      high: Math.max(open, close) + wickUp,
+      low: Math.min(open, close) - wickDown,
+    };
+  });
+
+  const allVals = candles.flatMap(c => [c.high, c.low]).concat([avg*1.02, threshold*0.97]);
+  const min = Math.min(...allVals), max = Math.max(...allVals);
+  const range = (max - min) || 1;
+  const y = v => h - ((v - min)/range) * h;
+  const slot = w / n;
+  const bodyW = Math.max(1.5, slot * 0.6);
+
+  const avgY = y(avg);
+  const thY = y(threshold);
+
+  const candleEls = candles.map((c, i) => {
+    const cx = slot * i + slot/2;
+    const isUp = c.close >= c.open;
+    const color = isUp ? 'var(--verdigris)' : 'var(--copper)';
+    const bodyTop = y(Math.max(c.open, c.close));
+    const bodyBottom = y(Math.min(c.open, c.close));
+    const bodyH = Math.max(1, bodyBottom - bodyTop);
+    return `<line x1="${cx.toFixed(1)}" y1="${y(c.high).toFixed(1)}" x2="${cx.toFixed(1)}" y2="${y(c.low).toFixed(1)}" stroke="${color}" stroke-width="1"></line>
+      <rect x="${(cx-bodyW/2).toFixed(1)}" y="${bodyTop.toFixed(1)}" width="${bodyW.toFixed(1)}" height="${bodyH.toFixed(1)}" fill="${color}"></rect>`;
+  }).join('');
+
+  svgEl.innerHTML = `
+    <rect x="0" y="0" width="${w}" height="${Math.max(thY,0)}" fill="var(--verdigris-soft)"></rect>
+    <rect x="0" y="${thY}" width="${w}" height="${Math.max(h-thY,0)}" fill="var(--copper-soft)"></rect>
+    <line x1="0" y1="${avgY}" x2="${w}" y2="${avgY}" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="3,3"></line>
+    ${candleEls}
+  `;
+}
+
+// ---- Deteccion heuristica de patron Hombro-Cabeza-Hombro ----
+// Es una heuristica geometrica, no una prediccion confiable -- ver
+// aviso en la interfaz. Necesita al menos 15 puntos para tener 3
+// picos distinguibles.
+function detectHeadAndShoulders(prices){
+  if(prices.length < 15) return null;
+
+  const peaks = [];
+  for(let i=2;i<prices.length-2;i++){
+    if(prices[i] > prices[i-1] && prices[i] > prices[i-2] &&
+       prices[i] > prices[i+1] && prices[i] > prices[i+2]){
+      peaks.push(i);
+    }
+  }
+  if(peaks.length < 3) return null;
+
+  for(let k=0;k<peaks.length-2;k++){
+    const i1 = peaks[k], i2 = peaks[k+1], i3 = peaks[k+2];
+    const p1 = prices[i1], p2 = prices[i2], p3 = prices[i3];
+
+    const cabezaMasAlta = p2 > p1 && p2 > p3;
+    const hombrosParejos = Math.abs(p1-p3) / Math.max(p1,p3) < 0.08;
+
+    if(cabezaMasAlta && hombrosParejos){
+      const valle1 = Math.min(...prices.slice(i1, i2+1));
+      const valle2 = Math.min(...prices.slice(i2, i3+1));
+      const cuelloParejo = Math.abs(valle1-valle2) / Math.max(valle1,valle2) < 0.08;
+      if(cuelloParejo){
+        return { hombro1:i1, cabeza:i2, hombro2:i3, cuello:(valle1+valle2)/2 };
+      }
+    }
+  }
+  return null;
+}
+
+function pushHistory(arr, v){ arr.push(v); if(arr.length > HISTORY_LEN) arr.shift(); }
+
+function addAlert(ticker, price, avg, dec){
+  const feedList = document.getElementById('feedList');
+  const empty = feedList.querySelector('.feed-empty');
+  if(empty) empty.remove();
+  const now = new Date().toLocaleTimeString('es-CL', {timeZone:'America/Santiago', hour12:false});
+  const pctBelow = ((price/avg)-1)*100;
+  const li = document.createElement('li');
+  li.className = 'feed-item';
+  li.innerHTML = `
+    <div class="fi-top">
+      <span class="fi-ticker mono">${ticker}</span>
+      <span class="fi-time mono">${now}</span>
+    </div>
+    <div class="fi-msg">Cayó a ${fmt(price,dec)}, un ${pctBelow.toFixed(1)}% bajo su promedio histórico (${fmt(avg,dec)}).</div>
+  `;
+  feedList.insertBefore(li, feedList.firstChild);
+  while(feedList.children.length > 10){ feedList.removeChild(feedList.lastChild); }
+  const countEl = document.getElementById('feedCount');
+  countEl.textContent = parseInt(countEl.textContent) + 1;
+}
+
+function calcSMA(prices, window){
+  if(prices.length < window) return null;
+  const slice = prices.slice(-window);
+  return slice.reduce((a,b) => a+b, 0) / window;
+}
+function calcRSI(prices, period=14){
+  if(prices.length < period+1) return null;
+  const deltas = [];
+  for(let i=1;i<prices.length;i++) deltas.push(prices[i]-prices[i-1]);
+  const gains = deltas.map(d => d>0 ? d : 0);
+  const losses = deltas.map(d => d<0 ? -d : 0);
+  const avgGain = gains.slice(-period).reduce((a,b)=>a+b,0) / period;
+  const avgLoss = losses.slice(-period).reduce((a,b)=>a+b,0) / period;
+  if(avgLoss === 0) return 100;
+  const rs = avgGain / avgLoss;
+  return Math.round((100 - (100/(1+rs))) * 10) / 10;
+}
+
+/* ---- Detail panel ---- */
+const overlay = document.getElementById('overlay');
+const detailPanel = document.getElementById('detailPanel');
+let openTicker = null;
+
+function openDetail(ticker){
+  openTicker = ticker;
+  renderDetail(ticker);
+  overlay.classList.add('open');
+}
+function closeDetail(){
+  overlay.classList.remove('open');
+  openTicker = null;
+}
+overlay.addEventListener('click', e => { if(e.target === overlay) closeDetail(); });
+
+function renderDetail(ticker){
+  const s = state.find(x => x.ticker === ticker);
+  const threshold = s.avg * ALERT_THRESHOLD;
+  const dayVals = s.history;
+  const dayHigh = Math.max(...dayVals);
+  const dayLow = Math.min(...dayVals);
+  const deltaVal = (s.price/s.avg)-1;
+
+  const spread = s.price * 0.001;
+  const bidPrice = s.price - spread;
+  const askPrice = s.price + spread;
+  const bidQty = Math.round(500 + s.rand()*4500);
+  const askQty = Math.round(500 + s.rand()*4500);
+
+  const monto = Math.round((300 + s.rand()*7000)) * 1000000;
+
+  const ret3m = (s.rand()-0.45) * 0.30;
+  const ret1y = ret3m + (s.rand()-0.4) * 0.35;
+
+  const now = new Date();
+  const txRows = [4,3,2,1,0].map(i => {
+    const t = new Date(now.getTime() - i*7000);
+    const hh = t.toLocaleTimeString('es-CL', {timeZone:'America/Santiago', hour12:false});
+    const idx = Math.max(0, s.history.length - 1 - i*2);
+    const px = s.history[idx];
+    const qty = Math.round(100 + s.rand()*3000);
+    return `<tr><td>${fmtCLP0(qty)}</td><td>${fmt(px, s.dec)}</td><td>${hh}</td></tr>`;
+  }).join('');
+
+  const rsiVal = calcRSI(s.history, 14);
+  const sma20Val = calcSMA(s.history, 20);
+  const sma50Val = calcSMA(s.history, Math.min(40, s.history.length));
+  const rsiTexto = rsiVal === null ? 'Calculando…' :
+    rsiVal + (rsiVal < 30 ? ' (sobrevendido)' : rsiVal > 70 ? ' (sobrecomprado)' : '');
+  const sma20Texto = sma20Val === null ? 'Calculando…' : fmt(sma20Val, s.dec);
+  const sma50Texto = sma50Val === null ? 'Calculando…' : fmt(sma50Val, s.dec);
+
+  const patron = detectHeadAndShoulders(s.history);
+  const patronTexto = patron
+    ? `⚠️ Posible Hombro-Cabeza-Hombro detectado (patrón bajista) — cuello en ${fmt(patron.cuello, s.dec)}. Recuerda: es una heurística geométrica, no una certeza; falsos positivos son comunes.`
+    : 'No se detectó el patrón en el rango visible ahora mismo. Eso no garantiza que no exista uno más amplio ni que no vaya a formarse.';
+
+  detailPanel.innerHTML = `
+    <div class="detail-top">
+      <div>
+        <div class="detail-name">${s.name}</div>
+        <div class="detail-sub mono">${s.ticker} · Bolsa de Santiago</div>
+        <span class="sim-badge"><span class="dot"></span>Datos simulados</span>
+      </div>
+      <button class="close-btn" id="closeBtn">✕</button>
+    </div>
+
+    <div class="value-row">
+      <div class="vitem">
+        <div class="vlabel">Valor</div>
+        <div class="vval mono">${fmt(s.price, s.dec)}</div>
+      </div>
+      <div class="vitem">
+        <div class="vlabel">Variación vs. promedio</div>
+        <div class="vval mono" style="color:${deltaVal>=0?'var(--verdigris)':'var(--copper)'}">${fmtPct(deltaVal)}</div>
+      </div>
+      <div class="vitem">
+        <div class="vlabel">Última actualización</div>
+        <div class="vval mono" style="font-size:14px;" id="detailClock">--:--:--</div>
+      </div>
+    </div>
+
+    <div class="detail-chart">
+      <svg viewBox="0 0 600 160" width="100%" height="160" preserveAspectRatio="none" id="detailSvg"></svg>
+    </div>
+
+    <p class="section-title">Resumen de precios (sesión simulada)</p>
+    <table class="mini-table">
+      <tr><td>Precio actual</td><td>${fmt(s.price, s.dec)}</td></tr>
+      <tr><td>Precio mayor</td><td>${fmt(dayHigh, s.dec)}</td></tr>
+      <tr><td>Precio menor</td><td>${fmt(dayLow, s.dec)}</td></tr>
+      <tr><td>Promedio histórico (90d)</td><td>${fmt(s.avg, s.dec)}</td></tr>
+      <tr><td>Umbral de alerta</td><td>${fmt(threshold, s.dec)}</td></tr>
+      <tr><td>Monto transado (simulado)</td><td>$${fmtCLP0(monto/1000000)} M</td></tr>
+    </table>
+
+    <p class="section-title" style="margin-top:16px;">Puntas de compra / venta</p>
+    <div class="puntas-row">
+      <div class="punta-box compra">
+        <div class="plabel">Compra</div>
+        <div class="pval mono">${fmt(bidPrice, s.dec)}</div>
+        <div class="pqty">${fmtCLP0(bidQty)} títulos</div>
+      </div>
+      <div class="punta-box venta">
+        <div class="plabel">Venta</div>
+        <div class="pval mono">${fmt(askPrice, s.dec)}</div>
+        <div class="pqty">${fmtCLP0(askQty)} títulos</div>
+      </div>
+    </div>
+
+    <p class="section-title" style="margin-top:16px;">Rentabilidad (simulada)</p>
+    <div class="rent-row">
+      <div class="rent-box">
+        <div class="rlabel">3 meses</div>
+        <div class="rval mono" style="color:${ret3m>=0?'var(--verdigris)':'var(--copper)'}">${fmtPct(ret3m)}</div>
+      </div>
+      <div class="rent-box">
+        <div class="rlabel">Año</div>
+        <div class="rval mono" style="color:${ret1y>=0?'var(--verdigris)':'var(--copper)'}">${fmtPct(ret1y)}</div>
+      </div>
+    </div>
+
+    <p class="section-title" style="margin-top:16px;">Indicadores técnicos (sobre los últimos ticks simulados)</p>
+    <table class="mini-table">
+      <tr><td>RSI (14)</td><td>${rsiTexto}</td></tr>
+      <tr><td>Media móvil 20</td><td>${sma20Texto}</td></tr>
+      <tr><td>Media móvil 50</td><td>${sma50Texto}</td></tr>
+    </table>
+    <p style="font-size:10.5px; color:var(--ink-faint); margin:6px 0 0;">Acá se calculan sobre los ticks simulados de esta demo (cada 2s). En el backend real (indicators.py) se calculan sobre cierres diarios, como se usa normalmente. No son señales de compra/venta — solo describen el movimiento reciente.</p>
+
+    <p class="section-title" style="margin-top:16px;">Patrones técnicos (heurística, no es predicción)</p>
+    <p style="font-size:11.5px; background:var(--bg-field); padding:10px 12px; border-radius:8px; color:${patron ? 'var(--gold)' : 'var(--ink-faint)'};">
+      ${patronTexto}
+    </p>
+
+    <p class="section-title" style="margin-top:16px;">Noticias recientes</p>
+    <p style="font-size:11.5px; color:var(--ink-faint); background:var(--bg-field); padding:10px 12px; border-radius:8px;">
+      Esta sección se conecta a noticias reales (Google News) cuando el backend esté desplegado — ver DEPLOY.md. No inventamos titulares acá para no confundirte con algo simulado.
+    </p>
+
+    <p class="section-title" style="margin-top:16px;">Últimas transacciones</p>
+    <table class="tx-table">
+      <thead><tr><th>Cantidad</th><th>Precio</th><th>Hora</th></tr></thead>
+      <tbody>${txRows}</tbody>
+    </table>
+  `;
+
+  document.getElementById('closeBtn').addEventListener('click', closeDetail);
+  buildSpark(document.getElementById('detailSvg'), s.history, s.avg, threshold, s.dec, 160);
+  updateDetailClock();
+}
+
+function updateDetailClock(){
+  const el = document.getElementById('detailClock');
+  if(el){ el.textContent = new Date().toLocaleTimeString('es-CL', {timeZone:'America/Santiago', hour12:false}); }
+}
+
+function tick(){
+  let idxDeltaSum = 0;
+  state.forEach(s => {
+    if(Math.random() < 0.12){ s.drift = (Math.random()-0.5) * 0.006; }
+    const noise = (Math.random()-0.5) * 0.010;
+    s.price = Math.max(s.price * (1 + s.drift + noise), s.avg*0.85);
+    pushHistory(s.history, s.price);
+
+    const threshold = s.avg * ALERT_THRESHOLD;
+    const isBelow = s.price < threshold;
+
+    const card = cardEls[s.ticker];
+    card.classList.toggle('alert', isBelow);
+    card.querySelector('[data-el="price"]').textContent = fmt(s.price, s.dec);
+    const deltaVal = (s.price/s.avg)-1;
+    const deltaEl = card.querySelector('[data-el="delta"]');
+    deltaEl.textContent = fmtPct(deltaVal);
+    deltaEl.style.color = deltaVal>=0 ? 'var(--verdigris)' : 'var(--copper)';
+
+    buildSpark(card.querySelector('[data-el="svg"]'), s.history, s.avg, threshold, s.dec);
+
+    if(isBelow && !s.inAlert){ addAlert(s.ticker, s.price, s.avg, s.dec); }
+    s.inAlert = isBelow;
+
+    idxDeltaSum += deltaVal;
+
+    if(openTicker === s.ticker){ renderDetail(s.ticker); }
+  });
+
+  const idxVal = 6412 * (1 + idxDeltaSum/state.length*0.4);
+  pushHistory(indexHistory, idxVal);
+  document.getElementById('idxValue').textContent = fmt(idxVal, 0);
+  const idxDelta = (idxVal/indexPrev)-1;
+  const idxEl = document.getElementById('idxDelta');
+  idxEl.textContent = fmtPct(idxDelta);
+  idxEl.className = 'mono index-delta ' + (idxDelta>=0 ? 'up' : 'down');
+}
+
+// Feriados bursátiles de Chile 2026 -- SOLO fechas de alta confianza:
+// feriados irrenunciables de fecha fija (Ley 2.977) + Viernes Santo
+// (calculable matemáticamente a partir de la fecha de Pascua).
+//
+// DELIBERADAMENTE INCOMPLETA: existen otros feriados legales chilenos
+// que probablemente también cierran la Bolsa (San Pedro y San Pablo,
+// Virgen del Carmen, Asunción de la Virgen, Encuentro de Dos Mundos,
+// Iglesias Evangélicas, Todos los Santos) pero encontré información
+// contradictoria sobre sus fechas exactas observadas y si la Bolsa los
+// trata como no-hábiles -- así que preferí dejarlos afuera en vez de
+// arriesgar una fecha equivocada. Esta lista hay que revisarla y
+// actualizarla cada año.
+const FERIADOS_2026 = [
+  '2026-01-01', // Año Nuevo
+  '2026-04-03', // Viernes Santo
+  '2026-05-01', // Día Nacional del Trabajo
+  '2026-05-21', // Glorias Navales
+  '2026-09-18', // Independencia Nacional
+  '2026-09-19', // Glorias del Ejército
+  '2026-12-08', // Inmaculada Concepción
+  '2026-12-25', // Navidad
+];
+
+function esFeriado(fechaISO){
+  return FERIADOS_2026.includes(fechaISO);
+}
+
+function updateMarketStatus(){
+  const el = document.getElementById('marketStatus');
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/Santiago',
+    weekday: 'short',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(new Date());
+
+  const map = {};
+  parts.forEach(p => map[p.type] = p.value);
+  const weekday = map.weekday; // Mon, Tue, ... Sun
+  const hour = parseInt(map.hour, 10);
+  const minute = parseInt(map.minute, 10);
+  const minutesNow = hour * 60 + minute;
+  const fechaISO = `${map.year}-${map.month}-${map.day}`;
+
+  const esHabil = !['Sat', 'Sun'].includes(weekday) && !esFeriado(fechaISO);
+  const dentroHorario = minutesNow >= (9*60+30) && minutesNow < (16*60);
+  const abierto = esHabil && dentroHorario;
+
+  el.textContent = abierto ? '● Mercado Nacional abierto' : '● Mercado Nacional cerrado';
+  el.className = 'live-pill mono ' + (abierto ? 'market-open' : 'market-closed');
+}
+
+function updateClock(){
+  const now = new Date().toLocaleTimeString('es-CL', {timeZone:'America/Santiago', hour12:false});
+  document.getElementById('clock').textContent = now + ' (Santiago)';
+  updateDetailClock();
+  updateMarketStatus();
+}
+
+tick();
+updateClock();
+setInterval(tick, 2000);
+setInterval(updateClock, 1000);
+
+/* ---- Notificaciones push ---- */
+// Clave pública VAPID (ver vapid_keys.txt) — ya insertada, no requiere edición.
+const VAPID_PUBLIC_KEY = 'BOQ6bcNgmXfK7oB9_Z2wca_1cd9oaqnebftUQf3hAkLX7DeHUIJezdHoqiY27CWadBjDD3fNZbzSpJPf23mpKBY';
+
+// CAMBIA ESTO por la URL real de tu servidor una vez desplegado (ver DEPLOY.md)
+const BACKEND_URL = 'https://ipsa-alert-service.onrender.com';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+document.getElementById('notifyBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('notifyBtn');
+  const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+  if (isIOS && !isStandalone) {
+    alert('En iPhone, las notificaciones solo funcionan si agregas esta página a tu pantalla de inicio primero:\n\n1. Toca el botón Compartir (el cuadrado con flecha) en Safari\n2. Elige "Agregar a inicio"\n3. Abre la app desde el ícono que aparece en tu pantalla de inicio (no desde Safari)\n4. Ahí sí toca este botón de nuevo');
+    return;
+  }
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    alert('Este navegador no soporta notificaciones push. En iPhone, asegúrate de haber agregado la app a inicio desde Safari (ver instrucciones).');
+    return;
+  }
+  try {
+    const permiso = await Notification.requestPermission();
+    if (permiso !== 'granted') {
+      alert('No diste permiso de notificaciones. Puedes activarlo después desde la configuración del sitio en tu navegador.');
+      return;
+    }
+    const reg = await navigator.serviceWorker.register('sw.js');
+    await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+    await fetch(BACKEND_URL + '/subscribe', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(sub),
+    });
+    btn.textContent = '✅ Notificaciones activas';
+    btn.style.color = 'var(--verdigris)';
+  } catch (err) {
+    console.error(err);
+    alert('No se pudo activar las notificaciones: ' + err.message + '\n\n¿Ya configuraste BACKEND_URL en el código con tu servidor real?');
+  }
+});
+</script>
+</body>
+</html>
