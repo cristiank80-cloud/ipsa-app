@@ -220,7 +220,7 @@
     <div class="status">
       <span class="live-pill mono" id="marketStatus" style="border-color:transparent;">···</span>
       <button id="notifyBtn" class="live-pill" style="cursor:pointer; background:none;">🔔 Activar notificaciones</button>
-      <span class="live-pill"><span class="live-dot"></span>Simulación en vivo</span>
+      <span class="live-pill" id="dataStatusPill"><span class="live-dot" id="dataStatusDot"></span><span id="dataStatusText">Simulación en vivo</span></span>
       <span class="mono clock" id="clock">--:--:--</span>
     </div>
   </div>
@@ -718,13 +718,18 @@ function updateDetailClock(){
   if(el){ el.textContent = new Date().toLocaleTimeString('es-CL', {timeZone:'America/Santiago', hour12:false}); }
 }
 
+let liveMode = false; // true una vez que /quotes responde con datos reales
+
 function tick(){
   let idxDeltaSum = 0;
   state.forEach(s => {
-    if(Math.random() < 0.12){ s.drift = (Math.random()-0.5) * 0.006; }
-    const noise = (Math.random()-0.5) * 0.010;
-    s.price = Math.max(s.price * (1 + s.drift + noise), s.avg*0.85);
-    pushHistory(s.history, s.price);
+    if(!liveMode){
+      // Solo simulamos movimiento de precio si NO tenemos datos reales.
+      if(Math.random() < 0.12){ s.drift = (Math.random()-0.5) * 0.006; }
+      const noise = (Math.random()-0.5) * 0.010;
+      s.price = Math.max(s.price * (1 + s.drift + noise), s.avg*0.85);
+      pushHistory(s.history, s.price);
+    }
 
     const threshold = s.avg * ALERT_THRESHOLD;
     const isBelow = s.price < threshold;
@@ -739,7 +744,7 @@ function tick(){
 
     buildSpark(card.querySelector('[data-el="svg"]'), s.history, s.avg, threshold, s.dec);
 
-    if(isBelow && !s.inAlert){ addAlert(s.ticker, s.price, s.avg, s.dec); }
+    if(!liveMode && isBelow && !s.inAlert){ addAlert(s.ticker, s.price, s.avg, s.dec); }
     s.inAlert = isBelow;
 
     idxDeltaSum += deltaVal;
@@ -754,6 +759,42 @@ function tick(){
   const idxEl = document.getElementById('idxDelta');
   idxEl.textContent = fmtPct(idxDelta);
   idxEl.className = 'mono index-delta ' + (idxDelta>=0 ? 'up' : 'down');
+}
+
+async function fetchRealQuotes(){
+  try {
+    const resp = await fetch(BACKEND_URL + '/quotes');
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    const body = await resp.json();
+    const quotes = body.quotes || {};
+
+    let recibidos = 0;
+    state.forEach(s => {
+      const q = quotes[s.ticker];
+      if(q && typeof q.price === 'number'){
+        s.price = q.price;
+        if(typeof q.avg === 'number' && q.avg > 0){ s.avg = q.avg; }
+        pushHistory(s.history, s.price);
+        recibidos++;
+      }
+    });
+
+    if(recibidos > 0){
+      liveMode = true;
+      document.getElementById('dataStatusDot').style.background = 'var(--gold)';
+      document.getElementById('dataStatusText').textContent = `Datos reales (${recibidos}/${state.length})`;
+      document.getElementById('dataStatusPill').style.color = 'var(--gold)';
+      document.getElementById('dataStatusPill').style.borderColor = 'rgba(201,166,107,0.35)';
+    }
+  } catch(e){
+    console.warn('No se pudo obtener /quotes real:', e);
+    if(!liveMode){
+      document.getElementById('dataStatusText').textContent = 'Simulación (sin conexión al backend)';
+    }
+    // Si liveMode ya estaba activo, dejamos los ultimos datos reales
+    // visibles en vez de volver a la simulacion -- es mas honesto que
+    // fingir una nueva actualizacion que no ocurrio.
+  }
 }
 
 // Feriados bursátiles de Chile 2026 -- SOLO fechas de alta confianza:
@@ -830,6 +871,12 @@ const VAPID_PUBLIC_KEY = 'BOQ6bcNgmXfK7oB9_Z2wca_1cd9oaqnebftUQf3hAkLX7DeHUIJezd
 
 // CAMBIA ESTO por la URL real de tu servidor una vez desplegado (ver DEPLOY.md)
 const BACKEND_URL = 'https://ipsa-alert-service.onrender.com';
+
+// Pedir datos reales apenas carga, y cada 60s despues. El backend gratuito
+// de Render puede tardar hasta ~50s en "despertar" si nadie lo uso en un
+// rato -- por eso el primer intento puede demorar, es normal.
+fetchRealQuotes();
+setInterval(fetchRealQuotes, 60000);
 
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
