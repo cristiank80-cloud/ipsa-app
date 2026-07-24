@@ -14,20 +14,20 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg-deep:#14171A;
-    --bg-panel:#1C2024;
-    --bg-panel-alt:#20252A;
-    --bg-field:#191D21;
-    --ink:#ECE9E2;
-    --ink-dim:#A8AFB6;
-    --ink-faint:#828A92;
-    --copper:#C1543A;
-    --copper-soft:rgba(193,84,58,0.14);
-    --copper-glow:rgba(193,84,58,0.45);
-    --verdigris:#4F9C8E;
-    --verdigris-soft:rgba(79,156,142,0.10);
-    --gold:#C9A66B;
-    --hairline:#2A2F34;
+    --bg-deep:#F2F4F6;
+    --bg-panel:#FFFFFF;
+    --bg-panel-alt:#F2F4F6;
+    --bg-field:#EEF1F3;
+    --ink:#2F3640;
+    --ink-dim:#5A6472;
+    --ink-faint:#68727D;
+    --copper:#B34A32;
+    --copper-soft:rgba(179,74,50,0.12);
+    --copper-glow:rgba(179,74,50,0.35);
+    --verdigris:#2C8072;
+    --verdigris-soft:rgba(47,135,121,0.12);
+    --gold:#906F37;
+    --hairline:#D9DEE3;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -37,6 +37,7 @@
     font-family:'IBM Plex Sans',sans-serif;
     min-height:100vh;
     padding:20px 20px 40px;
+    overflow-x:hidden;
   }
   .mono{font-family:'IBM Plex Mono',monospace;}
 
@@ -44,18 +45,25 @@
   .topbar{
     display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px;
     padding:18px 22px; background:var(--bg-panel); border:1px solid var(--hairline);
-    border-radius:10px; margin-bottom:22px;
+    border-radius:10px; margin-bottom:22px; overflow:visible;
   }
   .brand{display:flex; align-items:center; gap:12px;}
   .brand-mark{width:10px;height:10px;border-radius:50%; background:var(--gold); box-shadow:0 0 10px rgba(201,166,107,0.7);}
   .brand-text .eyebrow{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 2px;}
   .brand-text .title{font-size:16px; font-weight:600; margin:0; color:var(--ink);}
-  .index-block{display:flex; align-items:baseline; gap:14px;}
+  .index-block{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;}
   .index-value{font-size:30px; font-weight:600; letter-spacing:-0.01em;}
   .index-delta{font-size:14px; font-weight:500; padding:3px 8px; border-radius:5px;}
   .up{color:var(--verdigris); background:var(--verdigris-soft);}
   .down{color:var(--copper); background:var(--copper-soft);}
-  .status{display:flex; align-items:center; gap:18px;}
+  .status{display:flex; align-items:center; gap:12px; flex-wrap:wrap; row-gap:10px;}
+  @media(max-width:600px){
+    .topbar{padding:14px 16px;}
+    .index-value{font-size:24px;}
+    .status{gap:8px;}
+    .live-pill{font-size:10px; padding:4px 8px;}
+    .clock{font-size:11.5px;}
+  }
   .live-pill{
     display:flex; align-items:center; gap:7px; font-size:11px; letter-spacing:.08em; text-transform:uppercase;
     color:var(--verdigris); border:1px solid rgba(79,156,142,0.35); padding:5px 10px; border-radius:20px;
@@ -288,7 +296,14 @@
   }
   .period-btn:hover{border-color:var(--gold); color:var(--ink);}
   .period-btn.active{background:rgba(201,166,107,0.16); border-color:var(--gold); color:var(--gold);}
-  .period-date-label{font-size:12px; color:var(--ink-faint); display:flex; align-items:center; gap:6px;}
+  .overlay-btn{
+    background:var(--bg-field); border:1px solid var(--hairline); color:var(--ink-dim);
+    padding:6px 12px; border-radius:16px; font-size:12px; cursor:pointer;
+  }
+  .overlay-btn:hover{border-color:var(--gold); color:var(--ink);}
+  .overlay-btn.active{background:rgba(201,166,107,0.16); border-color:var(--gold); color:var(--gold);}
+  .sub-chart{margin-top:6px; padding-top:8px;}
+  .sub-chart-label{font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.04em; margin:0 0 4px;}
   .period-date{
     background:var(--bg-field); border:1px solid var(--hairline); color:var(--ink);
     padding:5px 8px; border-radius:6px; font-size:12px;
@@ -473,6 +488,9 @@ const stocks = [
 
 const ALERT_THRESHOLD = 0.96; // 4% bajo el promedio
 const PERIOD_LABELS = {'1d':'1D','5d':'5D','1mo':'1M','3mo':'3M','6mo':'6M','ytd':'YTD','1y':'1A','5y':'5A'};
+const OVERLAY_LABELS = {sma:'SMA', ema:'EMA', bbands:'BBands', macd:'MACD', rsi:'RSI', volume:'Volume'};
+let ultimoHistorialCargado = null; // {ticker, period, points, dec} -- sobrevive a re-renders del panel
+let overlaysActivos = {sma:false, ema:false, bbands:false, macd:false, rsi:false, volume:false};
 let historial5yCache = {}; // {ticker: [{date, close}, ...]} -- para filtrar rangos "Desde/Hasta" sin re-pedir
 const HISTORY_LEN = 40;
 
@@ -768,10 +786,48 @@ const overlay = document.getElementById('overlay');
 const detailPanel = document.getElementById('detailPanel');
 let openTicker = null;
 
+// ---- Siembra automática de historial real (soluciona RSI/SMA "calculando"
+// y el gráfico intradía casi vacío, sin esperar minutos a que se acumulen
+// datos de las actualizaciones cada 60s) ----
+const historialSeedEnCurso = new Set();
+async function seedHistorialSiFalta(s){
+  if(s.historySeeded || historialSeedEnCurso.has(s.ticker)) return;
+  historialSeedEnCurso.add(s.ticker);
+  try {
+    const resp = await fetch(`${BACKEND_URL}/history?ticker=${encodeURIComponent(s.ticker)}&period=3mo`);
+    if(resp.ok){
+      const body = await resp.json();
+      const points = body.points || [];
+      if(points.length >= 2){
+        const closes = points.map(p => p.close);
+        if(s.price !== null) closes.push(s.price); // el precio en vivo mas reciente, al final
+        s.history = closes.slice(-90);
+        s.historySeeded = true;
+        if(openTicker === s.ticker) renderDetail(s.ticker);
+        renderCard(s);
+      }
+    }
+  } catch(e){
+    console.warn('No se pudo sembrar historial real para', s.ticker, e);
+  } finally {
+    historialSeedEnCurso.delete(s.ticker);
+  }
+}
+
 function openDetail(ticker){
   openTicker = ticker;
   renderDetail(ticker);
   overlay.classList.add('open');
+
+  // Si es la primera vez que se abre esta accion en la sesion, carga de
+  // una vez el grafico de 3 meses -- asi no queda en blanco esperando
+  // que el usuario toque un boton de periodo.
+  const s = state.find(x => x.ticker === ticker);
+  if(s && s.price !== null && (!ultimoHistorialCargado || ultimoHistorialCargado.ticker !== ticker)){
+    cargarHistorialPeriodo(ticker, '3mo', s.dec);
+    const btn3m = document.querySelector('#periodRow [data-period="3mo"]');
+    if(btn3m) btn3m.classList.add('active');
+  }
 }
 function closeDetail(){
   overlay.classList.remove('open');
@@ -800,6 +856,8 @@ function renderDetail(ticker){
   const liveMode = true; // si llegamos aca, s.price ya es un dato real -- nunca simulado
   const threshold = s.avg * ALERT_THRESHOLD;
   const deltaVal = (s.price/s.avg)-1;
+
+  seedHistorialSiFalta(s); // dispara en segundo plano; si trae datos, se re-dibuja solo
 
   // Maximo/minimo del dia: usa el dato real de Yahoo Finance si llegó;
   // si no, cae al maximo/minimo de lo real acumulado en esta sesión.
@@ -876,10 +934,29 @@ function renderDetail(ticker){
       <label class="period-date-label">Hasta <input type="date" id="fechaHasta" class="period-date"></label>
       <button class="period-btn" id="btnRangoCustom">Aplicar rango</button>
     </div>
+
+    <div class="period-row" id="overlayRow" style="margin-top:10px;">
+      ${['sma','ema','bbands','macd','rsi','volume'].map(k => `<button class="overlay-btn" data-overlay="${k}">${OVERLAY_LABELS[k]}</button>`).join('')}
+      <button class="overlay-btn" id="btnLimpiarOverlays">Limpiar</button>
+    </div>
+
     <div class="detail-chart" style="margin-top:10px;">
-      <svg viewBox="0 0 600 140" width="100%" height="140" preserveAspectRatio="none" id="historySvg"></svg>
+      <svg viewBox="0 0 600 160" width="100%" height="160" preserveAspectRatio="none" id="historySvg"></svg>
       <p id="historyStatus" style="font-size:11px; color:var(--ink-faint); text-align:center; margin:4px 0 0;">Elige un período para cargar el historial real.</p>
     </div>
+    <div class="detail-chart sub-chart" id="volumeChartWrap" style="display:none;">
+      <p class="sub-chart-label">Volumen (real)</p>
+      <svg viewBox="0 0 600 60" width="100%" height="60" preserveAspectRatio="none" id="historyVolumeSvg"></svg>
+    </div>
+    <div class="detail-chart sub-chart" id="rsiChartWrap" style="display:none;">
+      <p class="sub-chart-label">RSI (14, real)</p>
+      <svg viewBox="0 0 600 60" width="100%" height="60" preserveAspectRatio="none" id="historyRsiSvg"></svg>
+    </div>
+    <div class="detail-chart sub-chart" id="macdChartWrap" style="display:none;">
+      <p class="sub-chart-label">MACD (12, 26, 9 — real)</p>
+      <svg viewBox="0 0 600 70" width="100%" height="70" preserveAspectRatio="none" id="historyMacdSvg"></svg>
+    </div>
+
 
     <p class="section-title">Resumen de precios ${liveMode ? '(real, Yahoo Finance)' : '(sesión simulada)'}</p>
     <table class="mini-table">
@@ -938,59 +1015,273 @@ function renderDetail(ticker){
   wirePeriodSelector(s);
 }
 
-function buildLineChart(svgEl, points, dec){
-  const w = 600, h = 140;
-  if(!points || points.length < 2){
-    svgEl.innerHTML = '';
-    return;
+// ---- Matemática de indicadores, todo sobre precios reales de /history ----
+function calcSMASeries(closes, period){
+  const out = Array(closes.length).fill(null);
+  for(let i=period-1;i<closes.length;i++){
+    let sum=0; for(let j=i-period+1;j<=i;j++) sum+=closes[j];
+    out[i] = sum/period;
   }
+  return out;
+}
+function calcEMASeries(closes, period){
+  const out = Array(closes.length).fill(null);
+  const k = 2/(period+1);
+  let emaPrev = null;
+  for(let i=0;i<closes.length;i++){
+    if(i === period-1){
+      let sum=0; for(let j=0;j<period;j++) sum+=closes[j];
+      emaPrev = sum/period;
+      out[i] = emaPrev;
+    } else if(i >= period){
+      emaPrev = closes[i]*k + emaPrev*(1-k);
+      out[i] = emaPrev;
+    }
+  }
+  return out;
+}
+function calcBollinger(closes, period=20, mult=2){
+  const sma = calcSMASeries(closes, period);
+  const upper = Array(closes.length).fill(null);
+  const lower = Array(closes.length).fill(null);
+  for(let i=period-1;i<closes.length;i++){
+    let sumSq=0;
+    for(let j=i-period+1;j<=i;j++) sumSq += Math.pow(closes[j]-sma[i],2);
+    const std = Math.sqrt(sumSq/period);
+    upper[i] = sma[i] + mult*std;
+    lower[i] = sma[i] - mult*std;
+  }
+  return {sma, upper, lower};
+}
+function calcRSISeries(closes, period=14){
+  const out = Array(closes.length).fill(null);
+  for(let i=period;i<closes.length;i++){
+    let gains=0, losses=0;
+    for(let j=i-period+1;j<=i;j++){
+      const diff = closes[j]-closes[j-1];
+      if(diff>0) gains+=diff; else losses-=diff;
+    }
+    const avgGain=gains/period, avgLoss=losses/period;
+    out[i] = avgLoss===0 ? 100 : (100-(100/(1+avgGain/avgLoss)));
+  }
+  return out;
+}
+function calcMACDSeries(closes, fast=12, slow=26, signalP=9){
+  const emaFast = calcEMASeries(closes, fast);
+  const emaSlow = calcEMASeries(closes, slow);
+  const macdLine = closes.map((_,i) => (emaFast[i]!=null && emaSlow[i]!=null) ? emaFast[i]-emaSlow[i] : null);
+  const soloValores = macdLine.filter(v=>v!=null);
+  const signalSoloValores = calcEMASeries(soloValores, signalP);
+  const signal = Array(closes.length).fill(null);
+  let k=0;
+  for(let i=0;i<closes.length;i++){
+    if(macdLine[i]!=null){ signal[i] = signalSoloValores[k]; k++; }
+  }
+  const hist = closes.map((_,i) => (macdLine[i]!=null && signal[i]!=null) ? macdLine[i]-signal[i] : null);
+  return {macdLine, signal, hist};
+}
+
+// ---- Renderizado del gráfico principal + overlays + subgráficos ----
+function renderHistoryChart(){
+  if(!ultimoHistorialCargado || ultimoHistorialCargado.ticker !== openTicker) return;
+  const {points, dec} = ultimoHistorialCargado;
+  const svgEl = document.getElementById('historySvg');
+  if(!svgEl) return;
+
+  const w = 600, h = 160;
   const closes = points.map(p => p.close);
-  const min = Math.min(...closes), max = Math.max(...closes);
-  const range = (max - min) || 1;
-  const x = i => (i/(points.length-1)) * w;
-  const y = v => h - ((v - min)/range) * h;
+  const n = closes.length;
+  const x = i => (i/(n-1)) * w;
+
+  const series = [];
+  if(overlaysActivos.sma) series.push({data: calcSMASeries(closes,20), color:'#E8B84B', label:'SMA20'});
+  if(overlaysActivos.ema) series.push({data: calcEMASeries(closes,20), color:'#7FB2E5', label:'EMA20'});
+  let bb = null;
+  if(overlaysActivos.bbands){ bb = calcBollinger(closes,20,2); }
+
+  const allVals = [...closes];
+  series.forEach(s => s.data.forEach(v => { if(v!=null) allVals.push(v); }));
+  if(bb){ bb.upper.forEach(v=>{if(v!=null)allVals.push(v);}); bb.lower.forEach(v=>{if(v!=null)allVals.push(v);}); }
+  const min = Math.min(...allVals), max = Math.max(...allVals);
+  const range = (max-min) || 1;
+  const y = v => h - ((v-min)/range)*h;
 
   const first = closes[0], last = closes[closes.length-1];
   const color = last >= first ? 'var(--verdigris)' : 'var(--copper)';
   const fillColor = last >= first ? 'var(--verdigris-soft)' : 'var(--copper-soft)';
-
   const linePts = closes.map((v,i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
   const areaPts = `0,${h} ${linePts} ${w},${h}`;
 
+  let svg = `<polygon points="${areaPts}" fill="${fillColor}"></polygon>`;
+
+  if(bb){
+    const upperPts = bb.upper.map((v,i)=> v!=null ? `${x(i).toFixed(1)},${y(v).toFixed(1)}` : null).filter(Boolean).join(' ');
+    const lowerPtsRev = bb.lower.map((v,i)=> v!=null ? `${x(i).toFixed(1)},${y(v).toFixed(1)}` : null).filter(Boolean).reverse().join(' ');
+    if(upperPts && lowerPtsRev){
+      svg += `<polygon points="${upperPts} ${lowerPtsRev}" fill="rgba(201,166,107,0.10)"></polygon>`;
+      svg += `<polyline points="${upperPts}" fill="none" stroke="rgba(201,166,107,0.55)" stroke-width="1" stroke-dasharray="2,2"></polyline>`;
+      svg += `<polyline points="${lowerPtsRev}" fill="none" stroke="rgba(201,166,107,0.55)" stroke-width="1" stroke-dasharray="2,2"></polyline>`;
+    }
+  }
+
+  svg += `<polyline points="${linePts}" fill="none" stroke="${color}" stroke-width="2"></polyline>`;
+  svg += `<circle cx="${x(n-1).toFixed(1)}" cy="${y(last).toFixed(1)}" r="3.5" fill="${color}"></circle>`;
+
+  series.forEach(s => {
+    const pts = s.data.map((v,i)=> v!=null ? `${x(i).toFixed(1)},${y(v).toFixed(1)}` : null).filter(Boolean).join(' ');
+    if(pts) svg += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="1.6"></polyline>`;
+  });
+
+  svgEl.innerHTML = svg;
+
+  // Leyenda simple si hay overlays de linea activos
+  const leyendaEl = document.getElementById('historyLeyenda');
+  if(leyendaEl){
+    leyendaEl.innerHTML = series.map(s => `<span style="color:${s.color};">● ${s.label}</span>`).join('  ') +
+      (bb ? '  <span style="color:rgba(201,166,107,0.8);">▭ Bollinger(20,2)</span>' : '');
+  }
+
+  renderVolumeChart(points);
+  renderRsiChart(closes);
+  renderMacdChart(closes);
+}
+
+function renderVolumeChart(points){
+  const wrap = document.getElementById('volumeChartWrap');
+  const svgEl = document.getElementById('historyVolumeSvg');
+  if(!wrap || !svgEl) return;
+  wrap.style.display = overlaysActivos.volume ? '' : 'none';
+  if(!overlaysActivos.volume) return;
+
+  const vols = points.map(p => p.volume || 0);
+  if(vols.every(v => v===0)){
+    svgEl.innerHTML = '';
+    wrap.querySelector('.sub-chart-label').textContent = 'Volumen — no disponible para este período';
+    return;
+  }
+  wrap.querySelector('.sub-chart-label').textContent = 'Volumen (real)';
+  const w=600, h=60, n=vols.length;
+  const max = Math.max(...vols) || 1;
+  const slot = w/n, barW = Math.max(1, slot*0.7);
+  const bars = vols.map((v,i) => {
+    const bh = (v/max)*h;
+    return `<rect x="${(slot*i + (slot-barW)/2).toFixed(1)}" y="${(h-bh).toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" fill="var(--ink-faint)"></rect>`;
+  }).join('');
+  svgEl.innerHTML = bars;
+}
+
+function renderRsiChart(closes){
+  const wrap = document.getElementById('rsiChartWrap');
+  const svgEl = document.getElementById('historyRsiSvg');
+  if(!wrap || !svgEl) return;
+  wrap.style.display = overlaysActivos.rsi ? '' : 'none';
+  if(!overlaysActivos.rsi) return;
+
+  const rsi = calcRSISeries(closes, 14);
+  const w=600, h=60, n=closes.length;
+  const x = i => (i/(n-1))*w;
+  const y = v => h - (v/100)*h;
+  const pts = rsi.map((v,i)=> v!=null ? `${x(i).toFixed(1)},${y(v).toFixed(1)}` : null).filter(Boolean).join(' ');
   svgEl.innerHTML = `
-    <polygon points="${areaPts}" fill="${fillColor}"></polygon>
-    <polyline points="${linePts}" fill="none" stroke="${color}" stroke-width="2"></polyline>
-    <circle cx="${x(closes.length-1)}" cy="${y(last)}" r="3.5" fill="${color}"></circle>
+    <line x1="0" y1="${y(70).toFixed(1)}" x2="${w}" y2="${y(70).toFixed(1)}" stroke="var(--copper)" stroke-width="1" stroke-dasharray="2,2"></line>
+    <line x1="0" y1="${y(30).toFixed(1)}" x2="${w}" y2="${y(30).toFixed(1)}" stroke="var(--verdigris)" stroke-width="1" stroke-dasharray="2,2"></line>
+    <polyline points="${pts}" fill="none" stroke="var(--gold)" stroke-width="1.6"></polyline>
   `;
 }
 
-async function cargarHistorialPeriodo(ticker, period, dec){
-  const statusEl = document.getElementById('historyStatus');
-  const svgEl = document.getElementById('historySvg');
-  if(!statusEl || !svgEl) return; // el panel pudo haberse cerrado mientras cargaba
+function renderMacdChart(closes){
+  const wrap = document.getElementById('macdChartWrap');
+  const svgEl = document.getElementById('historyMacdSvg');
+  if(!wrap || !svgEl) return;
+  wrap.style.display = overlaysActivos.macd ? '' : 'none';
+  if(!overlaysActivos.macd) return;
 
-  statusEl.textContent = 'Cargando historial real de Yahoo Finance…';
+  const {macdLine, signal, hist} = calcMACDSeries(closes);
+  const w=600, h=70, n=closes.length;
+  const x = i => (i/(n-1))*w;
+  const valores = [...macdLine, ...signal, ...hist].filter(v=>v!=null);
+  if(valores.length < 2){ svgEl.innerHTML = ''; return; }
+  const min = Math.min(...valores), max = Math.max(...valores);
+  const range = (max-min) || 1;
+  const y = v => h - ((v-min)/range)*h;
+  const zeroY = y(0);
+
+  const barW = Math.max(1, (w/n)*0.6);
+  const bars = hist.map((v,i) => {
+    if(v==null) return '';
+    const yv = y(v);
+    const barH = Math.abs(yv-zeroY);
+    return `<rect x="${(x(i)-barW/2).toFixed(1)}" y="${Math.min(yv,zeroY).toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" fill="${v>=0?'var(--verdigris-soft)':'var(--copper-soft)'}"></rect>`;
+  }).join('');
+
+  const macdPts = macdLine.map((v,i)=> v!=null ? `${x(i).toFixed(1)},${y(v).toFixed(1)}` : null).filter(Boolean).join(' ');
+  const signalPts = signal.map((v,i)=> v!=null ? `${x(i).toFixed(1)},${y(v).toFixed(1)}` : null).filter(Boolean).join(' ');
+
+  svgEl.innerHTML = `
+    ${bars}
+    <line x1="0" y1="${zeroY.toFixed(1)}" x2="${w}" y2="${zeroY.toFixed(1)}" stroke="var(--hairline)" stroke-width="1"></line>
+    <polyline points="${macdPts}" fill="none" stroke="#7FB2E5" stroke-width="1.6"></polyline>
+    <polyline points="${signalPts}" fill="none" stroke="#E8B84B" stroke-width="1.4"></polyline>
+  `;
+}
+
+function wireOverlayButtons(){
+  document.querySelectorAll('.overlay-btn[data-overlay]').forEach(btn => {
+    const key = btn.dataset.overlay;
+    btn.classList.toggle('active', overlaysActivos[key]);
+    btn.addEventListener('click', () => {
+      overlaysActivos[key] = !overlaysActivos[key];
+      btn.classList.toggle('active', overlaysActivos[key]);
+      renderHistoryChart();
+    });
+  });
+  const btnLimpiar = document.getElementById('btnLimpiarOverlays');
+  if(btnLimpiar){
+    btnLimpiar.addEventListener('click', () => {
+      Object.keys(overlaysActivos).forEach(k => overlaysActivos[k] = false);
+      document.querySelectorAll('.overlay-btn').forEach(b => b.classList.remove('active'));
+      renderHistoryChart();
+    });
+  }
+}
+
+async function cargarHistorialPeriodo(ticker, period, dec){
+  if(document.getElementById('historyStatus')) document.getElementById('historyStatus').textContent = 'Cargando historial real de Yahoo Finance…';
+
   try {
     const resp = await fetch(`${BACKEND_URL}/history?ticker=${encodeURIComponent(ticker)}&period=${period}`);
     if(!resp.ok) throw new Error('HTTP ' + resp.status);
     const body = await resp.json();
     const points = body.points || [];
+
+    // Re-consultamos los elementos AHORA, no antes del await -- si el
+    // panel se volvió a dibujar mientras esperábamos la red (pasa cada
+    // ~60s cuando llegan datos nuevos), los que teníamos guardados ya
+    // no son los que se ven en pantalla.
+    const statusEl = document.getElementById('historyStatus');
+    const svgEl = document.getElementById('historySvg');
+    if(ticker !== openTicker || !statusEl || !svgEl) return; // el panel cambió o se cerró
+
     if(points.length < 2){
       statusEl.textContent = 'Yahoo Finance no devolvió suficientes datos para este período.';
       svgEl.innerHTML = '';
       return;
     }
-    if(ticker === (openTicker)){
-      buildLineChart(svgEl, points, dec);
-      const primero = points[0], ultimo = points[points.length-1];
-      const variacion = (ultimo.close/primero.close - 1) * 100;
-      const signo = variacion >= 0 ? '+' : '';
-      statusEl.textContent = `${primero.date} → ${ultimo.date} · ${points.length} datos reales · ${signo}${variacion.toFixed(1)}%`;
-    }
+
+    ultimoHistorialCargado = {ticker, period, points, dec};
+    renderHistoryChart();
+    const primero = points[0], ultimo = points[points.length-1];
+    const variacion = (ultimo.close/primero.close - 1) * 100;
+    const signo = variacion >= 0 ? '+' : '';
+    statusEl.textContent = `${primero.date} → ${ultimo.date} · ${points.length} datos reales · ${signo}${variacion.toFixed(1)}%`;
   } catch(e){
     console.warn('Error cargando /history:', e);
-    statusEl.textContent = 'No se pudo cargar el historial real (¿backend despertando? intenta de nuevo en un momento).';
-    svgEl.innerHTML = '';
+    const statusEl = document.getElementById('historyStatus');
+    const svgEl = document.getElementById('historySvg');
+    if(ticker === openTicker && statusEl){
+      statusEl.textContent = 'No se pudo cargar el historial real (¿backend despertando? intenta de nuevo en un momento).';
+      if(svgEl) svgEl.innerHTML = '';
+    }
   }
 }
 
@@ -1011,14 +1302,14 @@ function wirePeriodSelector(s){
     btnRango.addEventListener('click', async () => {
       const desde = document.getElementById('fechaDesde').value;
       const hasta = document.getElementById('fechaHasta').value;
-      const statusEl = document.getElementById('historyStatus');
-      const svgEl = document.getElementById('historySvg');
       if(!desde || !hasta){
-        statusEl.textContent = 'Elige ambas fechas (Desde y Hasta) para aplicar un rango personalizado.';
+        const statusEl0 = document.getElementById('historyStatus');
+        if(statusEl0) statusEl0.textContent = 'Elige ambas fechas (Desde y Hasta) para aplicar un rango personalizado.';
         return;
       }
       row.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
-      statusEl.textContent = 'Cargando historial real de Yahoo Finance…';
+      const statusElCargando = document.getElementById('historyStatus');
+      if(statusElCargando) statusElCargando.textContent = 'Cargando historial real de Yahoo Finance…';
       try {
         if(!historial5yCache[s.ticker]){
           const resp = await fetch(`${BACKEND_URL}/history?ticker=${encodeURIComponent(s.ticker)}&period=5y`);
@@ -1028,21 +1319,48 @@ function wirePeriodSelector(s){
         }
         const todos = historial5yCache[s.ticker];
         const filtrados = todos.filter(p => p.date >= desde && p.date <= hasta);
+
+        // Re-consultamos frescos, por si el panel se redibujo mientras esperabamos
+        const statusEl = document.getElementById('historyStatus');
+        const svgEl = document.getElementById('historySvg');
+        if(s.ticker !== openTicker || !statusEl || !svgEl) return;
+
         if(filtrados.length < 2){
           statusEl.textContent = 'No hay suficientes datos reales en ese rango (¿fechas fuera de los últimos 5 años, o mercado cerrado ese período?).';
           svgEl.innerHTML = '';
           return;
         }
-        buildLineChart(svgEl, filtrados, s.dec);
+        ultimoHistorialCargado = {ticker: s.ticker, period: 'custom', points: filtrados, dec: s.dec};
+        renderHistoryChart();
         const primero = filtrados[0], ultimo = filtrados[filtrados.length-1];
         const variacion = (ultimo.close/primero.close - 1) * 100;
         const signo = variacion >= 0 ? '+' : '';
         statusEl.textContent = `${primero.date} → ${ultimo.date} · ${filtrados.length} datos reales · ${signo}${variacion.toFixed(1)}%`;
       } catch(e){
         console.warn('Error cargando rango personalizado:', e);
-        statusEl.textContent = 'No se pudo cargar el rango (¿backend despertando? intenta de nuevo).';
+        const statusEl = document.getElementById('historyStatus');
+        if(s.ticker === openTicker && statusEl) statusEl.textContent = 'No se pudo cargar el rango (¿backend despertando? intenta de nuevo).';
       }
     });
+  }
+
+  wireOverlayButtons();
+
+  // Si ya había un gráfico cargado para esta acción de antes de que el
+  // panel se redibujara (llega un dato real nuevo cada ~60s), lo
+  // restauramos en vez de dejarlo en blanco.
+  if(ultimoHistorialCargado && ultimoHistorialCargado.ticker === s.ticker){
+    if(ultimoHistorialCargado.period !== 'custom'){
+      const btnActivo = row.querySelector(`[data-period="${ultimoHistorialCargado.period}"]`);
+      if(btnActivo) btnActivo.classList.add('active');
+    }
+    renderHistoryChart();
+    const {points} = ultimoHistorialCargado;
+    const primero = points[0], ultimo = points[points.length-1];
+    const variacion = (ultimo.close/primero.close - 1) * 100;
+    const signo = variacion >= 0 ? '+' : '';
+    const statusEl = document.getElementById('historyStatus');
+    if(statusEl) statusEl.textContent = `${primero.date} → ${ultimo.date} · ${points.length} datos reales · ${signo}${variacion.toFixed(1)}%`;
   }
 }
 
