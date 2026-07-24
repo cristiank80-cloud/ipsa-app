@@ -19,8 +19,8 @@
     --bg-panel-alt:#20252A;
     --bg-field:#191D21;
     --ink:#ECE9E2;
-    --ink-dim:#8B9096;
-    --ink-faint:#585E63;
+    --ink-dim:#A8AFB6;
+    --ink-faint:#828A92;
     --copper:#C1543A;
     --copper-soft:rgba(193,84,58,0.14);
     --copper-glow:rgba(193,84,58,0.45);
@@ -66,7 +66,7 @@
   .clock{font-size:13px; color:var(--ink-dim);}
 
   .disclaimer{
-    font-size:12px; color:var(--ink-faint); margin:0 0 22px; line-height:1.5;
+    font-size:13px; color:var(--ink-faint); margin:0 0 22px; line-height:1.5;
     padding:10px 14px; border:1px dashed var(--hairline); border-radius:8px;
   }
   .disclaimer b{color:var(--ink-dim);}
@@ -74,11 +74,11 @@
   .search-row{display:flex; align-items:center; gap:12px; margin-bottom:16px;}
   .search-input{
     flex:1; background:var(--bg-panel); border:1px solid var(--hairline); color:var(--ink);
-    padding:10px 14px; border-radius:8px; font-size:13px; outline:none;
+    padding:12px 14px; border-radius:8px; font-size:14.5px; outline:none;
   }
   .search-input::placeholder{color:var(--ink-faint);}
   .search-input:focus{border-color:var(--gold);}
-  .search-hint{font-size:11px; color:var(--ink-faint); white-space:nowrap;}
+  .search-hint{font-size:12.5px; color:var(--ink-faint); white-space:nowrap;}
 
   .fav-btn{
     background:none; border:none; cursor:pointer; font-size:16px; line-height:1;
@@ -101,21 +101,25 @@
     box-shadow:0 0 0 1px rgba(193,84,58,0.15), 0 0 22px -6px var(--copper-glow);
   }
   .card-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;}
-  .ticker{font-size:15px; font-weight:700; letter-spacing:.01em;}
-  .company{font-size:11px; color:var(--ink-dim); margin-top:2px;}
+  .ticker{font-size:16px; font-weight:700; letter-spacing:.01em;}
+  .company{font-size:12.5px; color:var(--ink-dim); margin-top:2px;}
   .price-block{text-align:right;}
-  .price{font-size:19px; font-weight:600;}
-  .delta{font-size:11px; font-weight:500;}
+  .price{font-size:21px; font-weight:600;}
+  .delta{font-size:12.5px; font-weight:500;}
   .spark-wrap{position:relative; margin:4px 0 6px;}
+  .spark-loading{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:11px; color:var(--ink-faint); letter-spacing:.03em;
+  }
   .flag{
-    position:absolute; top:8px; right:10px; font-size:9.5px; letter-spacing:.07em; text-transform:uppercase;
+    position:absolute; top:8px; right:10px; font-size:11px; letter-spacing:.07em; text-transform:uppercase;
     color:var(--copper); background:rgba(193,84,58,0.16); padding:3px 7px; border-radius:20px;
     display:none; align-items:center; gap:5px;
   }
   .card.alert .flag{display:inline-flex;}
   .flag-dot{width:5px;height:5px;border-radius:50%;background:var(--copper); animation:pulse 1.4s ease-in-out infinite;}
-  .avg-line{font-size:10.5px; color:var(--ink-faint); display:flex; justify-content:space-between;}
-  .tap-hint{font-size:9.5px; color:var(--ink-faint); text-align:center; margin-top:8px; letter-spacing:.04em; text-transform:uppercase;}
+  .avg-line{font-size:12px; color:var(--ink-faint); display:flex; justify-content:space-between;}
+  .tap-hint{font-size:11px; color:var(--ink-faint); text-align:center; margin-top:8px; letter-spacing:.04em; text-transform:uppercase;}
 
   @keyframes pulse{ 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:.4; transform:scale(1.3);} }
 
@@ -140,7 +144,100 @@
   .feed-item .fi-msg{font-size:12px; color:var(--ink-dim); line-height:1.4;}
   @keyframes slidein{ from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:translateY(0);} }
 
-  .footer-note{margin-top:26px; font-size:11.5px; color:var(--ink-faint); text-align:center;}
+  .footer-note{margin-top:26px; font-size:12.5px; color:var(--ink-faint); text-align:center;}
+
+  /* ---- Panel de análisis ---- */
+  .analysis-panel{
+    background:var(--bg-panel); border:1px solid var(--hairline); border-radius:10px;
+    padding:16px 16px 14px; margin-bottom:16px;
+  }
+  .analysis-refresh{font-size:11px; color:var(--ink-faint); font-weight:400; text-transform:none; letter-spacing:0;}
+  .analysis-disclaimer{
+    font-size:12px; color:var(--ink-faint); background:var(--bg-field); padding:9px 11px;
+    border-radius:7px; margin:0 0 14px; line-height:1.5;
+  }
+  .analysis-cols{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media(max-width:560px){ .analysis-cols{grid-template-columns:1fr;} }
+  .analysis-col-title{font-size:11px; text-transform:uppercase; letter-spacing:.06em; margin:0 0 8px; font-weight:600;}
+  .analysis-col-title.down{color:var(--copper);}
+  .analysis-col-title.up{color:var(--verdigris);}
+  .analysis-list{display:flex; flex-direction:column; gap:6px;}
+  .analysis-empty{font-size:12px; color:var(--ink-faint); margin:0;}
+  .analysis-item{
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    background:var(--bg-field); border-radius:7px; padding:8px 10px; cursor:pointer;
+  }
+  .analysis-item:hover{background:#20262c;}
+  .analysis-item .ai-left{display:flex; flex-direction:column;}
+  .analysis-item .ai-ticker{font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:12.5px;}
+  .analysis-item .ai-rsi{font-size:10.5px; color:var(--ink-faint);}
+  .analysis-item .ai-delta{font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600;}
+
+  /* ---- Panel de movimientos ---- */
+  .movs-panel{
+    background:var(--bg-panel); border:1px solid var(--hairline); border-radius:10px;
+    padding:16px 16px 14px; margin-bottom:16px;
+  }
+  .movs-form{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
+  .mov-input{
+    background:var(--bg-field); border:1px solid var(--hairline); color:var(--ink);
+    padding:8px 10px; border-radius:7px; font-size:13px; flex:1; min-width:90px;
+  }
+  .mov-btn{
+    background:rgba(201,166,107,0.16); border:1px solid var(--gold); color:var(--gold);
+    padding:8px 16px; border-radius:7px; font-size:13px; cursor:pointer; font-weight:600;
+  }
+  .mov-btn:hover{background:rgba(201,166,107,0.28);}
+  .movs-list{display:flex; flex-direction:column; gap:6px; max-height:260px; overflow-y:auto;}
+  .mov-item{
+    display:flex; justify-content:space-between; align-items:center; gap:8px;
+    background:var(--bg-field); border-radius:7px; padding:8px 10px; font-size:12.5px;
+  }
+  .mov-item .mi-tipo{
+    font-size:10px; text-transform:uppercase; font-weight:700; padding:2px 7px; border-radius:10px;
+  }
+  .mov-item .mi-tipo.compra{color:var(--verdigris); background:var(--verdigris-soft);}
+  .mov-item .mi-tipo.venta{color:var(--copper); background:var(--copper-soft);}
+  .mov-item .mi-del{
+    background:none; border:none; color:var(--ink-faint); cursor:pointer; font-size:14px; padding:2px 6px;
+  }
+  .mov-item .mi-del:hover{color:var(--copper);}
+  .movs-summary{font-size:11.5px; color:var(--ink-dim); margin:10px 0 0; padding-top:10px; border-top:1px solid var(--hairline);}
+
+  .movs-summary-box{margin-top:14px; padding-top:14px; border-top:1px solid var(--hairline);}
+  .msb-row{display:flex; flex-wrap:wrap; align-items:center; gap:18px;}
+  .msb-item{display:flex; flex-direction:column; gap:2px;}
+  .msb-label{font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.04em;}
+  .msb-val{font-size:15px; font-weight:600;}
+  .msb-val.up{color:var(--verdigris);}
+  .msb-val.down{color:var(--copper);}
+  .eye-btn{
+    background:none; border:1px solid var(--hairline); color:var(--ink-dim);
+    width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:14px;
+    margin-left:auto;
+  }
+  .eye-btn:hover{border-color:var(--gold);}
+  .movs-detail-link{
+    background:none; border:none; color:var(--gold); font-size:12.5px; cursor:pointer;
+    padding:8px 0 0; text-align:left;
+  }
+  .movs-detail-link:hover{text-decoration:underline;}
+
+  .portfolio-actions{display:flex; gap:8px; margin:0 0 14px;}
+  .portfolio-actions .mov-btn{font-size:12px; padding:7px 12px;}
+  .portfolio-ticker-block{
+    background:var(--bg-field); border-radius:8px; padding:12px 14px; margin-bottom:12px;
+  }
+  .ptb-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;}
+  .ptb-head .ptb-ticker{font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:14px;}
+  .ptb-head .ptb-qty{font-size:12px; color:var(--ink-dim);}
+  .ptb-table{width:100%; border-collapse:collapse; font-size:11.5px; margin-bottom:8px;}
+  .ptb-table th{text-align:right; color:var(--ink-faint); font-weight:500; font-size:10px; text-transform:uppercase; padding:4px 6px;}
+  .ptb-table th:first-child, .ptb-table td:first-child{text-align:left;}
+  .ptb-table td{text-align:right; padding:4px 6px; font-family:'IBM Plex Mono',monospace; color:var(--ink-dim); border-top:1px solid var(--hairline);}
+  .ptb-table td:first-child{color:var(--ink);}
+  .ptb-totals{display:flex; flex-wrap:wrap; gap:14px; font-size:11.5px; color:var(--ink-dim); padding-top:6px; border-top:1px dashed var(--hairline);}
+  .ptb-totals b{color:var(--ink);}
 
   /* ---- Detail modal ---- */
   .overlay{
@@ -153,8 +250,8 @@
     max-width:640px; width:100%; padding:22px 22px 18px; margin-top:10px;
   }
   .detail-top{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;}
-  .detail-name{font-size:17px; font-weight:700;}
-  .detail-sub{font-size:12px; color:var(--ink-dim); margin-top:2px;}
+  .detail-name{font-size:19px; font-weight:700;}
+  .detail-sub{font-size:13px; color:var(--ink-dim); margin-top:2px;}
   .close-btn{
     background:var(--bg-field); border:1px solid var(--hairline); color:var(--ink-dim);
     width:28px; height:28px; border-radius:50%; cursor:pointer; font-size:14px; line-height:1;
@@ -169,7 +266,7 @@
 
   .value-row{display:flex; gap:26px; flex-wrap:wrap; margin:14px 0 18px; padding:14px 16px; background:var(--bg-field); border-radius:8px;}
   .value-row .vitem .vlabel{font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px;}
-  .value-row .vitem .vval{font-size:18px; font-weight:600;}
+  .value-row .vitem .vval{font-size:19px; font-weight:600;}
 
   .detail-chart{margin-bottom:18px;}
 
@@ -179,12 +276,23 @@
   }
   .detail-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px;}
   @media(max-width:520px){ .detail-grid{grid-template-columns:1fr;} }
-  .mini-table{width:100%; border-collapse:collapse; font-size:12px;}
+  .mini-table{width:100%; border-collapse:collapse; font-size:13.5px;}
   .mini-table td{padding:5px 0; border-bottom:1px solid var(--hairline); color:var(--ink-dim);}
   .mini-table td:last-child{text-align:right; color:var(--ink); font-family:'IBM Plex Mono',monospace;}
   .mini-table tr:last-child td{border-bottom:none;}
 
-  .puntas-row{display:flex; gap:12px;}
+  .period-row{display:flex; flex-wrap:wrap; gap:6px; align-items:center;}
+  .period-btn{
+    background:var(--bg-field); border:1px solid var(--hairline); color:var(--ink-dim);
+    padding:6px 12px; border-radius:16px; font-size:12px; cursor:pointer;
+  }
+  .period-btn:hover{border-color:var(--gold); color:var(--ink);}
+  .period-btn.active{background:rgba(201,166,107,0.16); border-color:var(--gold); color:var(--gold);}
+  .period-date-label{font-size:12px; color:var(--ink-faint); display:flex; align-items:center; gap:6px;}
+  .period-date{
+    background:var(--bg-field); border:1px solid var(--hairline); color:var(--ink);
+    padding:5px 8px; border-radius:6px; font-size:12px;
+  }
   .punta-box{flex:1; background:var(--bg-field); border-radius:8px; padding:10px 12px;}
   .punta-box .plabel{font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); margin-bottom:4px;}
   .punta-box .pval{font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600;}
@@ -214,7 +322,7 @@
       </div>
     </div>
     <div class="index-block">
-      <span class="mono index-value" id="idxValue">6.412</span>
+      <span class="mono index-value" id="idxValue">···</span>
       <span class="mono index-delta" id="idxDelta">+0,00%</span>
     </div>
     <div class="status">
@@ -228,6 +336,67 @@
   <p class="disclaimer">
     <b>Prototipo con datos simulados.</b> Toca cualquier tarjeta para ver el detalle de la acción, inspirado en la ficha de instrumento de bolsadesantiago.com (valor, puntas de compra/venta, rentabilidad, últimas transacciones).
   </p>
+
+  <div class="analysis-panel">
+    <p class="feed-title">Análisis del momento <span class="analysis-refresh" id="analysisRefresh">···</span></p>
+    <p class="analysis-disclaimer">
+      Esto NO es una recomendación de compra o venta — es un resumen de la posición de cada acción respecto a su propio promedio y a señales técnicas simples (RSI). Decide tú con esta información; yo no soy asesor financiero y no conozco tu situación completa.
+    </p>
+    <div class="analysis-cols" id="analysisCols">
+      <div class="analysis-col">
+        <p class="analysis-col-title down">Más lejos bajo su promedio</p>
+        <div id="analysisDown" class="analysis-list"><p class="analysis-empty">Cargando datos reales…</p></div>
+      </div>
+      <div class="analysis-col">
+        <p class="analysis-col-title up">Más lejos sobre su promedio</p>
+        <div id="analysisUp" class="analysis-list"><p class="analysis-empty">Cargando datos reales…</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="movs-panel">
+    <p class="feed-title">Mis movimientos <span class="feed-count" id="movsCount">0</span></p>
+    <div class="portfolio-actions">
+      <button id="btnExportarMovs" class="mov-btn" style="background:none; color:var(--ink-dim); border-color:var(--hairline);">⬇️ Respaldar</button>
+      <button id="btnImportarMovs" class="mov-btn" style="background:none; color:var(--ink-dim); border-color:var(--hairline);">⬆️ Restaurar</button>
+      <input type="file" id="inputImportarMovs" accept="application/json" style="display:none;">
+    </div>
+    <div class="movs-form">
+      <select id="movTicker" class="mov-input mono"></select>
+      <select id="movTipo" class="mov-input">
+        <option value="compra">Compra</option>
+        <option value="venta">Venta</option>
+      </select>
+      <input type="number" id="movCantidad" class="mov-input" placeholder="Cantidad" min="1" step="1">
+      <input type="number" id="movPrecio" class="mov-input" placeholder="Precio" min="0" step="0.01">
+      <input type="date" id="movFecha" class="mov-input">
+      <button id="movGuardar" class="mov-btn">Registrar</button>
+    </div>
+    <div id="movsList" class="movs-list"><p class="analysis-empty">Sin movimientos registrados todavía.</p></div>
+
+    <div class="movs-summary-box" id="movsSummaryBox">
+      <div class="msb-row">
+        <div class="msb-item">
+          <div class="msb-label">Valor cartera actual</div>
+          <div class="msb-val mono" id="msbValorCartera">···</div>
+        </div>
+        <div class="msb-item">
+          <div class="msb-label">Utilidad/pérdida realizada</div>
+          <div class="msb-val mono" id="msbRealizada">···</div>
+        </div>
+        <div class="msb-item">
+          <div class="msb-label">Utilidad/pérdida no realizada</div>
+          <div class="msb-val mono" id="msbNoRealizada">···</div>
+        </div>
+        <button id="btnOcultarCifras" class="eye-btn" title="Ocultar/mostrar cifras">👁️</button>
+      </div>
+      <button id="btnVerDetalleMovs" class="movs-detail-link">Ver posición actual e historial completo ›</button>
+    </div>
+  </div>
+
+  <div class="overlay" id="movsOverlay">
+    <div class="detail" id="movsDetailPanel"></div>
+  </div>
 
   <div class="feed-panel">
     <p class="feed-title">Alertas de caída <span class="feed-count" id="feedCount">0</span></p>
@@ -303,6 +472,8 @@ const stocks = [
 ];
 
 const ALERT_THRESHOLD = 0.96; // 4% bajo el promedio
+const PERIOD_LABELS = {'1d':'1D','5d':'5D','1mo':'1M','3mo':'3M','6mo':'6M','ytd':'YTD','1y':'1A','5y':'5A'};
+let historial5yCache = {}; // {ticker: [{date, close}, ...]} -- para filtrar rangos "Desde/Hasta" sin re-pedir
 const HISTORY_LEN = 40;
 
 function fmt(v, dec){ return v.toLocaleString('es-CL', {minimumFractionDigits:dec, maximumFractionDigits:dec}); }
@@ -317,19 +488,47 @@ function seedRand(str){
 
 const state = stocks.map(s => ({
   ...s,
-  avg: s.base,
-  price: s.base,
-  drift: 0,
-  history: Array(HISTORY_LEN).fill(s.base),
+  avg: null,        // null hasta tener un dato REAL -- nunca se rellena con 'base'
+  price: null,       // null hasta tener un dato REAL
+  history: [],        // se llena solo con precios reales, nunca simulados
   inAlert: false,
+  dayHigh: null, dayLow: null, volume: null, montoTransado: null, ret3m: null, ret1y: null,
   rand: seedRand(s.ticker),
 }));
 
-let indexHistory = Array(HISTORY_LEN).fill(6412);
-let indexPrev = 6412;
+let indexValue = null;      // null hasta tener el ^IPSA real
+let indexPrevClose = null;
+let ultimaActualizacionReal = null; // Date del último /quotes exitoso
 
 const grid = document.getElementById('cardsGrid');
 const cardEls = {};
+
+// ---- Caché local de la última respuesta real (para no partir de cero
+// cada vez que se abre la app) ----
+function loadCache(){
+  try {
+    const raw = localStorage.getItem('ipsa_cache');
+    return raw ? JSON.parse(raw) : null;
+  } catch(e){ return null; }
+}
+function saveCache(){
+  try {
+    const quotesOut = {};
+    state.forEach(s => {
+      if(s.price !== null){
+        quotesOut[s.ticker] = {
+          price: s.price, avg: s.avg, dayHigh: s.dayHigh, dayLow: s.dayLow,
+          volume: s.volume, montoTransado: s.montoTransado, ret3m: s.ret3m, ret1y: s.ret1y,
+        };
+      }
+    });
+    localStorage.setItem('ipsa_cache', JSON.stringify({
+      quotes: quotesOut,
+      index: (indexValue !== null) ? {value: indexValue, previousClose: indexPrevClose} : null,
+      ts: Date.now(),
+    }));
+  } catch(e){ /* si falla, simplemente no persiste entre sesiones */ }
+}
 
 // ---- Favoritos (persisten en este dispositivo/navegador) ----
 function loadFavorites(){
@@ -357,16 +556,17 @@ state.forEach(s => {
         <div class="company">${s.name}</div>
       </div>
       <div class="price-block">
-        <div class="price mono" data-el="price">${fmt(s.price, s.dec)}</div>
-        <div class="delta mono" data-el="delta">+0,0%</div>
+        <div class="price mono" data-el="price">···</div>
+        <div class="delta mono" data-el="delta"></div>
       </div>
     </div>
     <div class="spark-wrap">
       <svg viewBox="0 0 300 74" width="100%" height="74" preserveAspectRatio="none" data-el="svg"></svg>
+      <div class="spark-loading" data-el="sparkLoading">Cargando datos reales…</div>
     </div>
     <div class="avg-line">
       <span>Promedio 90d</span>
-      <span class="mono">${fmt(s.avg, s.dec)}</span>
+      <span class="mono" data-el="avgline">···</span>
     </div>
     <div class="tap-hint">Toca para ver detalle</div>
   `;
@@ -581,11 +781,28 @@ overlay.addEventListener('click', e => { if(e.target === overlay) closeDetail();
 
 function renderDetail(ticker){
   const s = state.find(x => x.ticker === ticker);
+
+  if(s.price === null || s.avg === null){
+    detailPanel.innerHTML = `
+      <div class="detail-top">
+        <div>
+          <div class="detail-name">${s.name}</div>
+          <div class="detail-sub mono">${s.ticker} · Bolsa de Santiago</div>
+        </div>
+        <button class="close-btn" id="closeBtn">✕</button>
+      </div>
+      <p style="padding:36px 0; text-align:center; color:var(--ink-faint);">Cargando datos reales de Yahoo Finance…</p>
+    `;
+    document.getElementById('closeBtn').addEventListener('click', closeDetail);
+    return;
+  }
+
+  const liveMode = true; // si llegamos aca, s.price ya es un dato real -- nunca simulado
   const threshold = s.avg * ALERT_THRESHOLD;
   const deltaVal = (s.price/s.avg)-1;
 
   // Maximo/minimo del dia: usa el dato real de Yahoo Finance si llegó;
-  // si no, cae al maximo/minimo de la sesion simulada como respaldo.
+  // si no, cae al maximo/minimo de lo real acumulado en esta sesión.
   const dayHigh = (liveMode && s.dayHigh != null) ? s.dayHigh : Math.max(...s.history);
   const dayLow = (liveMode && s.dayLow != null) ? s.dayLow : Math.min(...s.history);
   const dayHighLowEsReal = liveMode && s.dayHigh != null && s.dayLow != null;
@@ -644,8 +861,24 @@ function renderDetail(ticker){
       </div>
     </div>
 
+    <button id="btnRegistrarMov" class="mov-btn" style="width:100%; margin-bottom:16px;">📝 Registrar compra/venta de ${s.ticker}</button>
+
     <div class="detail-chart">
       <svg viewBox="0 0 600 160" width="100%" height="160" preserveAspectRatio="none" id="detailSvg"></svg>
+    </div>
+
+    <p class="section-title">Historial real por período (Yahoo Finance)</p>
+    <div class="period-row" id="periodRow">
+      ${['1d','5d','1mo','3mo','6mo','ytd','1y','5y'].map(p => `<button class="period-btn" data-period="${p}">${PERIOD_LABELS[p]}</button>`).join('')}
+    </div>
+    <div class="period-row" style="margin-top:8px;">
+      <label class="period-date-label">Desde <input type="date" id="fechaDesde" class="period-date"></label>
+      <label class="period-date-label">Hasta <input type="date" id="fechaHasta" class="period-date"></label>
+      <button class="period-btn" id="btnRangoCustom">Aplicar rango</button>
+    </div>
+    <div class="detail-chart" style="margin-top:10px;">
+      <svg viewBox="0 0 600 140" width="100%" height="140" preserveAspectRatio="none" id="historySvg"></svg>
+      <p id="historyStatus" style="font-size:11px; color:var(--ink-faint); text-align:center; margin:4px 0 0;">Elige un período para cargar el historial real.</p>
     </div>
 
     <p class="section-title">Resumen de precios ${liveMode ? '(real, Yahoo Finance)' : '(sesión simulada)'}</p>
@@ -660,8 +893,8 @@ function renderDetail(ticker){
     </table>
 
     <p class="section-title" style="margin-top:16px;">Puntas de compra / venta</p>
-    <p style="font-size:11.5px; color:var(--ink-faint); background:var(--bg-field); padding:10px 12px; border-radius:8px;">
-      No disponible: Yahoo Finance no entrega puntas de compra/venta para acciones de la Bolsa de Santiago vía la API gratuita. Prefiero mostrarte esto en vez de inventar un número.
+    <p style="font-size:12px; color:var(--ink-faint); background:var(--bg-field); padding:10px 12px; border-radius:8px;">
+      No disponible gratis: revisé Yahoo Finance, Investing.com y MarketScreener — ninguno entrega puntas de compra/venta en tiempo real para acciones de la Bolsa de Santiago sin pago o sin sesión de corredora. Prefiero mostrarte esto en vez de inventar un número.
     </p>
 
     <p class="section-title" style="margin-top:16px;">Rentabilidad ${rentabilidadEsReal ? '(real, calculada del historial de Yahoo Finance)' : '(simulada)'}</p>
@@ -682,7 +915,10 @@ function renderDetail(ticker){
       <tr><td>Media móvil 20</td><td>${sma20Texto}</td></tr>
       <tr><td>Media móvil 50</td><td>${sma50Texto}</td></tr>
     </table>
-    <p style="font-size:10.5px; color:var(--ink-faint); margin:6px 0 0;">${liveMode ? 'Se recalculan cada vez que llega una actualización real (cada ~60s), sobre pocos puntos todavía si recién te conectaste.' : 'Se calculan sobre los ticks simulados de esta demo (cada 2s).'} No son señales de compra/venta — solo describen el movimiento reciente.</p>
+    <p style="font-size:11.5px; color:var(--ink-faint); margin:8px 0 0; background:var(--bg-field); padding:8px 10px; border-radius:6px;">
+      <b style="color:var(--ink-dim);">¿Qué es el RSI?</b> Mide qué tan rápido subió o bajó el precio recientemente, en una escala de 0 a 100. Sobre 70 = subió muy rápido (posible sobrecompra). Bajo 30 = cayó muy rápido (posible sobreventa). Cerca de 50 = sin sesgo claro.
+    </p>
+    <p style="font-size:11px; color:var(--ink-faint); margin:6px 0 0;">${liveMode ? 'Se recalculan cada vez que llega una actualización real (cada ~60s), sobre pocos puntos todavía si recién te conectaste.' : 'Se calculan sobre los ticks simulados de esta demo (cada 2s).'} No son señales de compra/venta — solo describen el movimiento reciente.</p>
 
     <p class="section-title" style="margin-top:16px;">Patrones técnicos (heurística, no es predicción)</p>
     <p style="font-size:11.5px; background:var(--bg-field); padding:10px 12px; border-radius:8px; color:${patron ? 'var(--gold)' : 'var(--ink-faint)'};">
@@ -696,8 +932,118 @@ function renderDetail(ticker){
   `;
 
   document.getElementById('closeBtn').addEventListener('click', closeDetail);
+  document.getElementById('btnRegistrarMov').addEventListener('click', () => registrarDesdeDetalle(s.ticker, s.price));
   buildSpark(document.getElementById('detailSvg'), s.history, s.avg, threshold, s.dec, 160);
   updateDetailClock();
+  wirePeriodSelector(s);
+}
+
+function buildLineChart(svgEl, points, dec){
+  const w = 600, h = 140;
+  if(!points || points.length < 2){
+    svgEl.innerHTML = '';
+    return;
+  }
+  const closes = points.map(p => p.close);
+  const min = Math.min(...closes), max = Math.max(...closes);
+  const range = (max - min) || 1;
+  const x = i => (i/(points.length-1)) * w;
+  const y = v => h - ((v - min)/range) * h;
+
+  const first = closes[0], last = closes[closes.length-1];
+  const color = last >= first ? 'var(--verdigris)' : 'var(--copper)';
+  const fillColor = last >= first ? 'var(--verdigris-soft)' : 'var(--copper-soft)';
+
+  const linePts = closes.map((v,i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const areaPts = `0,${h} ${linePts} ${w},${h}`;
+
+  svgEl.innerHTML = `
+    <polygon points="${areaPts}" fill="${fillColor}"></polygon>
+    <polyline points="${linePts}" fill="none" stroke="${color}" stroke-width="2"></polyline>
+    <circle cx="${x(closes.length-1)}" cy="${y(last)}" r="3.5" fill="${color}"></circle>
+  `;
+}
+
+async function cargarHistorialPeriodo(ticker, period, dec){
+  const statusEl = document.getElementById('historyStatus');
+  const svgEl = document.getElementById('historySvg');
+  if(!statusEl || !svgEl) return; // el panel pudo haberse cerrado mientras cargaba
+
+  statusEl.textContent = 'Cargando historial real de Yahoo Finance…';
+  try {
+    const resp = await fetch(`${BACKEND_URL}/history?ticker=${encodeURIComponent(ticker)}&period=${period}`);
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    const body = await resp.json();
+    const points = body.points || [];
+    if(points.length < 2){
+      statusEl.textContent = 'Yahoo Finance no devolvió suficientes datos para este período.';
+      svgEl.innerHTML = '';
+      return;
+    }
+    if(ticker === (openTicker)){
+      buildLineChart(svgEl, points, dec);
+      const primero = points[0], ultimo = points[points.length-1];
+      const variacion = (ultimo.close/primero.close - 1) * 100;
+      const signo = variacion >= 0 ? '+' : '';
+      statusEl.textContent = `${primero.date} → ${ultimo.date} · ${points.length} datos reales · ${signo}${variacion.toFixed(1)}%`;
+    }
+  } catch(e){
+    console.warn('Error cargando /history:', e);
+    statusEl.textContent = 'No se pudo cargar el historial real (¿backend despertando? intenta de nuevo en un momento).';
+    svgEl.innerHTML = '';
+  }
+}
+
+function wirePeriodSelector(s){
+  const row = document.getElementById('periodRow');
+  if(!row) return;
+
+  row.querySelectorAll('.period-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      row.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      cargarHistorialPeriodo(s.ticker, btn.dataset.period, s.dec);
+    });
+  });
+
+  const btnRango = document.getElementById('btnRangoCustom');
+  if(btnRango){
+    btnRango.addEventListener('click', async () => {
+      const desde = document.getElementById('fechaDesde').value;
+      const hasta = document.getElementById('fechaHasta').value;
+      const statusEl = document.getElementById('historyStatus');
+      const svgEl = document.getElementById('historySvg');
+      if(!desde || !hasta){
+        statusEl.textContent = 'Elige ambas fechas (Desde y Hasta) para aplicar un rango personalizado.';
+        return;
+      }
+      row.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+      statusEl.textContent = 'Cargando historial real de Yahoo Finance…';
+      try {
+        if(!historial5yCache[s.ticker]){
+          const resp = await fetch(`${BACKEND_URL}/history?ticker=${encodeURIComponent(s.ticker)}&period=5y`);
+          if(!resp.ok) throw new Error('HTTP ' + resp.status);
+          const body = await resp.json();
+          historial5yCache[s.ticker] = body.points || [];
+        }
+        const todos = historial5yCache[s.ticker];
+        const filtrados = todos.filter(p => p.date >= desde && p.date <= hasta);
+        if(filtrados.length < 2){
+          statusEl.textContent = 'No hay suficientes datos reales en ese rango (¿fechas fuera de los últimos 5 años, o mercado cerrado ese período?).';
+          svgEl.innerHTML = '';
+          return;
+        }
+        buildLineChart(svgEl, filtrados, s.dec);
+        const primero = filtrados[0], ultimo = filtrados[filtrados.length-1];
+        const variacion = (ultimo.close/primero.close - 1) * 100;
+        const signo = variacion >= 0 ? '+' : '';
+        statusEl.textContent = `${primero.date} → ${ultimo.date} · ${filtrados.length} datos reales · ${signo}${variacion.toFixed(1)}%`;
+      } catch(e){
+        console.warn('Error cargando rango personalizado:', e);
+        statusEl.textContent = 'No se pudo cargar el rango (¿backend despertando? intenta de nuevo).';
+      }
+    });
+  }
 }
 
 function updateDetailClock(){
@@ -705,47 +1051,521 @@ function updateDetailClock(){
   if(el){ el.textContent = new Date().toLocaleTimeString('es-CL', {timeZone:'America/Santiago', hour12:false}); }
 }
 
-let liveMode = false; // true una vez que /quotes responde con datos reales
+// ---- Render de una tarjeta con lo que se sepa en este momento ----
+function renderCard(s){
+  const card = cardEls[s.ticker];
+  const priceEl = card.querySelector('[data-el="price"]');
+  const deltaEl = card.querySelector('[data-el="delta"]');
+  const avgEl = card.querySelector('[data-el="avgline"]');
+  const sparkLoading = card.querySelector('[data-el="sparkLoading"]');
+  const svgEl = card.querySelector('[data-el="svg"]');
 
-function tick(){
-  let idxDeltaSum = 0;
-  state.forEach(s => {
-    if(!liveMode){
-      // Solo simulamos movimiento de precio si NO tenemos datos reales.
-      if(Math.random() < 0.12){ s.drift = (Math.random()-0.5) * 0.006; }
-      const noise = (Math.random()-0.5) * 0.010;
-      s.price = Math.max(s.price * (1 + s.drift + noise), s.avg*0.85);
-      pushHistory(s.history, s.price);
-    }
+  if(s.price === null || s.avg === null){
+    priceEl.textContent = '···';
+    deltaEl.textContent = '';
+    avgEl.textContent = '···';
+    sparkLoading.style.display = 'flex';
+    svgEl.style.display = 'none';
+    card.classList.remove('alert');
+    return;
+  }
 
-    const threshold = s.avg * ALERT_THRESHOLD;
-    const isBelow = s.price < threshold;
+  sparkLoading.style.display = 'none';
+  svgEl.style.display = '';
 
-    const card = cardEls[s.ticker];
-    card.classList.toggle('alert', isBelow);
-    card.querySelector('[data-el="price"]').textContent = fmt(s.price, s.dec);
-    const deltaVal = (s.price/s.avg)-1;
-    const deltaEl = card.querySelector('[data-el="delta"]');
-    deltaEl.textContent = fmtPct(deltaVal);
-    deltaEl.style.color = deltaVal>=0 ? 'var(--verdigris)' : 'var(--copper)';
+  const threshold = s.avg * ALERT_THRESHOLD;
+  const isBelow = s.price < threshold;
+  card.classList.toggle('alert', isBelow);
+  priceEl.textContent = fmt(s.price, s.dec);
+  const deltaVal = (s.price/s.avg)-1;
+  deltaEl.textContent = fmtPct(deltaVal);
+  deltaEl.style.color = deltaVal>=0 ? 'var(--verdigris)' : 'var(--copper)';
+  avgEl.textContent = fmt(s.avg, s.dec);
 
-    buildSpark(card.querySelector('[data-el="svg"]'), s.history, s.avg, threshold, s.dec);
+  if(s.history.length >= 2){
+    buildSpark(svgEl, s.history, s.avg, threshold, s.dec);
+  } else {
+    sparkLoading.style.display = 'flex';
+    sparkLoading.textContent = 'Acumulando historial real…';
+    svgEl.style.display = 'none';
+  }
 
-    if(!liveMode && isBelow && !s.inAlert){ addAlert(s.ticker, s.price, s.avg, s.dec); }
-    s.inAlert = isBelow;
+  if(isBelow && !s.inAlert){ addAlert(s.ticker, s.price, s.avg, s.dec); }
+  s.inAlert = isBelow;
 
-    idxDeltaSum += deltaVal;
+  if(openTicker === s.ticker){ renderDetail(s.ticker); }
+}
 
-    if(openTicker === s.ticker){ renderDetail(s.ticker); }
+function renderIndexDisplay(){
+  const valEl = document.getElementById('idxValue');
+  const deltaEl = document.getElementById('idxDelta');
+  if(indexValue === null){
+    valEl.textContent = '···';
+    deltaEl.textContent = '';
+    return;
+  }
+  valEl.textContent = fmt(indexValue, 0);
+  if(indexPrevClose){
+    const idxDelta = (indexValue/indexPrevClose)-1;
+    deltaEl.textContent = fmtPct(idxDelta);
+    deltaEl.className = 'mono index-delta ' + (idxDelta>=0 ? 'up' : 'down');
+  } else {
+    deltaEl.textContent = '';
+  }
+}
+
+function setStatusPill(estado, texto){
+  const pill = document.getElementById('dataStatusPill');
+  const dot = document.getElementById('dataStatusDot');
+  const text = document.getElementById('dataStatusText');
+  text.textContent = texto;
+  const colores = {
+    cargando: {c:'var(--ink-faint)', bg:'transparent'},
+    cache:    {c:'var(--gold)',      bg:'rgba(201,166,107,0.35)'},
+    real:     {c:'var(--gold)',      bg:'rgba(201,166,107,0.35)'},
+    error:    {c:'var(--copper)',    bg:'rgba(193,84,58,0.35)'},
+  };
+  const col = colores[estado] || colores.cargando;
+  pill.style.color = col.c;
+  pill.style.borderColor = col.bg;
+  dot.style.background = col.c;
+}
+
+// ---- Panel de análisis (resumen, NO recomendación) ----
+function renderAnalysis(){
+  const conDatos = state.filter(s => s.price !== null && s.avg !== null);
+  const refreshEl = document.getElementById('analysisRefresh');
+
+  if(conDatos.length === 0){
+    document.getElementById('analysisDown').innerHTML = '<p class="analysis-empty">Cargando datos reales…</p>';
+    document.getElementById('analysisUp').innerHTML = '<p class="analysis-empty">Cargando datos reales…</p>';
+    refreshEl.textContent = '';
+    return;
+  }
+
+  const conDelta = conDatos.map(s => {
+    const deltaVal = (s.price/s.avg) - 1;
+    const rsi = calcRSI(s.history, 14);
+    return {s, deltaVal, rsi};
   });
 
-  const idxVal = 6412 * (1 + idxDeltaSum/state.length*0.4);
-  pushHistory(indexHistory, idxVal);
-  document.getElementById('idxValue').textContent = fmt(idxVal, 0);
-  const idxDelta = (idxVal/indexPrev)-1;
-  const idxEl = document.getElementById('idxDelta');
-  idxEl.textContent = fmtPct(idxDelta);
-  idxEl.className = 'mono index-delta ' + (idxDelta>=0 ? 'up' : 'down');
+  const masAbajo = [...conDelta].sort((a,b) => a.deltaVal - b.deltaVal).slice(0, 5);
+  const masArriba = [...conDelta].sort((a,b) => b.deltaVal - a.deltaVal).slice(0, 5);
+
+  function itemHTML(entry){
+    const {s, deltaVal, rsi} = entry;
+    const color = deltaVal >= 0 ? 'var(--verdigris)' : 'var(--copper)';
+    const rsiTxt = rsi === null ? 'RSI: acumulando' :
+      `RSI ${rsi}${rsi<30?' · sobrevendida':rsi>70?' · sobrecomprada':''}`;
+    return `
+      <div class="analysis-item" data-ticker="${s.ticker}">
+        <div class="ai-left">
+          <span class="ai-ticker mono">${s.ticker}</span>
+          <span class="ai-rsi">${rsiTxt}</span>
+        </div>
+        <span class="ai-delta mono" style="color:${color}">${fmtPct(deltaVal)}</span>
+      </div>`;
+  }
+
+  document.getElementById('analysisDown').innerHTML = masAbajo.map(itemHTML).join('') || '<p class="analysis-empty">Nada relevante ahora.</p>';
+  document.getElementById('analysisUp').innerHTML = masArriba.map(itemHTML).join('') || '<p class="analysis-empty">Nada relevante ahora.</p>';
+
+  document.querySelectorAll('.analysis-item').forEach(el => {
+    el.addEventListener('click', () => openDetail(el.dataset.ticker));
+  });
+
+  if(ultimaActualizacionReal){
+    refreshEl.textContent = 'actualizado ' + ultimaActualizacionReal.toLocaleTimeString('es-CL', {timeZone:'America/Santiago', hour12:false});
+  }
+}
+
+// ---- Registro de movimientos (compras/ventas que TÚ decidas) ----
+function loadMovimientos(){
+  try {
+    const raw = localStorage.getItem('ipsa_movimientos');
+    return raw ? JSON.parse(raw) : [];
+  } catch(e){ return []; }
+}
+function saveMovimientos(movs){
+  try { localStorage.setItem('ipsa_movimientos', JSON.stringify(movs)); } catch(e){}
+}
+let movimientos = loadMovimientos();
+
+function poblarSelectorTickers(){
+  const sel = document.getElementById('movTicker');
+  sel.innerHTML = state.map(s => `<option value="${s.ticker}">${s.ticker} — ${s.name}</option>`).join('');
+}
+
+function renderMovimientos(){
+  const listEl = document.getElementById('movsList');
+  const countEl = document.getElementById('movsCount');
+  countEl.textContent = movimientos.length;
+
+  if(movimientos.length === 0){
+    listEl.innerHTML = '<p class="analysis-empty">Sin movimientos registrados todavía.</p>';
+    renderResumenPortafolio();
+    return;
+  }
+
+  const ordenados = [...movimientos].sort((a,b) => b.fecha.localeCompare(a.fecha) || b.id - a.id);
+  listEl.innerHTML = ordenados.map(m => `
+    <div class="mov-item">
+      <span class="mi-tipo ${m.tipo}">${m.tipo}</span>
+      <span class="mono">${m.ticker}</span>
+      <span>${m.cantidad} tít.</span>
+      <span class="mono">$${fmtCLP0(m.precio)}</span>
+      <span style="color:var(--ink-faint);">${m.fecha}</span>
+      <button class="mi-del" data-id="${m.id}" title="Eliminar">✕</button>
+    </div>
+  `).join('');
+
+  listEl.querySelectorAll('.mi-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      movimientos = movimientos.filter(m => m.id !== Number(btn.dataset.id));
+      saveMovimientos(movimientos);
+      renderMovimientos();
+    });
+  });
+
+  // Resumen de posicion neta por ticker (compras - ventas)
+  const posiciones = {};
+  movimientos.forEach(m => {
+    const signo = m.tipo === 'compra' ? 1 : -1;
+    posiciones[m.ticker] = (posiciones[m.ticker] || 0) + signo * m.cantidad;
+  });
+  const resumen = Object.entries(posiciones)
+    .filter(([,cant]) => cant !== 0)
+    .map(([t,cant]) => `${t}: ${cant>0?'+':''}${cant}`)
+    .join(' · ');
+  if(resumen){
+    listEl.insertAdjacentHTML('beforeend', `<p class="movs-summary">Posición neta registrada — ${resumen}</p>`);
+  }
+  renderResumenPortafolio();
+}
+
+function inicializarFormularioMovimientos(){
+  poblarSelectorTickers();
+  document.getElementById('movFecha').value = new Date().toLocaleDateString('en-CA', {timeZone:'America/Santiago'});
+
+  document.getElementById('movGuardar').addEventListener('click', () => {
+    const ticker = document.getElementById('movTicker').value;
+    const tipo = document.getElementById('movTipo').value;
+    const cantidad = parseInt(document.getElementById('movCantidad').value, 10);
+    const precio = parseFloat(document.getElementById('movPrecio').value);
+    const fecha = document.getElementById('movFecha').value;
+
+    if(!ticker || !cantidad || cantidad <= 0 || !precio || precio <= 0 || !fecha){
+      alert('Completa cantidad, precio y fecha antes de registrar el movimiento.');
+      return;
+    }
+
+    movimientos.push({ id: Date.now(), ticker, tipo, cantidad, precio, fecha });
+    saveMovimientos(movimientos);
+    renderMovimientos();
+
+    document.getElementById('movCantidad').value = '';
+    document.getElementById('movPrecio').value = '';
+  });
+
+  renderMovimientos();
+}
+
+// Atajo desde el detalle de una acción: precarga el formulario de arriba
+function registrarDesdeDetalle(ticker, precio){
+  document.getElementById('movTicker').value = ticker;
+  document.getElementById('movPrecio').value = precio;
+  closeDetail();
+  document.querySelector('.movs-panel').scrollIntoView({behavior:'smooth', block:'center'});
+  document.getElementById('movCantidad').focus();
+}
+
+// ---- Cálculo de cartera a partir de los movimientos reales que registró
+// el usuario, cruzado con el precio REAL actual de cada acción (nunca
+// inventado -- si no hay precio real todavía, se marca como pendiente). ----
+function calcularPortafolio(){
+  const porTicker = {};
+  movimientos.forEach(m => {
+    if(!porTicker[m.ticker]) porTicker[m.ticker] = {compras:[], ventas:[]};
+    porTicker[m.ticker][m.tipo === 'compra' ? 'compras' : 'ventas'].push(m);
+  });
+
+  const resultado = {};
+  Object.entries(porTicker).forEach(([ticker, {compras, ventas}]) => {
+    const totalCompradoQ = compras.reduce((a,m)=>a+m.cantidad,0);
+    const totalCompradoCosto = compras.reduce((a,m)=>a+m.cantidad*m.precio,0);
+    const costoPromedio = totalCompradoQ > 0 ? totalCompradoCosto/totalCompradoQ : 0;
+    const totalVendidoQ = ventas.reduce((a,m)=>a+m.cantidad,0);
+    const totalVendidoIngreso = ventas.reduce((a,m)=>a+m.cantidad*m.precio,0);
+    const netoQ = totalCompradoQ - totalVendidoQ;
+    // Costo promedio ponderado (no es FIFO estricto, es un metodo estandar y simple)
+    const costoDeLoVendido = costoPromedio * totalVendidoQ;
+    const utilidadRealizada = totalVendidoIngreso - costoDeLoVendido;
+
+    const s = state.find(x => x.ticker === ticker);
+    const precioActual = (s && s.price !== null) ? s.price : null; // NUNCA inventado
+    const costoDeLoQueQueda = costoPromedio * Math.max(netoQ,0);
+    const valorActual = (precioActual !== null) ? precioActual * Math.max(netoQ,0) : null;
+    const utilidadNoRealizada = (valorActual !== null) ? valorActual - costoDeLoQueQueda : null;
+
+    resultado[ticker] = {
+      ticker, nombre: s ? s.name : ticker, dec: s ? s.dec : 0,
+      compras, ventas, totalCompradoQ, totalCompradoCosto, costoPromedio,
+      totalVendidoQ, totalVendidoIngreso, netoQ, utilidadRealizada,
+      precioActual, costoDeLoQueQueda, valorActual, utilidadNoRealizada,
+    };
+  });
+  return resultado;
+}
+
+function fmtMoneda(v, oculto){
+  if(oculto) return '••••••';
+  if(v === null || v === undefined) return 'calculando…';
+  const signo = v >= 0 ? '' : '-';
+  return signo + '$' + fmtCLP0(Math.abs(v));
+}
+
+function estaOculto(){
+  try { return localStorage.getItem('ipsa_ocultar_cifras') === '1'; } catch(e){ return false; }
+}
+
+function renderResumenPortafolio(){
+  const portafolio = calcularPortafolio();
+  const oculto = estaOculto();
+
+  let valorCartera = 0, hayValorCompleto = true;
+  let realizada = 0, noRealizada = 0, hayNoRealizadaCompleta = true;
+
+  Object.values(portafolio).forEach(p => {
+    realizada += p.utilidadRealizada;
+    if(p.netoQ > 0){
+      if(p.valorActual === null){ hayValorCompleto = false; hayNoRealizadaCompleta = false; }
+      else { valorCartera += p.valorActual; noRealizada += p.utilidadNoRealizada; }
+    }
+  });
+
+  const elValor = document.getElementById('msbValorCartera');
+  const elReal = document.getElementById('msbRealizada');
+  const elNoReal = document.getElementById('msbNoRealizada');
+  if(!elValor) return; // el panel puede no estar en el DOM en algun contexto de prueba
+
+  elValor.textContent = fmtMoneda(hayValorCompleto ? valorCartera : null, oculto);
+  elReal.textContent = fmtMoneda(realizada, oculto);
+  elReal.className = 'msb-val mono ' + (oculto ? '' : (realizada>=0?'up':'down'));
+  elNoReal.textContent = fmtMoneda(hayNoRealizadaCompleta ? noRealizada : null, oculto);
+  elNoReal.className = 'msb-val mono ' + (oculto ? '' : (hayNoRealizadaCompleta ? (noRealizada>=0?'up':'down') : ''));
+
+  document.getElementById('btnOcultarCifras').textContent = oculto ? '🙈' : '👁️';
+}
+
+// ---- Modal estilo "Excel" con el detalle completo de la cartera ----
+const movsOverlay = document.getElementById('movsOverlay');
+const movsDetailPanel = document.getElementById('movsDetailPanel');
+
+function openMovsDetail(){
+  renderMovsDetailPanel();
+  movsOverlay.classList.add('open');
+}
+function closeMovsDetail(){
+  movsOverlay.classList.remove('open');
+}
+movsOverlay.addEventListener('click', e => { if(e.target === movsOverlay) closeMovsDetail(); });
+
+function renderMovsDetailPanel(){
+  const portafolio = calcularPortafolio();
+  const oculto = estaOculto();
+  const tickers = Object.keys(portafolio).sort();
+
+  if(tickers.length === 0){
+    movsDetailPanel.innerHTML = `
+      <div class="detail-top">
+        <div><div class="detail-name">Mi cartera</div></div>
+        <button class="close-btn" id="movsCloseBtn">✕</button>
+      </div>
+      <p style="padding:30px 0; text-align:center; color:var(--ink-faint);">Todavía no registras ningún movimiento.</p>
+    `;
+    document.getElementById('movsCloseBtn').addEventListener('click', closeMovsDetail);
+    return;
+  }
+
+  let totalCompra = 0, totalVenta = 0, totalRealizada = 0, totalNoRealizada = 0, hayNoRealizadaCompleta = true;
+
+  const bloques = tickers.map(t => {
+    const p = portafolio[t];
+    totalCompra += p.totalCompradoCosto;
+    totalVenta += p.totalVendidoIngreso;
+    totalRealizada += p.utilidadRealizada;
+    if(p.netoQ > 0 && p.valorActual === null) hayNoRealizadaCompleta = false;
+    if(p.netoQ > 0 && p.valorActual !== null) totalNoRealizada += p.utilidadNoRealizada;
+
+    const filasCompra = p.compras.map(m => `
+      <tr>
+        <td>${m.fecha}</td>
+        <td>${fmtCLP0(m.cantidad)}</td>
+        <td>${fmt(m.precio, p.dec)}</td>
+        <td>${fmtCLP0(m.cantidad*m.precio)}</td>
+      </tr>`).join('');
+
+    const filasVenta = p.ventas.map(m => `
+      <tr>
+        <td>${m.fecha}</td>
+        <td>${fmtCLP0(m.cantidad)}</td>
+        <td>${fmt(m.precio, p.dec)}</td>
+        <td>${fmtCLP0(m.cantidad*m.precio)}</td>
+      </tr>`).join('');
+
+    return `
+      <div class="portfolio-ticker-block">
+        <div class="ptb-head">
+          <span class="ptb-ticker">${p.ticker}</span>
+          <span class="ptb-qty">${p.nombre} · posición actual: ${p.netoQ > 0 ? p.netoQ+' títulos' : 'cerrada'}</span>
+        </div>
+
+        ${p.netoQ > 0 ? `
+        <table class="ptb-table">
+          <thead><tr><th>Costo prom.</th><th>Cantidad</th><th>Costo total</th><th>Precio actual</th><th>Valor actual</th></tr></thead>
+          <tbody><tr>
+            <td>${fmt(p.costoPromedio, p.dec)}</td>
+            <td>${fmtCLP0(p.netoQ)}</td>
+            <td>${oculto?'••••':fmtCLP0(p.costoDeLoQueQueda)}</td>
+            <td>${p.precioActual !== null ? fmt(p.precioActual, p.dec) : 'cargando…'}</td>
+            <td>${p.valorActual !== null ? (oculto?'••••':fmtCLP0(p.valorActual)) : 'cargando…'}</td>
+          </tr></tbody>
+        </table>` : ''}
+
+        ${p.compras.length ? `
+        <p style="font-size:11px; color:var(--ink-faint); margin:8px 0 4px;">Compras</p>
+        <table class="ptb-table">
+          <thead><tr><th>Fecha</th><th>Q</th><th>P</th><th>PxQ</th></tr></thead>
+          <tbody>${filasCompra}</tbody>
+        </table>` : ''}
+
+        ${p.ventas.length ? `
+        <p style="font-size:11px; color:var(--ink-faint); margin:8px 0 4px;">Ventas</p>
+        <table class="ptb-table">
+          <thead><tr><th>Fecha</th><th>Q</th><th>P</th><th>PxQ</th></tr></thead>
+          <tbody>${filasVenta}</tbody>
+        </table>` : ''}
+
+        <div class="ptb-totals">
+          <span>Total comprado: <b>${oculto?'••••':'$'+fmtCLP0(p.totalCompradoCosto)}</b></span>
+          <span>Total vendido: <b>${oculto?'••••':'$'+fmtCLP0(p.totalVendidoIngreso)}</b></span>
+          <span>Utilidad realizada: <b style="color:${p.utilidadRealizada>=0?'var(--verdigris)':'var(--copper)'}">${fmtMoneda(p.utilidadRealizada, oculto)}</b></span>
+          ${p.netoQ>0 ? `<span>Utilidad no realizada: <b style="color:${p.utilidadNoRealizada>=0?'var(--verdigris)':'var(--copper)'}">${fmtMoneda(p.utilidadNoRealizada, oculto)}</b></span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const utilidadTotal = totalRealizada + (hayNoRealizadaCompleta ? totalNoRealizada : 0);
+
+  movsDetailPanel.innerHTML = `
+    <div class="detail-top">
+      <div>
+        <div class="detail-name">Mi cartera</div>
+        <div class="detail-sub mono">${tickers.length} acci${tickers.length===1?'ón':'ones'} con movimientos</div>
+      </div>
+      <button class="close-btn" id="movsCloseBtn">✕</button>
+    </div>
+
+    <div class="value-row">
+      <div class="vitem"><div class="vlabel">Total comprado</div><div class="vval mono">${oculto?'••••':'$'+fmtCLP0(totalCompra)}</div></div>
+      <div class="vitem"><div class="vlabel">Total vendido</div><div class="vval mono">${oculto?'••••':'$'+fmtCLP0(totalVenta)}</div></div>
+      <div class="vitem"><div class="vlabel">Utilidad/pérdida total${hayNoRealizadaCompleta?'':' (parcial)'}</div><div class="vval mono" style="color:${utilidadTotal>=0?'var(--verdigris)':'var(--copper)'}">${fmtMoneda(utilidadTotal, oculto)}</div></div>
+    </div>
+
+    ${bloques}
+  `;
+  document.getElementById('movsCloseBtn').addEventListener('click', closeMovsDetail);
+}
+
+// ---- Respaldo real: exportar/importar movimientos como archivo, para
+// que sobrevivan aunque el navegador borre el localStorage del celular ----
+function exportarMovimientos(){
+  const blob = new Blob([JSON.stringify(movimientos, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ipsa-movimientos-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function importarMovimientos(file){
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const datos = JSON.parse(e.target.result);
+      if(!Array.isArray(datos)) throw new Error('El archivo no tiene el formato esperado (debe ser una lista).');
+      const idsExistentes = new Set(movimientos.map(m => m.id));
+      const validos = datos.filter(m => m && m.ticker && m.tipo && m.cantidad && m.precio && m.fecha);
+      const nuevos = validos.filter(m => !idsExistentes.has(m.id));
+      movimientos = movimientos.concat(nuevos);
+      saveMovimientos(movimientos);
+      renderMovimientos();
+      renderResumenPortafolio();
+      alert(`Se importaron ${nuevos.length} movimientos nuevos (de ${datos.length} en el archivo; ${datos.length - nuevos.length} ya existían o no eran válidos).`);
+    } catch(err){
+      alert('No se pudo leer el archivo de respaldo: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function inicializarPortafolio(){
+  document.querySelector('.movs-panel .feed-title').style.cursor = 'default';
+  document.getElementById('btnVerDetalleMovs').addEventListener('click', openMovsDetail);
+  document.getElementById('btnOcultarCifras').addEventListener('click', () => {
+    const nuevoEstado = !estaOculto();
+    try { localStorage.setItem('ipsa_ocultar_cifras', nuevoEstado ? '1' : '0'); } catch(e){}
+    renderResumenPortafolio();
+  });
+  document.getElementById('btnExportarMovs').addEventListener('click', exportarMovimientos);
+  document.getElementById('btnImportarMovs').addEventListener('click', () => document.getElementById('inputImportarMovs').click());
+  document.getElementById('inputImportarMovs').addEventListener('change', (e) => {
+    if(e.target.files[0]) importarMovimientos(e.target.files[0]);
+    e.target.value = '';
+  });
+  renderResumenPortafolio();
+}
+
+// ---- Cargar lo último real que se tenga guardado, apenas abre la app ----
+function hydrateFromCache(){
+  const cache = loadCache();
+  if(!cache){
+    renderIndexDisplay(); // limpia el "6.412" que viene hardcodeado en el HTML
+    return;
+  }
+
+  let recibidos = 0;
+  state.forEach(s => {
+    const q = cache.quotes && cache.quotes[s.ticker];
+    if(q && typeof q.price === 'number'){
+      s.price = q.price;
+      s.avg = q.avg;
+      s.dayHigh = q.dayHigh ?? null;
+      s.dayLow = q.dayLow ?? null;
+      s.volume = q.volume ?? null;
+      s.montoTransado = q.montoTransado ?? null;
+      s.ret3m = q.ret3m ?? null;
+      s.ret1y = q.ret1y ?? null;
+      s.history = [s.price]; // un solo punto real conocido; se completa al llegar mas
+      recibidos++;
+    }
+    renderCard(s);
+  });
+  if(cache.index && typeof cache.index.value === 'number'){
+    indexValue = cache.index.value;
+    indexPrevClose = cache.index.previousClose;
+    renderIndexDisplay();
+  }
+  if(recibidos > 0){
+    const minAgo = Math.round((Date.now() - cache.ts) / 60000);
+    setStatusPill('cache', `Datos reales (caché, hace ${minAgo<1 ? '<1' : minAgo} min)`);
+  }
+  renderAnalysis();
+  renderResumenPortafolio();
 }
 
 async function fetchRealQuotes(){
@@ -770,47 +1590,54 @@ async function fetchRealQuotes(){
         pushHistory(s.history, s.price);
         recibidos++;
       }
+      renderCard(s);
     });
 
+    if(body.index && typeof body.index.value === 'number'){
+      indexValue = body.index.value;
+      indexPrevClose = body.index.previousClose;
+    }
+    renderIndexDisplay();
+
     if(recibidos > 0){
-      liveMode = true;
-      document.getElementById('dataStatusDot').style.background = 'var(--gold)';
-      document.getElementById('dataStatusText').textContent = `Datos reales (${recibidos}/${state.length})`;
-      document.getElementById('dataStatusPill').style.color = 'var(--gold)';
-      document.getElementById('dataStatusPill').style.borderColor = 'rgba(201,166,107,0.35)';
+      ultimaActualizacionReal = new Date();
+      setStatusPill('real', `Datos reales (${recibidos}/${state.length})`);
+      saveCache();
+      renderAnalysis();
+      renderResumenPortafolio();
+    } else {
+      setStatusPill('error', 'El backend respondió sin datos');
     }
   } catch(e){
     console.warn('No se pudo obtener /quotes real:', e);
-    if(!liveMode){
-      document.getElementById('dataStatusText').textContent = 'Simulación (sin conexión al backend)';
+    if(ultimaActualizacionReal === null){
+      setStatusPill('error', 'Sin conexión al backend — reintentando');
+    } else {
+      const minAgo = Math.round((Date.now() - ultimaActualizacionReal) / 60000);
+      setStatusPill('error', `Sin conexión — último dato real hace ${minAgo} min`);
     }
-    // Si liveMode ya estaba activo, dejamos los ultimos datos reales
-    // visibles en vez de volver a la simulacion -- es mas honesto que
-    // fingir una nueva actualizacion que no ocurrio.
+    // Nunca volvemos a numeros inventados: si ya hubo datos reales antes,
+    // se quedan visibles tal cual, aunque esten desactualizados.
   }
 }
 
-// Feriados bursátiles de Chile 2026 -- SOLO fechas de alta confianza:
-// feriados irrenunciables de fecha fija (Ley 2.977) + Viernes Santo
-// (calculable matemáticamente a partir de la fecha de Pascua).
-//
-// DELIBERADAMENTE INCOMPLETA: existen otros feriados legales chilenos
-// que probablemente también cierran la Bolsa (San Pedro y San Pablo,
-// Virgen del Carmen, Asunción de la Virgen, Encuentro de Dos Mundos,
-// Iglesias Evangélicas, Todos los Santos) pero encontré información
-// contradictoria sobre sus fechas exactas observadas y si la Bolsa los
-// trata como no-hábiles -- así que preferí dejarlos afuera en vez de
-// arriesgar una fecha equivocada. Esta lista hay que revisarla y
-// actualizarla cada año.
+// Feriados bursátiles de Chile 2026. Actualizado con San Pedro y San
+// Pablo, Virgen del Carmen, Encuentro de Dos Mundos, y el feriado
+// bancario de fin de año -- verificados con prensa financiera. Esta
+// lista hay que revisarla y actualizarla cada año.
 const FERIADOS_2026 = [
   '2026-01-01', // Año Nuevo
   '2026-04-03', // Viernes Santo
   '2026-05-01', // Día Nacional del Trabajo
   '2026-05-21', // Glorias Navales
+  '2026-06-29', // San Pedro y San Pablo
+  '2026-07-16', // Virgen del Carmen
   '2026-09-18', // Independencia Nacional
   '2026-09-19', // Glorias del Ejército
+  '2026-10-12', // Encuentro de Dos Mundos
   '2026-12-08', // Inmaculada Concepción
   '2026-12-25', // Navidad
+  '2026-12-31', // Feriado bancario de fin de año
 ];
 
 function esFeriado(fechaISO){
@@ -853,9 +1680,10 @@ function updateClock(){
   updateMarketStatus();
 }
 
-tick();
+inicializarFormularioMovimientos();
+inicializarPortafolio();
+hydrateFromCache();
 updateClock();
-setInterval(tick, 2000);
 setInterval(updateClock, 1000);
 
 /* ---- Notificaciones push ---- */
@@ -878,6 +1706,25 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
 }
 
+function marcarBotonActivo(btn){
+  btn.textContent = '✅ Notificaciones activas';
+  btn.style.color = 'var(--verdigris)';
+}
+
+// Al abrir la app, si ya se habían activado antes (localStorage) y el
+// permiso del navegador sigue concedido, refleja el botón como activo
+// de inmediato -- sin esto, cada vez que se cerraba la app volvía a
+// pedir activarlas de nuevo.
+(function restaurarEstadoNotificaciones(){
+  const btn = document.getElementById('notifyBtn');
+  let activadoAntes = false;
+  try { activadoAntes = localStorage.getItem('ipsa_notif_activas') === '1'; } catch(e){}
+  const permisoOk = ('Notification' in window) && Notification.permission === 'granted';
+  if(activadoAntes && permisoOk){
+    marcarBotonActivo(btn);
+  }
+})();
+
 document.getElementById('notifyBtn').addEventListener('click', async () => {
   const btn = document.getElementById('notifyBtn');
   const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
@@ -899,17 +1746,23 @@ document.getElementById('notifyBtn').addEventListener('click', async () => {
     }
     const reg = await navigator.serviceWorker.register('sw.js');
     await navigator.serviceWorker.ready;
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-    });
+
+    // Si ya existía una suscripción previa (de una sesión anterior), la
+    // reusamos en vez de crear una nueva cada vez.
+    let sub = await reg.pushManager.getSubscription();
+    if(!sub){
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    }
     await fetch(BACKEND_URL + '/subscribe', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(sub),
     });
-    btn.textContent = '✅ Notificaciones activas';
-    btn.style.color = 'var(--verdigris)';
+    try { localStorage.setItem('ipsa_notif_activas', '1'); } catch(e){}
+    marcarBotonActivo(btn);
   } catch (err) {
     console.error(err);
     alert('No se pudo activar las notificaciones: ' + err.message + '\n\n¿Ya configuraste BACKEND_URL en el código con tu servidor real?');
