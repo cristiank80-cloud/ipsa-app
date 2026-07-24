@@ -814,6 +814,49 @@ async function seedHistorialSiFalta(s){
   }
 }
 
+// ---- Noticias reales (Google News, vía el backend) ----
+const noticiasCache = {}; // {ticker: items[]} -- por sesion, para no repetir la consulta al re-render
+async function cargarNoticias(ticker){
+  const cont = document.getElementById('newsContainer');
+
+  if(noticiasCache[ticker]){
+    pintarNoticias(ticker, noticiasCache[ticker]);
+    return;
+  }
+
+  try {
+    const resp = await fetch(`${BACKEND_URL}/news?ticker=${encodeURIComponent(ticker)}`);
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    const body = await resp.json();
+    noticiasCache[ticker] = body.items || [];
+    pintarNoticias(ticker, noticiasCache[ticker]);
+  } catch(e){
+    console.warn('No se pudieron cargar noticias reales para', ticker, e);
+    if(ticker === openTicker && cont){
+      cont.textContent = 'No se pudieron cargar noticias reales ahora (¿backend despertando? vuelve a abrir esta acción en un momento).';
+    }
+  }
+}
+
+function pintarNoticias(ticker, items){
+  if(ticker !== openTicker) return; // el panel ya cambio de accion mientras esperabamos
+  const cont = document.getElementById('newsContainer');
+  if(!cont) return;
+
+  if(!items || items.length === 0){
+    cont.textContent = 'No se encontraron noticias recientes (últimas 48 horas) sobre esta acción en Google News.';
+    return;
+  }
+
+  cont.innerHTML = items.map(n => {
+    const fecha = new Date(n.published).toLocaleString('es-CL', {timeZone:'America/Santiago', dateStyle:'short', timeStyle:'short'});
+    return `<div style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--hairline);">
+      <a href="${n.link}" target="_blank" rel="noopener" style="color:var(--ink); text-decoration:none; font-weight:600; font-size:12.5px;">${n.title}</a>
+      <div style="color:var(--ink-faint); font-size:10.5px; margin-top:2px;">${fecha}</div>
+    </div>`;
+  }).join('');
+}
+
 function openDetail(ticker){
   openTicker = ticker;
   renderDetail(ticker);
@@ -858,6 +901,7 @@ function renderDetail(ticker){
   const deltaVal = (s.price/s.avg)-1;
 
   seedHistorialSiFalta(s); // dispara en segundo plano; si trae datos, se re-dibuja solo
+  cargarNoticias(s.ticker); // idem, noticias reales en segundo plano
 
   // Maximo/minimo del dia: usa el dato real de Yahoo Finance si llegó;
   // si no, cae al maximo/minimo de lo real acumulado en esta sesión.
@@ -969,10 +1013,23 @@ function renderDetail(ticker){
       <tr><td>Monto transado hoy (aprox.)</td><td>${montoReal !== null ? '$' + fmtCLP0(montoReal/1000000) + ' M' : 'No disponible'}</td></tr>
     </table>
 
-    <p class="section-title" style="margin-top:16px;">Puntas de compra / venta</p>
+    <p class="section-title" style="margin-top:16px;">Puntas de compra / venta ${(s.bid!==null || s.ask!==null) ? '(real, Yahoo Finance)' : ''}</p>
+    ${(s.bid!==null || s.ask!==null) ? `
+    <div class="puntas-row">
+      <div class="punta-box compra">
+        <div class="plabel">Compra</div>
+        <div class="pval mono">${s.bid!==null ? fmt(s.bid, s.dec) : '—'}</div>
+        <div class="pqty">${s.bidSize!==null ? fmtCLP0(s.bidSize)+' títulos' : ''}</div>
+      </div>
+      <div class="punta-box venta">
+        <div class="plabel">Venta</div>
+        <div class="pval mono">${s.ask!==null ? fmt(s.ask, s.dec) : '—'}</div>
+        <div class="pqty">${s.askSize!==null ? fmtCLP0(s.askSize)+' títulos' : ''}</div>
+      </div>
+    </div>` : `
     <p style="font-size:12px; color:var(--ink-faint); background:var(--bg-field); padding:10px 12px; border-radius:8px;">
-      No disponible gratis: revisé Yahoo Finance, Investing.com y MarketScreener — ninguno entrega puntas de compra/venta en tiempo real para acciones de la Bolsa de Santiago sin pago o sin sesión de corredora. Prefiero mostrarte esto en vez de inventar un número.
-    </p>
+      Yahoo Finance no tiene puntas de compra/venta cargadas para ${s.ticker} en este momento (varía por acción — no todas las tienen disponibles). No inventamos un número acá.
+    </p>`}
 
     <p class="section-title" style="margin-top:16px;">Rentabilidad ${rentabilidadEsReal ? '(real, calculada del historial de Yahoo Finance)' : '(simulada)'}</p>
     <div class="rent-row">
@@ -1003,9 +1060,9 @@ function renderDetail(ticker){
     </p>
 
     <p class="section-title" style="margin-top:16px;">Noticias recientes</p>
-    <p style="font-size:11.5px; color:var(--ink-faint); background:var(--bg-field); padding:10px 12px; border-radius:8px;">
-      Esta sección todavía no está conectada a noticias reales desde la PWA (el backend sí las busca para las alertas por correo, vía news.py). No inventamos titulares acá.
-    </p>
+    <div id="newsContainer" style="font-size:12px; color:var(--ink-faint); background:var(--bg-field); padding:10px 12px; border-radius:8px;">
+      Buscando noticias reales (Google News)…
+    </div>
   `;
 
   document.getElementById('closeBtn').addEventListener('click', closeDetail);
@@ -1868,6 +1925,10 @@ function hydrateFromCache(){
       s.montoTransado = q.montoTransado ?? null;
       s.ret3m = q.ret3m ?? null;
       s.ret1y = q.ret1y ?? null;
+      s.bid = q.bid ?? null;
+      s.ask = q.ask ?? null;
+      s.bidSize = q.bidSize ?? null;
+      s.askSize = q.askSize ?? null;
       s.history = [s.price]; // un solo punto real conocido; se completa al llegar mas
       recibidos++;
     }
@@ -1905,6 +1966,10 @@ async function fetchRealQuotes(){
         s.montoTransado = (typeof q.montoTransado === 'number') ? q.montoTransado : null;
         s.ret3m = (typeof q.ret3m === 'number') ? q.ret3m : null;
         s.ret1y = (typeof q.ret1y === 'number') ? q.ret1y : null;
+        s.bid = (typeof q.bid === 'number') ? q.bid : null;
+        s.ask = (typeof q.ask === 'number') ? q.ask : null;
+        s.bidSize = (typeof q.bidSize === 'number') ? q.bidSize : null;
+        s.askSize = (typeof q.askSize === 'number') ? q.askSize : null;
         pushHistory(s.history, s.price);
         recibidos++;
       }
@@ -2033,6 +2098,13 @@ function marcarBotonActivo(btn){
 // permiso del navegador sigue concedido, refleja el botón como activo
 // de inmediato -- sin esto, cada vez que se cerraba la app volvía a
 // pedir activarlas de nuevo.
+//
+// Ademas, re-envia la suscripcion existente al servidor EN SILENCIO,
+// cada vez que se abre la app. Esto es necesario porque el servidor
+// (Render, plan gratuito) puede perder el archivo donde guarda las
+// suscripciones cada vez que se redespliega -- sin este re-envio, el
+// boton seguiria diciendo "activas" (porque eso lo recuerda el
+// celular) aunque el servidor ya no supiera a quien avisarle.
 (function restaurarEstadoNotificaciones(){
   const btn = document.getElementById('notifyBtn');
   let activadoAntes = false;
@@ -2040,8 +2112,28 @@ function marcarBotonActivo(btn){
   const permisoOk = ('Notification' in window) && Notification.permission === 'granted';
   if(activadoAntes && permisoOk){
     marcarBotonActivo(btn);
+    resincronizarSuscripcion();
   }
 })();
+
+async function resincronizarSuscripcion(){
+  try {
+    if(!('serviceWorker' in navigator)) return;
+    const reg = await navigator.serviceWorker.register('sw.js');
+    await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if(sub){
+      await fetch(BACKEND_URL + '/subscribe', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(sub),
+      });
+      console.log('Suscripción push re-sincronizada con el servidor.');
+    }
+  } catch(e){
+    console.warn('No se pudo re-sincronizar la suscripción push:', e);
+  }
+}
 
 document.getElementById('notifyBtn').addEventListener('click', async () => {
   const btn = document.getElementById('notifyBtn');
