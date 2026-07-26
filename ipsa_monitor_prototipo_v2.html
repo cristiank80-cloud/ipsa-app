@@ -344,6 +344,7 @@
       <span class="live-pill mono" id="marketStatus" style="border-color:transparent;">···</span>
       <button id="notifyBtn" class="live-pill" style="cursor:pointer; background:none;">🔔 Activar notificaciones</button>
       <span class="live-pill" id="dataStatusPill"><span class="live-dot" id="dataStatusDot"></span><span id="dataStatusText">Simulación en vivo</span></span>
+      <button id="btnActualizar" class="live-pill" style="cursor:pointer; background:none;" title="Forzar una actualización ahora, sin esperar el ciclo automático">🔄 Actualizar</button>
       <span class="mono clock" id="clock">--:--:--</span>
     </div>
   </div>
@@ -1583,37 +1584,58 @@ function renderMovimientos(){
   }
 
   const ordenados = [...movimientos].sort((a,b) => b.fecha.localeCompare(a.fecha) || b.id - a.id);
-  listEl.innerHTML = ordenados.map(m => `
-    <div class="mov-item">
-      <span class="mi-tipo ${m.tipo}">${m.tipo}</span>
-      <span class="mono">${m.ticker}</span>
-      <span>${m.cantidad} tít.</span>
-      <span class="mono">$${fmtCLP0(m.precio)}</span>
-      <span style="color:var(--ink-faint);">${m.fecha}</span>
-      <button class="mi-del" data-id="${m.id}" title="Eliminar">✕</button>
-    </div>
-  `).join('');
+  const oculto = estaOculto();
+  // Para ahorrar espacio se muestra siempre solo el movimiento más
+  // reciente. Con el ojito cerrado, además se enmascara su contenido
+  // (tipo, ticker, cantidad, precio) igual que los saldos -- la fecha
+  // se deja visible porque por sí sola no revela montos ni posiciones.
+  const ultimo = ordenados[0];
 
-  listEl.querySelectorAll('.mi-del').forEach(btn => {
-    btn.addEventListener('click', () => {
-      movimientos = movimientos.filter(m => m.id !== Number(btn.dataset.id));
-      saveMovimientos(movimientos);
-      renderMovimientos();
+  const filaMov = oculto
+    ? `
+      <div class="mov-item mov-item--oculto">
+        <span class="mi-tipo" style="filter:blur(3px);">compra</span>
+        <span class="mono" style="filter:blur(3px);">•••••••</span>
+        <span style="filter:blur(3px);">••• tít.</span>
+        <span class="mono" style="filter:blur(3px);">$•••</span>
+        <span style="color:var(--ink-faint);">${ultimo.fecha}</span>
+      </div>`
+    : `
+      <div class="mov-item">
+        <span class="mi-tipo ${ultimo.tipo}">${ultimo.tipo}</span>
+        <span class="mono">${ultimo.ticker}</span>
+        <span>${ultimo.cantidad} tít.</span>
+        <span class="mono">$${fmtCLP0(ultimo.precio)}</span>
+        <span style="color:var(--ink-faint);">${ultimo.fecha}</span>
+        <button class="mi-del" data-id="${ultimo.id}" title="Eliminar">✕</button>
+      </div>`;
+
+  listEl.innerHTML = filaMov;
+
+  if(!oculto){
+    listEl.querySelectorAll('.mi-del').forEach(btn => {
+      btn.addEventListener('click', () => {
+        movimientos = movimientos.filter(m => m.id !== Number(btn.dataset.id));
+        saveMovimientos(movimientos);
+        renderMovimientos();
+      });
     });
-  });
+  }
 
-  // Resumen de posicion neta por ticker (compras - ventas)
-  const posiciones = {};
-  movimientos.forEach(m => {
-    const signo = m.tipo === 'compra' ? 1 : -1;
-    posiciones[m.ticker] = (posiciones[m.ticker] || 0) + signo * m.cantidad;
-  });
-  const resumen = Object.entries(posiciones)
-    .filter(([,cant]) => cant !== 0)
-    .map(([t,cant]) => `${t}: ${cant>0?'+':''}${cant}`)
-    .join(' · ');
-  if(resumen){
-    listEl.insertAdjacentHTML('beforeend', `<p class="movs-summary">Posición neta registrada — ${resumen}</p>`);
+  // Resumen de posicion neta por ticker (compras - ventas) -- solo con ojo abierto
+  if(!oculto){
+    const posiciones = {};
+    movimientos.forEach(m => {
+      const signo = m.tipo === 'compra' ? 1 : -1;
+      posiciones[m.ticker] = (posiciones[m.ticker] || 0) + signo * m.cantidad;
+    });
+    const resumen = Object.entries(posiciones)
+      .filter(([,cant]) => cant !== 0)
+      .map(([t,cant]) => `${t}: ${cant>0?'+':''}${cant}`)
+      .join(' · ');
+    if(resumen){
+      listEl.insertAdjacentHTML('beforeend', `<p class="movs-summary">Posición neta registrada — ${resumen}</p>`);
+    }
   }
   renderResumenPortafolio();
 }
@@ -1730,6 +1752,12 @@ function renderResumenPortafolio(){
   elNoReal.className = 'msb-val mono ' + (oculto ? '' : (hayNoRealizadaCompleta ? (noRealizada>=0?'up':'down') : ''));
 
   document.getElementById('btnOcultarCifras').textContent = oculto ? '🙈' : '👁️';
+
+  // El detalle completo (tickers, cantidades y fechas por acción) tiene
+  // que quedar tapado igual que la lista de movimientos -- si no, alguien
+  // mirando por encima podría abrirlo con el ojito cerrado.
+  const linkDetalle = document.getElementById('btnVerDetalleMovs');
+  if(linkDetalle) linkDetalle.style.display = oculto ? 'none' : '';
 }
 
 // ---- Modal estilo "Excel" con el detalle completo de la cartera ----
@@ -1894,7 +1922,7 @@ function inicializarPortafolio(){
   document.getElementById('btnOcultarCifras').addEventListener('click', () => {
     const nuevoEstado = !estaOculto();
     try { localStorage.setItem('ipsa_ocultar_cifras', nuevoEstado ? '1' : '0'); } catch(e){}
-    renderResumenPortafolio();
+    renderMovimientos();
   });
   document.getElementById('btnExportarMovs').addEventListener('click', exportarMovimientos);
   document.getElementById('btnImportarMovs').addEventListener('click', () => document.getElementById('inputImportarMovs').click());
@@ -2071,7 +2099,7 @@ setInterval(updateClock, 1000);
 
 /* ---- Notificaciones push ---- */
 // Clave pública VAPID (ver vapid_keys.txt) — ya insertada, no requiere edición.
-const VAPID_PUBLIC_KEY = 'BKLnGpwyT6bNPR_CDvGAgTrQDU9Xu5aUpYm6Y42L6fULYd8_d0QjXzzhdPavqKdtg-jcMPYwnrHzjPGtAqqQw2c';
+const VAPID_PUBLIC_KEY = 'BOQ6bcNgmXfK7oB9_Z2wca_1cd9oaqnebftUQf3hAkLX7DeHUIJezdHoqiY27CWadBjDD3fNZbzSpJPf23mpKBY';
 
 // CAMBIA ESTO por la URL real de tu servidor una vez desplegado (ver DEPLOY.md)
 const BACKEND_URL = 'https://ipsa-alert-service.onrender.com';
@@ -2081,6 +2109,38 @@ const BACKEND_URL = 'https://ipsa-alert-service.onrender.com';
 // rato -- por eso el primer intento puede demorar, es normal.
 fetchRealQuotes();
 setInterval(fetchRealQuotes, 60000);
+
+// ---- Botón "Actualizar ahora" ----
+// No hace que Render despierte más rápido (eso depende del hosting), pero
+// evita la sensación de que la app quedó pegada: muestra un estado de
+// "actualizando" mientras espera, y deja reintentar al instante en vez de
+// esperar el ciclo automático de 60s.
+(function inicializarBotonActualizar(){
+  const btn = document.getElementById('btnActualizar');
+  let actualizando = false;
+
+  btn.addEventListener('click', async () => {
+    if(actualizando) return; // evita disparar varias peticiones si tocan el botón repetido
+    actualizando = true;
+
+    const textoOriginal = btn.textContent;
+    btn.textContent = '⏳ Actualizando…';
+    btn.disabled = true;
+    btn.style.opacity = '0.6';
+    btn.style.cursor = 'wait';
+    setStatusPill('cargando', 'Actualizando… (puede tardar ~50s si el servidor estaba dormido)');
+
+    try {
+      await fetchRealQuotes();
+    } finally {
+      btn.textContent = textoOriginal;
+      btn.disabled = false;
+      btn.style.opacity = '';
+      btn.style.cursor = 'pointer';
+      actualizando = false;
+    }
+  });
+})();
 
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - base64String.length % 4) % 4);
