@@ -54,6 +54,10 @@
   .index-block{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;}
   .index-value{font-size:30px; font-weight:600; letter-spacing:-0.01em;}
   .index-delta{font-size:14px; font-weight:500; padding:3px 8px; border-radius:5px;}
+  /* Fecha y hora del valor del IPSA. Esto es lo que faltaba: sin esto no
+     habia forma de notar que el indice llevaba horas o dias congelado. */
+  .index-time{font-size:11px; color:var(--ink-faint); letter-spacing:.02em;}
+  .index-time.viejo{color:var(--copper); font-weight:600;}
   .up{color:var(--verdigris); background:var(--verdigris-soft);}
   .down{color:var(--copper); background:var(--copper-soft);}
   .status{display:flex; align-items:center; gap:12px; flex-wrap:wrap; row-gap:10px;}
@@ -127,6 +131,14 @@
   .card.alert .flag{display:inline-flex;}
   .flag-dot{width:5px;height:5px;border-radius:50%;background:var(--copper); animation:pulse 1.4s ease-in-out infinite;}
   .avg-line{font-size:12px; color:var(--ink-faint); display:flex; justify-content:space-between;}
+  /* Fecha y hora a la que corresponde el precio, segun la bolsa. No es la
+     hora en que la app lo pidio: es la hora del dato. */
+  .dato-hora{font-size:11px; display:flex; justify-content:space-between;
+             align-items:center; margin-top:2px; letter-spacing:.02em;}
+  .dato-hora .dh-fecha{font-variant-numeric:tabular-nums;}
+  .dato-hora.fresco  {color:var(--ink-faint);}
+  .dato-hora.tibio   {color:var(--gold);}
+  .dato-hora.viejo   {color:var(--copper); font-weight:600;}
   .tap-hint{font-size:11px; color:var(--ink-faint); text-align:center; margin-top:8px; letter-spacing:.04em; text-transform:uppercase;}
 
   @keyframes pulse{ 0%,100%{opacity:1; transform:scale(1);} 50%{opacity:.4; transform:scale(1.3);} }
@@ -339,6 +351,7 @@
     <div class="index-block">
       <span class="mono index-value" id="idxValue">···</span>
       <span class="mono index-delta" id="idxDelta">+0,00%</span>
+      <span class="mono index-time" id="idxTime"></span>
     </div>
     <div class="status">
       <span class="live-pill mono" id="marketStatus" style="border-color:transparent;">···</span>
@@ -350,7 +363,7 @@
   </div>
 
   <p class="disclaimer">
-    <b>Prototipo con datos simulados.</b> Toca cualquier tarjeta para ver el detalle de la acción, inspirado en la ficha de instrumento de bolsadesantiago.com (valor, puntas de compra/venta, rentabilidad, últimas transacciones).
+    <b>Datos reales de Yahoo Finance, con rezago.</b> Yahoo no publica de cuántos minutos es el rezago, así que cada precio muestra su antigüedad real: fíjate en la hora que aparece junto al IPSA y en el semáforo de estado. <b>Yahoo no entrega puntas de compra/venta de la Bolsa de Santiago</b> — ese dato aparece como no disponible, nunca inventado. Toca cualquier tarjeta para ver el detalle.
   </p>
 
   <div class="analysis-panel">
@@ -543,7 +556,7 @@ function saveCache(){
     });
     localStorage.setItem('ipsa_cache', JSON.stringify({
       quotes: quotesOut,
-      index: (indexValue !== null) ? {value: indexValue, previousClose: indexPrevClose} : null,
+      index: (indexValue !== null) ? {value: indexValue, previousClose: indexPrevClose, marketTime: indexMarketTime} : null,
       ts: Date.now(),
     }));
   } catch(e){ /* si falla, simplemente no persiste entre sesiones */ }
@@ -587,6 +600,7 @@ state.forEach(s => {
       <span>Promedio 90d</span>
       <span class="mono" data-el="avgline">···</span>
     </div>
+    <div class="dato-hora mono" data-el="datoHora"><span>&nbsp;</span></div>
     <div class="tap-hint">Toca para ver detalle</div>
   `;
   card.addEventListener('click', () => openDetail(s.ticker));
@@ -1006,6 +1020,11 @@ function renderDetail(ticker){
     <p class="section-title">Resumen de precios ${liveMode ? '(real, Yahoo Finance)' : '(sesión simulada)'}</p>
     <table class="mini-table">
       <tr><td>Precio actual</td><td>${fmt(s.price, s.dec)}</td></tr>
+      <tr><td>Fecha y hora del dato</td><td>${(() => {
+        const h = formatoHoraDato(s.marketTime, s.staleSeconds);
+        if(!h) return 'No disponible';
+        return h.texto + ' (' + h.edad + ')' + (h.clase === 'viejo' ? ' \u26A0\uFE0E' : '');
+      })()}</td></tr>
       <tr><td>Precio mayor del día${dayHighLowEsReal ? '' : ' (aprox., sesión)'}</td><td>${fmt(dayHigh, s.dec)}</td></tr>
       <tr><td>Precio menor del día${dayHighLowEsReal ? '' : ' (aprox., sesión)'}</td><td>${fmt(dayLow, s.dec)}</td></tr>
       <tr><td>Promedio histórico (90d)</td><td>${fmt(s.avg, s.dec)}</td></tr>
@@ -1014,7 +1033,7 @@ function renderDetail(ticker){
       <tr><td>Monto transado hoy (aprox.)</td><td>${montoReal !== null ? '$' + fmtCLP0(montoReal/1000000) + ' M' : 'No disponible'}</td></tr>
     </table>
 
-    <p class="section-title" style="margin-top:16px;">Puntas de compra / venta ${(s.bid!==null || s.ask!==null) ? '(real, Yahoo Finance)' : ''}</p>
+    <p class="section-title" style="margin-top:16px;">Puntas de compra / venta ${(s.bid!==null || s.ask!==null) ? '(real)' : '— Yahoo Finance no las publica para la Bolsa de Santiago'}</p>
     ${(s.bid!==null || s.ask!==null) ? `
     <div class="puntas-row">
       <div class="punta-box compra">
@@ -1427,14 +1446,57 @@ function updateDetailClock(){
   if(el){ el.textContent = new Date().toLocaleTimeString('es-CL', {timeZone:'America/Santiago', hour12:false}); }
 }
 
+// Fecha y hora de bolsa a la que corresponde un precio, en horario de
+// Santiago. El backend manda `marketTime` (ISO en UTC) y `staleSeconds`.
+// Devuelve {texto, clase} o null si no hay dato de hora.
+function formatoHoraDato(marketTime, staleSeconds){
+  if(!marketTime) return null;
+  const d = new Date(marketTime);
+  if(isNaN(d.getTime())) return null;
+
+  const f = new Intl.DateTimeFormat('es-CL', {
+    timeZone: 'America/Santiago',
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(d);
+  const m = {}; f.forEach(x => m[x.type] = x.value);
+  const texto = `${m.day}/${m.month}/${m.year} · ${m.hour}:${m.minute}`;
+
+  // Semáforo por antigüedad. Con el mercado cerrado es normal que el dato
+  // sea del cierre, por eso el umbral rojo es de horas y no de minutos.
+  let clase = 'fresco';
+  if(staleSeconds !== null && staleSeconds !== undefined){
+    if(staleSeconds > 21600)     clase = 'viejo';   // más de 6 h
+    else if(staleSeconds > 1800) clase = 'tibio';   // más de 30 min
+  }
+  return {texto, clase, edad: textoAntiguedad(staleSeconds)};
+}
+
 // ---- Render de una tarjeta con lo que se sepa en este momento ----
 function renderCard(s){
   const card = cardEls[s.ticker];
   const priceEl = card.querySelector('[data-el="price"]');
   const deltaEl = card.querySelector('[data-el="delta"]');
   const avgEl = card.querySelector('[data-el="avgline"]');
+  const horaEl = card.querySelector('[data-el="datoHora"]');
   const sparkLoading = card.querySelector('[data-el="sparkLoading"]');
   const svgEl = card.querySelector('[data-el="svg"]');
+
+  if(horaEl){
+    const h = formatoHoraDato(s.marketTime, s.staleSeconds);
+    if(h){
+      horaEl.className = 'dato-hora mono ' + h.clase;
+      horaEl.innerHTML = `<span class="dh-fecha">${h.texto}</span>`
+                       + `<span>${h.clase === 'viejo' ? '⚠︎ ' : ''}${h.edad}</span>`;
+      horaEl.title = h.clase === 'viejo'
+        ? 'Este precio tiene varias horas. Si el mercado está abierto, no es el precio actual.'
+        : 'Fecha y hora de la bolsa a la que corresponde este precio (no la hora en que la app lo consultó).';
+    } else {
+      horaEl.className = 'dato-hora mono';
+      horaEl.innerHTML = '<span>&nbsp;</span>';
+      horaEl.title = '';
+    }
+  }
 
   if(s.price === null || s.avg === null){
     priceEl.textContent = '···';
@@ -1472,21 +1534,71 @@ function renderCard(s){
   if(openTicker === s.ticker){ renderDetail(s.ticker); }
 }
 
+// Antiguedad del ultimo valor de IPSA que entrego el backend, en segundos.
+// null = el backend no pudo obtener el indice en la ultima tanda.
+let indexStaleSeconds = null;
+let indexDisponible = false;
+let indexMarketTime = null;   // hora de bolsa del ultimo valor de IPSA
+
+function textoAntiguedad(seg){
+  if(seg === null || seg === undefined) return '';
+  if(seg < 120)   return 'hace ' + seg + 's';
+  if(seg < 5400)  return 'hace ' + Math.round(seg/60) + ' min';
+  if(seg < 172800)return 'hace ' + Math.round(seg/3600) + ' h';
+  return 'hace ' + Math.round(seg/86400) + ' días';
+}
+
 function renderIndexDisplay(){
   const valEl = document.getElementById('idxValue');
   const deltaEl = document.getElementById('idxDelta');
+
   if(indexValue === null){
     valEl.textContent = '···';
+    valEl.title = 'Todavía no llega el valor del IPSA.';
     deltaEl.textContent = '';
     return;
   }
+
   valEl.textContent = fmt(indexValue, 0);
+
+  // ESTE ERA EL BUG QUE VISTE: si el backend no lograba traer ^IPSA (se lo
+  // comía el rate limit de Yahoo, porque se pedía al final de ~190
+  // peticiones), la app se quedaba mostrando el valor anterior de su caché
+  // sin ninguna marca, mientras el semáforo seguía en verde porque las 47
+  // acciones sí habían llegado. Ahora el índice tiene su propio estado.
+  const edad = indexStaleSeconds;
+  const viejo = (!indexDisponible) || (edad !== null && edad > 900); // >15 min
+  valEl.style.opacity = viejo ? '0.45' : '1';
+
+  // Fecha y hora del dato, VISIBLE, igual que en la ficha de bolsadesantiago.
+  const timeEl = document.getElementById('idxTime');
+  if(timeEl){
+    const h = formatoHoraDato(indexMarketTime, edad);
+    if(!indexDisponible && indexValue !== null){
+      timeEl.className = 'mono index-time viejo';
+      timeEl.textContent = '⚠︎ sin dato nuevo' + (h ? ' · último: ' + h.texto : '');
+    } else if(h){
+      timeEl.className = 'mono index-time' + (viejo ? ' viejo' : '');
+      timeEl.textContent = (viejo ? '⚠︎ ' : '') + h.texto + ' · ' + h.edad;
+    } else {
+      timeEl.className = 'mono index-time';
+      timeEl.textContent = '';
+    }
+  }
+  valEl.title = indexDisponible
+    ? ('Valor del IPSA según Yahoo Finance · ' + textoAntiguedad(edad))
+    : 'El servidor NO pudo obtener el IPSA en la última actualización. Esto que ves es el último valor conocido, no el de ahora.';
+
   if(indexPrevClose){
     const idxDelta = (indexValue/indexPrevClose)-1;
-    deltaEl.textContent = fmtPct(idxDelta);
+    deltaEl.textContent = fmtPct(idxDelta) + (viejo ? ' ⚠︎' : '');
     deltaEl.className = 'mono index-delta ' + (idxDelta>=0 ? 'up' : 'down');
+    deltaEl.title = viejo
+      ? 'Dato desactualizado — no confíes en esta variación.'
+      : 'Variación respecto al cierre anterior.';
   } else {
-    deltaEl.textContent = '';
+    deltaEl.textContent = viejo ? '⚠︎ dato viejo' : '';
+    deltaEl.className = 'mono index-delta';
   }
 }
 
@@ -1521,18 +1633,25 @@ function renderAnalysis(){
 
   const conDelta = conDatos.map(s => {
     const deltaVal = (s.price/s.avg) - 1;
-    const rsi = calcRSI(s.history, 14);
-    return {s, deltaVal, rsi};
+    // RSI del backend (cierres diarios de 1 año). Solo si no viniera, se
+    // cae al cálculo local sobre los ticks de la sesión, que casi nunca
+    // alcanza los 15 puntos que necesita RSI(14).
+    const rsi = (typeof s.rsi14 === 'number') ? s.rsi14 : calcRSI(s.history, 14);
+    return {s, deltaVal, rsi, z: (typeof s.zscore === 'number') ? s.zscore : null};
   });
 
   const masAbajo = [...conDelta].sort((a,b) => a.deltaVal - b.deltaVal).slice(0, 5);
   const masArriba = [...conDelta].sort((a,b) => b.deltaVal - a.deltaVal).slice(0, 5);
 
   function itemHTML(entry){
-    const {s, deltaVal, rsi} = entry;
+    const {s, deltaVal, rsi, z} = entry;
     const color = deltaVal >= 0 ? 'var(--verdigris)' : 'var(--copper)';
-    const rsiTxt = rsi === null ? 'RSI: acumulando' :
+    let rsiTxt = rsi === null ? 'RSI: sin dato' :
       `RSI ${rsi}${rsi<30?' · sobrevendida':rsi>70?' · sobrecomprada':''}`;
+    // El z-score es lo que hace comparables una acción tranquila y una
+    // volátil: dice a cuántas desviaciones de SU PROPIO promedio está.
+    // Un -4% en AGUAS-A y un -4% en ENJOY no significan lo mismo.
+    if(z !== null){ rsiTxt += ` · z ${z>=0?'+':''}${z.toFixed(1)}σ`; }
     return `
       <div class="analysis-item" data-ticker="${s.ticker}">
         <div class="ai-left">
@@ -1965,6 +2084,12 @@ function hydrateFromCache(){
   if(cache.index && typeof cache.index.value === 'number'){
     indexValue = cache.index.value;
     indexPrevClose = cache.index.previousClose;
+    // Viene de la caché del celular, no del servidor: se marca como no
+    // disponible hasta que llegue el primer /quotes real. Así el valor
+    // aparece atenuado y con advertencia en vez de fingir estar al día.
+    indexDisponible = false;
+    indexStaleSeconds = Math.round((Date.now() - (cache.ts || Date.now()))/1000);
+    indexMarketTime = cache.index.marketTime || null;
     renderIndexDisplay();
   }
   if(recibidos > 0){
@@ -1998,15 +2123,33 @@ async function fetchRealQuotes(){
         s.ask = (typeof q.ask === 'number') ? q.ask : null;
         s.bidSize = (typeof q.bidSize === 'number') ? q.bidSize : null;
         s.askSize = (typeof q.askSize === 'number') ? q.askSize : null;
+        // Indicadores calculados en el backend sobre cierres DIARIOS reales
+        // de un año. Antes se calculaban aquí sobre los datos que llegaban
+        // cada 60s y se reiniciaban al recargar la app -- por eso las 47
+        // tarjetas decían siempre "RSI: acumulando".
+        s.rsi14 = (typeof q.rsi14 === 'number') ? q.rsi14 : null;
+        s.sma20 = (typeof q.sma20 === 'number') ? q.sma20 : null;
+        s.sma50 = (typeof q.sma50 === 'number') ? q.sma50 : null;
+        s.zscore = (typeof q.zscore === 'number') ? q.zscore : null;
+        s.staleSeconds = (typeof q.staleSeconds === 'number') ? q.staleSeconds : null;
+        s.marketTime = q.marketTime || null;
         pushHistory(s.history, s.price);
         recibidos++;
       }
       renderCard(s);
     });
 
+    // El backend ahora dice explícitamente si pudo obtener el índice.
+    indexDisponible = (body.indexDisponible === true);
     if(body.index && typeof body.index.value === 'number'){
       indexValue = body.index.value;
       indexPrevClose = body.index.previousClose;
+      indexStaleSeconds = (typeof body.index.staleSeconds === 'number')
+        ? body.index.staleSeconds : null;
+      indexMarketTime = body.index.marketTime || null;
+    } else {
+      // No se pisa el último valor conocido, pero queda marcado como viejo.
+      indexStaleSeconds = null;
     }
     renderIndexDisplay();
 
@@ -2176,24 +2319,84 @@ function marcarBotonActivo(btn){
   }
 })();
 
+// El disco de Render (plan gratuito) es EFÍMERO: la lista de suscripciones
+// se borra en cada reinicio y en cada despliegue. Esta función la vuelve a
+// registrar.
+//
+// DOS ARREGLOS respecto de la versión anterior:
+//
+//  1. Antes solo corría al ABRIR la app. Si el servidor se reiniciaba a las
+//     09:00 y tú no abrías la app hasta la tarde, el servidor pasaba todo el
+//     día sin saber a quién avisarle. Ahora también corre al volver a la app
+//     (visibilitychange) y cada 30 minutos mientras esté abierta.
+//
+//  2. Antes, si el re-registro fallaba, el error se tragaba en el catch y el
+//     botón seguía diciendo "notificaciones activas" -- porque ese estado
+//     salía de localStorage del celular, no del servidor. Ese falso verde es
+//     exactamente lo que viste. Ahora el botón refleja la respuesta real.
 async function resincronizarSuscripcion(){
+  const btn = document.getElementById('notifyBtn');
   try {
-    if(!('serviceWorker' in navigator)) return;
+    if(!('serviceWorker' in navigator)) return false;
     const reg = await navigator.serviceWorker.register('sw.js');
     await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
-    if(sub){
-      await fetch(BACKEND_URL + '/subscribe', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(sub),
-      });
-      console.log('Suscripción push re-sincronizada con el servidor.');
+
+    if(!sub){
+      // El navegador perdió la suscripción: hay que rehacerla, no basta
+      // con reenviarla.
+      if(btn){
+        btn.textContent = '🔔 Reactivar notificaciones';
+        btn.style.color = 'var(--copper)';
+        btn.title = 'El navegador perdió la suscripción push. Tócalo para rehacerla.';
+      }
+      try { localStorage.setItem('ipsa_notif_activas', '0'); } catch(e){}
+      return false;
     }
+
+    const resp = await fetch(BACKEND_URL + '/subscribe', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(sub),
+    });
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+
+    const body = await resp.json().catch(() => ({}));
+    console.log('Suscripción push re-sincronizada. El servidor tiene',
+                body.suscripciones, 'dispositivo(s).');
+    if(btn){
+      btn.style.color = '';
+      btn.title = 'Notificaciones registradas en el servidor · última verificación '
+                + new Date().toLocaleTimeString('es-CL', {hour12:false});
+    }
+    return true;
+
   } catch(e){
     console.warn('No se pudo re-sincronizar la suscripción push:', e);
+    if(btn){
+      btn.textContent = '⚠︎ Notificaciones sin confirmar';
+      btn.style.color = 'var(--copper)';
+      btn.title = 'El celular cree que están activas, pero el servidor no confirmó. '
+                + 'Mientras esto siga así puede que no te lleguen alertas. ('
+                + e.message + ')';
+    }
+    return false;
   }
 }
+
+// Revalidar al volver a la app y cada 30 min mientras esté abierta.
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible'){
+    let activadas = false;
+    try { activadas = localStorage.getItem('ipsa_notif_activas') === '1'; } catch(e){}
+    if(activadas) resincronizarSuscripcion();
+  }
+});
+setInterval(() => {
+  let activadas = false;
+  try { activadas = localStorage.getItem('ipsa_notif_activas') === '1'; } catch(e){}
+  if(activadas && document.visibilityState === 'visible') resincronizarSuscripcion();
+}, 30 * 60 * 1000);
 
 document.getElementById('notifyBtn').addEventListener('click', async () => {
   const btn = document.getElementById('notifyBtn');
