@@ -13,19 +13,28 @@ self.addEventListener('push', event => {
       body: data.body,
       icon: undefined,
       tag: data.ticker || 'ipsa-alert',
+      // El backend manda 'url' (ver notify.py) con la tarjeta exacta a la
+      // que apunta esta alerta. Antes esto no viajaba, asi que tocar la
+      // notificacion solo abria la app en la pantalla principal -- habia
+      // que buscar la accion a mano entre las 47.
+      data: { url: data.url || '/' },
     })
   );
 });
 
-// Al tocar la notificación, enfoca o abre la PWA.
+// Al tocar la notificación, va directo al detalle de la accion (no solo
+// enfoca o abre la app en la pantalla principal).
 self.addEventListener('notificationclick', event => {
   event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || '/';
   event.waitUntil(
     clients.matchAll({ type: 'window' }).then(clientList => {
       for (const client of clientList) {
-        if ('focus' in client) return client.focus();
+        if ('navigate' in client && 'focus' in client) {
+          return client.navigate(url).then(c => c.focus());
+        }
       }
-      if (clients.openWindow) return clients.openWindow('/');
+      if (clients.openWindow) return clients.openWindow(url);
     })
   );
 });

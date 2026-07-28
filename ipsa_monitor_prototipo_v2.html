@@ -84,12 +84,20 @@
   .disclaimer b{color:var(--ink-dim);}
 
   .search-row{display:flex; align-items:center; gap:12px; margin-bottom:16px;}
+  .search-wrap{position:relative; flex:1; display:flex;}
   .search-input{
     flex:1; background:var(--bg-panel); border:1px solid var(--hairline); color:var(--ink);
-    padding:12px 14px; border-radius:8px; font-size:14.5px; outline:none;
+    padding:12px 38px 12px 14px; border-radius:8px; font-size:14.5px; outline:none; width:100%;
   }
   .search-input::placeholder{color:var(--ink-faint);}
   .search-input:focus{border-color:var(--gold);}
+  .search-clear{
+    position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    background:none; border:none; color:var(--ink-faint); font-size:16px; line-height:1;
+    cursor:pointer; padding:6px; display:none;
+  }
+  .search-clear:hover{color:var(--ink);}
+  .search-clear.visible{display:block;}
   .search-hint{font-size:12.5px; color:var(--ink-faint); white-space:nowrap;}
 
   .fav-btn{
@@ -156,10 +164,14 @@
   .feed-count{font-family:'IBM Plex Mono',monospace; color:var(--copper); background:var(--copper-soft); padding:1px 7px; border-radius:10px; font-size:11px;}
   .feed-list{list-style:none; margin:0; padding:0; overflow-y:auto; flex:1;}
   .feed-empty{color:var(--ink-faint); font-size:12.5px; padding:20px 0; text-align:center;}
-  .feed-item{padding:10px 0; border-bottom:1px solid var(--hairline); animation:slidein .35s ease;}
+  .feed-item{padding:10px 0; border-bottom:1px solid var(--hairline); animation:slidein .35s ease; cursor:pointer;}
   .feed-item:last-child{border-bottom:none;}
-  .feed-item .fi-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px;}
-  .feed-item .fi-ticker{font-weight:700; font-size:13px; color:var(--copper);}
+  .feed-item:hover{background:#20262c;}
+  .feed-item .fi-top{display:flex; align-items:baseline; gap:8px; margin-bottom:3px;}
+  .feed-item .fi-ticker{font-weight:700; font-size:13px; color:var(--ink);}
+  .feed-item .fi-tag{font-size:10.5px; font-weight:600; flex:1;}
+  .feed-item .fi-tag.compra{color:var(--verdigris);}
+  .feed-item .fi-tag.venta{color:var(--copper);}
   .feed-item .fi-time{font-size:10.5px; color:var(--ink-faint);}
   .feed-item .fi-msg{font-size:12px; color:var(--ink-dim); line-height:1.4;}
   @keyframes slidein{ from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:translateY(0);} }
@@ -351,10 +363,14 @@
         <p class="title">IPSA Monitor</p>
       </div>
     </div>
-    <div class="index-block">
+    <div class="index-block" id="idxBlock">
       <span class="mono index-value" id="idxValue">···</span>
       <span class="mono index-delta" id="idxDelta">+0,00%</span>
       <span class="mono index-time" id="idxTime"></span>
+    </div>
+    <div class="index-block index-block--oculto" id="idxBlockOculto" style="display:none;">
+      <span class="mono index-value" style="opacity:0.4;">IPSA —</span>
+      <span class="mono index-time viejo" id="idxTimeOculto"></span>
     </div>
     <div class="status">
       <span class="live-pill mono" id="marketStatus" style="border-color:transparent;">···</span>
@@ -394,7 +410,8 @@
       <input type="file" id="inputImportarMovs" accept="application/json" style="display:none;">
     </div>
     <div class="movs-form">
-      <select id="movTicker" class="mov-input mono"></select>
+      <input id="movTicker" class="mov-input mono" list="movTickerList" placeholder="Escribe o elige una acción..." autocomplete="off">
+      <datalist id="movTickerList"></datalist>
       <select id="movTipo" class="mov-input">
         <option value="compra">Compra</option>
         <option value="venta">Venta</option>
@@ -431,14 +448,17 @@
   </div>
 
   <div class="feed-panel">
-    <p class="feed-title">Alertas de caída <span class="feed-count" id="feedCount">0</span></p>
+    <p class="feed-title">Alertas: posible compra / venta <span class="feed-count" id="feedCount">0</span></p>
     <ul class="feed-list" id="feedList">
-      <li class="feed-empty">Sin alertas por ahora. Aparecerán aquí apenas una acción rompa su banda histórica.</li>
+      <li class="feed-empty">Sin alertas por ahora. Aparecerán aquí apenas una acción entre a "posible compra" o "posible venta" — lo mismo que dispara el correo y el push.</li>
     </ul>
   </div>
 
   <div class="search-row">
-    <input type="text" id="searchInput" class="search-input mono" placeholder="Buscar acción por ticker o nombre...">
+    <div class="search-wrap">
+      <input type="text" id="searchInput" class="search-input mono" placeholder="Buscar acción por ticker o nombre...">
+      <button type="button" id="searchClear" class="search-clear" title="Borrar búsqueda" aria-label="Borrar búsqueda">✕</button>
+    </div>
     <span class="search-hint" id="searchHint"></span>
   </div>
 
@@ -446,7 +466,7 @@
     <div class="grid" id="cardsGrid"></div>
   </div>
 
-  <p class="footer-note">Umbral de alerta: 4% bajo el promedio histórico de 90 días · actualiza cada 2s</p>
+  <p class="footer-note">Umbral de alerta: reglas de signals.py (distancia a su promedio, RSI, tendencia y liquidez) · el correo y el push usan la misma regla que este panel</p>
 
   <div class="overlay" id="overlay">
     <div class="detail" id="detailPanel"></div>
@@ -664,9 +684,17 @@ function renderGridOrder(){
   } else {
     hint.textContent = favoritos.size ? `${favoritos.size} favorita${favoritos.size>1?'s':''}` : '';
   }
+
+  document.getElementById('searchClear').classList.toggle('visible', query.length > 0);
 }
 
 document.getElementById('searchInput').addEventListener('input', renderGridOrder);
+document.getElementById('searchClear').addEventListener('click', () => {
+  const input = document.getElementById('searchInput');
+  input.value = '';
+  input.focus();
+  renderGridOrder();
+});
 renderGridOrder();
 
 function pseudoRand(seed){
@@ -760,25 +788,61 @@ function detectHeadAndShoulders(prices){
 
 function pushHistory(arr, v){ arr.push(v); if(arr.length > HISTORY_LEN) arr.shift(); }
 
-function addAlert(ticker, price, avg, dec){
+// Registra en el feed una entrada de "posible compra" o "posible venta".
+// Antes esto solo sabia avisar caidas con la regla plana de -4% (ver
+// git history); ahora usa el mismo evaluador (signals.py via /signals)
+// que ya dispara el correo y el push, para que lo que ves en la app
+// coincida con lo que te llega al celular.
+function addAlert(ticker, direccion, ev){
   const feedList = document.getElementById('feedList');
   const empty = feedList.querySelector('.feed-empty');
   if(empty) empty.remove();
   const now = new Date().toLocaleTimeString('es-CL', {timeZone:'America/Santiago', hour12:false});
-  const pctBelow = ((price/avg)-1)*100;
+  const esVenta = direccion === 'venta';
+  const etiqueta = esVenta ? 'posible venta' : 'posible compra';
+  const dist = (ev && typeof ev.distanciaPromedio === 'number') ? ev.distanciaPromedio : null;
+  const distTxt = dist !== null
+    ? `${Math.abs(dist).toFixed(1)}% ${esVenta ? 'sobre' : 'bajo'} su promedio`
+    : '';
   const li = document.createElement('li');
-  li.className = 'feed-item';
+  li.className = 'feed-item feed-item--' + (esVenta ? 'venta' : 'compra');
+  li.dataset.ticker = ticker;
   li.innerHTML = `
     <div class="fi-top">
       <span class="fi-ticker mono">${ticker}</span>
+      <span class="fi-tag ${esVenta?'venta':'compra'}">${esVenta?'📈':'📉'} ${etiqueta}</span>
       <span class="fi-time mono">${now}</span>
     </div>
-    <div class="fi-msg">Cayó a ${fmt(price,dec)}, un ${pctBelow.toFixed(1)}% bajo su promedio histórico (${fmt(avg,dec)}).</div>
+    <div class="fi-msg">${distTxt}${ev && typeof ev.rsi14==='number' ? ' · RSI ' + ev.rsi14 : ''}</div>
   `;
+  li.addEventListener('click', () => openDetail(ticker));
   feedList.insertBefore(li, feedList.firstChild);
   while(feedList.children.length > 10){ feedList.removeChild(feedList.lastChild); }
   const countEl = document.getElementById('feedCount');
   countEl.textContent = parseInt(countEl.textContent) + 1;
+}
+
+// Compara la tanda nueva de /signals contra la anterior y registra en el
+// feed solo las acciones que ACABAN de entrar a una lista (no las que ya
+// estaban ahi la vez pasada) -- igual que el backend, que solo manda
+// correo/push al cruzar el umbral, no en cada chequeo.
+let _prevCompraSet = null;
+let _prevVentaSet = null;
+
+function detectarNuevasSenales(data){
+  const compra = data.candidatos_compra || [];
+  const venta = data.candidatos_venta || [];
+  const compraSet = new Set(compra.map(c => c.ticker));
+  const ventaSet = new Set(venta.map(c => c.ticker));
+
+  // La primera vez no se compara contra nada (evita volcar de golpe todo
+  // lo que ya estaba activo al abrir la app como si fuera "nuevo").
+  if(_prevCompraSet !== null){
+    compra.forEach(c => { if(!_prevCompraSet.has(c.ticker)) addAlert(c.ticker, 'compra', c); });
+    venta.forEach(c => { if(!_prevVentaSet.has(c.ticker)) addAlert(c.ticker, 'venta', c); });
+  }
+  _prevCompraSet = compraSet;
+  _prevVentaSet = ventaSet;
 }
 
 function calcSMA(prices, window){
@@ -1515,7 +1579,9 @@ function renderCard(s){
   svgEl.style.display = '';
 
   const threshold = s.avg * ALERT_THRESHOLD;
-  const isBelow = s.price < threshold;
+  // El borde rojo de la tarjeta ahora usa el mismo z-score que el resto
+  // del sistema (antes era un -4% fijo, desincronizado de /signals).
+  const isBelow = (typeof s.zscore === 'number') ? s.zscore <= -1.5 : s.price < threshold;
   card.classList.toggle('alert', isBelow);
   priceEl.textContent = fmt(s.price, s.dec);
   const deltaVal = (s.price/s.avg)-1;
@@ -1531,7 +1597,6 @@ function renderCard(s){
     svgEl.style.display = 'none';
   }
 
-  if(isBelow && !s.inAlert){ addAlert(s.ticker, s.price, s.avg, s.dec); }
   s.inAlert = isBelow;
 
   if(openTicker === s.ticker){ renderDetail(s.ticker); }
@@ -1551,16 +1616,48 @@ function textoAntiguedad(seg){
   return 'hace ' + Math.round(seg/86400) + ' días';
 }
 
+// Investigado (ver INFORME.md): fuera de la API oficial de la Bolsa (que
+// requiere pedir una clave, ver fuente_bolsa.py), no hay ninguna fuente
+// gratuita que entregue el valor del IPSA en vivo -- la pagina publica de
+// la Bolsa es una SPA sin datos en el HTML del servidor, no se puede leer
+// sin un navegador headless. Mostrar un numero de mas de 4 horas como si
+// fuera el de ahora es peor que no mostrar nada: se oculta en su lugar.
+const OCULTAR_INDICE_SEG = 4 * 3600;
+
 function renderIndexDisplay(){
   const valEl = document.getElementById('idxValue');
   const deltaEl = document.getElementById('idxDelta');
+  const bloque = document.getElementById('idxBlock');
+  const bloqueOculto = document.getElementById('idxBlockOculto');
 
   if(indexValue === null){
+    bloque.style.display = '';
+    bloqueOculto.style.display = 'none';
     valEl.textContent = '···';
     valEl.title = 'Todavía no llega el valor del IPSA.';
     deltaEl.textContent = '';
     return;
   }
+
+  // Si no se sabe la antiguedad (una falla puntual de un solo ciclo), se
+  // mantiene el comportamiento anterior -- atenuado y con ⚠, no oculto --
+  // para no hacer parpadear el bloque por un solo fetch fallido.
+  const edadParaOcultar = indexStaleSeconds;
+  const muyViejo = edadParaOcultar !== null && edadParaOcultar > OCULTAR_INDICE_SEG;
+  if(muyViejo){
+    bloque.style.display = 'none';
+    bloqueOculto.style.display = '';
+    const h = formatoHoraDato(indexMarketTime, edadParaOcultar);
+    const timeElOculto = document.getElementById('idxTimeOculto');
+    timeElOculto.textContent = h
+      ? ('⚠︎ último dato: ' + h.texto + ' · ' + h.edad)
+      : '⚠︎ sin dato reciente';
+    timeElOculto.title = 'El IPSA no se muestra porque no hay una fuente con un valor '
+      + 'fresco (más de 4 horas de antigüedad). Las 47 acciones siguen actualizándose normal.';
+    return;
+  }
+  bloque.style.display = '';
+  bloqueOculto.style.display = 'none';
 
   valEl.textContent = fmt(indexValue, 0);
 
@@ -1687,6 +1784,8 @@ function renderAnalysis(){
   }
 
   if(signalsData && (signalsData.candidatos_compra || signalsData.candidatos_venta)){
+    detectarNuevasSenales(signalsData);
+
     document.getElementById('analysisDown').innerHTML =
       bloqueConGrupos(signalsData.candidatos_compra, false);
     document.getElementById('analysisUp').innerHTML =
@@ -1760,8 +1859,22 @@ function saveMovimientos(movs){
 let movimientos = loadMovimientos();
 
 function poblarSelectorTickers(){
-  const sel = document.getElementById('movTicker');
-  sel.innerHTML = state.map(s => `<option value="${s.ticker}">${s.ticker} — ${s.name}</option>`).join('');
+  // Antes era un <select> con 47 opciones: para encontrar una accion habia
+  // que abrir el desplegable y buscarla a ojo. Ahora es un campo de texto
+  // con datalist: se puede escribir el ticker O el nombre y el navegador
+  // filtra solo, sin perder la posibilidad de elegir de la lista.
+  const dl = document.getElementById('movTickerList');
+  dl.innerHTML = state.map(s => `<option value="${s.ticker} — ${s.name}">`).join('');
+}
+
+// El input guarda "TICKER — Nombre" (o solo lo que el usuario haya
+// escrito). Esto extrae el ticker y valida que sea una accion conocida.
+function tickerDesdeInputMov(valorInput){
+  const bruto = (valorInput || '').split('—')[0].trim().toUpperCase();
+  if(state.some(s => s.ticker === bruto)) return bruto;
+  // Por si escriben el nombre completo en vez del ticker.
+  const porNombre = state.find(s => s.name.toUpperCase() === (valorInput || '').trim().toUpperCase());
+  return porNombre ? porNombre.ticker : null;
 }
 
 function renderMovimientos(){
@@ -1837,13 +1950,17 @@ function inicializarFormularioMovimientos(){
   document.getElementById('movFecha').value = new Date().toLocaleDateString('en-CA', {timeZone:'America/Santiago'});
 
   document.getElementById('movGuardar').addEventListener('click', () => {
-    const ticker = document.getElementById('movTicker').value;
+    const ticker = tickerDesdeInputMov(document.getElementById('movTicker').value);
     const tipo = document.getElementById('movTipo').value;
     const cantidad = parseInt(document.getElementById('movCantidad').value, 10);
     const precio = parseFloat(document.getElementById('movPrecio').value);
     const fecha = document.getElementById('movFecha').value;
 
-    if(!ticker || !cantidad || cantidad <= 0 || !precio || precio <= 0 || !fecha){
+    if(!ticker){
+      alert('Escribe o elige una acción válida de la lista (por ticker o nombre).');
+      return;
+    }
+    if(!cantidad || cantidad <= 0 || !precio || precio <= 0 || !fecha){
       alert('Completa cantidad, precio y fecha antes de registrar el movimiento.');
       return;
     }
@@ -1861,7 +1978,8 @@ function inicializarFormularioMovimientos(){
 
 // Atajo desde el detalle de una acción: precarga el formulario de arriba
 function registrarDesdeDetalle(ticker, precio){
-  document.getElementById('movTicker').value = ticker;
+  const s = state.find(x => x.ticker === ticker);
+  document.getElementById('movTicker').value = s ? `${s.ticker} — ${s.name}` : ticker;
   document.getElementById('movPrecio').value = precio;
   closeDetail();
   document.querySelector('.movs-panel').scrollIntoView({behavior:'smooth', block:'center'});
@@ -2327,6 +2445,20 @@ fetchRealQuotes();
 fetchSignals();
 setInterval(fetchRealQuotes, 60000);
 setInterval(fetchSignals, 60000);
+
+// ---- Deep link desde el push/correo (?ticker=XXX) ----
+// El correo y el push ahora llevan un enlace directo a la tarjeta de la
+// accion en vez de solo abrir la app en la pantalla principal (ver
+// notify.py). Se abre apenas carga: renderDetail() se vuelve a llamar
+// solo cuando lleguen los datos reales, asi que no importa que al
+// principio la tarjeta este vacia ("···").
+(function abrirDesdeEnlaceSiCorresponde(){
+  const params = new URLSearchParams(location.search);
+  const ticker = (params.get('ticker') || '').toUpperCase();
+  if(ticker && state.some(s => s.ticker === ticker)){
+    openDetail(ticker);
+  }
+})();
 
 // ---- Botón "Actualizar ahora" ----
 // No hace que Render despierte más rápido (eso depende del hosting), pero
