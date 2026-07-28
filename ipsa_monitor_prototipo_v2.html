@@ -192,6 +192,9 @@
   .analysis-item .ai-ticker{font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:12.5px;}
   .analysis-item .ai-rsi{font-size:10.5px; color:var(--ink-faint);}
   .analysis-item .ai-delta{font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:600;}
+  .analysis-item--flag{opacity:0.62;}
+  .analysis-item .ai-flag{font-size:10px; color:var(--copper); margin-top:2px;}
+  .analysis-group-label{font-size:10px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.04em; margin:6px 2px 2px;}
 
   /* ---- Panel de movimientos ---- */
   .movs-panel{
@@ -369,15 +372,15 @@
   <div class="analysis-panel">
     <p class="feed-title">Análisis del momento <span class="analysis-refresh" id="analysisRefresh">···</span></p>
     <p class="analysis-disclaimer">
-      Esto NO es una recomendación de compra o venta — es un resumen de la posición de cada acción respecto a su propio promedio y a señales técnicas simples (RSI). Decide tú con esta información; yo no soy asesor financiero y no conozco tu situación completa.
+      Esto NO es una recomendación de compra o venta — es un resumen de reglas estadísticas explícitas (distancia a su propio promedio, RSI, tendencia SMA20/SMA50 y liquidez). Decide tú con esta información; yo no soy asesor financiero, no conozco tu situación completa y el precio viene de Yahoo Finance con rezago. Las marcadas con ⚠ están más lejos de su promedio, pero en una tendencia bajista sostenida — no son una oportunidad detectada, es una acción cayendo, y se muestran atenuadas a propósito.
     </p>
     <div class="analysis-cols" id="analysisCols">
       <div class="analysis-col">
-        <p class="analysis-col-title down">Más lejos bajo su promedio</p>
+        <p class="analysis-col-title down">Para revisar como posible compra</p>
         <div id="analysisDown" class="analysis-list"><p class="analysis-empty">Cargando datos reales…</p></div>
       </div>
       <div class="analysis-col">
-        <p class="analysis-col-title up">Más lejos sobre su promedio</p>
+        <p class="analysis-col-title up">Para revisar como posible venta</p>
         <div id="analysisUp" class="analysis-list"><p class="analysis-empty">Cargando datos reales…</p></div>
       </div>
     </div>
@@ -1620,10 +1623,89 @@ function setStatusPill(estado, texto){
 }
 
 // ---- Panel de análisis (resumen, NO recomendación) ----
+// Se nutre de /signals (signals.py): puntaje, RSI, z-score, tendencia
+// SMA20/SMA50 y liquidez ya combinados en el backend. Antes este panel
+// recalculaba solo el delta % contra el promedio, así que mezclaba en el
+// mismo nivel una acción "de rebote sano" con una en caída sostenida
+// (ver INFORME.md §4). Ahora separa las dos cosas y atenúa las que traen
+// una bandera roja, en vez de mostrarlas todas igual de destacadas.
+let signalsData = null;
+
+async function fetchSignals(){
+  try {
+    const resp = await fetch(BACKEND_URL + '/signals');
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    signalsData = await resp.json();
+  } catch(e){
+    console.warn('No se pudo obtener /signals:', e);
+    // Se deja signalsData como estaba (null o el último bueno): el panel
+    // cae al cálculo local de respaldo en vez de quedar en blanco.
+  }
+  renderAnalysis();
+}
+
 function renderAnalysis(){
-  const conDatos = state.filter(s => s.price !== null && s.avg !== null);
   const refreshEl = document.getElementById('analysisRefresh');
 
+  function candItemHTML(ev, esVenta){
+    const flagged = Array.isArray(ev.banderas) && ev.banderas.length > 0;
+    const color = esVenta ? 'var(--copper)' : (flagged ? 'var(--ink-faint)' : 'var(--verdigris)');
+    let rsiTxt = (typeof ev.rsi14 === 'number')
+      ? `RSI ${ev.rsi14}${ev.rsi14<30?' · sobrevendida':ev.rsi14>70?' · sobrecomprada':''}`
+      : 'RSI: sin dato';
+    if(typeof ev.zscore === 'number'){ rsiTxt += ` · z ${ev.zscore>=0?'+':''}${ev.zscore.toFixed(1)}σ`; }
+    const flagTxt = flagged
+      ? `<div class="ai-flag">⚠ ${ev.banderas[0].split('—')[0].trim()}</div>`
+      : '';
+    const delta = typeof ev.distanciaPromedio === 'number' ? ev.distanciaPromedio/100 : 0;
+    return `
+      <div class="analysis-item${flagged?' analysis-item--flag':''}" data-ticker="${ev.ticker}">
+        <div class="ai-left">
+          <span class="ai-ticker mono">${ev.ticker}</span>
+          <span class="ai-rsi">${rsiTxt}</span>
+          ${flagTxt}
+        </div>
+        <span class="ai-delta mono" style="color:${color}">${fmtPct(delta)}</span>
+      </div>`;
+  }
+
+  // Dentro de cada lista: primero las "limpias" (sin bandera roja), luego
+  // las que traen advertencia de tendencia -- esas últimas van atenuadas
+  // y al final, no borradas, para que sigan siendo auditables.
+  function bloqueConGrupos(candidatos, esVenta){
+    if(!candidatos || candidatos.length === 0){
+      return '<p class="analysis-empty">Nada relevante ahora.</p>';
+    }
+    const limpias = candidatos.filter(c => !(c.banderas && c.banderas.length));
+    const conBandera = candidatos.filter(c => c.banderas && c.banderas.length);
+    let html = limpias.map(c => candItemHTML(c, esVenta)).join('');
+    if(conBandera.length){
+      html += '<p class="analysis-group-label">Con advertencia de tendencia</p>';
+      html += conBandera.map(c => candItemHTML(c, esVenta)).join('');
+    }
+    return html;
+  }
+
+  if(signalsData && (signalsData.candidatos_compra || signalsData.candidatos_venta)){
+    document.getElementById('analysisDown').innerHTML =
+      bloqueConGrupos(signalsData.candidatos_compra, false);
+    document.getElementById('analysisUp').innerHTML =
+      bloqueConGrupos(signalsData.candidatos_venta, true);
+
+    document.querySelectorAll('.analysis-item').forEach(el => {
+      el.addEventListener('click', () => openDetail(el.dataset.ticker));
+    });
+
+    if(signalsData.serverTime){
+      const t = new Date(signalsData.serverTime);
+      refreshEl.textContent = 'actualizado ' + t.toLocaleTimeString('es-CL', {timeZone:'America/Santiago', hour12:false});
+    }
+    return;
+  }
+
+  // Respaldo: si /signals aun no respondio (o fallo), no dejar el panel
+  // en blanco -- se arma una version simple con lo que ya hay en /quotes.
+  const conDatos = state.filter(s => s.price !== null && s.avg !== null);
   if(conDatos.length === 0){
     document.getElementById('analysisDown').innerHTML = '<p class="analysis-empty">Cargando datos reales…</p>';
     document.getElementById('analysisUp').innerHTML = '<p class="analysis-empty">Cargando datos reales…</p>';
@@ -1633,24 +1715,17 @@ function renderAnalysis(){
 
   const conDelta = conDatos.map(s => {
     const deltaVal = (s.price/s.avg) - 1;
-    // RSI del backend (cierres diarios de 1 año). Solo si no viniera, se
-    // cae al cálculo local sobre los ticks de la sesión, que casi nunca
-    // alcanza los 15 puntos que necesita RSI(14).
     const rsi = (typeof s.rsi14 === 'number') ? s.rsi14 : calcRSI(s.history, 14);
     return {s, deltaVal, rsi, z: (typeof s.zscore === 'number') ? s.zscore : null};
   });
-
   const masAbajo = [...conDelta].sort((a,b) => a.deltaVal - b.deltaVal).slice(0, 5);
   const masArriba = [...conDelta].sort((a,b) => b.deltaVal - a.deltaVal).slice(0, 5);
 
-  function itemHTML(entry){
+  function itemHTMLRespaldo(entry){
     const {s, deltaVal, rsi, z} = entry;
     const color = deltaVal >= 0 ? 'var(--verdigris)' : 'var(--copper)';
     let rsiTxt = rsi === null ? 'RSI: sin dato' :
       `RSI ${rsi}${rsi<30?' · sobrevendida':rsi>70?' · sobrecomprada':''}`;
-    // El z-score es lo que hace comparables una acción tranquila y una
-    // volátil: dice a cuántas desviaciones de SU PROPIO promedio está.
-    // Un -4% en AGUAS-A y un -4% en ENJOY no significan lo mismo.
     if(z !== null){ rsiTxt += ` · z ${z>=0?'+':''}${z.toFixed(1)}σ`; }
     return `
       <div class="analysis-item" data-ticker="${s.ticker}">
@@ -1662,13 +1737,11 @@ function renderAnalysis(){
       </div>`;
   }
 
-  document.getElementById('analysisDown').innerHTML = masAbajo.map(itemHTML).join('') || '<p class="analysis-empty">Nada relevante ahora.</p>';
-  document.getElementById('analysisUp').innerHTML = masArriba.map(itemHTML).join('') || '<p class="analysis-empty">Nada relevante ahora.</p>';
-
+  document.getElementById('analysisDown').innerHTML = masAbajo.map(itemHTMLRespaldo).join('') || '<p class="analysis-empty">Nada relevante ahora.</p>';
+  document.getElementById('analysisUp').innerHTML = masArriba.map(itemHTMLRespaldo).join('') || '<p class="analysis-empty">Nada relevante ahora.</p>';
   document.querySelectorAll('.analysis-item').forEach(el => {
     el.addEventListener('click', () => openDetail(el.dataset.ticker));
   });
-
   if(ultimaActualizacionReal){
     refreshEl.textContent = 'actualizado ' + ultimaActualizacionReal.toLocaleTimeString('es-CL', {timeZone:'America/Santiago', hour12:false});
   }
@@ -2251,7 +2324,9 @@ const BACKEND_URL = 'https://ipsa-alert-service.onrender.com';
 // de Render puede tardar hasta ~50s en "despertar" si nadie lo uso en un
 // rato -- por eso el primer intento puede demorar, es normal.
 fetchRealQuotes();
+fetchSignals();
 setInterval(fetchRealQuotes, 60000);
+setInterval(fetchSignals, 60000);
 
 // ---- Botón "Actualizar ahora" ----
 // No hace que Render despierte más rápido (eso depende del hosting), pero
@@ -2275,6 +2350,7 @@ setInterval(fetchRealQuotes, 60000);
 
     try {
       await fetchRealQuotes();
+      await fetchSignals();
     } finally {
       btn.textContent = textoOriginal;
       btn.disabled = false;
