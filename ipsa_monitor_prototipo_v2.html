@@ -472,6 +472,60 @@
     <div class="detail" id="detailPanel"></div>
   </div>
 
+  <div class="overlay" id="helpOverlay" style="z-index:60;">
+    <div class="detail" style="max-width:480px;">
+      <div class="detail-top">
+        <div>
+          <div class="detail-name">¿Qué significa cada indicador?</div>
+          <div class="detail-sub">Explicación simple, sin tecnicismos</div>
+        </div>
+        <button class="close-btn" id="btnCerrarAyuda">✕</button>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:14px; font-size:13px; color:var(--ink-dim); line-height:1.5;">
+        <div>
+          <b style="color:var(--ink);">SMA — Media móvil simple</b><br>
+          El precio promedio de los últimos días, sin darle más peso a ninguno.
+          Sirve para ver la tendencia general "suavizada", sin el ruido del día a día.
+        </div>
+        <div>
+          <b style="color:var(--ink);">EMA — Media móvil exponencial</b><br>
+          Parecida a la SMA, pero le da más importancia a los precios más
+          recientes. Reacciona más rápido a cambios nuevos que la SMA.
+        </div>
+        <div>
+          <b style="color:var(--ink);">BBands — Bandas de Bollinger</b><br>
+          Una franja arriba y abajo del precio promedio que se hace más ancha
+          cuando la acción se mueve mucho, y más angosta cuando está tranquila.
+          Si el precio toca el borde de la franja, se ha movido bastante más
+          de lo habitual para esa acción.
+        </div>
+        <div>
+          <b style="color:var(--ink);">MACD</b><br>
+          Compara dos promedios (uno más rápido y uno más lento) para mostrar
+          si el impulso de la acción está acelerando hacia arriba o hacia
+          abajo. No es un precio, es una señal de "fuerza" del movimiento.
+        </div>
+        <div>
+          <b style="color:var(--ink);">RSI — Fuerza relativa</b><br>
+          Un número de 0 a 100 que mide qué tan "sobrecomprada" o
+          "sobrevendida" está la acción. Sobre 70 suele leerse como que ha
+          subido mucho y podría corregir; bajo 30, que ha caído mucho y
+          podría rebotar. No es una garantía, solo una referencia.
+        </div>
+        <div>
+          <b style="color:var(--ink);">Volume — Volumen</b><br>
+          Cuántos títulos se transaron. Un movimiento de precio con volumen
+          alto suele ser más confiable que el mismo movimiento con poco
+          volumen (pocas personas comprando o vendiendo).
+        </div>
+        <div style="font-size:11.5px; color:var(--ink-faint); border-top:1px dashed var(--hairline); padding-top:10px;">
+          Estos indicadores son referencias históricas, no predicciones. Ninguno
+          te dice qué hacer — la decisión de comprar o vender siempre es tuya.
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script>
 const stocks = [
   {ticker:'AGUAS-A', name:'Aguas Andinas',       base:339,   dec:0},
@@ -702,9 +756,17 @@ function pseudoRand(seed){
   return x - Math.floor(x);
 }
 
-function buildSpark(svgEl, history, avg, threshold, dec, h){
+function buildSpark(svgEl, history, avg, threshold, dec, h, w){
   h = h || 74;
-  const w = 300;
+  // OJO: antes "w" venia fijo en 300 sin importar quien llamara a esta
+  // funcion. La mini-tarjeta (spark-wrap) SI tiene viewBox="0 0 300 74",
+  // asi que ahi calzaba -- pero el grafico grande del detalle usa
+  // <svg id="detailSvg" viewBox="0 0 600 160">, el doble de ancho. Las
+  // velas se dibujaban solo en la mitad izquierda de esos 600 y el resto
+  // quedaba vacio: se veia "angosto" en el telefono aunque el <svg>
+  // ocupara el 100% del ancho de su contenedor. Ahora cada llamada pasa
+  // el ancho real de SU viewBox.
+  w = w || 300;
   const n = history.length;
 
   // Sintetizamos velas OHLC a partir de la serie de cierres simulados
@@ -960,6 +1022,13 @@ function closeDetail(){
 }
 overlay.addEventListener('click', e => { if(e.target === overlay) closeDetail(); });
 
+const helpOverlayEl = document.getElementById('helpOverlay');
+if(helpOverlayEl){
+  helpOverlayEl.addEventListener('click', e => { if(e.target === helpOverlayEl) closeHelpOverlay(); });
+  const btnCerrarAyuda = document.getElementById('btnCerrarAyuda');
+  if(btnCerrarAyuda) btnCerrarAyuda.addEventListener('click', closeHelpOverlay);
+}
+
 function renderDetail(ticker){
   const s = state.find(x => x.ticker === ticker);
 
@@ -1064,6 +1133,7 @@ function renderDetail(ticker){
     <div class="period-row" id="overlayRow" style="margin-top:10px;">
       ${['sma','ema','bbands','macd','rsi','volume'].map(k => `<button class="overlay-btn" data-overlay="${k}">${OVERLAY_LABELS[k]}</button>`).join('')}
       <button class="overlay-btn" id="btnLimpiarOverlays">Limpiar</button>
+      <button class="overlay-btn" id="btnAyudaIndicadores" title="¿Qué significa cada indicador?">❓ Ayuda</button>
     </div>
 
     <div class="detail-chart" style="margin-top:10px;">
@@ -1154,7 +1224,7 @@ function renderDetail(ticker){
 
   document.getElementById('closeBtn').addEventListener('click', closeDetail);
   document.getElementById('btnRegistrarMov').addEventListener('click', () => registrarDesdeDetalle(s.ticker, s.price));
-  buildSpark(document.getElementById('detailSvg'), s.history, s.avg, threshold, s.dec, 160);
+  buildSpark(document.getElementById('detailSvg'), s.history, s.avg, threshold, s.dec, 160, 600);
   updateDetailClock();
   wirePeriodSelector(s);
 }
@@ -1387,6 +1457,18 @@ function wireOverlayButtons(){
       renderHistoryChart();
     });
   }
+  const btnAyuda = document.getElementById('btnAyudaIndicadores');
+  if(btnAyuda){
+    btnAyuda.addEventListener('click', () => {
+      const helpOverlay = document.getElementById('helpOverlay');
+      if(helpOverlay) helpOverlay.classList.add('open');
+    });
+  }
+}
+
+function closeHelpOverlay(){
+  const helpOverlay = document.getElementById('helpOverlay');
+  if(helpOverlay) helpOverlay.classList.remove('open');
 }
 
 async function cargarHistorialPeriodo(ticker, period, dec){
