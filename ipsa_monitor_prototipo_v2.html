@@ -756,7 +756,24 @@ function pseudoRand(seed){
   return x - Math.floor(x);
 }
 
-function buildSpark(svgEl, history, avg, threshold, dec, h, w){
+// ---- Eje Y compartido: valores de referencia + lineas punteadas ----
+// Se dibuja en una franja reservada a la derecha del area de datos (el
+// "gutter"), asi el precio no tapa la ultima vela/punto de la serie.
+const AXIS_GUTTER = 46;
+function yAxisSvg(min, max, plotW, h, dec, ticks){
+  ticks = ticks || 4;
+  const range = (max - min) || 1;
+  let out = '';
+  for(let i = 0; i <= ticks; i++){
+    const v = min + range * (i/ticks);
+    const yy = h - (i/ticks) * h;
+    out += `<line x1="0" y1="${yy.toFixed(1)}" x2="${plotW.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="var(--hairline)" stroke-width="1" stroke-dasharray="2,2"></line>`;
+    out += `<text x="${(plotW+5).toFixed(1)}" y="${(yy+3).toFixed(1)}" font-size="9" fill="var(--ink-faint)">${fmt(v, dec)}</text>`;
+  }
+  return out;
+}
+
+function buildSpark(svgEl, history, avg, threshold, dec, h, w, mostrarEjeY){
   h = h || 74;
   // OJO: antes "w" venia fijo en 300 sin importar quien llamara a esta
   // funcion. La mini-tarjeta (spark-wrap) SI tiene viewBox="0 0 300 74",
@@ -767,6 +784,9 @@ function buildSpark(svgEl, history, avg, threshold, dec, h, w){
   // ocupara el 100% del ancho de su contenedor. Ahora cada llamada pasa
   // el ancho real de SU viewBox.
   w = w || 300;
+  // El eje Y solo se pide para el grafico grande del detalle (mostrarEjeY),
+  // no para la mini-tarjeta -- ahi no hay espacio ni falta hace.
+  const plotW = mostrarEjeY ? (w - AXIS_GUTTER) : w;
   const n = history.length;
 
   // Sintetizamos velas OHLC a partir de la serie de cierres simulados
@@ -788,7 +808,7 @@ function buildSpark(svgEl, history, avg, threshold, dec, h, w){
   const min = Math.min(...allVals), max = Math.max(...allVals);
   const range = (max - min) || 1;
   const y = v => h - ((v - min)/range) * h;
-  const slot = w / n;
+  const slot = plotW / n;
   const bodyW = Math.max(1.5, slot * 0.6);
 
   const avgY = y(avg);
@@ -806,10 +826,11 @@ function buildSpark(svgEl, history, avg, threshold, dec, h, w){
   }).join('');
 
   svgEl.innerHTML = `
-    <rect x="0" y="0" width="${w}" height="${Math.max(thY,0)}" fill="var(--verdigris-soft)"></rect>
-    <rect x="0" y="${thY}" width="${w}" height="${Math.max(h-thY,0)}" fill="var(--copper-soft)"></rect>
-    <line x1="0" y1="${avgY}" x2="${w}" y2="${avgY}" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="3,3"></line>
+    <rect x="0" y="0" width="${plotW}" height="${Math.max(thY,0)}" fill="var(--verdigris-soft)"></rect>
+    <rect x="0" y="${thY}" width="${plotW}" height="${Math.max(h-thY,0)}" fill="var(--copper-soft)"></rect>
+    <line x1="0" y1="${avgY}" x2="${plotW}" y2="${avgY}" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="3,3"></line>
     ${candleEls}
+    ${mostrarEjeY ? yAxisSvg(min, max, plotW, h, dec) : ''}
   `;
 }
 
@@ -1224,7 +1245,7 @@ function renderDetail(ticker){
 
   document.getElementById('closeBtn').addEventListener('click', closeDetail);
   document.getElementById('btnRegistrarMov').addEventListener('click', () => registrarDesdeDetalle(s.ticker, s.price));
-  buildSpark(document.getElementById('detailSvg'), s.history, s.avg, threshold, s.dec, 160, 600);
+  buildSpark(document.getElementById('detailSvg'), s.history, s.avg, threshold, s.dec, 160, 600, true);
   updateDetailClock();
   wirePeriodSelector(s);
 }
@@ -1303,9 +1324,12 @@ function renderHistoryChart(){
   if(!svgEl) return;
 
   const w = 600, h = 160;
+  // Se reserva AXIS_GUTTER a la derecha para los valores del eje Y (ver
+  // yAxisSvg) -- por eso el area de datos usa plotW, no w.
+  const plotW = w - AXIS_GUTTER;
   const closes = points.map(p => p.close);
   const n = closes.length;
-  const x = i => (i/(n-1)) * w;
+  const x = i => (i/(n-1)) * plotW;
 
   const series = [];
   if(overlaysActivos.sma) series.push({data: calcSMASeries(closes,20), color:'#E8B84B', label:'SMA20'});
@@ -1324,7 +1348,7 @@ function renderHistoryChart(){
   const color = last >= first ? 'var(--verdigris)' : 'var(--copper)';
   const fillColor = last >= first ? 'var(--verdigris-soft)' : 'var(--copper-soft)';
   const linePts = closes.map((v,i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  const areaPts = `0,${h} ${linePts} ${w},${h}`;
+  const areaPts = `0,${h} ${linePts} ${plotW},${h}`;
 
   let svg = `<polygon points="${areaPts}" fill="${fillColor}"></polygon>`;
 
@@ -1345,6 +1369,8 @@ function renderHistoryChart(){
     const pts = s.data.map((v,i)=> v!=null ? `${x(i).toFixed(1)},${y(v).toFixed(1)}` : null).filter(Boolean).join(' ');
     if(pts) svg += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="1.6"></polyline>`;
   });
+
+  svg += yAxisSvg(min, max, plotW, h, dec);
 
   svgEl.innerHTML = svg;
 
