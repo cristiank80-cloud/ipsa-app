@@ -58,6 +58,15 @@
      habia forma de notar que el indice llevaba horas o dias congelado. */
   .index-time{font-size:11px; color:var(--ink-faint); letter-spacing:.02em;}
   .index-time.viejo{color:var(--copper); font-weight:600;}
+  /* "Fuente: Diario Financiero" -- nota chica bajo el valor del IPSA. Ancho
+     100% para que caiga en su propia linea dentro del index-block (que ya
+     usa flex-wrap). */
+  .index-source{font-size:10px; color:var(--ink-faint); letter-spacing:.02em; width:100%;}
+  /* UF/UTM: mismo origen (Diario Financiero) que el IPSA, se muestran juntos. */
+  .uf-utm-block{display:flex; gap:16px; align-items:baseline;}
+  .uu-item{display:flex; flex-direction:column; gap:1px;}
+  .uu-label{font-size:9.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em;}
+  .uu-val{font-size:13px; font-weight:600; color:var(--ink);}
   .up{color:var(--verdigris); background:var(--verdigris-soft);}
   .down{color:var(--copper); background:var(--copper-soft);}
   .status{display:flex; align-items:center; gap:12px; flex-wrap:wrap; row-gap:10px;}
@@ -367,10 +376,21 @@
       <span class="mono index-value" id="idxValue">···</span>
       <span class="mono index-delta" id="idxDelta">+0,00%</span>
       <span class="mono index-time" id="idxTime"></span>
+      <span class="index-source" id="idxSource">Fuente: Diario Financiero</span>
     </div>
     <div class="index-block index-block--oculto" id="idxBlockOculto" style="display:none;">
       <span class="mono index-value" style="opacity:0.4;">IPSA —</span>
       <span class="mono index-time viejo" id="idxTimeOculto"></span>
+    </div>
+    <div class="uf-utm-block" id="ufUtmBlock">
+      <div class="uu-item">
+        <span class="uu-label">UF</span>
+        <span class="mono uu-val" id="ufVal">···</span>
+      </div>
+      <div class="uu-item">
+        <span class="uu-label">UTM</span>
+        <span class="mono uu-val" id="utmVal">···</span>
+      </div>
     </div>
     <div class="status">
       <span class="live-pill mono" id="marketStatus" style="border-color:transparent;">···</span>
@@ -382,7 +402,7 @@
   </div>
 
   <p class="disclaimer">
-    <b>Datos reales de Yahoo Finance, con rezago.</b> Yahoo no publica de cuántos minutos es el rezago, así que cada precio muestra su antigüedad real: fíjate en la hora que aparece junto al IPSA y en el semáforo de estado. <b>Yahoo no entrega puntas de compra/venta de la Bolsa de Santiago</b> — ese dato aparece como no disponible, nunca inventado. Toca cualquier tarjeta para ver el detalle.
+    <b>Datos reales de Yahoo Finance, con rezago.</b> Yahoo no publica de cuántos minutos es el rezago, así que cada precio muestra su antigüedad real: fíjate en la hora junto a cada acción y en el semáforo de estado. <b>El IPSA (y la UF/UTM) vienen directo de Diario Financiero</b>, no de Yahoo — el "Consultado" que ves junto al IPSA es el momento en que este servidor revisó esa página, no la hora exacta en que la bolsa fijó ese valor. <b>Yahoo no entrega puntas de compra/venta de la Bolsa de Santiago</b> — ese dato aparece como no disponible, nunca inventado. Toca cualquier tarjeta para ver el detalle.
   </p>
 
   <div class="analysis-panel">
@@ -605,8 +625,10 @@ const state = stocks.map(s => ({
   rand: seedRand(s.ticker),
 }));
 
-let indexValue = null;      // null hasta tener el ^IPSA real
+let indexValue = null;      // null hasta tener el IPSA real (ahora viene de Diario Financiero, no de Yahoo)
 let indexPrevClose = null;
+let ufValue = null;          // UF, también de Diario Financiero
+let utmValue = null;         // UTM, también de Diario Financiero
 let ultimaActualizacionReal = null; // Date del último /quotes exitoso
 
 const grid = document.getElementById('cardsGrid');
@@ -634,6 +656,7 @@ function saveCache(){
     localStorage.setItem('ipsa_cache', JSON.stringify({
       quotes: quotesOut,
       index: (indexValue !== null) ? {value: indexValue, previousClose: indexPrevClose, marketTime: indexMarketTime} : null,
+      uf: ufValue, utm: utmValue,
       ts: Date.now(),
     }));
   } catch(e){ /* si falla, simplemente no persiste entre sesiones */ }
@@ -1724,12 +1747,12 @@ function textoAntiguedad(seg){
   return 'hace ' + Math.round(seg/86400) + ' días';
 }
 
-// Investigado (ver INFORME.md): fuera de la API oficial de la Bolsa (que
-// requiere pedir una clave, ver fuente_bolsa.py), no hay ninguna fuente
-// gratuita que entregue el valor del IPSA en vivo -- la pagina publica de
-// la Bolsa es una SPA sin datos en el HTML del servidor, no se puede leer
-// sin un navegador headless. Mostrar un numero de mas de 4 horas como si
-// fuera el de ahora es peor que no mostrar nada: se oculta en su lugar.
+// El IPSA ahora se consulta a Diario Financiero en cada ciclo (no queda
+// "pegado" como pasaba antes con Yahoo para ^IPSA), asi que en condiciones
+// normales esto casi nunca se dispara. Se deja como red de seguridad por si
+// el backend no logra contactar a Diario Financiero por varias horas
+// seguidas: mostrar un numero de mas de 4 horas como si fuera el de ahora
+// es peor que no mostrar nada, asi que se oculta en su lugar.
 const OCULTAR_INDICE_SEG = 4 * 3600;
 
 function renderIndexDisplay(){
@@ -1769,32 +1792,34 @@ function renderIndexDisplay(){
 
   valEl.textContent = fmt(indexValue, 0);
 
-  // ESTE ERA EL BUG QUE VISTE: si el backend no lograba traer ^IPSA (se lo
-  // comía el rate limit de Yahoo, porque se pedía al final de ~190
-  // peticiones), la app se quedaba mostrando el valor anterior de su caché
-  // sin ninguna marca, mientras el semáforo seguía en verde porque las 47
-  // acciones sí habían llegado. Ahora el índice tiene su propio estado.
+  // El índice tiene su propio estado de frescura, independiente de las 47
+  // acciones (que siguen viniendo de Yahoo o de la API de la Bolsa): si
+  // Diario Financiero no respondió en el último ciclo, esto se marca
+  // "viejo" aunque las acciones se hayan actualizado sin problema.
   const edad = indexStaleSeconds;
   const viejo = (!indexDisponible) || (edad !== null && edad > 900); // >15 min
   valEl.style.opacity = viejo ? '0.45' : '1';
 
-  // Fecha y hora del dato, VISIBLE, igual que en la ficha de bolsadesantiago.
+  // "Consultado", no "Actualizado": marketTime es el momento en que ESTE
+  // servidor revisó la página de Diario Financiero, no la hora exacta en
+  // que la bolsa fijó ese valor (esa hora no viene en el texto plano de la
+  // página -- ver fuente_df.py). Se rotula así para ser honesto con eso.
   const timeEl = document.getElementById('idxTime');
   if(timeEl){
     const h = formatoHoraDato(indexMarketTime, edad);
     if(!indexDisponible && indexValue !== null){
       timeEl.className = 'mono index-time viejo';
-      timeEl.textContent = '⚠︎ sin dato nuevo' + (h ? ' · último: ' + h.texto : '');
+      timeEl.textContent = '⚠︎ sin dato nuevo' + (h ? ' · último consultado: ' + h.texto : '');
     } else if(h){
       timeEl.className = 'mono index-time' + (viejo ? ' viejo' : '');
-      timeEl.textContent = (viejo ? '⚠︎ ' : '') + h.texto + ' · ' + h.edad;
+      timeEl.textContent = (viejo ? '⚠︎ ' : '') + 'Consultado ' + h.texto + ' · ' + h.edad;
     } else {
       timeEl.className = 'mono index-time';
       timeEl.textContent = '';
     }
   }
   valEl.title = indexDisponible
-    ? ('Valor del IPSA según Yahoo Finance · ' + textoAntiguedad(edad))
+    ? ('Valor del IPSA según Diario Financiero · hora = momento en que el servidor consultó la página, no la hora exacta de bolsa · ' + textoAntiguedad(edad))
     : 'El servidor NO pudo obtener el IPSA en la última actualización. Esto que ves es el último valor conocido, no el de ahora.';
 
   if(indexPrevClose){
@@ -1808,6 +1833,15 @@ function renderIndexDisplay(){
     deltaEl.textContent = viejo ? '⚠︎ dato viejo' : '';
     deltaEl.className = 'mono index-delta';
   }
+}
+
+// UF y UTM: mismo origen que el IPSA (Diario Financiero). Sin semaforo de
+// frescura propio -- son valores que cambian, como mucho, una vez al dia.
+function renderUfUtm(){
+  const ufEl = document.getElementById('ufVal');
+  const utmEl = document.getElementById('utmVal');
+  if(ufEl)  ufEl.textContent  = (typeof ufValue === 'number')  ? fmt(ufValue, 2)  : '···';
+  if(utmEl) utmEl.textContent = (typeof utmValue === 'number') ? fmt(utmValue, 0) : '···';
 }
 
 function setStatusPill(estado, texto){
@@ -2356,6 +2390,7 @@ function hydrateFromCache(){
   const cache = loadCache();
   if(!cache){
     renderIndexDisplay(); // limpia el "6.412" que viene hardcodeado en el HTML
+    renderUfUtm();
     return;
   }
 
@@ -2390,6 +2425,11 @@ function hydrateFromCache(){
     indexStaleSeconds = Math.round((Date.now() - (cache.ts || Date.now()))/1000);
     indexMarketTime = cache.index.marketTime || null;
     renderIndexDisplay();
+  }
+  if(typeof cache.uf === 'number' || typeof cache.utm === 'number'){
+    ufValue = (typeof cache.uf === 'number') ? cache.uf : null;
+    utmValue = (typeof cache.utm === 'number') ? cache.utm : null;
+    renderUfUtm();
   }
   if(recibidos > 0){
     const minAgo = Math.round((Date.now() - cache.ts) / 60000);
@@ -2451,6 +2491,13 @@ async function fetchRealQuotes(){
       indexStaleSeconds = null;
     }
     renderIndexDisplay();
+
+    // UF/UTM: mismo /quotes, mismo origen (Diario Financiero). Si por algún
+    // motivo no vinieron en este ciclo, se deja el último valor conocido en
+    // vez de borrarlo (igual que el IPSA).
+    if(typeof body.uf === 'number') ufValue = body.uf;
+    if(typeof body.utm === 'number') utmValue = body.utm;
+    renderUfUtm();
 
     if(recibidos > 0){
       ultimaActualizacionReal = new Date();
