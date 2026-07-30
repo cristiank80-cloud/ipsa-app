@@ -467,13 +467,6 @@
     <div class="detail" id="movsDetailPanel"></div>
   </div>
 
-  <div class="feed-panel">
-    <p class="feed-title">Alertas: posible compra / venta <span class="feed-count" id="feedCount">0</span></p>
-    <ul class="feed-list" id="feedList">
-      <li class="feed-empty">Sin alertas por ahora. Aparecerán aquí apenas una acción entre a "posible compra" o "posible venta" — lo mismo que dispara el correo y el push.</li>
-    </ul>
-  </div>
-
   <div class="search-row">
     <div class="search-wrap">
       <input type="text" id="searchInput" class="search-input mono" placeholder="Buscar acción por ticker o nombre...">
@@ -901,6 +894,7 @@ function pushHistory(arr, v){ arr.push(v); if(arr.length > HISTORY_LEN) arr.shif
 // coincida con lo que te llega al celular.
 function addAlert(ticker, direccion, ev){
   const feedList = document.getElementById('feedList');
+  if(!feedList) return; // el campo "Alertas: posible compra / venta" se quito de la UI
   const empty = feedList.querySelector('.feed-empty');
   if(empty) empty.remove();
   const now = new Date().toLocaleTimeString('es-CL', {timeZone:'America/Santiago', hour12:false});
