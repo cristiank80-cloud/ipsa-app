@@ -1168,7 +1168,13 @@ function renderGridOrder(){
 // explícito. Se instancia una vez por buscador (arriba y en movimientos),
 // cada uno con su propio `getItems`.
 function crearBuscadorUnificado(opts){
-  const { input, clearBtn, dropdown, getItems, onSelect, permiteTextoLibre, agrupar } = opts;
+  const { input, dropdown, getItems, onSelect, permiteTextoLibre, agrupar } = opts;
+  // El botón ✕ es OPCIONAL: el buscador de arriba lo tiene, el del campo de
+  // movimientos no. Antes se pasaba un objeto falso con solo classList.toggle
+  // y el listener de más abajo lo hacía reventar (clearBtn.addEventListener
+  // no era una función), lo que cortaba TODO el script desde ahí: no se
+  // activaban los botones de ambiente ni se pedían los datos al servidor.
+  const clearBtn = opts.clearBtn || null;
   let indiceActivo = -1;
   let itemsActuales = [];
 
@@ -1192,7 +1198,7 @@ function crearBuscadorUnificado(opts){
   function elegir(it){
     input.value = it.ticker;
     cerrar();
-    clearBtn.classList.toggle('visible', input.value.length > 0);
+    if(clearBtn) clearBtn.classList.toggle('visible', input.value.length > 0);
     if(onSelect) onSelect(it);
   }
 
@@ -1202,7 +1208,7 @@ function crearBuscadorUnificado(opts){
     itemsActuales = !q ? todos : todos.filter(it =>
       it.ticker.toLowerCase().includes(q) || it.name.toLowerCase().includes(q)
     );
-    clearBtn.classList.toggle('visible', input.value.length > 0);
+    if(clearBtn) clearBtn.classList.toggle('visible', input.value.length > 0);
     indiceActivo = -1;
 
     if(itemsActuales.length === 0){
@@ -1255,12 +1261,12 @@ function crearBuscadorUnificado(opts){
     } else if(e.key === 'Escape'){
       input.value = '';
       cerrar();
-      clearBtn.classList.remove('visible');
+      if(clearBtn) clearBtn.classList.remove('visible');
       input.blur();
     }
   });
   input.addEventListener('blur', () => setTimeout(cerrar, 150)); // deja tiempo al mousedown del item
-  clearBtn.addEventListener('click', () => { input.value = ''; input.focus(); render(); cerrar(); });
+  if(clearBtn) clearBtn.addEventListener('click', () => { input.value = ''; input.focus(); render(); cerrar(); });
 
   return { refrescar: render, cerrar };
 }
@@ -2637,7 +2643,7 @@ function poblarSelectorTickers(){
   if(buscadorMovTicker) return; // ya instanciado, nada que repoblar (los items se leen en vivo)
   buscadorMovTicker = crearBuscadorUnificado({
     input: document.getElementById('movTicker'),
-    clearBtn: { classList: { toggle(){} } }, // este campo no tiene botón ✕ propio
+    clearBtn: null, // este campo no tiene botón ✕ propio (crearBuscadorUnificado lo acepta)
     dropdown: document.getElementById('movTickerDropdown'),
     getItems: () => todosLosStocks(),
     onSelect: () => {},
