@@ -1018,6 +1018,9 @@ function renderRecordatorioAporte(){
   el.style.display = 'flex';
   txtEl.innerHTML = `<b>Día ${DIA_APORTE_MENSUAL} del plan de inversión.</b> No hay registro de un aporte este mes (ni compra ni ingreso de caja) — antes de mirar qué acción subió o bajó, este es el recordatorio principal de la app.`;
 }
+// Contenedor de las tarjetas. Se declara acá porque lo usan tanto el bucle
+// que las crea (más abajo) como renderGridOrder(), que las reordena.
+const grid = document.getElementById('cardsGrid');
 const cardEls = {};
 
 // ---- Caché local de la última respuesta real (para no partir de cero
