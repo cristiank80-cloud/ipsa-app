@@ -814,13 +814,118 @@ function usdclpEsValido(){
 // que `stocks`/`state`: nunca se rellena con datos inventados, todo queda
 // null hasta que llegue un precio real de /quotes-usa.
 const stocksUSA = [
-  {ticker:'VOO',  name:'Vanguard S&P 500 ETF',                base:560, dec:2, currency:'USD'},
-  {ticker:'VTI',  name:'Vanguard Total Stock Market ETF',      base:290, dec:2, currency:'USD'},
-  {ticker:'VT',   name:'Vanguard Total World Stock ETF',       base:115, dec:2, currency:'USD'},
-  {ticker:'VXUS', name:'Vanguard Total International Stock ETF', base:63, dec:2, currency:'USD'},
-  {ticker:'QQQM', name:'Invesco NASDAQ-100 ETF',               base:200, dec:2, currency:'USD'},
-  {ticker:'SCHD', name:'Schwab US Dividend Equity ETF',        base:28,  dec:2, currency:'USD'},
-  {ticker:'BND',  name:'Vanguard Total Bond Market ETF',       base:73,  dec:2, currency:'USD'},
+  // Nucleo de ETF (los 7 originales)
+  {ticker:'VOO',    name:"Vanguard S&P 500 ETF",                      dec:2, currency:'USD'},
+  {ticker:'VTI',    name:"Vanguard Total Stock Market ETF",           dec:2, currency:'USD'},
+  {ticker:'VT',     name:"Vanguard Total World Stock ETF",            dec:2, currency:'USD'},
+  {ticker:'VXUS',   name:"Vanguard Total International Stock ETF",    dec:2, currency:'USD'},
+  {ticker:'QQQM',   name:"Invesco NASDAQ-100 ETF",                    dec:2, currency:'USD'},
+  {ticker:'SCHD',   name:"Schwab US Dividend Equity ETF",             dec:2, currency:'USD'},
+  {ticker:'BND',    name:"Vanguard Total Bond Market ETF",            dec:2, currency:'USD'},
+  // 100 acciones grandes de EE.UU. -- misma lista y mismo orden que
+  // TICKERS_USA en backend/main.py. Si agregas una aca, agregala alla
+  // tambien: el backend solo devuelve precio de los tickers que tiene
+  // en su lista, y esta grilla solo muestra los que estan en esta.
+  {ticker:'AAPL',   name:"Apple",                                     dec:2, currency:'USD'},
+  {ticker:'MSFT',   name:"Microsoft",                                 dec:2, currency:'USD'},
+  {ticker:'NVDA',   name:"Nvidia",                                    dec:2, currency:'USD'},
+  {ticker:'AMZN',   name:"Amazon",                                    dec:2, currency:'USD'},
+  {ticker:'GOOGL',  name:"Alphabet (Clase A)",                        dec:2, currency:'USD'},
+  {ticker:'META',   name:"Meta Platforms",                            dec:2, currency:'USD'},
+  {ticker:'TSLA',   name:"Tesla",                                     dec:2, currency:'USD'},
+  {ticker:'AVGO',   name:"Broadcom",                                  dec:2, currency:'USD'},
+  {ticker:'TSM',    name:"Taiwan Semiconductor",                      dec:2, currency:'USD'},
+  {ticker:'ORCL',   name:"Oracle",                                    dec:2, currency:'USD'},
+  {ticker:'NFLX',   name:"Netflix",                                   dec:2, currency:'USD'},
+  {ticker:'AMD',    name:"AMD",                                       dec:2, currency:'USD'},
+  {ticker:'CRM',    name:"Salesforce",                                dec:2, currency:'USD'},
+  {ticker:'ADBE',   name:"Adobe",                                     dec:2, currency:'USD'},
+  {ticker:'INTC',   name:"Intel",                                     dec:2, currency:'USD'},
+  {ticker:'QCOM',   name:"Qualcomm",                                  dec:2, currency:'USD'},
+  {ticker:'TXN',    name:"Texas Instruments",                         dec:2, currency:'USD'},
+  {ticker:'AMAT',   name:"Applied Materials",                         dec:2, currency:'USD'},
+  {ticker:'LRCX',   name:"Lam Research",                              dec:2, currency:'USD'},
+  {ticker:'KLAC',   name:"KLA Corp",                                  dec:2, currency:'USD'},
+  {ticker:'MU',     name:"Micron Technology",                         dec:2, currency:'USD'},
+  {ticker:'ASML',   name:"ASML",                                      dec:2, currency:'USD'},
+  {ticker:'ARM',    name:"Arm Holdings",                              dec:2, currency:'USD'},
+  {ticker:'PLTR',   name:"Palantir",                                  dec:2, currency:'USD'},
+  {ticker:'NOW',    name:"ServiceNow",                                dec:2, currency:'USD'},
+  {ticker:'INTU',   name:"Intuit",                                    dec:2, currency:'USD'},
+  {ticker:'IBM',    name:"IBM",                                       dec:2, currency:'USD'},
+  {ticker:'CSCO',   name:"Cisco",                                     dec:2, currency:'USD'},
+  {ticker:'ACN',    name:"Accenture",                                 dec:2, currency:'USD'},
+  {ticker:'UBER',   name:"Uber",                                      dec:2, currency:'USD'},
+  {ticker:'SHOP',   name:"Shopify",                                   dec:2, currency:'USD'},
+  {ticker:'PANW',   name:"Palo Alto Networks",                        dec:2, currency:'USD'},
+  {ticker:'CRWD',   name:"CrowdStrike",                               dec:2, currency:'USD'},
+  {ticker:'SNOW',   name:"Snowflake",                                 dec:2, currency:'USD'},
+  {ticker:'ANET',   name:"Arista Networks",                           dec:2, currency:'USD'},
+  {ticker:'MRVL',   name:"Marvell Technology",                        dec:2, currency:'USD'},
+  {ticker:'DELL',   name:"Dell",                                      dec:2, currency:'USD'},
+  {ticker:'SMCI',   name:"Super Micro Computer",                      dec:2, currency:'USD'},
+  {ticker:'COIN',   name:"Coinbase",                                  dec:2, currency:'USD'},
+  {ticker:'SPOT',   name:"Spotify",                                   dec:2, currency:'USD'},
+  {ticker:'ABNB',   name:"Airbnb",                                    dec:2, currency:'USD'},
+  {ticker:'BKNG',   name:"Booking Holdings",                          dec:2, currency:'USD'},
+  {ticker:'MELI',   name:"MercadoLibre",                              dec:2, currency:'USD'},
+  {ticker:'XYZ',    name:"Block",                                     dec:2, currency:'USD'},
+  {ticker:'PYPL',   name:"PayPal",                                    dec:2, currency:'USD'},
+  {ticker:'BRK-B',  name:"Berkshire Hathaway (Clase B)",              dec:2, currency:'USD'},
+  {ticker:'JPM',    name:"JPMorgan Chase",                            dec:2, currency:'USD'},
+  {ticker:'V',      name:"Visa",                                      dec:2, currency:'USD'},
+  {ticker:'MA',     name:"MasterCard",                                dec:2, currency:'USD'},
+  {ticker:'BAC',    name:"Bank of America",                           dec:2, currency:'USD'},
+  {ticker:'WFC',    name:"Wells Fargo",                               dec:2, currency:'USD'},
+  {ticker:'GS',     name:"Goldman Sachs",                             dec:2, currency:'USD'},
+  {ticker:'MS',     name:"Morgan Stanley",                            dec:2, currency:'USD'},
+  {ticker:'C',      name:"Citigroup",                                 dec:2, currency:'USD'},
+  {ticker:'BLK',    name:"BlackRock",                                 dec:2, currency:'USD'},
+  {ticker:'AXP',    name:"American Express",                          dec:2, currency:'USD'},
+  {ticker:'SCHW',   name:"Charles Schwab",                            dec:2, currency:'USD'},
+  {ticker:'SPGI',   name:"S&P Global",                                dec:2, currency:'USD'},
+  {ticker:'KKR',    name:"KKR",                                       dec:2, currency:'USD'},
+  {ticker:'BX',     name:"Blackstone",                                dec:2, currency:'USD'},
+  {ticker:'LLY',    name:"Eli Lilly",                                 dec:2, currency:'USD'},
+  {ticker:'JNJ',    name:"Johnson & Johnson",                         dec:2, currency:'USD'},
+  {ticker:'UNH',    name:"UnitedHealth",                              dec:2, currency:'USD'},
+  {ticker:'ABBV',   name:"AbbVie",                                    dec:2, currency:'USD'},
+  {ticker:'MRK',    name:"Merck",                                     dec:2, currency:'USD'},
+  {ticker:'TMO',    name:"Thermo Fisher Scientific",                  dec:2, currency:'USD'},
+  {ticker:'ABT',    name:"Abbott",                                    dec:2, currency:'USD'},
+  {ticker:'PFE',    name:"Pfizer",                                    dec:2, currency:'USD'},
+  {ticker:'AMGN',   name:"Amgen",                                     dec:2, currency:'USD'},
+  {ticker:'DHR',    name:"Danaher",                                   dec:2, currency:'USD'},
+  {ticker:'ISRG',   name:"Intuitive Surgical",                        dec:2, currency:'USD'},
+  {ticker:'NVO',    name:"Novo Nordisk",                              dec:2, currency:'USD'},
+  {ticker:'VRTX',   name:"Vertex Pharmaceuticals",                    dec:2, currency:'USD'},
+  {ticker:'BMY',    name:"Bristol-Myers Squibb",                      dec:2, currency:'USD'},
+  {ticker:'MDT',    name:"Medtronic",                                 dec:2, currency:'USD'},
+  {ticker:'WMT',    name:"Walmart",                                   dec:2, currency:'USD'},
+  {ticker:'COST',   name:"Costco",                                    dec:2, currency:'USD'},
+  {ticker:'PG',     name:"Procter & Gamble",                          dec:2, currency:'USD'},
+  {ticker:'HD',     name:"Home Depot",                                dec:2, currency:'USD'},
+  {ticker:'KO',     name:"Coca-Cola",                                 dec:2, currency:'USD'},
+  {ticker:'PEP',    name:"PepsiCo",                                   dec:2, currency:'USD'},
+  {ticker:'MCD',    name:"McDonald's",                                dec:2, currency:'USD'},
+  {ticker:'NKE',    name:"Nike",                                      dec:2, currency:'USD'},
+  {ticker:'SBUX',   name:"Starbucks",                                 dec:2, currency:'USD'},
+  {ticker:'DIS',    name:"Disney",                                    dec:2, currency:'USD'},
+  {ticker:'PM',     name:"Philip Morris",                             dec:2, currency:'USD'},
+  {ticker:'TGT',    name:"Target",                                    dec:2, currency:'USD'},
+  {ticker:'LOW',    name:"Lowe's",                                    dec:2, currency:'USD'},
+  {ticker:'TJX',    name:"TJX Companies",                             dec:2, currency:'USD'},
+  {ticker:'XOM',    name:"Exxon Mobil",                               dec:2, currency:'USD'},
+  {ticker:'CVX',    name:"Chevron",                                   dec:2, currency:'USD'},
+  {ticker:'COP',    name:"ConocoPhillips",                            dec:2, currency:'USD'},
+  {ticker:'CAT',    name:"Caterpillar",                               dec:2, currency:'USD'},
+  {ticker:'BA',     name:"Boeing",                                    dec:2, currency:'USD'},
+  {ticker:'GE',     name:"General Electric",                          dec:2, currency:'USD'},
+  {ticker:'RTX',    name:"RTX (Raytheon)",                            dec:2, currency:'USD'},
+  {ticker:'UNP',    name:"Union Pacific",                             dec:2, currency:'USD'},
+  {ticker:'LMT',    name:"Lockheed Martin",                           dec:2, currency:'USD'},
+  {ticker:'DE',     name:"Deere",                                     dec:2, currency:'USD'},
+  {ticker:'LIN',    name:"Linde",                                     dec:2, currency:'USD'},
 ];
 const stateUSA = stocksUSA.map(s => ({
   ...s,
@@ -924,6 +1029,10 @@ function cambiarAmbiente(nuevo){
   if(typeof renderResumenPortafolio === 'function') renderResumenPortafolio();
   if(typeof renderW8ben === 'function') renderW8ben();
   if(esSeguir && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir();
+  // Al entrar a EE.UU. o al consolidado, refrescar sus precios de inmediato:
+  // el refresco periódico de arriba está apagado mientras se mira Chile, así
+  // que sin esto el usuario vería datos de hace rato al cambiarse.
+  if(!esChile && typeof fetchRealQuotesUsa === 'function') fetchRealQuotesUsa();
   if(typeof cerrarBuscadorUnificado === 'function'){ /* no-op guard, ver bloque 3 */ }
 }
 
@@ -1146,8 +1255,15 @@ function renderGridOrder(){
   ordenFinal.forEach(s => grid.appendChild(cardEls[s.ticker])); // reordena moviendo los nodos existentes
 
   // Oculta las del otro ambiente Y las que no calzan con la búsqueda.
-  universo.forEach(s => {
-    cardEls[s.ticker].style.display = visibles.includes(s) ? '' : 'none';
+  //
+  // Se recorre TODO el universo de ambos mercados, no solo el del ambiente
+  // activo: si solo se recorriera el activo, las tarjetas del otro mercado
+  // se quedarían visibles para siempre (nadie más les toca el display).
+  // Con los 7 ETF originales casi no se notaba; con 107 instrumentos
+  // gringos aparecían todos mezclados en la vista de Chile.
+  const visiblesSet = new Set(visibles);
+  todosLosStocks().forEach(s => {
+    cardEls[s.ticker].style.display = visiblesSet.has(s) ? '' : 'none';
   });
 
   const hint = document.getElementById('searchHint');
@@ -3864,7 +3980,15 @@ fetchRealQuotes();
 fetchRealQuotesUsa();
 fetchSignals();
 setInterval(fetchRealQuotes, 60000);
-setInterval(fetchRealQuotesUsa, 60000);
+// El ambiente EE.UU. pasó de 7 ETF a 107 instrumentos. Cada refresco obliga
+// al servidor a pedirle a Yahoo un precio por cada uno, y Yahoo corta con
+// error 429 cuando se le piden demasiados seguidos (es exactamente lo que
+// dejaba el IPSA congelado antes de la v3, ver INFORME.md §1.3). Por eso
+// este refresco periódico solo corre cuando el ambiente EE.UU. o el
+// consolidado están a la vista: mirando Chile no tiene sentido gastar esa
+// cuota. Al cambiar de ambiente, cambiarAmbiente() pide los datos al tiro,
+// así que no se nota ninguna espera.
+setInterval(() => { if(ambienteActivo !== 'chile') fetchRealQuotesUsa(); }, 60000);
 setInterval(fetchSignals, 60000);
 
 // ---- Selector de ambientes: listeners de los botones + estado inicial ----
