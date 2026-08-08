@@ -4124,11 +4124,28 @@ function uint8ArrayToUrlBase64(buf) {
 // Ahora la clave se pide a /vapid-public-key y siempre gana la del servidor.
 // La constante de abajo queda solo como respaldo por si ese endpoint no
 // responde (servidor dormido, versión vieja del backend sin desplegar).
+// fetch con plazo máximo. SIN esto, una petición al backend dormido no
+// falla: se queda esperando. Ese fue el motivo de que el botón 🔔 pareciera
+// muerto -- por dentro estaba colgado esperando la clave VAPID de un
+// servidor que tardaba ~50 s en despertar, sin decir nada en pantalla.
+async function fetchConPlazo(url, opciones, ms){
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, Object.assign({}, opciones, {signal: ctrl.signal}));
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 let vapidPublicKey = null;
 async function obtenerClaveVapid(){
   if(vapidPublicKey) return vapidPublicKey;
   try {
-    const r = await fetch(BACKEND_URL + '/vapid-public-key');
+    // 8 segundos: si el servidor está despierto contesta al instante; si
+    // está dormido no tiene sentido esperarlo, porque la clave de respaldo
+    // sirve igual para suscribirse.
+    const r = await fetchConPlazo(BACKEND_URL + '/vapid-public-key', {}, 8000);
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const j = await r.json();
     if(j && j.key){ vapidPublicKey = j.key; return vapidPublicKey; }
@@ -4349,13 +4366,16 @@ document.getElementById('notifyBtn').addEventListener('click', async () => {
   const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-  // Si ya están activas, este botón deja de servir para activarlas y pasa a
-  // ser el botón de diagnóstico: es el momento en que el usuario lo toca,
-  // porque no le está llegando nada.
-  let yaActivas = false;
-  try { yaActivas = localStorage.getItem('ipsa_notif_activas') === '1'; } catch(e){}
-  if(yaActivas && ('Notification' in window) && Notification.permission === 'granted'){
+  // El botón pasa a modo diagnóstico apenas el permiso está concedido, sin
+  // exigir que localStorage diga que están "activas". Antes se pedían las
+  // dos cosas, y bastaba con borrar los datos del sitio (algo que hicimos
+  // varias veces probando) para que el diagnóstico quedara inalcanzable
+  // justo cuando más se necesitaba.
+  if(('Notification' in window) && Notification.permission === 'granted'){
+    const textoPrevio = btn.textContent;
+    btn.textContent = '⏳ Probando…';
     const r = await probarNotificacionLocal();
+    btn.textContent = textoPrevio;
     alert(
       (r.ok
         ? '✅ Se acaba de mostrar una notificación de prueba.\n\nSi la VISTE: el teléfono está bien, el problema está en el envío desde el servidor.\nSi NO la viste: revisa Ajustes → Notificaciones → IPSA Monitor.'
@@ -4373,6 +4393,12 @@ document.getElementById('notifyBtn').addEventListener('click', async () => {
     alert('Este navegador no soporta notificaciones push. En iPhone, asegúrate de haber agregado la app a inicio desde Safari (ver instrucciones).');
     return;
   }
+  // Este proceso habla dos veces con un servidor que puede estar dormido y
+  // tardar ~50 s en despertar. Sin avisar en pantalla, el botón parece
+  // muerto y el usuario lo toca de nuevo pensando que no registró el toque.
+  const textoOriginal = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '⏳ Activando…';
   try {
     const permiso = await Notification.requestPermission();
     if (permiso !== 'granted') {
@@ -4386,11 +4412,15 @@ document.getElementById('notifyBtn').addEventListener('click', async () => {
     // con una clave VAPID antigua, la rehace (ver suscripcionVigente()).
     const sub = await suscripcionVigente(reg);
 
-    const resp = await fetch(BACKEND_URL + '/subscribe', {
+    btn.textContent = '⏳ Registrando en el servidor…';
+    // 60 s: el plan gratuito de Render duerme el servicio y despertarlo
+    // toma cerca de 50. Este es el único punto donde SÍ vale la pena
+    // esperarlo, porque sin registrar la suscripción no hay push posible.
+    const resp = await fetchConPlazo(BACKEND_URL + '/subscribe', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(sub),
-    });
+    }, 60000);
     // Antes no se miraba la respuesta: si el servidor rechazaba el registro,
     // el botón igual se ponía en verde y el usuario quedaba creyendo que
     // estaba todo listo.
@@ -4398,10 +4428,19 @@ document.getElementById('notifyBtn').addEventListener('click', async () => {
 
     try { localStorage.setItem('ipsa_notif_activas', '1'); } catch(e){}
     marcarBotonActivo(btn);
+    btn.disabled = false;
+    return;
   } catch (err) {
     console.error(err);
-    alert('No se pudo activar las notificaciones: ' + err.message);
+    const dormido = err.name === 'AbortError' || /Failed to fetch|NetworkError/i.test(err.message || '');
+    alert(dormido
+      ? 'El permiso quedó concedido, pero no se pudo avisar al servidor: no respondió a tiempo.\n\n'
+        + 'El servidor gratuito se duerme cuando nadie lo usa y tarda hasta un minuto en despertar. '
+        + 'Abre primero cualquier pantalla de la app, espera a que aparezcan los precios, y vuelve a tocar este botón.'
+      : 'No se pudo activar las notificaciones: ' + err.message);
   }
+  btn.disabled = false;
+  btn.textContent = textoOriginal;
 });
 </script>
 </body>
