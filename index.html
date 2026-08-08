@@ -4366,25 +4366,15 @@ document.getElementById('notifyBtn').addEventListener('click', async () => {
   const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
-  // El botón pasa a modo diagnóstico apenas el permiso está concedido, sin
-  // exigir que localStorage diga que están "activas". Antes se pedían las
-  // dos cosas, y bastaba con borrar los datos del sitio (algo que hicimos
-  // varias veces probando) para que el diagnóstico quedara inalcanzable
-  // justo cuando más se necesitaba.
-  if(('Notification' in window) && Notification.permission === 'granted'){
-    const textoPrevio = btn.textContent;
-    btn.textContent = '⏳ Probando…';
-    const r = await probarNotificacionLocal();
-    btn.textContent = textoPrevio;
-    alert(
-      (r.ok
-        ? '✅ Se acaba de mostrar una notificación de prueba.\n\nSi la VISTE: el teléfono está bien, el problema está en el envío desde el servidor.\nSi NO la viste: revisa Ajustes → Notificaciones → IPSA Monitor.'
-        : '⚠️ No se pudo mostrar la notificación de prueba en este dispositivo.')
-      + '\n\nDatos técnicos:\n· ' + r.info.join('\n· ')
-    );
-    return;
-  }
-
+  // NO hay "modo diagnóstico" que se coma el toque antes de registrar.
+  //
+  // Al principio esta comprobación estaba arriba y cortaba con `return`: si
+  // el permiso ya estaba concedido, el botón solo hacía la prueba local y
+  // nunca llegaba a registrar la suscripción en el servidor. Como en tu
+  // iPhone el permiso YA estaba dado, el botón quedó atrapado ahí para
+  // siempre — decía "Activar notificaciones", mostraba la prueba, y el
+  // servidor seguía con cero suscripciones. Ahora cada toque hace las dos
+  // cosas: primero registra, después diagnostica.
   if (isIOS && !isStandalone) {
     alert('En iPhone, las notificaciones solo funcionan si agregas esta página a tu pantalla de inicio primero:\n\n1. Toca el botón Compartir (el cuadrado con flecha) en Safari\n2. Elige "Agregar a inicio"\n3. Abre la app desde el ícono que aparece en tu pantalla de inicio (no desde Safari)\n4. Ahí sí toca este botón de nuevo');
     return;
@@ -4426,9 +4416,26 @@ document.getElementById('notifyBtn').addEventListener('click', async () => {
     // estaba todo listo.
     if(!resp.ok) throw new Error('el servidor rechazó el registro (HTTP ' + resp.status + ')');
 
+    const cuerpo = await resp.json().catch(() => ({}));
     try { localStorage.setItem('ipsa_notif_activas', '1'); } catch(e){}
     marcarBotonActivo(btn);
     btn.disabled = false;
+
+    // Registrada. Ahora sí el diagnóstico: muestra una notificación de
+    // prueba local y el resumen técnico, para poder distinguir a la primera
+    // entre "el teléfono no muestra nada" y "el envío desde el servidor no
+    // llega".
+    const r = await probarNotificacionLocal();
+    alert('✅ Notificaciones registradas en el servidor'
+      + (typeof cuerpo.suscripciones === 'number'
+          ? ' (' + cuerpo.suscripciones + ' dispositivo' + (cuerpo.suscripciones === 1 ? '' : 's') + ').'
+          : '.')
+      + (r.ok
+          ? '\n\nSe acaba de mostrar una notificación de prueba local.\n'
+            + 'Si la VISTE: el teléfono está bien.\n'
+            + 'Si NO la viste: revisa Ajustes → Notificaciones → IPSA Monitor.'
+          : '\n\n⚠️ No se pudo mostrar la notificación de prueba local.')
+      + '\n\nDatos técnicos:\n· ' + r.info.join('\n· '));
     return;
   } catch (err) {
     console.error(err);
