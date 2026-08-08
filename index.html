@@ -4290,10 +4290,80 @@ setInterval(() => {
   if(activadas && document.visibilityState === 'visible') resincronizarSuscripcion();
 }, 30 * 60 * 1000);
 
+// ---- Autodiagnóstico de notificaciones ----
+//
+// "No me llega la notificación" son en realidad DOS fallas distintas que se
+// ven igual desde afuera, y hasta ahora no teníamos cómo separarlas:
+//
+//   A) El teléfono no muestra notificaciones de esta app (permiso revocado,
+//      modo concentración, la PWA no quedó bien instalada). Nada de lo que
+//      pase en el servidor va a arreglar esto.
+//   B) El permiso está bien y el problema está en el camino: servidor →
+//      Apple/Google → teléfono.
+//
+// Esta función prueba SOLO la parte local: pide al service worker que
+// muestre una notificación ahora mismo, sin pasar por internet. Si aparece,
+// el caso A queda descartado y sabemos que hay que mirar el servidor. Si no
+// aparece, el problema es del teléfono y no tiene sentido seguir tocando
+// código del backend.
+async function probarNotificacionLocal(){
+  const info = [];
+  try {
+    if(!('Notification' in window)) return { ok:false, info:['Este navegador no tiene API de notificaciones'] };
+    info.push('permiso: ' + Notification.permission);
+
+    const standalone = window.matchMedia('(display-mode: standalone)').matches
+                    || window.navigator.standalone === true;
+    info.push('abierta como app instalada: ' + (standalone ? 'sí' : 'NO (en iPhone el push no funciona así)'));
+
+    if(!('serviceWorker' in navigator)) return { ok:false, info:info.concat('sin service worker') };
+    const reg = await navigator.serviceWorker.getRegistration();
+    info.push('service worker: ' + (reg ? 'registrado' : 'NO registrado'));
+    if(!reg) return { ok:false, info };
+
+    const sub = await reg.pushManager.getSubscription();
+    if(sub){
+      const host = (sub.endpoint || '').split('/')[2] || '?';
+      info.push('servicio de push: ' + host);
+      const clave = await obtenerClaveVapid();
+      info.push('clave VAPID al día: ' + (suscripcionUsaClave(sub, clave) ? 'sí' : 'NO'));
+    } else {
+      info.push('suscripción push: NO existe en este dispositivo');
+    }
+
+    if(Notification.permission !== 'granted'){
+      return { ok:false, info };
+    }
+    await reg.showNotification('IPSA Monitor · prueba local', {
+      body: 'Si ves esto, el teléfono SÍ puede mostrar notificaciones de la app. El problema estaría en el envío desde el servidor.',
+      tag: 'ipsa-prueba-local',
+    });
+    return { ok:true, info };
+  } catch(e){
+    return { ok:false, info: info.concat('error: ' + e.message) };
+  }
+}
+
 document.getElementById('notifyBtn').addEventListener('click', async () => {
   const btn = document.getElementById('notifyBtn');
   const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+  // Si ya están activas, este botón deja de servir para activarlas y pasa a
+  // ser el botón de diagnóstico: es el momento en que el usuario lo toca,
+  // porque no le está llegando nada.
+  let yaActivas = false;
+  try { yaActivas = localStorage.getItem('ipsa_notif_activas') === '1'; } catch(e){}
+  if(yaActivas && ('Notification' in window) && Notification.permission === 'granted'){
+    const r = await probarNotificacionLocal();
+    alert(
+      (r.ok
+        ? '✅ Se acaba de mostrar una notificación de prueba.\n\nSi la VISTE: el teléfono está bien, el problema está en el envío desde el servidor.\nSi NO la viste: revisa Ajustes → Notificaciones → IPSA Monitor.'
+        : '⚠️ No se pudo mostrar la notificación de prueba en este dispositivo.')
+      + '\n\nDatos técnicos:\n· ' + r.info.join('\n· ')
+    );
+    return;
+  }
 
   if (isIOS && !isStandalone) {
     alert('En iPhone, las notificaciones solo funcionan si agregas esta página a tu pantalla de inicio primero:\n\n1. Toca el botón Compartir (el cuadrado con flecha) en Safari\n2. Elige "Agregar a inicio"\n3. Abre la app desde el ícono que aparece en tu pantalla de inicio (no desde Safari)\n4. Ahí sí toca este botón de nuevo');
