@@ -3967,8 +3967,12 @@ updateClock();
 setInterval(updateClock, 1000);
 
 /* ---- Notificaciones push ---- */
-// Clave pública VAPID (ver vapid_keys.txt) — ya insertada, no requiere edición.
-const VAPID_PUBLIC_KEY = 'BOQ6bcNgmXfK7oB9_Z2wca_1cd9oaqnebftUQf3hAkLX7DeHUIJezdHoqiY27CWadBjDD3fNZbzSpJPf23mpKBY';
+// Clave pública VAPID de RESPALDO. La app pide la buena a /vapid-public-key
+// (ver obtenerClaveVapid() más abajo); esta solo se usa si ese endpoint no
+// responde. Es la que el servidor deriva hoy de su clave privada — si algún
+// día regeneras las claves VAPID en Render, esta queda vieja, pero como el
+// endpoint manda, no rompe nada.
+const VAPID_PUBLIC_KEY_RESPALDO = 'BKLnGpwyT6bNPR_CDvGAgTrQDU9Xu5aUpYm6Y42L6fULYd8_d0QjXzzhdPavqKdtg-jcMPYwnrHzjPGtAqqQw2c';
 
 // CAMBIA ESTO por la URL real de tu servidor una vez desplegado (ver DEPLOY.md)
 const BACKEND_URL = 'https://ipsa-alert-service.onrender.com';
@@ -4074,6 +4078,79 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
 }
 
+// Inversa de la anterior: convierte el applicationServerKey que trae una
+// suscripción ya existente (viaja como ArrayBuffer) al mismo texto
+// base64url con que se compara la clave del servidor.
+function uint8ArrayToUrlBase64(buf) {
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  for(const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// ---- Clave VAPID: la manda el servidor, no se escribe a mano ----
+//
+// EL PROBLEMA QUE ESTO ARREGLA
+// El HTML traía una clave pública escrita a mano y el servidor tenía la
+// privada en sus variables de entorno. Se desincronizaron: el HTML decía
+// BOQ6bc… y el servidor derivaba BKLnGp…. Con claves distintas el navegador
+// igual deja suscribirse y el botón queda en verde — el celular no tiene
+// cómo saber cuál es la correcta. El push muere después, en silencio,
+// cuando Apple/Google rechazan un mensaje firmado con otra identidad.
+//
+// Ahora la clave se pide a /vapid-public-key y siempre gana la del servidor.
+// La constante de abajo queda solo como respaldo por si ese endpoint no
+// responde (servidor dormido, versión vieja del backend sin desplegar).
+let vapidPublicKey = null;
+async function obtenerClaveVapid(){
+  if(vapidPublicKey) return vapidPublicKey;
+  try {
+    const r = await fetch(BACKEND_URL + '/vapid-public-key');
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    if(j && j.key){ vapidPublicKey = j.key; return vapidPublicKey; }
+    throw new Error('respuesta sin clave');
+  } catch(e){
+    console.warn('No se pudo pedir la clave VAPID al servidor, usando la de respaldo:', e);
+    vapidPublicKey = VAPID_PUBLIC_KEY_RESPALDO;
+    return vapidPublicKey;
+  }
+}
+
+// Una suscripción push guarda para siempre la clave con que se creó. Si esa
+// clave ya no es la del servidor, no sirve de nada reenviarla: hay que
+// borrarla y hacer una nueva. Sin esta comprobación, un celular que se
+// suscribió con la clave equivocada seguiría reusándola indefinidamente,
+// incluso después de corregir el código.
+function suscripcionUsaClave(sub, clave){
+  try {
+    const k = sub && sub.options && sub.options.applicationServerKey;
+    if(!k) return true; // el navegador no lo expone: no forzar rehacerla
+    return uint8ArrayToUrlBase64(k) === String(clave).replace(/=+$/, '');
+  } catch(e){
+    return true;
+  }
+}
+
+// Devuelve una suscripción vigente y firmada con la clave actual del
+// servidor, rehaciéndola si la que había quedó obsoleta.
+async function suscripcionVigente(reg){
+  const clave = await obtenerClaveVapid();
+  let sub = await reg.pushManager.getSubscription();
+  if(sub && !suscripcionUsaClave(sub, clave)){
+    console.warn('La suscripción push existente usa una clave VAPID antigua. Se rehace.');
+    try { await sub.unsubscribe(); } catch(e){ /* si falla, subscribe() la reemplaza igual */ }
+    sub = null;
+  }
+  if(!sub){
+    sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(clave),
+    });
+  }
+  return sub;
+}
+
 function marcarBotonActivo(btn){
   btn.textContent = '✅ Notificaciones activas';
   btn.style.color = 'var(--verdigris)';
@@ -4122,7 +4199,17 @@ async function resincronizarSuscripcion(){
     if(!('serviceWorker' in navigator)) return false;
     const reg = await navigator.serviceWorker.register('sw.js');
     await navigator.serviceWorker.ready;
-    const sub = await reg.pushManager.getSubscription();
+
+    // Pide la suscripción vigente. Si la guardada quedó con una clave VAPID
+    // antigua, suscripcionVigente() la rehace sola: el permiso ya está
+    // concedido en este punto, así que no molesta al usuario con un diálogo.
+    let sub = null;
+    try {
+      sub = await suscripcionVigente(reg);
+    } catch(e){
+      console.warn('No se pudo renovar la suscripción push:', e);
+      sub = await reg.pushManager.getSubscription();
+    }
 
     if(!sub){
       // El navegador perdió la suscripción: hay que rehacerla, no basta
@@ -4202,25 +4289,25 @@ document.getElementById('notifyBtn').addEventListener('click', async () => {
     const reg = await navigator.serviceWorker.register('sw.js');
     await navigator.serviceWorker.ready;
 
-    // Si ya existía una suscripción previa (de una sesión anterior), la
-    // reusamos en vez de crear una nueva cada vez.
-    let sub = await reg.pushManager.getSubscription();
-    if(!sub){
-      sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-      });
-    }
-    await fetch(BACKEND_URL + '/subscribe', {
+    // Reusa la suscripción previa si sigue siendo válida; si quedó firmada
+    // con una clave VAPID antigua, la rehace (ver suscripcionVigente()).
+    const sub = await suscripcionVigente(reg);
+
+    const resp = await fetch(BACKEND_URL + '/subscribe', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify(sub),
     });
+    // Antes no se miraba la respuesta: si el servidor rechazaba el registro,
+    // el botón igual se ponía en verde y el usuario quedaba creyendo que
+    // estaba todo listo.
+    if(!resp.ok) throw new Error('el servidor rechazó el registro (HTTP ' + resp.status + ')');
+
     try { localStorage.setItem('ipsa_notif_activas', '1'); } catch(e){}
     marcarBotonActivo(btn);
   } catch (err) {
     console.error(err);
-    alert('No se pudo activar las notificaciones: ' + err.message + '\n\n¿Ya configuraste BACKEND_URL en el código con tu servidor real?');
+    alert('No se pudo activar las notificaciones: ' + err.message);
   }
 });
 </script>
