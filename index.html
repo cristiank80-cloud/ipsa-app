@@ -3,12 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IPSA Monitor · Prototipo v2</title>
+<title>IPSA Monitor</title>
 <link rel="manifest" href="manifest.json">
+<!-- El estándar reemplazó a apple-mobile-web-app-capable por
+     mobile-web-app-capable. Se dejan los dos: Safari viejo todavía lee el
+     de Apple, y sin el nuevo Chrome escupe un aviso de obsolescencia. -->
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="IPSA Monitor">
 <link rel="apple-touch-icon" href="icon-192.png">
+<!-- Sin esto el navegador pide /favicon.ico y anota un 404 en la consola
+     cada vez que se abre la app. Se reusa el ícono que ya existe. -->
+<link rel="icon" href="icon-192.png" type="image/png">
 <meta name="theme-color" content="#14171A">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
@@ -2599,6 +2606,9 @@ let signalsData = null;
 // candidatos. El día que signals.py soporte esto, empieza a funcionar
 // solo, sin tocar el frontend de nuevo.
 let signalsDataUsa = null;
+// Se pone en true al primer 404 de /signals?mercado=usa para no volver a
+// preguntar en esta sesión (ver fetchSignals más abajo).
+let signalsUsaNoDisponible = false;
 
 async function fetchSignals(){
   try {
@@ -2610,11 +2620,24 @@ async function fetchSignals(){
     // Se deja signalsData como estaba (null o el último bueno): el panel
     // cae al cálculo local de respaldo en vez de quedar en blanco.
   }
-  try {
-    const respUsa = await fetch(BACKEND_URL + '/signals?mercado=usa');
-    signalsDataUsa = respUsa.ok ? await respUsa.json() : null;
-  } catch(e){
-    signalsDataUsa = null; // esperado hasta que signals.py soporte EE.UU. -- no es un error para el usuario
+  // El backend todavía no calcula señales para EE.UU.: /signals?mercado=usa
+  // devuelve 404 a propósito (nunca datos inventados). Antes se preguntaba
+  // igual cada 60 segundos para siempre, llenando la consola de 404 y
+  // gastando una petición al servidor cada minuto sin ninguna posibilidad
+  // de que la respuesta cambiara. Ahora, al primer 404 se deja de preguntar
+  // en esta sesión; si algún día el backend lo implementa, basta recargar.
+  if(!signalsUsaNoDisponible){
+    try {
+      const respUsa = await fetch(BACKEND_URL + '/signals?mercado=usa');
+      if(respUsa.status === 404){
+        signalsUsaNoDisponible = true;
+        signalsDataUsa = null;
+      } else {
+        signalsDataUsa = respUsa.ok ? await respUsa.json() : null;
+      }
+    } catch(e){
+      signalsDataUsa = null; // servidor caído o dormido: se reintenta al próximo ciclo
+    }
   }
   renderAnalysis();
 }
