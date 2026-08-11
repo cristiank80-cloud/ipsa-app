@@ -536,7 +536,7 @@
         <option value="compra">Compra</option>
         <option value="venta">Venta</option>
       </select>
-      <input type="number" id="movCantidad" class="mov-input" placeholder="Cantidad" min="1" step="1">
+      <input type="number" id="movCantidad" class="mov-input" placeholder="Cantidad" min="0.00000001" step="any">
       <input type="number" id="movPrecio" class="mov-input" placeholder="Precio" min="0" step="0.01">
       <input type="date" id="movFecha" class="mov-input">
       <button id="movGuardar" class="mov-btn">Registrar</button>
@@ -756,6 +756,19 @@ function fmt(v, dec, currency){
 }
 function fmtPct(v){ const s = v>=0 ? '+' : ''; return s + (v*100).toLocaleString('es-CL',{minimumFractionDigits:1,maximumFractionDigits:1}) + '%'; }
 function fmtCLP0(v){ return Math.round(v).toLocaleString('es-CL'); }
+// Cantidad de títulos: en Chile siempre es un número entero (no se compran
+// fracciones de acción), pero en EE.UU. muchas apps de inversión compran
+// "por monto" (ej. US$10 en Nvidia) y entregan cantidades fraccionadas como
+// 0.07438882 -- redondear eso a entero mostraría "0 títulos" para una
+// compra real. Se muestra con hasta 6 decimales (sin ceros de más) solo
+// para USD; CLP se comporta exactamente igual que antes (fmtCLP0).
+function fmtCantidad(v, currency){
+  if(v === null || v === undefined || isNaN(v)) return '···';
+  if(currency === 'USD'){
+    return v.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:6});
+  }
+  return Math.round(v).toLocaleString('es-CL');
+}
 // Formateador de dinero CON símbolo, para bloques que hoy concatenan '$' +
 // fmtCLP0(...) a mano (caja, cartera, resumen). currency por defecto CLP.
 // Se usa desde los bloques 5-7 (caja por moneda, ambiente 3 consolidado).
@@ -2868,7 +2881,7 @@ function renderMovimientos(){
       <div class="mov-item">
         <span class="mi-tipo ${ultimo.tipo}">${ultimo.tipo}</span>
         <span class="mono">${ultimo.ticker}</span>
-        <span>${ultimo.cantidad} tít.</span>
+        <span>${fmtCantidad(ultimo.cantidad, monedaDeMov(ultimo))} tít.</span>
         <span class="mono">${fmtMoneda2(ultimo.precio, monedaDeMov(ultimo))}</span>
         <span style="color:var(--ink-faint);">${ultimo.fecha}</span>
         <button class="mi-del" data-id="${ultimo.id}" title="Eliminar">✕</button>
@@ -2895,9 +2908,12 @@ function renderMovimientos(){
       const signo = m.tipo === 'compra' ? 1 : -1;
       posiciones[m.ticker] = (posiciones[m.ticker] || 0) + signo * m.cantidad;
     });
+    const monedaResumen = ambienteActivo === 'usa' ? 'USD' : 'CLP';
     const resumen = Object.entries(posiciones)
-      .filter(([,cant]) => cant !== 0)
-      .map(([t,cant]) => `${t}: ${cant>0?'+':''}${cant}`)
+      // Umbral chico en vez de "!== 0": sumar/restar floats (0.1+0.2, etc.)
+      // puede dejar restos como 0.000000000000003 en vez de un 0 exacto.
+      .filter(([,cant]) => Math.abs(cant) > 0.0000001)
+      .map(([t,cant]) => `${t}: ${cant>0?'+':''}${fmtCantidad(cant, monedaResumen)}`)
       .join(' · ');
     if(resumen){
       listEl.insertAdjacentHTML('beforeend', `<p class="movs-summary">Posición neta registrada — ${resumen}</p>`);
@@ -2913,7 +2929,11 @@ function inicializarFormularioMovimientos(){
   document.getElementById('movGuardar').addEventListener('click', () => {
     const ticker = tickerDesdeInputMov(document.getElementById('movTicker').value);
     const tipo = document.getElementById('movTipo').value;
-    const cantidad = parseInt(document.getElementById('movCantidad').value, 10);
+    // parseFloat (no parseInt): acciones de EE.UU. compradas "por monto" dan
+    // cantidades fraccionadas (ej. 0.07438882 Nvidia) -- con parseInt esas
+    // compras se truncaban a 0 y el formulario las rechazaba como si el
+    // campo estuviera vacío.
+    const cantidad = parseFloat(document.getElementById('movCantidad').value);
     const precio = parseFloat(document.getElementById('movPrecio').value);
     const fecha = document.getElementById('movFecha').value;
 
@@ -3439,7 +3459,7 @@ function renderMovsDetailPanel(){
     const filasCompra = p.compras.map(m => `
       <tr>
         <td>${m.fecha}</td>
-        <td>${fmtCLP0(m.cantidad)}</td>
+        <td>${fmtCantidad(m.cantidad, moneda)}</td>
         <td>${fmt(m.precio, p.dec, moneda)}</td>
         <td>${$$(m.cantidad*m.precio)}</td>
       </tr>`).join('');
@@ -3447,7 +3467,7 @@ function renderMovsDetailPanel(){
     const filasVenta = p.ventas.map(m => `
       <tr>
         <td>${m.fecha}</td>
-        <td>${fmtCLP0(m.cantidad)}</td>
+        <td>${fmtCantidad(m.cantidad, moneda)}</td>
         <td>${fmt(m.precio, p.dec, moneda)}</td>
         <td>${$$(m.cantidad*m.precio)}</td>
       </tr>`).join('');
@@ -3456,7 +3476,7 @@ function renderMovsDetailPanel(){
       <div class="portfolio-ticker-block">
         <div class="ptb-head">
           <span class="ptb-ticker">${p.ticker}</span>
-          <span class="ptb-qty">${p.nombre} · posición actual: ${p.netoQ > 0 ? p.netoQ+' títulos' : 'cerrada'}</span>
+          <span class="ptb-qty">${p.nombre} · posición actual: ${p.netoQ > 0 ? fmtCantidad(p.netoQ, p.moneda)+' títulos' : 'cerrada'}</span>
         </div>
 
         ${p.netoQ > 0 ? `
@@ -3464,7 +3484,7 @@ function renderMovsDetailPanel(){
           <thead><tr><th>Costo prom.</th><th>Cantidad</th><th>Costo total</th><th>Precio actual</th><th>Valor actual</th></tr></thead>
           <tbody><tr>
             <td>${fmt(p.costoPromedio, p.dec, moneda)}</td>
-            <td>${fmtCLP0(p.netoQ)}</td>
+            <td>${fmtCantidad(p.netoQ, moneda)}</td>
             <td>${oculto?'••••':$$(p.costoDeLoQueQueda)}</td>
             <td>${p.precioActual !== null ? fmt(p.precioActual, p.dec, moneda) : 'cargando…'}</td>
             <td>${p.valorActual !== null ? (oculto?'••••':$$(p.valorActual)) : 'cargando…'}</td>
