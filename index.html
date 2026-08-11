@@ -528,7 +528,8 @@
     </div>
     <div class="movs-form">
       <div style="position:relative; flex:1; min-width:140px;">
-        <input id="movTicker" class="mov-input mono" style="width:100%;" placeholder="Escribe o elige una acción..." autocomplete="off">
+        <input id="movTicker" class="mov-input mono" style="width:100%; padding-right:30px;" placeholder="Escribe o elige una acción..." autocomplete="off">
+        <button type="button" id="movTickerClear" class="search-clear" title="Borrar búsqueda" aria-label="Borrar búsqueda">✕</button>
         <div class="ud-dropdown" id="movTickerDropdown"></div>
       </div>
       <select id="movTipo" class="mov-input">
@@ -1034,6 +1035,13 @@ function cambiarAmbiente(nuevo){
   if(typeof updateMarketStatusUsa === 'function') updateMarketStatusUsa();
   if(typeof renderMovimientos === 'function') renderMovimientos();
   if(typeof renderResumenPortafolio === 'function') renderResumenPortafolio();
+  // El panel "Para revisar como posible compra/venta" (RSI/z-score) no se
+  // repintaba al cambiar de ambiente -- seguía mostrando los candidatos del
+  // mercado anterior hasta que terminaba el próximo fetch de precios (unos
+  // segundos después), dando la sensación de que "aparecen" acciones del
+  // otro país antes de cambiar solas. renderAnalysis() ya elige los datos
+  // correctos según ambienteActivo; solo faltaba llamarlo aquí, de inmediato.
+  if(typeof renderAnalysis === 'function') renderAnalysis();
   if(typeof renderW8ben === 'function') renderW8ben();
   if(esSeguir && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir();
   // Al entrar a EE.UU. o al consolidado, refrescar sus precios de inmediato:
@@ -2773,21 +2781,26 @@ function saveMovimientos(movs){
 }
 let movimientos = loadMovimientos();
 
-// Buscador unificado del campo de movimientos (sección 6.3, tabla): cubre
-// AMBOS mercados siempre (no solo el ambiente activo) y permite texto
-// libre -- registrar un ticker que la app todavía no monitorea. Se
-// instancia una sola vez; ver crearBuscadorUnificado() más arriba.
+// Buscador unificado del campo de movimientos (sección 6.3, tabla): filtra
+// SOLO por el ambiente activo (igual que el buscador de arriba) para no
+// mezclar acciones chilenas con acciones de EE.UU. en la misma lista --
+// antes cubría ambos mercados siempre, lo que hacía fácil elegir por error
+// una acción del otro mercado y que el movimiento quedara registrado con
+// la moneda equivocada (y por lo tanto invisible en el ambiente donde se
+// esperaba verlo). Sigue permitiendo texto libre para un nemotécnico que
+// la app todavía no monitorea. Se instancia una sola vez; ver
+// crearBuscadorUnificado() más arriba.
 let buscadorMovTicker = null;
 function poblarSelectorTickers(){
   if(buscadorMovTicker) return; // ya instanciado, nada que repoblar (los items se leen en vivo)
   buscadorMovTicker = crearBuscadorUnificado({
     input: document.getElementById('movTicker'),
-    clearBtn: null, // este campo no tiene botón ✕ propio (crearBuscadorUnificado lo acepta)
+    clearBtn: document.getElementById('movTickerClear'),
     dropdown: document.getElementById('movTickerDropdown'),
-    getItems: () => todosLosStocks(),
+    getItems: () => stocksDelAmbiente(ambienteActivo),
     onSelect: () => {},
     permiteTextoLibre: true,
-    agrupar: true,
+    agrupar: () => ambienteActivo === 'seguir',
   });
 }
 
