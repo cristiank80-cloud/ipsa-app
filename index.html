@@ -94,6 +94,37 @@
   .seguir-regla{font-size:11px; color:var(--ink-dim); margin-top:3px;}
   .seguir-empty{font-size:12px; color:var(--ink-faint); padding:8px 0;}
 
+  /* Bloque 8: Ambiente 4 · Mi Cartera (favoritos + precios objetivo). */
+  .cartera-buscador{width:100%; padding:9px 12px; border:1px solid var(--hairline); border-radius:8px; background:var(--bg-field); font-size:13px; margin-bottom:10px; box-sizing:border-box;}
+  .cartera-toggle{font-size:11.5px; color:var(--ink-dim); margin-bottom:14px; display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none;}
+  .cartera-group-title{font-size:12.5px; font-weight:600; margin:18px 0 8px; color:var(--ink-dim);}
+  .cartera-row{border:1px solid var(--hairline); border-radius:10px; padding:12px; margin-bottom:8px; background:var(--bg-panel);}
+  .cartera-row.is-favorite{border-color:var(--gold);}
+  .cartera-row-head{display:flex; align-items:center; gap:8px; cursor:pointer;}
+  .cartera-row-head .fav-btn{font-size:16px; line-height:1; background:none; border:none; color:var(--ink-faint); cursor:pointer; padding:2px;}
+  .cartera-row-head .fav-btn.active{color:var(--gold);}
+  .cartera-ticker{font-weight:600;}
+  .cartera-name{font-size:11px; color:var(--ink-faint); margin-left:6px;}
+  .cartera-pos{font-size:11.5px; color:var(--ink-dim); margin:6px 0 8px;}
+  .cartera-alertas{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  @media(max-width:480px){ .cartera-alertas{grid-template-columns:1fr;} }
+  .cartera-campo label{font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.02em; display:block; margin-bottom:3px;}
+  .cartera-campo input{width:100%; padding:6px 8px; border:1px solid var(--hairline); border-radius:6px; background:var(--bg-field); font-size:13px; box-sizing:border-box;}
+  .cartera-dist{font-size:10.5px; margin-top:3px; color:var(--ink-faint);}
+  .cartera-empty{font-size:12px; color:var(--ink-faint); padding:8px 0;}
+
+  /* Rediseño Patrimonio (imagen 1 del pedido): total + desglose Cartera/Caja por país. */
+  .patr-total{background:var(--bg-panel); border:1px solid var(--hairline); border-radius:12px; padding:16px; margin-bottom:14px; text-align:center;}
+  .patr-total-label{font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.03em;}
+  .patr-total-val{font-size:26px; font-weight:700; margin-top:4px;}
+  .patr-sub{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px; padding-top:12px; border-top:1px solid var(--hairline);}
+  .patr-block{background:var(--bg-panel); border:1px solid var(--hairline); border-radius:12px; padding:14px; margin-bottom:12px;}
+  .patr-block-title{font-size:12.5px; font-weight:600; margin-bottom:10px;}
+  .patr-cols{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .patr-col-label{font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.02em;}
+  .patr-col-val{font-size:16px; font-weight:600; margin-top:3px;}
+  .patr-fx{font-size:11px; color:var(--ink-dim); margin-top:10px; text-align:right;}
+
   /* Bloque 6: asignación objetivo vs. real, con banda de tolerancia. */
   .asig-box{margin-top:10px; padding-top:8px; border-top:1px dashed var(--hairline);}
   .asig-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:11.5px; color:var(--ink-dim);}
@@ -437,6 +468,7 @@
       <button type="button" class="env-btn" data-amb="chile">Chile · CLP</button>
       <button type="button" class="env-btn" data-amb="usa">EE.UU. · USD</button>
       <button type="button" class="env-btn" data-amb="seguir">A seguir</button>
+      <button type="button" class="env-btn" data-amb="cartera">Mi Cartera</button>
     </div>
 
     <div class="index-block" id="idxBlock">
@@ -607,11 +639,15 @@
     <div class="grid" id="cardsGrid"></div>
   </div>
 
-  <p class="footer-note" id="footerNote">Recordatorio principal: aporte mensual (día 17) · alertas de precio: reglas de signals.py (distancia a su promedio, RSI, tendencia y liquidez) — el correo y el push por ahora solo cubren Chile · CLP</p>
+  <p class="footer-note" id="footerNote">Recordatorio principal: aporte mensual (día 17) · alertas de precio: reglas de signals.py (distancia a su promedio, RSI, tendencia y liquidez) — el correo y el push de estas reglas por ahora solo cubren Chile · CLP. Los precios objetivo que definas en "Mi Cartera" sí cubren Chile y EE.UU.</p>
 
   <!-- Ambiente 3 · A seguir (sección 2.4). Se construye en el bloque 7;
        aquí solo el contenedor, oculto salvo cuando ambienteActivo==='seguir'. -->
   <div class="ambiente-view" id="viewSeguir" style="display:none;"></div>
+
+  <!-- Ambiente 4 · Mi Cartera (favoritos + precios objetivo, imagen 2 del
+       pedido). Se construye en el bloque 8; aquí solo el contenedor. -->
+  <div class="ambiente-view" id="viewCartera" style="display:none;"></div>
 
   <div class="overlay" id="overlay">
     <div class="detail" id="detailPanel"></div>
@@ -947,6 +983,9 @@ const stocksUSA = [
   {ticker:'LMT',    name:"Lockheed Martin",                           dec:2, currency:'USD'},
   {ticker:'DE',     name:"Deere",                                     dec:2, currency:'USD'},
   {ticker:'LIN',    name:"Linde",                                     dec:2, currency:'USD'},
+  // Agregado a pedido: ETF sectorial de aeroespacial/defensa. Debe existir
+  // tambien en TICKERS_USA de backend/main.py, o el backend no le manda precio.
+  {ticker:'ITA',    name:"iShares U.S. Aerospace & Defense ETF",       dec:2, currency:'USD'},
 ];
 const stateUSA = stocksUSA.map(s => ({
   ...s,
@@ -989,7 +1028,7 @@ const DISCLAIMER_USA = '<b>Datos reales de Yahoo Finance, con rezago.</b> Los ET
 // bloque. El ambiente "seguir" (consolidado) se construye en el bloque 7;
 // por ahora solo conmuta la vista, #viewSeguir puede llegar vacío.
 function cambiarAmbiente(nuevo){
-  if(nuevo !== 'chile' && nuevo !== 'usa' && nuevo !== 'seguir') return;
+  if(nuevo !== 'chile' && nuevo !== 'usa' && nuevo !== 'seguir' && nuevo !== 'cartera') return;
   ambienteActivo = nuevo;
   guardarAmbienteActivo(nuevo);
 
@@ -1001,6 +1040,10 @@ function cambiarAmbiente(nuevo){
   const esChile = nuevo === 'chile';
   const esUsa = nuevo === 'usa';
   const esSeguir = nuevo === 'seguir';
+  const esCartera = nuevo === 'cartera';
+  // "Mi Cartera" es una vista consolidada como "A seguir" -- oculta la
+  // grilla de tarjetas y los paneles de análisis/movimientos igual que ella.
+  const esVistaConsolidada = esSeguir || esCartera;
 
   // Bloques de índice / estado de mercado / UF-UTM / disclaimer
   const idxBlock = document.getElementById('idxBlock');
@@ -1015,7 +1058,7 @@ function cambiarAmbiente(nuevo){
   if(idxBlock) idxBlock.style.display = esChile ? '' : 'none';
   if(idxBlockOculto) idxBlockOculto.style.display = 'none'; // renderIndexDisplay() decide si corresponde mostrarlo
   if(idxBlockUsa) idxBlockUsa.style.display = esUsa ? '' : 'none';
-  if(ufUtmBlock) ufUtmBlock.style.display = esSeguir ? 'none' : '';
+  if(ufUtmBlock) ufUtmBlock.style.display = esVistaConsolidada ? 'none' : '';
   if(statusChile) statusChile.style.display = esChile ? '' : 'none';
   if(statusUsa) statusUsa.style.display = esUsa ? '' : 'none';
   if(w8benBlock) w8benBlock.style.display = esUsa ? '' : 'none';
@@ -1028,17 +1071,19 @@ function cambiarAmbiente(nuevo){
   const mainLayout = document.getElementById('mainLayout');
   const footerNote = document.getElementById('footerNote');
   const viewSeguir = document.getElementById('viewSeguir');
+  const viewCartera = document.getElementById('viewCartera');
 
-  if(topDisclaimer) topDisclaimer.style.display = esSeguir ? 'none' : '';
-  if(analysisPanelWrap) analysisPanelWrap.style.display = esSeguir ? 'none' : '';
-  if(movsPanelWrap) movsPanelWrap.style.display = esSeguir ? 'none' : '';
-  // El buscador SÍ queda visible en los tres ambientes (sección 6.3 de la
-  // spec v3): en "A seguir" busca en ambos mercados con encabezado por
-  // grupo (ver buscadorTop.agrupar) y abre el detalle sin necesitar la
-  // grilla de tarjetas, que sigue oculta.
-  if(mainLayout) mainLayout.style.display = esSeguir ? 'none' : '';
-  if(footerNote) footerNote.style.display = esSeguir ? 'none' : '';
+  if(topDisclaimer) topDisclaimer.style.display = esVistaConsolidada ? 'none' : '';
+  if(analysisPanelWrap) analysisPanelWrap.style.display = esVistaConsolidada ? 'none' : '';
+  if(movsPanelWrap) movsPanelWrap.style.display = esVistaConsolidada ? 'none' : '';
+  // El buscador SÍ queda visible en los cuatro ambientes (sección 6.3 de la
+  // spec v3): en "A seguir" y "Mi Cartera" busca en ambos mercados con
+  // encabezado por grupo (ver buscadorTop.agrupar) y abre el detalle sin
+  // necesitar la grilla de tarjetas, que sigue oculta.
+  if(mainLayout) mainLayout.style.display = esVistaConsolidada ? 'none' : '';
+  if(footerNote) footerNote.style.display = esVistaConsolidada ? 'none' : '';
   if(viewSeguir) viewSeguir.style.display = esSeguir ? '' : 'none';
+  if(viewCartera) viewCartera.style.display = esCartera ? '' : 'none';
 
   // Re-renderizar los componentes compartidos con el ambiente ya cambiado
   if(typeof renderGridOrder === 'function') renderGridOrder();
@@ -1057,6 +1102,7 @@ function cambiarAmbiente(nuevo){
   if(typeof renderAnalysis === 'function') renderAnalysis();
   if(typeof renderW8ben === 'function') renderW8ben();
   if(esSeguir && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir();
+  if(esCartera && typeof renderAmbienteCartera === 'function') renderAmbienteCartera();
   // Al entrar a EE.UU. o al consolidado, refrescar sus precios de inmediato:
   // el refresco periódico de arriba está apagado mientras se mira Chile, así
   // que sin esto el usuario vería datos de hace rato al cambiarse.
@@ -3154,25 +3200,57 @@ function renderAmbienteSeguir(){
   const cajaTotalClp = cambioOk ? (cajaClp + cajaUsdEnClp) : null;
   const patrimonioTotalClp = (totalCompleto && cajaTotalClp !== null) ? (rentaVariableClp + cajaTotalClp) : null;
 
+  // Rediseño imagen 1 del pedido: total consolidado, luego el mismo total
+  // desglosado en Cartera vs. Caja (ambos en CLP), y despues cada país por
+  // separado con su propia Cartera y Caja -- Chile ya en CLP, EE.UU. en USD
+  // con su equivalente en CLP al lado, más el tipo de cambio usado.
   const patrimonioHTML = `
-    <div class="seguir-patrimonio">
-      <div class="seguir-item">
-        <div class="seguir-label">Patrimonio consolidado (CLP eq.)</div>
-        <div class="seguir-val mono">${patrimonioTotalClp !== null ? fmtMoneda(patrimonioTotalClp, oculto, 'CLP') : 'No disponible (falta tipo de cambio o algún precio real)'}</div>
-      </div>
-      <div class="seguir-item">
-        <div class="seguir-label">Cartera Chile · CLP</div>
-        <div class="seguir-val mono">${fmtMoneda(valorClpCompleto ? valorClp : null, oculto, 'CLP')}</div>
-      </div>
-      <div class="seguir-item">
-        <div class="seguir-label">Cartera EE.UU. · USD${cambioOk ? ' (' + fmtMoneda(valorUsdCompleto ? valorUsdEnClp : null, oculto, 'CLP') + ' eq.)' : ''}</div>
-        <div class="seguir-val mono">${fmtMoneda(valorUsdCompleto ? valorUsd : null, oculto, 'USD')}</div>
-      </div>
-      <div class="seguir-item">
-        <div class="seguir-label">Caja total (CLP eq.)</div>
-        <div class="seguir-val mono">${cajaTotalClp !== null ? fmtMoneda(cajaTotalClp, oculto, 'CLP') : 'No disponible (falta tipo de cambio)'}</div>
+    <div class="patr-total">
+      <div class="patr-total-label">Patrimonio consolidado (CLP eq.)</div>
+      <div class="patr-total-val mono">${patrimonioTotalClp !== null ? fmtMoneda(patrimonioTotalClp, oculto, 'CLP') : 'No disponible (falta tipo de cambio o algún precio real)'}</div>
+      <div class="patr-sub">
+        <div>
+          <div class="patr-col-label">Total cartera</div>
+          <div class="patr-col-val mono">${fmtMoneda(totalCompleto ? rentaVariableClp : null, oculto, 'CLP')}</div>
+        </div>
+        <div>
+          <div class="patr-col-label">Total caja</div>
+          <div class="patr-col-val mono">${cajaTotalClp !== null ? fmtMoneda(cajaTotalClp, oculto, 'CLP') : 'No disponible'}</div>
+        </div>
       </div>
     </div>
+
+    <div class="patr-block">
+      <div class="patr-block-title">Chile · CLP</div>
+      <div class="patr-cols">
+        <div>
+          <div class="patr-col-label">Cartera</div>
+          <div class="patr-col-val mono">${fmtMoneda(valorClpCompleto ? valorClp : null, oculto, 'CLP')}</div>
+        </div>
+        <div>
+          <div class="patr-col-label">Caja</div>
+          <div class="patr-col-val mono">${fmtMoneda(cajaClp, oculto, 'CLP')}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="patr-block">
+      <div class="patr-block-title">EE.UU. · USD</div>
+      <div class="patr-cols">
+        <div>
+          <div class="patr-col-label">Cartera</div>
+          <div class="patr-col-val mono">${fmtMoneda(valorUsdCompleto ? valorUsd : null, oculto, 'USD')}</div>
+          ${(cambioOk && valorUsdCompleto) ? `<div class="cartera-dist">${fmtMoneda(valorUsdEnClp, oculto, 'CLP')} eq.</div>` : ''}
+        </div>
+        <div>
+          <div class="patr-col-label">Caja</div>
+          <div class="patr-col-val mono">${fmtMoneda(cajaUsd, oculto, 'USD')}</div>
+          ${cambioOk ? `<div class="cartera-dist">${fmtMoneda(cajaUsdEnClp, oculto, 'CLP')} eq.</div>` : ''}
+        </div>
+      </div>
+      ${cambioOk ? `<div class="patr-fx">Tipo de cambio: ${fmtMoneda(usdclpValue, oculto, 'CLP')} / USD</div>` : ''}
+    </div>
+
     ${!cambioOk ? '<p class="seguir-empty">El tipo de cambio USD/CLP no está disponible o está vencido — la asignación y el patrimonio consolidado no se calculan hasta que vuelva.</p>' : ''}
   `;
 
@@ -3313,6 +3391,191 @@ function renderAmbienteSeguir(){
       asignacion[campo] = (v === null || isNaN(v)) ? ((campo==='umbralCajaClp'||campo==='umbralCajaUsd') ? null : 0) : v;
       guardarAsignacion();
       renderAmbienteSeguir();
+    });
+  });
+}
+
+// ---- Ambiente 4 · "Mi Cartera" (bloque 8) ----
+// Favoritos (ya existían, ver loadFavorites/saveFavorites arriba) y
+// precios objetivo por accion ("avisar si sube/baja a") -- lo nuevo. La
+// Cantidad y el Precio Compra que se muestran salen de calcularPortafolio(),
+// es decir, de "Mis movimientos": NO son un campo aparte que haya que
+// llenar dos veces. Cubre Chile y EE.UU. en la misma vista.
+function cargarAlertasPrecio(){
+  try {
+    const raw = localStorage.getItem('ipsa_alertas_precio');
+    return raw ? JSON.parse(raw) : {};
+  } catch(e){ return {}; }
+}
+function guardarAlertasPrecio(){
+  try { localStorage.setItem('ipsa_alertas_precio', JSON.stringify(alertasPrecio)); }
+  catch(e){ /* si falla, los objetivos solo duran mientras la app siga abierta */ }
+}
+const alertasPrecio = cargarAlertasPrecio(); // {TICKER: {sube: num|null, baja: num|null}}
+
+// El servidor necesita su propia copia para poder avisar aunque el celular
+// este cerrado (igual motivo que la re-suscripcion push en cada apertura,
+// ver notas de OBJETIVOS_FILE en server.py: el disco de Render es efimero).
+// Se manda la copia COMPLETA cada vez -- el frontend es la fuente de verdad.
+let _syncAlertasTimeout = null;
+function sincronizarAlertasPrecio(inmediato){
+  if(_syncAlertasTimeout){ clearTimeout(_syncAlertasTimeout); _syncAlertasTimeout = null; }
+  const enviar = () => {
+    const objetivos = {};
+    Object.entries(alertasPrecio).forEach(([ticker, obj]) => {
+      const sube = (obj.sube === null || obj.sube === undefined || isNaN(obj.sube)) ? null : obj.sube;
+      const baja = (obj.baja === null || obj.baja === undefined || isNaN(obj.baja)) ? null : obj.baja;
+      if(sube === null && baja === null) return; // nada que vigilar, no hace falta mandarlo
+      const s = todosLosStocks().find(x => x.ticker === ticker);
+      objetivos[ticker] = { sube, baja, mercado: (s && s.currency === 'USD') ? 'USD' : 'CLP' };
+    });
+    fetch(BACKEND_URL + '/alertas-precio', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({objetivos}),
+    }).catch(e => console.warn('No se pudo sincronizar los precios objetivo con el servidor (se reintenta al volver a editar):', e));
+  };
+  if(inmediato) enviar(); else _syncAlertasTimeout = setTimeout(enviar, 600);
+}
+
+// Estrella de favorito reutilizable fuera de la grilla de tarjetas (donde
+// el toggle vive embebido en el click handler de cada card, ver bloque de
+// favoritos mas arriba). Misma fuente de verdad (el Set `favoritos`), asi
+// que marcar/desmarcar aca se refleja tambien en las tarjetas de Chile/EE.UU.
+function toggleFavoritoTicker(ticker){
+  if(favoritos.has(ticker)) favoritos.delete(ticker); else favoritos.add(ticker);
+  saveFavorites();
+  if(typeof renderGridOrder === 'function') renderGridOrder();
+}
+
+let carteraFiltro = '';
+let carteraMostrarTodas = false;
+let carteraBuscadorTuvoFoco = false;
+
+function renderAmbienteCartera(){
+  const viewEl = document.getElementById('viewCartera');
+  if(!viewEl) return;
+
+  const portClp = calcularPortafolio('CLP');
+  const portUsd = calcularPortafolio('USD');
+  const filtroNorm = carteraFiltro.trim().toLowerCase();
+
+  function coincide(s){
+    if(!filtroNorm) return true;
+    return s.ticker.toLowerCase().includes(filtroNorm) || s.name.toLowerCase().includes(filtroNorm);
+  }
+  function visible(s, pos){
+    if(filtroNorm) return coincide(s); // buscando: se ignora el filtro de favoritas/con posición
+    if(carteraMostrarTodas) return true;
+    return favoritos.has(s.ticker) || (pos && pos.netoQ > 0);
+  }
+  function ordenar(lista){
+    return lista.slice().sort((a,b) => {
+      const fa = favoritos.has(a.s.ticker), fb = favoritos.has(b.s.ticker);
+      if(fa !== fb) return fa ? -1 : 1;
+      return a.s.ticker.localeCompare(b.s.ticker);
+    });
+  }
+
+  const filaCartera = (s, pos, currency) => {
+    const held = pos && pos.netoQ > 0;
+    const obj = alertasPrecio[s.ticker] || {};
+    const precioActual = (typeof s.price === 'number') ? s.price : null;
+
+    function distancia(objetivo){
+      if(objetivo === null || objetivo === undefined || objetivo === '') return '';
+      if(precioActual === null) return `Objetivo ${fmtMoneda2(objetivo, currency)} · precio actual aún no disponible`;
+      const monto = precioActual - objetivo;
+      const pct = objetivo ? (monto / objetivo * 100) : null;
+      const signo = monto >= 0 ? '+' : '';
+      return `Hoy: ${fmtMoneda2(precioActual, currency)} (${signo}${fmtMoneda2(monto, currency)}`
+           + `${pct !== null ? ', ' + signo + pct.toFixed(1) + '%' : ''} respecto del objetivo)`;
+    }
+
+    const esFav = favoritos.has(s.ticker);
+    return `
+      <div class="cartera-row ${esFav ? 'is-favorite' : ''}" data-ticker="${s.ticker}">
+        <div class="cartera-row-head">
+          <button type="button" class="fav-btn ${esFav ? 'active' : ''}" data-accion="fav" data-ticker="${s.ticker}" title="Marcar como favorita">${esFav ? '★' : '☆'}</button>
+          <span class="cartera-ticker mono" data-accion="abrir" data-ticker="${s.ticker}">${s.ticker}</span>
+          <span class="cartera-name" data-accion="abrir" data-ticker="${s.ticker}">${s.name}</span>
+        </div>
+        <div class="cartera-pos">${held
+          ? `Tienes ${fmtCantidad(pos.netoQ, currency)} título(s) · precio promedio de compra ${fmtMoneda2(pos.costoPromedio, currency)}`
+          : 'Sin posición registrada todavía (se calcula sola desde "Mis movimientos")'}</div>
+        <div class="cartera-alertas">
+          <div class="cartera-campo">
+            <label>Avisar si sube a (venta)</label>
+            <input type="number" step="any" min="0" inputmode="decimal" class="mono" data-ticker="${s.ticker}" data-campo="sube"
+                   value="${(obj.sube !== null && obj.sube !== undefined) ? obj.sube : ''}" placeholder="—">
+            <div class="cartera-dist">${distancia(obj.sube)}</div>
+          </div>
+          <div class="cartera-campo">
+            <label>Avisar si baja a</label>
+            <input type="number" step="any" min="0" inputmode="decimal" class="mono" data-ticker="${s.ticker}" data-campo="baja"
+                   value="${(obj.baja !== null && obj.baja !== undefined) ? obj.baja : ''}" placeholder="—">
+            <div class="cartera-dist">${distancia(obj.baja)}</div>
+          </div>
+        </div>
+      </div>`;
+  };
+
+  const chileItems = ordenar(state.map(s => ({s, pos: portClp[s.ticker]})).filter(x => visible(x.s, x.pos)));
+  const usaItems = ordenar(stateUSA.map(s => ({s, pos: portUsd[s.ticker]})).filter(x => visible(x.s, x.pos)));
+
+  const chileHTML = chileItems.length
+    ? chileItems.map(x => filaCartera(x.s, x.pos, 'CLP')).join('')
+    : `<p class="cartera-empty">${filtroNorm ? 'Nada calzó con la búsqueda en Chile.' : 'Sin favoritas ni posiciones en Chile todavía. Marca una estrella o activa "Mostrar todas".'}</p>`;
+  const usaHTML = usaItems.length
+    ? usaItems.map(x => filaCartera(x.s, x.pos, 'USD')).join('')
+    : `<p class="cartera-empty">${filtroNorm ? 'Nada calzó con la búsqueda en EE.UU.' : 'Sin favoritas ni posiciones en EE.UU. todavía. Marca una estrella o activa "Mostrar todas".'}</p>`;
+
+  viewEl.innerHTML = `
+    <p class="section-title" style="margin-top:0;">Mi Cartera</p>
+    <p style="font-size:12px; color:var(--ink-dim); margin:-6px 0 14px;">Favoritos y precios objetivo para Chile y EE.UU. — al cruzar un objetivo llega correo y push con el monto y el porcentaje de diferencia. La cantidad y el precio de compra se calculan solos desde "Mis movimientos".</p>
+    <input type="text" id="carteraBuscador" class="cartera-buscador" placeholder="Buscar por ticker o nombre (Chile o EE.UU.)…" value="${carteraFiltro.replace(/"/g,'&quot;')}">
+    <label class="cartera-toggle"><input type="checkbox" id="carteraMostrarTodas" ${carteraMostrarTodas ? 'checked' : ''}> Mostrar todas las acciones, no solo favoritas o con posición</label>
+    <p class="cartera-group-title">Chile · CLP</p>
+    ${chileHTML}
+    <p class="cartera-group-title">EE.UU. · USD</p>
+    ${usaHTML}
+  `;
+
+  const buscadorEl = document.getElementById('carteraBuscador');
+  if(buscadorEl){
+    if(carteraBuscadorTuvoFoco){
+      buscadorEl.focus();
+      const p = buscadorEl.value.length;
+      try { buscadorEl.setSelectionRange(p, p); } catch(e){}
+    }
+    buscadorEl.addEventListener('focus', () => { carteraBuscadorTuvoFoco = true; });
+    buscadorEl.addEventListener('blur', () => { carteraBuscadorTuvoFoco = false; });
+    buscadorEl.addEventListener('input', () => { carteraFiltro = buscadorEl.value; renderAmbienteCartera(); });
+  }
+  const mostrarTodasEl = document.getElementById('carteraMostrarTodas');
+  if(mostrarTodasEl){
+    mostrarTodasEl.addEventListener('change', () => { carteraMostrarTodas = mostrarTodasEl.checked; renderAmbienteCartera(); });
+  }
+
+  viewEl.querySelectorAll('[data-accion="fav"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleFavoritoTicker(btn.dataset.ticker);
+      renderAmbienteCartera();
+    });
+  });
+  viewEl.querySelectorAll('[data-accion="abrir"]').forEach(el => {
+    el.addEventListener('click', () => openDetail(el.dataset.ticker));
+  });
+  viewEl.querySelectorAll('.cartera-campo input').forEach(input => {
+    input.addEventListener('change', () => {
+      const ticker = input.dataset.ticker, campo = input.dataset.campo;
+      const v = input.value === '' ? null : parseFloat(input.value);
+      if(!alertasPrecio[ticker]) alertasPrecio[ticker] = {sube: null, baja: null};
+      alertasPrecio[ticker][campo] = (v === null || isNaN(v)) ? null : v;
+      guardarAlertasPrecio();
+      sincronizarAlertasPrecio();
+      renderAmbienteCartera(); // refresca la línea "Hoy: ..." con la distancia nueva
     });
   });
 }
@@ -4250,6 +4513,13 @@ function marcarBotonActivo(btn){
     resincronizarSuscripcion();
   }
 })();
+
+// Mismo motivo que arriba (disco efímero de Render): al abrir la app se
+// reenvían también los precios objetivo de "Mi Cartera" guardados en
+// localStorage, aunque el usuario no haya entrado a esa pestaña esta vez.
+// El correo no depende del permiso de notificaciones push, así que este
+// envío no está condicionado a `permisoOk`.
+if(Object.keys(alertasPrecio).length) sincronizarAlertasPrecio(true);
 
 // El disco de Render (plan gratuito) es EFÍMERO: la lista de suscripciones
 // se borra en cada reinicio y en cada despliegue. Esta función la vuelve a
