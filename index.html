@@ -304,6 +304,17 @@
   .analysis-item--flag{opacity:0.62;}
   .analysis-item .ai-flag{font-size:10px; color:var(--copper); margin-top:2px;}
   .analysis-group-label{font-size:10px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.04em; margin:6px 2px 2px;}
+  /* A pedido: ocultar los dos cuadros de descargo (Yahoo + "no es
+     recomendación"). Se dejan en el HTML (no se borra el texto) por si
+     algún día se quieren mostrar de nuevo; solo se ocultan con !important
+     para que ganen sobre el display inline que les pone cambiarAmbiente(). */
+  #topDisclaimer, .analysis-disclaimer{display:none !important;}
+  .detail-fav-btn{
+    background:var(--bg-field); border:1px solid var(--hairline); color:var(--ink-faint);
+    width:28px; height:28px; border-radius:50%; cursor:pointer; font-size:15px; line-height:1;
+  }
+  .detail-fav-btn:hover{color:var(--ink);}
+  .detail-fav-btn.active{color:var(--gold); border-color:rgba(201,166,107,0.5);}
 
   /* ---- Panel de movimientos ---- */
   .movs-panel{
@@ -1249,6 +1260,21 @@ function saveFavorites(){
 }
 const favoritos = loadFavorites();
 
+// Estrella de favorito en el modal de detalle (imagen 3 del pedido). Usa
+// toggleFavoritoTicker(), definida más abajo junto al módulo "Mi Cartera"
+// -- es la misma fuente de verdad (Set `favoritos`) que las tarjetas y que
+// "Mi Cartera", así que marcar/desmarcar acá se refleja en los dos lugares.
+function inicializarFavBtnDetalle(ticker){
+  const btn = document.getElementById('detailFavBtn');
+  if(!btn) return;
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleFavoritoTicker(ticker);
+    btn.textContent = favoritos.has(ticker) ? '★' : '☆';
+    btn.classList.toggle('active', favoritos.has(ticker));
+  });
+}
+
 todosLosStocks().forEach(s => {
   const card = document.createElement('div');
   card.className = 'card';
@@ -1788,11 +1814,15 @@ function renderDetail(ticker){
           <div class="detail-name">${s.name}</div>
           <div class="detail-sub mono">${s.ticker} · ${bolsaTexto}</div>
         </div>
-        <button class="close-btn" id="closeBtn">✕</button>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <button class="detail-fav-btn ${favoritos.has(s.ticker) ? 'active' : ''}" id="detailFavBtn" title="Marcar como favorita">${favoritos.has(s.ticker) ? '★' : '☆'}</button>
+          <button class="close-btn" id="closeBtn">✕</button>
+        </div>
       </div>
       <p style="padding:36px 0; text-align:center; color:var(--ink-faint);">Cargando datos reales de Yahoo Finance…</p>
     `;
     document.getElementById('closeBtn').addEventListener('click', closeDetail);
+    inicializarFavBtnDetalle(s.ticker);
     return;
   }
 
@@ -1840,12 +1870,15 @@ function renderDetail(ticker){
     <div class="detail-top">
       <div>
         <div class="detail-name">${s.name}</div>
-        <div class="detail-sub mono">${s.ticker} · Bolsa de Santiago</div>
+        <div class="detail-sub mono">${s.ticker} · ${bolsaTexto}</div>
         <span class="sim-badge" style="${liveMode ? 'color:var(--gold); border-color:rgba(201,166,107,0.35);' : ''}">
           <span class="dot" style="${liveMode ? 'background:var(--gold);' : ''}"></span>${liveMode ? 'Precio y promedio reales (Yahoo Finance)' : 'Datos simulados'}
         </span>
       </div>
-      <button class="close-btn" id="closeBtn">✕</button>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <button class="detail-fav-btn ${favoritos.has(s.ticker) ? 'active' : ''}" id="detailFavBtn" title="Marcar como favorita">${favoritos.has(s.ticker) ? '★' : '☆'}</button>
+        <button class="close-btn" id="closeBtn">✕</button>
+      </div>
     </div>
 
     <div class="value-row">
@@ -1973,6 +2006,7 @@ function renderDetail(ticker){
 
   document.getElementById('closeBtn').addEventListener('click', closeDetail);
   document.getElementById('btnRegistrarMov').addEventListener('click', () => registrarDesdeDetalle(s.ticker, s.price));
+  inicializarFavBtnDetalle(s.ticker);
   buildSpark(document.getElementById('detailSvg'), s.history, s.avg, threshold, s.dec, 160, 600, true);
   updateDetailClock();
   wirePeriodSelector(s);
@@ -2709,6 +2743,49 @@ async function fetchSignals(){
   renderAnalysis();
 }
 
+// A pedido: las listas "Para revisar como posible compra/venta" solo
+// muestran los 2 primeros resultados; el resto queda detrás de un botón
+// "Ver X más" (mismo estilo que "Ver posición actual e historial completo"
+// de Mis movimientos) que también sirve para volver a ocultarlos. El
+// estado (expandido/colapsado) se guarda en memoria -- no en localStorage,
+// igual criterio que el panel de asignación de "A seguir" -- para que no
+// se cierre solo cada vez que llega un refresco de precios (renderAnalysis()
+// corre cada ~60s) pero tampoco quede pegado entre sesiones.
+const analisisExpandido = { analysisDown: false, analysisUp: false };
+function renderListaColapsable(contenedorId, filas){
+  const el = document.getElementById(contenedorId);
+  if(!el) return;
+  if(!filas.length){
+    el.innerHTML = '<p class="analysis-empty">Nada relevante ahora.</p>';
+    return;
+  }
+  const expandido = analisisExpandido[contenedorId];
+  const visibles = filas.slice(0, 2);
+  const resto = filas.slice(2);
+  let html = visibles.join('');
+  if(resto.length){
+    html += `<div class="analysis-mas" style="${expandido ? '' : 'display:none;'}">${resto.join('')}</div>`;
+    html += `<button type="button" class="movs-detail-link analysis-toggle" data-cont="${contenedorId}">`
+          + (expandido ? 'Ocultar ‹' : `Ver ${resto.length} más ›`) + '</button>';
+  }
+  el.innerHTML = html;
+}
+// Delegado UNA sola vez sobre el contenedor que nunca se reemplaza entero
+// (#analysisCols) -- así el botón sigue funcionando aunque analysisDown/Up
+// se vuelvan a dibujar en cada refresco, sin tener que reenganchar el
+// listener cada vez.
+(function inicializarToggleAnalisis(){
+  const cont = document.getElementById('analysisCols');
+  if(!cont) return;
+  cont.addEventListener('click', (e) => {
+    const btn = e.target.closest('.analysis-toggle');
+    if(!btn) return;
+    const id = btn.dataset.cont;
+    analisisExpandido[id] = !analisisExpandido[id];
+    if(typeof renderAnalysis === 'function') renderAnalysis();
+  });
+})();
+
 function renderAnalysis(){
   if(ambienteActivo === 'seguir' && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir(); // bloque 7
   const refreshEl = document.getElementById('analysisRefresh');
@@ -2740,19 +2817,19 @@ function renderAnalysis(){
 
   // Dentro de cada lista: primero las "limpias" (sin bandera roja), luego
   // las que traen advertencia de tendencia -- esas últimas van atenuadas
-  // y al final, no borradas, para que sigan siendo auditables.
-  function bloqueConGrupos(candidatos, esVenta){
-    if(!candidatos || candidatos.length === 0){
-      return '<p class="analysis-empty">Nada relevante ahora.</p>';
-    }
+  // y al final, no borradas, para que sigan siendo auditables. Devuelve un
+  // ARRAY de filas (no un string ya unido) para que renderListaColapsable
+  // pueda mostrar solo las 2 primeras y esconder el resto.
+  function filasConGrupos(candidatos, esVenta){
+    if(!candidatos || candidatos.length === 0) return [];
     const limpias = candidatos.filter(c => !(c.banderas && c.banderas.length));
     const conBandera = candidatos.filter(c => c.banderas && c.banderas.length);
-    let html = limpias.map(c => candItemHTML(c, esVenta)).join('');
+    const filas = limpias.map(c => candItemHTML(c, esVenta));
     if(conBandera.length){
-      html += '<p class="analysis-group-label">Con advertencia de tendencia</p>';
-      html += conBandera.map(c => candItemHTML(c, esVenta)).join('');
+      filas.push('<p class="analysis-group-label">Con advertencia de tendencia</p>');
+      filas.push(...conBandera.map(c => candItemHTML(c, esVenta)));
     }
-    return html;
+    return filas;
   }
 
   // Cada ambiente tiene su propia fuente de señales -- nunca se muestran
@@ -2762,10 +2839,8 @@ function renderAnalysis(){
   if(datosDeEsteAmbiente && (datosDeEsteAmbiente.candidatos_compra || datosDeEsteAmbiente.candidatos_venta)){
     if(ambienteActivo === 'chile') detectarNuevasSenales(datosDeEsteAmbiente);
 
-    document.getElementById('analysisDown').innerHTML =
-      bloqueConGrupos(datosDeEsteAmbiente.candidatos_compra, false);
-    document.getElementById('analysisUp').innerHTML =
-      bloqueConGrupos(datosDeEsteAmbiente.candidatos_venta, true);
+    renderListaColapsable('analysisDown', filasConGrupos(datosDeEsteAmbiente.candidatos_compra, false));
+    renderListaColapsable('analysisUp', filasConGrupos(datosDeEsteAmbiente.candidatos_venta, true));
 
     document.querySelectorAll('.analysis-item').forEach(el => {
       el.addEventListener('click', () => openDetail(el.dataset.ticker));
@@ -2818,8 +2893,8 @@ function renderAnalysis(){
       </div>`;
   }
 
-  document.getElementById('analysisDown').innerHTML = masAbajo.map(itemHTMLRespaldo).join('') || '<p class="analysis-empty">Nada relevante ahora.</p>';
-  document.getElementById('analysisUp').innerHTML = masArriba.map(itemHTMLRespaldo).join('') || '<p class="analysis-empty">Nada relevante ahora.</p>';
+  renderListaColapsable('analysisDown', masAbajo.map(itemHTMLRespaldo));
+  renderListaColapsable('analysisUp', masArriba.map(itemHTMLRespaldo));
   document.querySelectorAll('.analysis-item').forEach(el => {
     el.addEventListener('click', () => openDetail(el.dataset.ticker));
   });
