@@ -630,6 +630,30 @@
           <div class="msb-val mono" id="msbNoRealizada">···</div>
         </div>
       </div>
+
+      <!-- Comparación contra el índice (IPSA o S&P 500 según el ambiente):
+           retorno simple de la cartera desde el primer movimiento registrado
+           en esa moneda, contra el retorno del índice en el mismo período.
+           Nunca inventa un número -- si no hay movimientos, o el backend no
+           responde, dice explícitamente que no se pudo calcular. -->
+      <div class="msb-benchmark" id="msbBenchmarkBox" style="display:none; margin-top:10px; padding-top:10px; border-top:1px solid var(--hairline);">
+        <div class="msb-label" id="msbBenchmarkTitulo">Tu cartera vs. el índice</div>
+        <div class="msb-val mono" id="msbBenchmarkValor" style="font-size:14px;">calculando…</div>
+        <p class="analysis-empty" id="msbBenchmarkNota" style="padding:2px 0 0; text-align:left;"></p>
+      </div>
+
+      <!-- Concentración por posición: % del valor de la cartera (en esta
+           moneda) que representa cada acción abierta, ordenadas de mayor a
+           menor. Reusa asignacion.maxPorPosicion -- el mismo umbral que ya
+           configuraste en "A seguir" ▸ Asignación objetivo -- para no tener
+           dos números distintos de "cuánto es demasiado" en la misma app. -->
+      <div class="msb-benchmark" id="msbConcentracionBox" style="display:none; margin-top:10px; padding-top:10px; border-top:1px solid var(--hairline);">
+        <div class="msb-label">Concentración de tu cartera</div>
+        <div class="mono" id="msbConcentracionLista" style="font-size:13px; line-height:1.7; margin-top:2px;"></div>
+        <p class="analysis-empty" id="msbConcentracionNota" style="padding:2px 0 0; text-align:left;"></p>
+      </div>
+
+      <p class="movs-summary" id="ultimoRespaldoInfo" style="margin-top:8px;"></p>
       <button id="btnVerDetalleMovs" class="movs-detail-link">Ver posición actual e historial completo ›</button>
     </div>
   </div>
@@ -2736,12 +2760,13 @@ async function fetchSignals(){
     // Se deja signalsData como estaba (null o el último bueno): el panel
     // cae al cálculo local de respaldo en vez de quedar en blanco.
   }
-  // El backend todavía no calcula señales para EE.UU.: /signals?mercado=usa
-  // devuelve 404 a propósito (nunca datos inventados). Antes se preguntaba
-  // igual cada 60 segundos para siempre, llenando la consola de 404 y
-  // gastando una petición al servidor cada minuto sin ninguna posibilidad
-  // de que la respuesta cambiara. Ahora, al primer 404 se deja de preguntar
-  // en esta sesión; si algún día el backend lo implementa, basta recargar.
+  // El backend YA calcula señales para EE.UU. (server.py /signals?mercado=usa,
+  // con signals.py evaluando TICKERS_USA contra el S&P 500). Justo después
+  // de un despliegue puede devolver 503 un rato mientras termina de bajar
+  // los 107 historiales en segundo plano -- este código se queda tal cual
+  // para ese caso (y por si algún día vuelve a no estar disponible): al
+  // primer 404 se deja de preguntar en esta sesión para no llenar la
+  // consola ni gastar una petición cada minuto sin sentido.
   if(!signalsUsaNoDisponible){
     try {
       const respUsa = await fetch(BACKEND_URL + '/signals?mercado=usa');
@@ -3707,6 +3732,231 @@ function renderResumenPortafolio(){
 
   if(typeof renderCaja === 'function') renderCaja(); // bloque 5
   if(ambienteActivo === 'seguir' && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir(); // bloque 7
+  if(typeof actualizarBenchmarkCartera === 'function') actualizarBenchmarkCartera();
+  if(typeof renderConcentracionCartera === 'function') renderConcentracionCartera();
+}
+
+// ---- Concentración por posición ----
+// Responde una pregunta que el panel de "Mi Cartera" no contestaba:
+// "si UNA de mis posiciones se derrumba, ¿cuánto me duele?". Eso depende de
+// qué % de la cartera es esa posición, no de RSI ni de z-score -- por eso
+// vive aparte de "Análisis del momento" (que sí es sobre precio). Ya existía
+// una versión de esta misma regla adentro de "A seguir" ▸ Revisar para venta
+// (ver renderAmbienteSeguir(), "Máximo por posición · Días 14 y 23"), pero
+// solo aparecía ahí cuando YA se pasaba el máximo -- el resto del tiempo la
+// concentración real quedaba invisible. Esto la muestra siempre, no solo
+// cuando ya es un problema, y reusa el mismo umbral (asignacion.maxPorPosicion)
+// para no tener dos definiciones de "demasiado" en la misma app.
+//
+// Alcance: % del valor de la cartera EN ESA MONEDA (igual que el resto de
+// este panel, que ya está scopeado por ambienteActivo) -- no del patrimonio
+// consolidado. Consolidar Chile+EE.UU. exigiría el tipo de cambio, que puede
+// no estar disponible (ver renderAmbienteSeguir/usdclpEsValido) y ese cálculo
+// YA existe ahí para quien lo necesite. Este es el más simple de los dos,
+// a propósito -- se dice explícito en la nota para no confundir los dos números.
+function calcularConcentracion(moneda){
+  const portafolio = calcularPortafolio(moneda);
+  const todas = Object.values(portafolio).filter(p => p.netoQ > 0);
+  const abiertasConPrecio = todas.filter(p => p.valorActual !== null);
+  const total = abiertasConPrecio.reduce((acc, p) => acc + p.valorActual, 0);
+  if(total <= 0) return null;
+  const filas = abiertasConPrecio
+    .map(p => ({ ticker: p.ticker, pct: p.valorActual / total * 100 }))
+    .sort((a, b) => b.pct - a.pct);
+  return { filas, completo: abiertasConPrecio.length === todas.length };
+}
+
+function renderConcentracionCartera(){
+  const box = document.getElementById('msbConcentracionBox');
+  if(!box) return;
+  if(ambienteActivo === 'seguir'){ box.style.display = 'none'; return; }
+
+  const moneda = ambienteActivo === 'usa' ? 'USD' : 'CLP';
+  const listaEl = document.getElementById('msbConcentracionLista');
+  const notaEl = document.getElementById('msbConcentracionNota');
+
+  // Mismo criterio de privacidad que el resto del panel: con las cifras
+  // ocultas, ni siquiera se muestran los tickers (revelarían la posición).
+  if(estaOculto()){
+    const c = calcularConcentracion(moneda);
+    if(!c || !c.filas.length){ box.style.display = 'none'; return; }
+    box.style.display = '';
+    listaEl.innerHTML = '<div style="filter:blur(3px);">•••• ····%</div>';
+    notaEl.textContent = '';
+    return;
+  }
+
+  const c = calcularConcentracion(moneda);
+  if(!c || !c.filas.length){
+    box.style.display = 'none';
+    return;
+  }
+  box.style.display = '';
+
+  const umbral = asignacion.maxPorPosicion;
+  const MOSTRAR = 5;
+  const top = c.filas.slice(0, MOSTRAR);
+  listaEl.innerHTML = top.map(f => {
+    const excede = f.pct > umbral;
+    return `<div style="display:flex; justify-content:space-between; gap:10px; ${excede ? 'color:var(--copper); font-weight:600;' : ''}">`
+         + `<span>${f.ticker}${excede ? ' ⚠' : ''}</span><span>${f.pct.toFixed(1)}%</span></div>`;
+  }).join('');
+
+  const excedidas = c.filas.filter(f => f.pct > umbral);
+  let nota = `% del valor de tu cartera en ${moneda} (no de tu patrimonio consolidado). `;
+  if(c.filas.length > MOSTRAR) nota += `Mostrando las ${MOSTRAR} más grandes de ${c.filas.length}. `;
+  nota += excedidas.length
+    ? `⚠ ${excedidas.map(f => f.ticker).join(', ')} ${excedidas.length === 1 ? 'supera' : 'superan'} tu máximo por posición configurado (${umbral}%).`
+    : `Ninguna posición supera tu máximo por posición configurado (${umbral}%).`;
+  if(!c.completo) nota += ' Cifra parcial: falta el precio real de alguna posición abierta.';
+  notaEl.textContent = nota;
+}
+
+// ---- Comparación contra el índice ("cuánto le gano o le pierdo al
+// IPSA/S&P 500") ----
+// Retorno SIMPLE sobre el capital invertido desde el primer movimiento
+// registrado en esa moneda: (utilidad realizada + utilidad no realizada) /
+// total comprado histórico. A propósito NO es una TIR -- no pondera CUÁNDO
+// entró cada aporte, así que un aporte de ayer pesa igual que uno de hace
+// un año. Se dice así, explícito, en la nota de abajo: mismo criterio de
+// esta app de no fingir más precisión de la que el cálculo realmente tiene.
+const _benchmarkCache = {}; // "CLP"/"USD" -> {ts, puntos}
+const BENCHMARK_CACHE_MS = 20 * 60 * 1000; // 20 min, mismo orden que STATS_CACHE_TTL del backend
+
+function primeraFechaMovimientos(moneda){
+  const propios = movimientos.filter(m => monedaDeMov(m) === moneda);
+  if(!propios.length) return null;
+  return propios.reduce((min, m) => (m.fecha < min ? m.fecha : min), propios[0].fecha);
+}
+
+function retornoSimpleCartera(moneda){
+  const portafolio = calcularPortafolio(moneda);
+  let totalInvertido = 0, totalUtilidad = 0, completo = true;
+  Object.values(portafolio).forEach(p => {
+    totalInvertido += p.totalCompradoCosto;
+    totalUtilidad += p.utilidadRealizada;
+    if(p.netoQ > 0){
+      if(p.utilidadNoRealizada === null) completo = false;
+      else totalUtilidad += p.utilidadNoRealizada;
+    }
+  });
+  if(totalInvertido <= 0) return null;
+  return { pct: totalUtilidad / totalInvertido, completo };
+}
+
+async function obtenerSerieIndice(moneda){
+  const ahora = Date.now();
+  const c = _benchmarkCache[moneda];
+  if(c && (ahora - c.ts) < BENCHMARK_CACHE_MS) return c.puntos;
+
+  const ticker = moneda === 'USD' ? '^GSPC' : 'IPSA';
+  const fechaInicio = primeraFechaMovimientos(moneda);
+  // 5y alcanza para cualquier fecha de inicio razonable en esta app; 1y
+  // pesa menos y basta para la mayoría (la app recién empezó en 2026).
+  const diasTranscurridos = fechaInicio
+    ? (ahora - new Date(fechaInicio + 'T00:00:00').getTime()) / 86400000
+    : 0;
+  const periodo = diasTranscurridos > 340 ? '5y' : '1y';
+
+  try {
+    const resp = await fetchConPlazo(
+      `${BACKEND_URL}/history?ticker=${encodeURIComponent(ticker)}&period=${periodo}`, {}, 10000);
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    const j = await resp.json();
+    const puntos = Array.isArray(j.points) ? j.points : [];
+    _benchmarkCache[moneda] = { ts: ahora, puntos };
+    return puntos;
+  } catch(e){
+    console.warn('[benchmark] No se pudo obtener el historial del índice:', e);
+    return c ? c.puntos : null; // si hay algo viejo en cache, mejor eso que nada
+  }
+}
+
+function fmtPctCartera(v){
+  return (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%';
+}
+
+let _benchmarkCalculando = false;
+async function actualizarBenchmarkCartera(){
+  const box = document.getElementById('msbBenchmarkBox');
+  if(!box) return;
+  if(ambienteActivo === 'seguir'){ box.style.display = 'none'; return; }
+
+  const moneda = ambienteActivo === 'usa' ? 'USD' : 'CLP';
+  const nombreIndice = moneda === 'USD' ? 'S&P 500' : 'IPSA';
+  const fechaInicio = primeraFechaMovimientos(moneda);
+  const retorno = retornoSimpleCartera(moneda);
+
+  if(!fechaInicio || !retorno){
+    box.style.display = 'none';
+    return;
+  }
+  box.style.display = '';
+  document.getElementById('msbBenchmarkTitulo').textContent = `Tu cartera vs. ${nombreIndice}`;
+
+  // Mismo criterio de privacidad que el resto de "Mi Cartera" (ojito): con
+  // las cifras ocultas no se pide ni se muestra nada, ni siquiera el % --
+  // y de paso se ahorra la petición al backend mientras está oculto.
+  if(estaOculto()){
+    document.getElementById('msbBenchmarkValor').textContent = '•••• vs ••••';
+    document.getElementById('msbBenchmarkValor').className = 'msb-val mono';
+    document.getElementById('msbBenchmarkNota').textContent = '';
+    return;
+  }
+
+  if(_benchmarkCalculando) return; // ya hay un cálculo en curso, no pedir dos veces en paralelo
+  _benchmarkCalculando = true;
+  const valorEl = document.getElementById('msbBenchmarkValor');
+  const notaEl = document.getElementById('msbBenchmarkNota');
+  try {
+    const puntos = await obtenerSerieIndice(moneda);
+    if(!puntos || puntos.length < 2){
+      valorEl.textContent = 'no se pudo comparar con el índice ahora';
+      valorEl.className = 'msb-val mono';
+      notaEl.textContent = 'El servidor puede estar despertando (tarda ~50s la primera vez) o sin datos todavía. Se reintenta solo.';
+      return;
+    }
+
+    // Punto de partida: el primer precio de la serie con fecha >= a la del
+    // primer movimiento. Si el historial pedido no alcanza tan atrás, se usa
+    // el punto MÁS ANTIGUO disponible y se avisa explícitamente -- nunca se
+    // inventa un precio para una fecha que no se tiene.
+    let base = puntos.find(p => p.date >= fechaInicio);
+    let aproximado = false;
+    if(!base){
+      base = puntos[0];
+      aproximado = true;
+    }
+    const actual = puntos[puntos.length - 1];
+    if(!base || !actual || !base.close || !actual.close){
+      valorEl.textContent = 'no se pudo comparar con el índice ahora';
+      valorEl.className = 'msb-val mono';
+      notaEl.textContent = 'Faltan precios en el historial recibido.';
+      return;
+    }
+
+    const retornoIndice = actual.close / base.close - 1;
+    const diferenciaPP = (retorno.pct - retornoIndice) * 100;
+
+    valorEl.textContent = `Cartera ${fmtPctCartera(retorno.pct)} · ${nombreIndice} ${fmtPctCartera(retornoIndice)}`;
+    valorEl.className = 'msb-val mono ' + (diferenciaPP >= 0 ? 'up' : 'down');
+
+    const fechaTxt = (base.date || '').slice(0, 10);
+    let nota = `Desde ${aproximado ? 'la fecha más antigua disponible' : 'tu primer movimiento'} en ${moneda} (${fechaTxt}). `;
+    nota += diferenciaPP >= 0
+      ? `Le ganas ${Math.abs(diferenciaPP).toFixed(1)} puntos al índice.`
+      : `Vas ${Math.abs(diferenciaPP).toFixed(1)} puntos detrás del índice.`;
+    nota += ' Retorno simple sobre el capital invertido (no es una TIR: no pondera cuándo entró cada aporte).';
+    if(!retorno.completo) nota += ' Cifra parcial: falta el precio real de alguna posición abierta.';
+    notaEl.textContent = nota;
+  } catch(e){
+    console.warn('[benchmark] Error calculando comparación:', e);
+    valorEl.textContent = 'no se pudo comparar con el índice ahora';
+    valorEl.className = 'msb-val mono';
+    notaEl.textContent = '';
+  } finally {
+    _benchmarkCalculando = false;
+  }
 }
 
 // ---- Modal estilo "Excel" con el detalle completo de la cartera ----
@@ -3936,6 +4186,70 @@ function exportarMovimientos(){
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+  marcarRespaldoHecho();
+}
+
+// ---- Respaldo automático ----
+// El botón "Respaldar todo" de arriba ya existía, pero dependía por completo
+// de que Cristian se acordara de apretarlo -- si pierde el celular o lo
+// cambia sin haberlo hecho, pierde el historial de movimientos completo
+// (localStorage no sobrevive a eso). Esto agrega dos cosas SIN tocar el
+// botón manual: 1) cada RESPALDO_AUTO_DIAS días, al abrir la app, se
+// descarga sola una copia (mismo archivo, mismo formato que el botón
+// manual); 2) siempre se muestra hace cuántos días fue el último respaldo
+// -- manual o automático -- para que la falta de respaldo sea visible en
+// vez de silenciosa, mismo criterio que usa toda esta app con la frescura
+// de los precios.
+const RESPALDO_AUTO_DIAS = 7;
+let _respaldoAutoIntentadoEstaSesion = false;
+
+function fechaUltimoRespaldo(){
+  try { return localStorage.getItem('ipsa_ultimo_respaldo') || null; } catch(e){ return null; }
+}
+function marcarRespaldoHecho(){
+  try { localStorage.setItem('ipsa_ultimo_respaldo', new Date().toISOString()); } catch(e){}
+  renderUltimoRespaldo();
+}
+
+function renderUltimoRespaldo(){
+  const el = document.getElementById('ultimoRespaldoInfo');
+  if(!el) return;
+  const iso = fechaUltimoRespaldo();
+  if(!iso){
+    el.textContent = movimientos.length
+      ? 'Nunca se ha descargado un respaldo en este dispositivo — si lo pierdes, pierdes tus movimientos.'
+      : 'Sin movimientos todavía, nada que respaldar.';
+    el.style.color = movimientos.length ? 'var(--copper)' : '';
+    return;
+  }
+  const dias = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+  const texto = dias <= 0 ? 'Último respaldo: hoy.'
+              : dias === 1 ? 'Último respaldo: hace 1 día.'
+              : `Último respaldo: hace ${dias} días.`;
+  el.textContent = texto;
+  el.style.color = dias > RESPALDO_AUTO_DIAS * 2 ? 'var(--copper)' : '';
+}
+
+// Se llama una vez al abrir la app (ver inicializarPortafolio). Descarga sola
+// si corresponde -- mismo mecanismo del botón manual (Blob + <a download> +
+// click sintético), que no depende de un gesto real del usuario para
+// funcionar en ningún navegador moderno.
+function revisarRespaldoAutomatico(){
+  if(_respaldoAutoIntentadoEstaSesion) return;
+  _respaldoAutoIntentadoEstaSesion = true;
+  renderUltimoRespaldo();
+  if(!movimientos.length) return; // nada que respaldar todavía
+
+  const iso = fechaUltimoRespaldo();
+  const dias = iso ? (Date.now() - new Date(iso).getTime()) / 86400000 : Infinity;
+  if(dias >= RESPALDO_AUTO_DIAS){
+    try {
+      exportarMovimientos(); // mismo archivo y formato que "⬇️ Respaldar todo"
+      console.log(`[respaldo] Respaldo automático descargado (habían pasado ${Math.floor(dias)} días).`);
+    } catch(e){
+      console.warn('[respaldo] No se pudo generar el respaldo automático:', e);
+    }
+  }
 }
 
 function resumenRespaldoParaConfirmar(actual, nuevo){
@@ -4005,6 +4319,7 @@ function importarMovimientos(file){
       renderResumenPortafolio();
       renderCaja();
       renderW8ben();
+      renderUltimoRespaldo();
       if(typeof renderRecordatorioAporte === 'function') renderRecordatorioAporte();
       if(ambienteActivo === 'seguir' && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir();
 
@@ -4037,6 +4352,7 @@ function inicializarPortafolio(){
     if(e.target.files[0]) importarMovimientos(e.target.files[0]);
     e.target.value = '';
   });
+  revisarRespaldoAutomatico();
   renderResumenPortafolio();
 }
 
