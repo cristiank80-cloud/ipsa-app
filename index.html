@@ -263,7 +263,11 @@
   .feed-empty{color:var(--ink-faint); font-size:12.5px; padding:20px 0; text-align:center;}
   .feed-item{padding:10px 0; border-bottom:1px solid var(--hairline); animation:slidein .35s ease; cursor:pointer;}
   .feed-item:last-child{border-bottom:none;}
-  .feed-item:hover{background:#20262c;}
+  /* (hover: hover) evita que el fondo oscuro quede "pegado" en celulares
+     -- sin esto, tocar un item que cambia de posicion (p.ej. al desplegar
+     "Ver mas más" arriba) deja ese fondo encendido porque el touch queda
+     interpretado como :hover permanente en dispositivos sin mouse real. */
+  @media (hover:hover) and (pointer:fine){ .feed-item:hover{background:#20262c;} }
   .feed-item .fi-top{display:flex; align-items:baseline; gap:8px; margin-bottom:3px;}
   .feed-item .fi-ticker{font-weight:700; font-size:13px; color:var(--ink);}
   .feed-item .fi-tag{font-size:10.5px; font-weight:600; flex:1;}
@@ -296,7 +300,10 @@
     display:flex; justify-content:space-between; align-items:center; gap:8px;
     background:var(--bg-field); border-radius:7px; padding:8px 10px; cursor:pointer;
   }
-  .analysis-item:hover{background:#20262c;}
+  /* Mismo motivo que .feed-item de arriba: sin (hover:hover) el fondo
+     oscuro queda pegado al tocar "Ver X más" (imagen reportada por
+     Cristian: fila oscura e ilegible tras desplegar la lista en EE.UU.). */
+  @media (hover:hover) and (pointer:fine){ .analysis-item:hover{background:#20262c;} }
   .analysis-item .ai-left{display:flex; flex-direction:column;}
   .analysis-item .ai-ticker{font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:12.5px;}
   .analysis-item .ai-rsi{font-size:10.5px; color:var(--ink-faint);}
@@ -997,6 +1004,14 @@ const stocksUSA = [
   // Agregado a pedido: ETF sectorial de aeroespacial/defensa. Debe existir
   // tambien en TICKERS_USA de backend/main.py, o el backend no le manda precio.
   {ticker:'ITA',    name:"iShares U.S. Aerospace & Defense ETF",       dec:2, currency:'USD'},
+  // Agregadas a pedido, revisadas una por una contra lo que ya estaba en
+  // esta lista -- ANET (Arista Networks) y LLY (Eli Lilly) ya estaban, no
+  // se duplican. Deben existir tambien en TICKERS_USA de backend/main.py.
+  {ticker:'SKWD',   name:"Skyward Specialty Insurance Group",          dec:2, currency:'USD'},
+  {ticker:'ERO',    name:"Ero Copper Corp",                            dec:2, currency:'USD'},
+  {ticker:'ENVA',   name:"Enova International",                       dec:2, currency:'USD'},
+  {ticker:'PAYS',   name:"Paysign",                                    dec:2, currency:'USD'},
+  {ticker:'WT',     name:"WisdomTree",                                 dec:2, currency:'USD'},
 ];
 const stateUSA = stocksUSA.map(s => ({
   ...s,
