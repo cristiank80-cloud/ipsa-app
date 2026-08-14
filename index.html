@@ -430,7 +430,14 @@
   .value-row .vitem .vlabel{font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.06em; margin-bottom:3px;}
   .value-row .vitem .vval{font-size:19px; font-weight:600;}
 
-  .detail-chart{margin-bottom:18px;}
+  .detail-chart{margin-bottom:18px; position:relative;}
+  /* Etiquetas del eje Y como HTML, no como <text> del SVG: el SVG usa
+     preserveAspectRatio="none" (ancho 100% pero alto fijo), así que
+     cualquier texto DENTRO de él se aprieta horizontalmente en pantallas
+     angostas y queda ilegible. Puestas afuera, en una capa HTML normal,
+     el tamaño de letra es el real (en px), sin deformarse. */
+  .axis-labels{position:absolute; top:0; right:2px; bottom:0; width:52px; pointer-events:none;}
+  .axis-labels span{position:absolute; right:0; transform:translateY(-50%); font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-faint); white-space:nowrap; background:var(--bg-panel); padding-left:4px;}
 
   .section-title{
     font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--gold); margin:0 0 8px;
@@ -1562,22 +1569,57 @@ function pseudoRand(seed){
 
 // ---- Eje Y compartido: valores de referencia + lineas punteadas ----
 // Se dibuja en una franja reservada a la derecha del area de datos (el
-// "gutter"), asi el precio no tapa la ultima vela/punto de la serie.
-const AXIS_GUTTER = 46;
-function yAxisSvg(min, max, plotW, h, dec, ticks){
-  ticks = ticks || 4;
+// "gutter"), asi el precio no tapa la ultima vela/punto de la serie. El
+// ancho subio de 46 a 80 (unidades del viewBox) para dejarle espacio real
+// a las etiquetas HTML de .axis-labels (antes el texto vivia DENTRO del
+// SVG y quedaba angosto).
+const AXIS_GUTTER = 80;
+
+// Valores de referencia "redondos" para el eje Y (100, 200, 500, 1000...
+// segun la escala de precio) en vez de repartir min/max en fracciones
+// parejas -- eso es lo que producia numeros feos como "5.9713". No todos
+// caen exactamente en min o max: por eso pueden quedar 3-5 lineas, no
+// siempre "ticks+1".
+function ejeYNiceTicks(min, max, aprox){
+  aprox = aprox || 4;
   const range = (max - min) || 1;
-  let out = '';
-  for(let i = 0; i <= ticks; i++){
-    const v = min + range * (i/ticks);
-    const yy = h - (i/ticks) * h;
-    out += `<line x1="0" y1="${yy.toFixed(1)}" x2="${plotW.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="var(--hairline)" stroke-width="1" stroke-dasharray="2,2"></line>`;
-    out += `<text x="${(plotW+5).toFixed(1)}" y="${(yy+3).toFixed(1)}" font-size="9" fill="var(--ink-faint)">${fmt(v, dec)}</text>`;
-  }
+  const rawStep = range / aprox;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const norm = rawStep / mag;
+  const niceNorm = norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10;
+  const step = niceNorm * mag;
+  const out = [];
+  for(let v = Math.ceil(min/step) * step; v <= max + step * 1e-6; v += step) out.push(v);
+  if(out.length === 0) out.push(min, max); // rango tan chico que ningun redondo calzo
   return out;
 }
 
-function buildSpark(svgEl, history, avg, threshold, dec, h, w, mostrarEjeY){
+function yAxisSvg(min, max, plotW, h, dec, ticks){
+  const valores = ejeYNiceTicks(min, max, ticks);
+  const range = (max - min) || 1;
+  let out = '';
+  valores.forEach(v => {
+    const yy = h - ((v - min)/range) * h;
+    out += `<line x1="0" y1="${yy.toFixed(1)}" x2="${plotW.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="var(--hairline)" stroke-width="1" stroke-dasharray="2,2"></line>`;
+  });
+  return out;
+}
+
+// Pinta las etiquetas del eje Y como HTML normal (ver .axis-labels), NO
+// como <text> del SVG -- asi el tamaño de letra es real y no se aprieta
+// en pantallas angostas. `contenedorEl` es el <div class="axis-labels">
+// hermano del <svg>.
+function pintarEtiquetasEjeY(contenedorEl, min, max, h, dec, moneda, ticks){
+  if(!contenedorEl) return;
+  const valores = ejeYNiceTicks(min, max, ticks);
+  const range = (max - min) || 1;
+  contenedorEl.innerHTML = valores.map(v => {
+    const pct = (1 - (v - min)/range) * 100;
+    return `<span style="top:${pct.toFixed(2)}%;">${fmt(v, dec, moneda)}</span>`;
+  }).join('');
+}
+
+function buildSpark(svgEl, history, avg, threshold, dec, h, w, mostrarEjeY, moneda, axisLabelsEl){
   h = h || 74;
   // OJO: antes "w" venia fijo en 300 sin importar quien llamara a esta
   // funcion. La mini-tarjeta (spark-wrap) SI tiene viewBox="0 0 300 74",
@@ -1636,6 +1678,8 @@ function buildSpark(svgEl, history, avg, threshold, dec, h, w, mostrarEjeY){
     ${candleEls}
     ${mostrarEjeY ? yAxisSvg(min, max, plotW, h, dec) : ''}
   `;
+  if(mostrarEjeY) pintarEtiquetasEjeY(axisLabelsEl, min, max, h, dec, moneda);
+  else if(axisLabelsEl) axisLabelsEl.innerHTML = '';
 }
 
 // ---- Deteccion heuristica de patron Hombro-Cabeza-Hombro ----
@@ -1969,6 +2013,7 @@ function renderDetail(ticker){
 
     <div class="detail-chart">
       <svg viewBox="0 0 600 160" width="100%" height="160" preserveAspectRatio="none" id="detailSvg"></svg>
+      <div class="axis-labels" id="detailAxisLabels"></div>
     </div>
 
     <p class="section-title">Historial real por período (Yahoo Finance)</p>
@@ -1989,6 +2034,7 @@ function renderDetail(ticker){
 
     <div class="detail-chart" style="margin-top:10px;">
       <svg viewBox="0 0 600 160" width="100%" height="160" preserveAspectRatio="none" id="historySvg"></svg>
+      <div class="axis-labels" id="historyAxisLabels"></div>
       <p id="historyStatus" style="font-size:11px; color:var(--ink-faint); text-align:center; margin:4px 0 0;">Elige un período para cargar el historial real.</p>
     </div>
     <div class="detail-chart sub-chart" id="volumeChartWrap" style="display:none;">
@@ -2061,7 +2107,7 @@ function renderDetail(ticker){
   document.getElementById('closeBtn').addEventListener('click', closeDetail);
   document.getElementById('btnRegistrarMov').addEventListener('click', () => registrarDesdeDetalle(s.ticker, s.price));
   inicializarFavBtnDetalle(s.ticker);
-  buildSpark(document.getElementById('detailSvg'), s.history, s.avg, threshold, s.dec, 160, 600, true);
+  buildSpark(document.getElementById('detailSvg'), s.history, s.avg, threshold, s.dec, 160, 600, true, moneda, document.getElementById('detailAxisLabels'));
   updateDetailClock();
   wirePeriodSelector(s);
 }
@@ -2135,9 +2181,11 @@ function calcMACDSeries(closes, fast=12, slow=26, signalP=9){
 // ---- Renderizado del gráfico principal + overlays + subgráficos ----
 function renderHistoryChart(){
   if(!ultimoHistorialCargado || ultimoHistorialCargado.ticker !== openTicker) return;
-  const {points, dec} = ultimoHistorialCargado;
+  const {points, dec, ticker} = ultimoHistorialCargado;
   const svgEl = document.getElementById('historySvg');
   if(!svgEl) return;
+  const sHist = todosLosStocks().find(x => x.ticker === ticker);
+  const monedaHist = (sHist && sHist.currency) || 'CLP';
 
   const w = 600, h = 160;
   // Se reserva AXIS_GUTTER a la derecha para los valores del eje Y (ver
@@ -2189,6 +2237,7 @@ function renderHistoryChart(){
   svg += yAxisSvg(min, max, plotW, h, dec);
 
   svgEl.innerHTML = svg;
+  pintarEtiquetasEjeY(document.getElementById('historyAxisLabels'), min, max, h, dec, monedaHist);
 
   // Leyenda simple si hay overlays de linea activos
   const leyendaEl = document.getElementById('historyLeyenda');
