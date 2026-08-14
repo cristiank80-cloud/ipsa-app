@@ -4157,6 +4157,18 @@ async function actualizarBenchmarkCartera(){
 
   const moneda = ambienteActivo === 'usa' ? 'USD' : 'CLP';
   const nombreIndice = moneda === 'USD' ? 'S&P 500' : 'IPSA';
+
+  // El IPSA (^IPSA) no tiene historial usable en Yahoo Finance -- se
+  // confirmó en vivo (ver conversación): /history?ticker=IPSA solo trae 1
+  // punto viejo, para cualquier período. No es un problema temporal del
+  // servidor, es una limitación de la fuente, así que en vez de mostrar el
+  // mensaje de error cada vez, se oculta el bloque entero para CLP. El S&P
+  // 500 (USD) sí tiene historial real y sigue funcionando normal.
+  if(moneda === 'CLP'){
+    box.style.display = 'none';
+    return;
+  }
+
   const fechaInicio = primeraFechaMovimientos(moneda);
   const retorno = retornoSimpleCartera(moneda);
 
