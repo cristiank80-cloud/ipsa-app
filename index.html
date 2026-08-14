@@ -233,11 +233,22 @@
   .price-block{text-align:right;}
   .price{font-size:21px; font-weight:600;}
   .delta{font-size:12.5px; font-weight:500;}
-  .spark-wrap{position:relative; margin:4px 0 6px;}
-  .spark-loading{
-    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    font-size:11px; color:var(--ink-faint); letter-spacing:.03em;
-  }
+  /* Reemplaza al grafico que iba aca antes: en la tarjeta de LISTA nunca
+     alcanzaba a mostrar nada real (el historial solo se carga completo al
+     abrir el detalle de una accion), asi que quedaba vacio. Esta franja usa
+     datos que igual ya se piden (señales de /signals, rango de /rango5y). */
+  .card-stats{margin:6px 0 8px;}
+  .cs-loading{font-size:11px; color:var(--ink-faint); text-align:center; padding:10px 0;}
+  .cs-boxes{display:flex; gap:6px; margin-bottom:6px;}
+  .cs-box{flex:1; min-width:0; background:var(--bg-panel); border-radius:8px; padding:5px 4px; text-align:center;}
+  .cs-box-label{display:block; font-size:9.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.03em;}
+  .cs-box-val{display:block; font-size:13px; font-weight:600; margin-top:1px;}
+  .cs-ret{font-size:12px; color:var(--ink-dim); display:flex; justify-content:space-between; padding:3px 0;}
+  .cs-ret .mono{font-weight:600;}
+  .cs-rango{font-size:12px; color:var(--ink-dim); margin-top:4px;}
+  .cs-rango-head{display:flex; justify-content:space-between; margin-bottom:4px;}
+  .cs-rango-bar{position:relative; height:4px; border-radius:2px; background:var(--hairline);}
+  .cs-rango-marker{position:absolute; top:-3px; width:2px; height:10px; background:var(--ink); border-radius:1px;}
   .flag{
     position:absolute; top:8px; right:10px; font-size:11px; letter-spacing:.07em; text-transform:uppercase;
     color:var(--copper); background:rgba(193,84,58,0.16); padding:3px 7px; border-radius:20px;
@@ -1366,9 +1377,37 @@ todosLosStocks().forEach(s => {
         ${s.currency === 'USD' ? '<div class="price-clp-eq mono" data-el="priceClp"></div>' : ''}
       </div>
     </div>
-    <div class="spark-wrap">
-      <svg viewBox="0 0 300 74" width="100%" height="74" preserveAspectRatio="none" data-el="svg"></svg>
-      <div class="spark-loading" data-el="sparkLoading">Cargando datos reales…</div>
+    <div class="card-stats" data-el="cardStats">
+      <p class="cs-loading" data-el="csLoading">Cargando señales…</p>
+      <div class="cs-boxes" data-el="csBoxes" style="display:none">
+        <div class="cs-box">
+          <span class="cs-box-label">Puntaje</span>
+          <span class="cs-box-val mono" data-el="csPuntajeVal">···</span>
+        </div>
+        <div class="cs-box">
+          <span class="cs-box-label">RSI</span>
+          <span class="cs-box-val mono" data-el="csRsiVal">···</span>
+        </div>
+        <div class="cs-box">
+          <span class="cs-box-label">Tendencia</span>
+          <span class="cs-box-val" data-el="csTendVal">···</span>
+        </div>
+      </div>
+      <div class="cs-ret" data-el="csRet3mRow" style="display:none">
+        <span>Rentabilidad 3 meses</span>
+        <span class="mono" data-el="csRet3mVal"></span>
+      </div>
+      <div class="cs-ret" data-el="csRet1yRow" style="display:none">
+        <span>Rentabilidad 1 año</span>
+        <span class="mono" data-el="csRet1yVal"></span>
+      </div>
+      <div class="cs-rango" data-el="csRangoRow" style="display:none">
+        <div class="cs-rango-head">
+          <span>Rango 5 años</span>
+          <span class="mono" data-el="csRangoTxt"></span>
+        </div>
+        <div class="cs-rango-bar"><div class="cs-rango-marker" data-el="csRangoMarker"></div></div>
+      </div>
     </div>
     <div class="avg-line">
       <span>Promedio 90d</span>
@@ -2585,8 +2624,8 @@ function renderCard(s){
   const priceClpEl = card.querySelector('[data-el="priceClp"]');
   const avgEl = card.querySelector('[data-el="avgline"]');
   const horaEl = card.querySelector('[data-el="datoHora"]');
-  const sparkLoading = card.querySelector('[data-el="sparkLoading"]');
-  const svgEl = card.querySelector('[data-el="svg"]');
+
+  actualizarStatsCard(card, s);
 
   if(horaEl){
     const h = formatoHoraDato(s.marketTime, s.staleSeconds);
@@ -2609,14 +2648,9 @@ function renderCard(s){
     deltaEl.textContent = '';
     if(priceClpEl) priceClpEl.textContent = '';
     avgEl.textContent = '···';
-    sparkLoading.style.display = 'flex';
-    svgEl.style.display = 'none';
     card.classList.remove('alert');
     return;
   }
-
-  sparkLoading.style.display = 'none';
-  svgEl.style.display = '';
 
   const threshold = s.avg * ALERT_THRESHOLD;
   // El borde rojo de la tarjeta ahora usa el mismo z-score que el resto
@@ -2639,14 +2673,6 @@ function renderCard(s){
   deltaEl.textContent = fmtPct(deltaVal);
   deltaEl.style.color = deltaVal>=0 ? 'var(--verdigris)' : 'var(--copper)';
   avgEl.textContent = fmt(s.avg, s.dec, s.currency);
-
-  if(s.history.length >= 2){
-    buildSpark(svgEl, s.history, s.avg, threshold, s.dec);
-  } else {
-    sparkLoading.style.display = 'flex';
-    sparkLoading.textContent = 'Acumulando historial real…';
-    svgEl.style.display = 'none';
-  }
 
   s.inAlert = isBelow;
 
@@ -2879,6 +2905,12 @@ let signalsDataUsa = null;
 // preguntar en esta sesión (ver fetchSignals más abajo).
 let signalsUsaNoDisponible = false;
 
+// Indice por ticker de evaluadas_detalle (TODAS las acciones evaluadas, no
+// solo candidatos_compra/venta) -- lo usa la franja nueva de la tarjeta de
+// lista (puntaje/RSI/tendencia/rentabilidad). Se reconstruye cada vez que
+// llega /signals nuevo, ver fetchSignals().
+let signalsPorTicker = {};
+
 async function fetchSignals(){
   try {
     const resp = await fetch(BACKEND_URL + '/signals');
@@ -2909,7 +2941,120 @@ async function fetchSignals(){
       signalsDataUsa = null; // servidor caído o dormido: se reintenta al próximo ciclo
     }
   }
+
+  const nuevoIndice = {};
+  (signalsData && signalsData.evaluadas_detalle || []).forEach(ev => { nuevoIndice[ev.ticker] = ev; });
+  (signalsDataUsa && signalsDataUsa.evaluadas_detalle || []).forEach(ev => { nuevoIndice[ev.ticker] = ev; });
+  signalsPorTicker = nuevoIndice;
+
   renderAnalysis();
+  refrescarStatsDeTodasLasTarjetas();
+}
+
+// ---- Rango de 5 años (min/max) por ticker, para la tarjeta de lista ----
+// Cache de 24h en el SERVIDOR (ver /rango5y en server.py) -- acá alcanza
+// con pedirlo una vez al abrir la app y de ahí en un intervalo largo, no
+// hace falta pedirlo cada 60s como /signals.
+let rango5yPorTicker = {};
+async function obtenerRango5y(){
+  try {
+    const resp = await fetch(BACKEND_URL + '/rango5y');
+    if(resp.ok){
+      const j = await resp.json();
+      if(j.data) Object.assign(rango5yPorTicker, j.data);
+    }
+  } catch(e){ console.warn('No se pudo obtener /rango5y (Chile):', e); }
+  try {
+    const respUsa = await fetch(BACKEND_URL + '/rango5y?mercado=usa');
+    if(respUsa.ok){
+      const j = await respUsa.json();
+      if(j.data) Object.assign(rango5yPorTicker, j.data);
+    }
+  } catch(e){ console.warn('No se pudo obtener /rango5y (USA):', e); }
+  refrescarStatsDeTodasLasTarjetas();
+}
+
+function refrescarStatsDeTodasLasTarjetas(){
+  todosLosStocks().forEach(s => {
+    const card = cardEls[s.ticker];
+    if(card) actualizarStatsCard(card, s);
+  });
+}
+
+const ICONOS_TENDENCIA = {alcista: '▲', bajista: '▼', neutra: '—'};
+const TITULOS_TENDENCIA = {
+  alcista: 'Tendencia alcista',
+  bajista: 'Tendencia bajista (caída sostenida bajo su media de 50 días)',
+  neutra: 'Tendencia neutra',
+};
+
+// Llena la franja "puntaje/RSI/tendencia + rentabilidad + rango 5 años" de
+// una tarjeta de lista. Reemplaza el gráfico que antes iba ahí -- ese
+// gráfico nunca alcanzaba a mostrar nada real en la lista (solo se llenaba
+// de historial real recién abriendo el detalle de la acción), así que este
+// espacio quedaba vacío. Se llama tanto desde renderCard() (cada refresco
+// de precio) como desde fetchSignals()/obtenerRango5y() (cuando llega esa
+// data en su propio ciclo, más lento).
+function actualizarStatsCard(card, s){
+  const loadingEl = card.querySelector('[data-el="csLoading"]');
+  const boxesEl = card.querySelector('[data-el="csBoxes"]');
+  const ret3mRow = card.querySelector('[data-el="csRet3mRow"]');
+  const ret1yRow = card.querySelector('[data-el="csRet1yRow"]');
+  const rangoRow = card.querySelector('[data-el="csRangoRow"]');
+  if(!loadingEl || !boxesEl) return; // tarjeta todavía no montada del todo
+
+  const ev = signalsPorTicker[s.ticker];
+  if(!ev || ev.puntaje === null || ev.puntaje === undefined){
+    loadingEl.style.display = '';
+    loadingEl.textContent = ev ? 'Sin datos suficientes para evaluar esta acción.' : 'Cargando señales…';
+    boxesEl.style.display = 'none';
+    ret3mRow.style.display = 'none';
+    ret1yRow.style.display = 'none';
+  } else {
+    loadingEl.style.display = 'none';
+    boxesEl.style.display = '';
+
+    const puntajeVal = card.querySelector('[data-el="csPuntajeVal"]');
+    puntajeVal.textContent = (ev.puntaje >= 0 ? '+' : '') + Math.round(ev.puntaje);
+    puntajeVal.style.color = ev.puntaje >= 0 ? 'var(--verdigris)' : 'var(--copper)';
+
+    const rsiVal = card.querySelector('[data-el="csRsiVal"]');
+    rsiVal.textContent = (typeof ev.rsi14 === 'number') ? ev.rsi14.toFixed(1) : '···';
+
+    const tendVal = card.querySelector('[data-el="csTendVal"]');
+    const tendencia = ev.tendencia || 'neutra';
+    tendVal.textContent = ICONOS_TENDENCIA[tendencia] || '—';
+    tendVal.style.color = tendencia === 'alcista' ? 'var(--verdigris)'
+                         : tendencia === 'bajista' ? 'var(--copper)' : 'var(--ink-faint)';
+    tendVal.title = TITULOS_TENDENCIA[tendencia] || '';
+
+    if(typeof ev.ret3m === 'number'){
+      ret3mRow.style.display = '';
+      const el = card.querySelector('[data-el="csRet3mVal"]');
+      el.textContent = fmtPctCartera(ev.ret3m);
+      el.style.color = ev.ret3m >= 0 ? 'var(--verdigris)' : 'var(--copper)';
+    } else ret3mRow.style.display = 'none';
+
+    if(typeof ev.ret1y === 'number'){
+      ret1yRow.style.display = '';
+      const el = card.querySelector('[data-el="csRet1yVal"]');
+      el.textContent = fmtPctCartera(ev.ret1y);
+      el.style.color = ev.ret1y >= 0 ? 'var(--verdigris)' : 'var(--copper)';
+    } else ret1yRow.style.display = 'none';
+  }
+
+  const rango = rango5yPorTicker[s.ticker];
+  if(rangoRow){
+    if(rango && typeof s.price === 'number' && rango.max5y > rango.min5y){
+      rangoRow.style.display = '';
+      const txt = card.querySelector('[data-el="csRangoTxt"]');
+      txt.textContent = `${fmtEje(rango.min5y, s.dec, s.currency)} – ${fmtEje(rango.max5y, s.dec, s.currency)}`;
+      const pct = Math.max(0, Math.min(100, (s.price - rango.min5y) / (rango.max5y - rango.min5y) * 100));
+      card.querySelector('[data-el="csRangoMarker"]').style.left = pct + '%';
+    } else {
+      rangoRow.style.display = 'none';
+    }
+  }
 }
 
 // A pedido: las listas "Para revisar como posible compra/venta" solo
@@ -4041,7 +4186,13 @@ async function actualizarBenchmarkCartera(){
     if(!puntos || puntos.length < 2){
       valorEl.textContent = 'no se pudo comparar con el índice ahora';
       valorEl.className = 'msb-val mono';
-      notaEl.textContent = 'El servidor puede estar despertando (tarda ~50s la primera vez) o sin datos todavía. Se reintenta solo.';
+      // El IPSA (^IPSA) no tiene historial usable en Yahoo Finance -- no es
+      // un tema de arranque en frio del servidor (confirmado: la peticion
+      // responde bien, solo trae 1 punto viejo). El S&P 500 (USD) si suele
+      // ser solo el arranque en frio, asi que ese mensaje se mantiene.
+      notaEl.textContent = moneda === 'CLP'
+        ? 'El historial del IPSA no está disponible por ahora (limitación de la fuente de datos, no del servidor). No es necesario esperar.'
+        : 'El servidor puede estar despertando (tarda ~50s la primera vez) o sin datos todavía. Se reintenta solo.';
       return;
     }
 
@@ -4842,6 +4993,12 @@ const BACKEND_URL = 'https://ipsa-alert-service.onrender.com';
 fetchRealQuotes();
 fetchRealQuotesUsa();
 fetchSignals();
+// El rango de 5 años se cachea 24h en el servidor (ver /rango5y en
+// server.py) -- no hace falta pedirlo cada 60s como /signals, alcanza con
+// una vez al abrir la app y de ahí en un intervalo largo por si la pestaña
+// queda abierta varios días.
+obtenerRango5y();
+setInterval(obtenerRango5y, 6 * 3600 * 1000);
 setInterval(fetchRealQuotes, 60000);
 // El ambiente EE.UU. pasó de 7 ETF a 107 instrumentos. Cada refresco obliga
 // al servidor a pedirle a Yahoo un precio por cada uno, y Yahoo corta con
