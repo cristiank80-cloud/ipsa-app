@@ -98,18 +98,30 @@
   .cartera-buscador{width:100%; padding:9px 12px; border:1px solid var(--hairline); border-radius:8px; background:var(--bg-field); font-size:13px; margin-bottom:10px; box-sizing:border-box;}
   .cartera-toggle{font-size:11.5px; color:var(--ink-dim); margin-bottom:14px; display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none;}
   .cartera-group-title{font-size:12.5px; font-weight:600; margin:18px 0 8px; color:var(--ink-dim);}
-  .cartera-row{border:1px solid var(--hairline); border-radius:10px; padding:12px; margin-bottom:8px; background:var(--bg-panel);}
+  /* Tarjetas compactas: todo en 3 líneas (encabezado, posición, alertas)
+     en vez de 6+ -- antes cada campo "avisar si sube/baja" ocupaba su
+     propia etiqueta + input + línea de distancia, apiladas y encima a una
+     sola columna en celular (<480px), lo que hacía la lista larguísima. */
+  .cartera-row{border:1px solid var(--hairline); border-radius:8px; padding:8px 10px; margin-bottom:6px; background:var(--bg-panel);}
   .cartera-row.is-favorite{border-color:var(--gold);}
-  .cartera-row-head{display:flex; align-items:center; gap:8px; cursor:pointer;}
-  .cartera-row-head .fav-btn{font-size:16px; line-height:1; background:none; border:none; color:var(--ink-faint); cursor:pointer; padding:2px;}
+  .cartera-row-head{display:flex; align-items:center; gap:6px; cursor:pointer;}
+  .cartera-row-head .fav-btn{font-size:14px; line-height:1; background:none; border:none; color:var(--ink-faint); cursor:pointer; padding:2px;}
   .cartera-row-head .fav-btn.active{color:var(--gold);}
-  .cartera-ticker{font-weight:600;}
-  .cartera-name{font-size:11px; color:var(--ink-faint); margin-left:6px;}
-  .cartera-pos{font-size:11.5px; color:var(--ink-dim); margin:6px 0 8px;}
-  .cartera-alertas{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
-  @media(max-width:480px){ .cartera-alertas{grid-template-columns:1fr;} }
-  .cartera-campo label{font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.02em; display:block; margin-bottom:3px;}
-  .cartera-campo input{width:100%; padding:6px 8px; border:1px solid var(--hairline); border-radius:6px; background:var(--bg-field); font-size:13px; box-sizing:border-box;}
+  .cartera-ticker{font-weight:600; font-size:13px;}
+  .cartera-name{font-size:10.5px; color:var(--ink-faint); margin-left:6px;}
+  .cartera-pos{font-size:10.5px; color:var(--ink-dim); margin:3px 0 6px;}
+  /* Siempre en una fila (no se apila en celular): dos campos angostos con
+     la etiqueta pegada al input, en vez de etiqueta-arriba-de-input. La
+     distancia al objetivo ("Hoy: $X, +Y% ...") ya no ocupa una línea
+     aparte -- vive en el title (tooltip al mantener presionado / hover). */
+  .cartera-alertas{display:flex; gap:6px;}
+  .cartera-campo{flex:1; min-width:0; display:flex; align-items:center; gap:4px; cursor:text;}
+  .cartera-campo span{font-size:10px; font-weight:600; white-space:nowrap; flex-shrink:0;}
+  .cartera-campo.sube span{color:var(--verdigris);}
+  .cartera-campo.baja span{color:var(--copper);}
+  .cartera-campo input{width:100%; min-width:0; padding:4px 5px; border:1px solid var(--hairline); border-radius:5px; background:var(--bg-field); font-size:12px; box-sizing:border-box;}
+  /* Se sigue usando en el patrimonio consolidado (equivalente USD→CLP) más
+     abajo -- no es exclusiva de las tarjetas de "Mi Cartera". */
   .cartera-dist{font-size:10.5px; margin-top:3px; color:var(--ink-faint);}
   .cartera-empty{font-size:12px; color:var(--ink-faint); padding:8px 0;}
 
@@ -810,11 +822,13 @@ const stocks = [
 ];
 
 const ALERT_THRESHOLD = 0.96; // 4% bajo el promedio
-const PERIOD_LABELS = {'1d':'1D','5d':'5D','1mo':'1M','3mo':'3M','6mo':'6M','ytd':'YTD','1y':'1A','5y':'5A'};
+const PERIOD_LABELS = {'1d':'1D','5d':'5D','1mo':'1M','3mo':'3M','6mo':'6M','ytd':'YTD','1y':'1A','5y':'5A','8y':'8A','10y':'10A'};
 const OVERLAY_LABELS = {sma:'SMA', ema:'EMA', bbands:'BBands', macd:'MACD', rsi:'RSI', volume:'Volume'};
 let ultimoHistorialCargado = null; // {ticker, period, points, dec} -- sobrevive a re-renders del panel
 let overlaysActivos = {sma:false, ema:false, bbands:false, macd:false, rsi:false, volume:false};
-let historial5yCache = {}; // {ticker: [{date, close}, ...]} -- para filtrar rangos "Desde/Hasta" sin re-pedir
+let historial10yCache = {}; // {ticker: [{date, close}, ...]} -- 10 años reales de Yahoo, para
+// filtrar en el navegador el rango "Desde/Hasta" y el botón "8A" (Yahoo no
+// tiene un rango nativo de 8 años, así que se recorta de acá) sin re-pedir.
 const HISTORY_LEN = 40;
 
 // fmt() sigue devolviendo el mismo texto de siempre para llamadas de 2
@@ -1869,6 +1883,17 @@ function renderDetail(ticker){
   const threshold = s.avg * ALERT_THRESHOLD;
   const deltaVal = (s.price/s.avg)-1;
 
+  // Si el usuario tiene posición comprada en esta acción (compras - ventas >
+  // 0), se muestra el precio de compra promedio junto al valor actual --
+  // funciona igual para Chile y USA, calculado desde sus movimientos reales
+  // (nunca inventado). calcularPortafolio() ya filtra por moneda.
+  const posActualDetalle = calcularPortafolio(moneda)[s.ticker];
+  const tienePosicionComprada = !!(posActualDetalle && posActualDetalle.netoQ > 0);
+  // Objetivos "avisar si sube/baja a" que el usuario ya definió en "Mi
+  // Cartera" (alertasPrecio, ver bloque 8) -- se reusan acá, no se piden de
+  // nuevo. `alertasPrecio` es global y ya existe cuando se abre un detalle.
+  const objCarteraDetalle = (typeof alertasPrecio !== 'undefined' && alertasPrecio[s.ticker]) || {};
+
   seedHistorialSiFalta(s); // dispara en segundo plano; si trae datos, se re-dibuja solo
   cargarNoticias(s.ticker); // idem, noticias reales en segundo plano
 
@@ -1933,6 +1958,11 @@ function renderDetail(ticker){
         <div class="vlabel">Última actualización</div>
         <div class="vval mono" style="font-size:14px;" id="detailClock">--:--:--</div>
       </div>
+      ${tienePosicionComprada ? `
+      <div class="vitem">
+        <div class="vlabel">Precio de compra</div>
+        <div class="vval mono" style="color:var(--gold);">${fmt(posActualDetalle.costoPromedio, s.dec, moneda)}</div>
+      </div>` : ''}
     </div>
 
     <button id="btnRegistrarMov" class="mov-btn" style="width:100%; margin-bottom:16px;">📝 Registrar compra/venta de ${s.ticker}</button>
@@ -1943,7 +1973,7 @@ function renderDetail(ticker){
 
     <p class="section-title">Historial real por período (Yahoo Finance)</p>
     <div class="period-row" id="periodRow">
-      ${['1d','5d','1mo','3mo','6mo','ytd','1y','5y'].map(p => `<button class="period-btn" data-period="${p}">${PERIOD_LABELS[p]}</button>`).join('')}
+      ${['1d','5d','1mo','3mo','6mo','ytd','1y','5y','8y','10y'].map(p => `<button class="period-btn" data-period="${p}">${PERIOD_LABELS[p]}</button>`).join('')}
     </div>
     <div class="period-row" style="margin-top:8px;">
       <label class="period-date-label">Desde <input type="date" id="fechaDesde" class="period-date"></label>
@@ -1989,25 +2019,10 @@ function renderDetail(ticker){
       <tr><td>Umbral de alerta</td><td>${fmt(threshold, s.dec, moneda)}</td></tr>
       <tr><td>Volumen negociado hoy</td><td>${volumenReal !== null ? fmtCLP0(volumenReal) + ' títulos' : 'No disponible'}</td></tr>
       <tr><td>Monto transado hoy (aprox.)</td><td>${montoReal !== null ? (moneda === 'USD' ? 'US$' + fmtCLP0(montoReal/1000000) + ' M' : '$' + fmtCLP0(montoReal/1000000) + ' M') : 'No disponible'}</td></tr>
+      <tr><td>Precio de compra (tu cartera)</td><td>${tienePosicionComprada ? fmt(posActualDetalle.costoPromedio, s.dec, moneda) : '— (sin posición registrada)'}</td></tr>
+      <tr><td>Venta si sube a (tu cartera)</td><td>${(objCarteraDetalle.sube !== null && objCarteraDetalle.sube !== undefined && objCarteraDetalle.sube !== '') ? fmt(objCarteraDetalle.sube, s.dec, moneda) : '— (sin objetivo en Mi Cartera)'}</td></tr>
+      <tr><td>Venta si baja a (tu cartera)</td><td>${(objCarteraDetalle.baja !== null && objCarteraDetalle.baja !== undefined && objCarteraDetalle.baja !== '') ? fmt(objCarteraDetalle.baja, s.dec, moneda) : '— (sin objetivo en Mi Cartera)'}</td></tr>
     </table>
-
-    <p class="section-title" style="margin-top:16px;">Puntas de compra / venta ${(s.bid!==null || s.ask!==null) ? '(real)' : '— Yahoo Finance no las publica para ' + bolsaTexto}</p>
-    ${(s.bid!==null || s.ask!==null) ? `
-    <div class="puntas-row">
-      <div class="punta-box compra">
-        <div class="plabel">Compra</div>
-        <div class="pval mono">${s.bid!==null ? fmt(s.bid, s.dec, moneda) : '—'}</div>
-        <div class="pqty">${s.bidSize!==null ? fmtCLP0(s.bidSize)+' títulos' : ''}</div>
-      </div>
-      <div class="punta-box venta">
-        <div class="plabel">Venta</div>
-        <div class="pval mono">${s.ask!==null ? fmt(s.ask, s.dec, moneda) : '—'}</div>
-        <div class="pqty">${s.askSize!==null ? fmtCLP0(s.askSize)+' títulos' : ''}</div>
-      </div>
-    </div>` : `
-    <p style="font-size:12px; color:var(--ink-faint); background:var(--bg-field); padding:10px 12px; border-radius:8px;">
-      Yahoo Finance no tiene puntas de compra/venta cargadas para ${s.ticker} en este momento (varía por acción — no todas las tienen disponibles). No inventamos un número acá.
-    </p>`}
 
     <p class="section-title" style="margin-top:16px;">Rentabilidad ${rentabilidadEsReal ? '(real, calculada del historial de Yahoo Finance)' : '(simulada)'}</p>
     <div class="rent-row">
@@ -2338,14 +2353,63 @@ async function cargarHistorialPeriodo(ticker, period, dec){
   }
 }
 
+// Trae (y cachea) los 10 años reales de Yahoo Finance para un ticker.
+// Base compartida para el botón "8A" (Yahoo no tiene ese rango nativo, se
+// recorta acá) y para el rango personalizado Desde/Hasta.
+async function obtenerHistorial10y(ticker){
+  if(!historial10yCache[ticker]){
+    const resp = await fetch(`${BACKEND_URL}/history?ticker=${encodeURIComponent(ticker)}&period=10y`);
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    const body = await resp.json();
+    historial10yCache[ticker] = body.points || [];
+  }
+  return historial10yCache[ticker];
+}
+
 function wirePeriodSelector(s){
   const row = document.getElementById('periodRow');
   if(!row) return;
 
   row.querySelectorAll('.period-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       row.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+
+      if(btn.dataset.period === '8y'){
+        // Yahoo no tiene un rango de 8 años -- se pide el de 10 y se
+        // recorta a los últimos 8 en el navegador (mismo truco que Desde/Hasta).
+        const statusEl0 = document.getElementById('historyStatus');
+        if(statusEl0) statusEl0.textContent = 'Cargando historial real de Yahoo Finance…';
+        try {
+          const todos = await obtenerHistorial10y(s.ticker);
+          const statusEl = document.getElementById('historyStatus');
+          const svgEl = document.getElementById('historySvg');
+          if(s.ticker !== openTicker || !statusEl || !svgEl) return;
+
+          const hace8Anios = new Date();
+          hace8Anios.setFullYear(hace8Anios.getFullYear() - 8);
+          const desde8 = hace8Anios.toISOString().slice(0, 10);
+          const filtrados = todos.filter(p => p.date >= desde8);
+
+          if(filtrados.length < 2){
+            statusEl.textContent = 'No hay suficientes datos reales de los últimos 8 años para esta acción.';
+            svgEl.innerHTML = '';
+            return;
+          }
+          ultimoHistorialCargado = {ticker: s.ticker, period: '8y', points: filtrados, dec: s.dec};
+          renderHistoryChart();
+          const primero = filtrados[0], ultimo = filtrados[filtrados.length-1];
+          const variacion = (ultimo.close/primero.close - 1) * 100;
+          const signo = variacion >= 0 ? '+' : '';
+          statusEl.textContent = `${primero.date} → ${ultimo.date} · ${filtrados.length} datos reales · ${signo}${variacion.toFixed(1)}%`;
+        } catch(e){
+          console.warn('Error cargando 8A:', e);
+          const statusEl = document.getElementById('historyStatus');
+          if(s.ticker === openTicker && statusEl) statusEl.textContent = 'No se pudo cargar el historial (¿backend despertando? intenta de nuevo).';
+        }
+        return;
+      }
+
       cargarHistorialPeriodo(s.ticker, btn.dataset.period, s.dec);
     });
   });
@@ -2364,13 +2428,7 @@ function wirePeriodSelector(s){
       const statusElCargando = document.getElementById('historyStatus');
       if(statusElCargando) statusElCargando.textContent = 'Cargando historial real de Yahoo Finance…';
       try {
-        if(!historial5yCache[s.ticker]){
-          const resp = await fetch(`${BACKEND_URL}/history?ticker=${encodeURIComponent(s.ticker)}&period=5y`);
-          if(!resp.ok) throw new Error('HTTP ' + resp.status);
-          const body = await resp.json();
-          historial5yCache[s.ticker] = body.points || [];
-        }
-        const todos = historial5yCache[s.ticker];
+        const todos = await obtenerHistorial10y(s.ticker);
         const filtrados = todos.filter(p => p.date >= desde && p.date <= hasta);
 
         // Re-consultamos frescos, por si el panel se redibujo mientras esperabamos
@@ -2379,7 +2437,7 @@ function wirePeriodSelector(s){
         if(s.ticker !== openTicker || !statusEl || !svgEl) return;
 
         if(filtrados.length < 2){
-          statusEl.textContent = 'No hay suficientes datos reales en ese rango (¿fechas fuera de los últimos 5 años, o mercado cerrado ese período?).';
+          statusEl.textContent = 'No hay suficientes datos reales en ese rango (¿fechas fuera de los últimos 10 años, o mercado cerrado ese período?).';
           svgEl.innerHTML = '';
           return;
         }
@@ -3616,21 +3674,19 @@ function renderAmbienteCartera(){
           <span class="cartera-name" data-accion="abrir" data-ticker="${s.ticker}">${s.name}</span>
         </div>
         <div class="cartera-pos">${held
-          ? `Tienes ${fmtCantidad(pos.netoQ, currency)} título(s) · precio promedio de compra ${fmtMoneda2(pos.costoPromedio, currency)}`
-          : 'Sin posición registrada todavía (se calcula sola desde "Mis movimientos")'}</div>
+          ? `Tienes ${fmtCantidad(pos.netoQ, currency)} título(s) · compra ${fmtMoneda2(pos.costoPromedio, currency)}`
+          : 'Sin posición registrada (se calcula sola desde "Mis movimientos")'}</div>
         <div class="cartera-alertas">
-          <div class="cartera-campo">
-            <label>Avisar si sube a (venta)</label>
+          <label class="cartera-campo sube" title="${distancia(obj.sube) || 'Avisar si sube a (venta)'}">
+            <span>Vta si sube</span>
             <input type="number" step="any" min="0" inputmode="decimal" class="mono" data-ticker="${s.ticker}" data-campo="sube"
                    value="${(obj.sube !== null && obj.sube !== undefined) ? obj.sube : ''}" placeholder="—">
-            <div class="cartera-dist">${distancia(obj.sube)}</div>
-          </div>
-          <div class="cartera-campo">
-            <label>Avisar si baja a</label>
+          </label>
+          <label class="cartera-campo baja" title="${distancia(obj.baja) || 'Avisar si baja a'}">
+            <span>Vta si baja</span>
             <input type="number" step="any" min="0" inputmode="decimal" class="mono" data-ticker="${s.ticker}" data-campo="baja"
                    value="${(obj.baja !== null && obj.baja !== undefined) ? obj.baja : ''}" placeholder="—">
-            <div class="cartera-dist">${distancia(obj.baja)}</div>
-          </div>
+          </label>
         </div>
       </div>`;
   };
@@ -3690,7 +3746,7 @@ function renderAmbienteCartera(){
       alertasPrecio[ticker][campo] = (v === null || isNaN(v)) ? null : v;
       guardarAlertasPrecio();
       sincronizarAlertasPrecio();
-      renderAmbienteCartera(); // refresca la línea "Hoy: ..." con la distancia nueva
+      renderAmbienteCartera(); // refresca el tooltip "Hoy: ..." con la distancia nueva
     });
   });
 }
@@ -4029,7 +4085,13 @@ function renderMovsDetailPanel(){
   const moneda = ambienteActivo === 'usa' ? 'USD' : 'CLP';
   const portafolio = calcularPortafolio(moneda);
   const oculto = estaOculto();
-  const tickers = Object.keys(portafolio).sort();
+  // Posiciones abiertas primero (orden alfabético entre ellas), las ya
+  // vendidas por completo (netoQ === 0, "cerrada") al final del listado.
+  const tickers = Object.keys(portafolio).sort((a, b) => {
+    const aAbierta = portafolio[a].netoQ > 0, bAbierta = portafolio[b].netoQ > 0;
+    if(aAbierta !== bAbierta) return aAbierta ? -1 : 1;
+    return a.localeCompare(b);
+  });
   const $$ = (v) => fmtMoneda2(v, moneda); // dinero con símbolo correcto según moneda
 
   if(tickers.length === 0){
