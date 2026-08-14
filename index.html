@@ -436,7 +436,7 @@
      cualquier texto DENTRO de él se aprieta horizontalmente en pantallas
      angostas y queda ilegible. Puestas afuera, en una capa HTML normal,
      el tamaño de letra es el real (en px), sin deformarse. */
-  .axis-labels{position:absolute; top:0; right:2px; bottom:0; width:52px; pointer-events:none;}
+  .axis-labels{position:absolute; top:0; left:2px; bottom:0; width:60px; pointer-events:none;}
   .axis-labels span{position:absolute; right:0; transform:translateY(-50%); font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-faint); white-space:nowrap; background:var(--bg-panel); padding-left:4px;}
 
   .section-title{
@@ -850,6 +850,19 @@ function fmt(v, dec, currency){
   if(currency === 'USD'){
     const d = (dec === undefined || dec === null) ? 2 : dec;
     return 'US$' + v.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+  }
+  return v.toLocaleString('es-CL', {minimumFractionDigits:dec, maximumFractionDigits:dec});
+}
+// Igual que fmt() pero SIN el símbolo de moneda -- solo para las etiquetas
+// del eje Y de los gráficos. "US$250.00" no entraba en la franja angosta
+// reservada para el eje y se montaba sobre la línea/velas; el número solo
+// (con separador de miles/decimales correcto por moneda) sí entra, y la
+// moneda ya se sabe por el resto de la pantalla (Valor, Resumen de precios, etc).
+function fmtEje(v, dec, currency){
+  if(v === null || v === undefined || isNaN(v)) return '···';
+  if(currency === 'USD'){
+    const d = (dec === undefined || dec === null) ? 2 : dec;
+    return v.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
   }
   return v.toLocaleString('es-CL', {minimumFractionDigits:dec, maximumFractionDigits:dec});
 }
@@ -1568,12 +1581,12 @@ function pseudoRand(seed){
 }
 
 // ---- Eje Y compartido: valores de referencia + lineas punteadas ----
-// Se dibuja en una franja reservada a la derecha del area de datos (el
-// "gutter"), asi el precio no tapa la ultima vela/punto de la serie. El
-// ancho subio de 46 a 80 (unidades del viewBox) para dejarle espacio real
-// a las etiquetas HTML de .axis-labels (antes el texto vivia DENTRO del
-// SVG y quedaba angosto).
-const AXIS_GUTTER = 80;
+// Se dibuja en una franja reservada a la IZQUIERDA del area de datos (el
+// "gutter"), asi el precio no tapa la vela/punto mas reciente de la serie
+// (antes vivia a la derecha y con acciones en USD -- "US$250.00" -- se
+// montaba sobre la linea). 105 unidades del viewBox le dan espacio real a
+// las etiquetas HTML de .axis-labels (60px, ver CSS) incluso para USD.
+const AXIS_GUTTER = 105;
 
 // Valores de referencia "redondos" para el eje Y (100, 200, 500, 1000...
 // segun la escala de precio) en vez de repartir min/max en fracciones
@@ -1594,13 +1607,17 @@ function ejeYNiceTicks(min, max, aprox){
   return out;
 }
 
-function yAxisSvg(min, max, plotW, h, dec, ticks){
+// `offsetX`: donde empieza el area de datos (0 si el eje ya no reserva
+// nada -- ej. mini-tarjetas sin eje -- o AXIS_GUTTER cuando el gutter vive
+// a la izquierda, ver buildSpark/renderHistoryChart).
+function yAxisSvg(min, max, plotW, h, dec, ticks, offsetX){
+  offsetX = offsetX || 0;
   const valores = ejeYNiceTicks(min, max, ticks);
   const range = (max - min) || 1;
   let out = '';
   valores.forEach(v => {
     const yy = h - ((v - min)/range) * h;
-    out += `<line x1="0" y1="${yy.toFixed(1)}" x2="${plotW.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="var(--hairline)" stroke-width="1" stroke-dasharray="2,2"></line>`;
+    out += `<line x1="${offsetX.toFixed(1)}" y1="${yy.toFixed(1)}" x2="${(offsetX+plotW).toFixed(1)}" y2="${yy.toFixed(1)}" stroke="var(--hairline)" stroke-width="1" stroke-dasharray="2,2"></line>`;
   });
   return out;
 }
@@ -1608,14 +1625,15 @@ function yAxisSvg(min, max, plotW, h, dec, ticks){
 // Pinta las etiquetas del eje Y como HTML normal (ver .axis-labels), NO
 // como <text> del SVG -- asi el tamaño de letra es real y no se aprieta
 // en pantallas angostas. `contenedorEl` es el <div class="axis-labels">
-// hermano del <svg>.
+// hermano del <svg>. Sin simbolo de moneda (fmtEje, no fmt) -- ver nota
+// junto a fmtEje().
 function pintarEtiquetasEjeY(contenedorEl, min, max, h, dec, moneda, ticks){
   if(!contenedorEl) return;
   const valores = ejeYNiceTicks(min, max, ticks);
   const range = (max - min) || 1;
   contenedorEl.innerHTML = valores.map(v => {
     const pct = (1 - (v - min)/range) * 100;
-    return `<span style="top:${pct.toFixed(2)}%;">${fmt(v, dec, moneda)}</span>`;
+    return `<span style="top:${pct.toFixed(2)}%;">${fmtEje(v, dec, moneda)}</span>`;
   }).join('');
 }
 
@@ -1631,7 +1649,10 @@ function buildSpark(svgEl, history, avg, threshold, dec, h, w, mostrarEjeY, mone
   // el ancho real de SU viewBox.
   w = w || 300;
   // El eje Y solo se pide para el grafico grande del detalle (mostrarEjeY),
-  // no para la mini-tarjeta -- ahi no hay espacio ni falta hace.
+  // no para la mini-tarjeta -- ahi no hay espacio ni falta hace. Cuando si
+  // se pide, el area de datos arranca DESPUES del gutter (que ahora vive a
+  // la izquierda), no en 0.
+  const offsetX = mostrarEjeY ? AXIS_GUTTER : 0;
   const plotW = mostrarEjeY ? (w - AXIS_GUTTER) : w;
   const n = history.length;
 
@@ -1661,7 +1682,7 @@ function buildSpark(svgEl, history, avg, threshold, dec, h, w, mostrarEjeY, mone
   const thY = y(threshold);
 
   const candleEls = candles.map((c, i) => {
-    const cx = slot * i + slot/2;
+    const cx = offsetX + slot * i + slot/2;
     const isUp = c.close >= c.open;
     const color = isUp ? 'var(--verdigris)' : 'var(--copper)';
     const bodyTop = y(Math.max(c.open, c.close));
@@ -1672,11 +1693,11 @@ function buildSpark(svgEl, history, avg, threshold, dec, h, w, mostrarEjeY, mone
   }).join('');
 
   svgEl.innerHTML = `
-    <rect x="0" y="0" width="${plotW}" height="${Math.max(thY,0)}" fill="var(--verdigris-soft)"></rect>
-    <rect x="0" y="${thY}" width="${plotW}" height="${Math.max(h-thY,0)}" fill="var(--copper-soft)"></rect>
-    <line x1="0" y1="${avgY}" x2="${plotW}" y2="${avgY}" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="3,3"></line>
+    <rect x="${offsetX}" y="0" width="${plotW}" height="${Math.max(thY,0)}" fill="var(--verdigris-soft)"></rect>
+    <rect x="${offsetX}" y="${thY}" width="${plotW}" height="${Math.max(h-thY,0)}" fill="var(--copper-soft)"></rect>
+    <line x1="${offsetX}" y1="${avgY}" x2="${offsetX+plotW}" y2="${avgY}" stroke="var(--ink-faint)" stroke-width="1" stroke-dasharray="3,3"></line>
     ${candleEls}
-    ${mostrarEjeY ? yAxisSvg(min, max, plotW, h, dec) : ''}
+    ${mostrarEjeY ? yAxisSvg(min, max, plotW, h, dec, undefined, offsetX) : ''}
   `;
   if(mostrarEjeY) pintarEtiquetasEjeY(axisLabelsEl, min, max, h, dec, moneda);
   else if(axisLabelsEl) axisLabelsEl.innerHTML = '';
@@ -2188,12 +2209,12 @@ function renderHistoryChart(){
   const monedaHist = (sHist && sHist.currency) || 'CLP';
 
   const w = 600, h = 160;
-  // Se reserva AXIS_GUTTER a la derecha para los valores del eje Y (ver
-  // yAxisSvg) -- por eso el area de datos usa plotW, no w.
+  // Se reserva AXIS_GUTTER a la IZQUIERDA para los valores del eje Y (ver
+  // yAxisSvg) -- por eso el area de datos arranca en AXIS_GUTTER, no en 0.
   const plotW = w - AXIS_GUTTER;
   const closes = points.map(p => p.close);
   const n = closes.length;
-  const x = i => (i/(n-1)) * plotW;
+  const x = i => AXIS_GUTTER + (i/(n-1)) * plotW;
 
   const series = [];
   if(overlaysActivos.sma) series.push({data: calcSMASeries(closes,20), color:'#E8B84B', label:'SMA20'});
@@ -2212,7 +2233,7 @@ function renderHistoryChart(){
   const color = last >= first ? 'var(--verdigris)' : 'var(--copper)';
   const fillColor = last >= first ? 'var(--verdigris-soft)' : 'var(--copper-soft)';
   const linePts = closes.map((v,i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  const areaPts = `0,${h} ${linePts} ${plotW},${h}`;
+  const areaPts = `${AXIS_GUTTER},${h} ${linePts} ${AXIS_GUTTER+plotW},${h}`;
 
   let svg = `<polygon points="${areaPts}" fill="${fillColor}"></polygon>`;
 
@@ -2234,7 +2255,7 @@ function renderHistoryChart(){
     if(pts) svg += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="1.6"></polyline>`;
   });
 
-  svg += yAxisSvg(min, max, plotW, h, dec);
+  svg += yAxisSvg(min, max, plotW, h, dec, undefined, AXIS_GUTTER);
 
   svgEl.innerHTML = svg;
   pintarEtiquetasEjeY(document.getElementById('historyAxisLabels'), min, max, h, dec, monedaHist);
