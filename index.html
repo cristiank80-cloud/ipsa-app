@@ -109,6 +109,7 @@
   .cartera-row-head .fav-btn.active{color:var(--gold);}
   .cartera-ticker{font-weight:600; font-size:13px;}
   .cartera-name{font-size:10.5px; color:var(--ink-faint); margin-left:6px;}
+  .cartera-price{margin-left:auto; font-size:13px; font-weight:600; color:var(--ink); white-space:nowrap; padding-left:6px;}
   .cartera-pos{font-size:10.5px; color:var(--ink-dim); margin:3px 0 6px;}
   /* Siempre en una fila (no se apila en celular): dos campos angostos con
      la etiqueta pegada al input, en vez de etiqueta-arriba-de-input. La
@@ -3742,6 +3743,7 @@ function renderAmbienteCartera(){
           <button type="button" class="fav-btn ${esFav ? 'active' : ''}" data-accion="fav" data-ticker="${s.ticker}" title="Marcar como favorita">${esFav ? '★' : '☆'}</button>
           <span class="cartera-ticker mono" data-accion="abrir" data-ticker="${s.ticker}">${s.ticker}</span>
           <span class="cartera-name" data-accion="abrir" data-ticker="${s.ticker}">${s.name}</span>
+          <span class="cartera-price mono" data-accion="abrir" data-ticker="${s.ticker}">${precioActual !== null ? fmtMoneda2(precioActual, currency) : ''}</span>
         </div>
         <div class="cartera-pos">${held
           ? `Tienes ${fmtCantidad(pos.netoQ, currency)} título(s) · compra ${fmtMoneda2(pos.costoPromedio, currency)}`
