@@ -865,7 +865,11 @@ const ALERT_THRESHOLD = 0.96; // 4% bajo el promedio
 const PERIOD_LABELS = {'1d':'1D','5d':'5D','1mo':'1M','3mo':'3M','6mo':'6M','ytd':'YTD','1y':'1A','5y':'5A','8y':'8A','10y':'10A'};
 const OVERLAY_LABELS = {sma:'SMA', ema:'EMA', bbands:'BBands', macd:'MACD', rsi:'RSI', volume:'Volume'};
 let ultimoHistorialCargado = null; // {ticker, period, points, dec} -- sobrevive a re-renders del panel
-let overlaysActivos = {sma:false, ema:false, bbands:false, macd:false, rsi:false, volume:false};
+let overlaysActivos = {sma:false, ema:false, bbands:false, macd:false, rsi:false, volume:false, indice:false};
+// Serie del indice de referencia (S&P 500 o IPSA) para el boton "indice" del
+// grafico. Igual patron que ultimoHistorialCargado: sobrevive a re-renders,
+// se descarta cuando cambia el ticker/periodo de referencia.
+let ultimoIndiceCargado = null; // {refTicker, period, points, origen}
 let historial10yCache = {}; // {ticker: [{date, close}, ...]} -- 10 años reales de Yahoo, para
 // filtrar en el navegador el rango "Desde/Hasta" y el botón "8A" (Yahoo no
 // tiene un rango nativo de 8 años, así que se recorta de acá) sin re-pedir.
@@ -2089,6 +2093,7 @@ function renderDetail(ticker){
 
     <div class="period-row" id="overlayRow" style="margin-top:10px;">
       ${['sma','ema','bbands','macd','rsi','volume'].map(k => `<button class="overlay-btn" data-overlay="${k}">${OVERLAY_LABELS[k]}</button>`).join('')}
+      <button class="overlay-btn" data-overlay="indice" title="Compara el movimiento de ${s.ticker} contra ${moneda === 'USD' ? 'el S&P 500' : 'el IPSA'} en el mismo período, reescalado para que quepa en el mismo gráfico.">${moneda === 'USD' ? 'S&P 500' : 'IPSA'}</button>
       <button class="overlay-btn" id="btnLimpiarOverlays">Limpiar</button>
       <button class="overlay-btn" id="btnAyudaIndicadores" title="¿Qué significa cada indicador?">❓ Ayuda</button>
     </div>
@@ -2097,6 +2102,7 @@ function renderDetail(ticker){
       <svg viewBox="0 0 600 160" width="100%" height="160" preserveAspectRatio="none" id="historySvg"></svg>
       <div class="axis-labels" id="historyAxisLabels"></div>
       <p id="historyStatus" style="font-size:11px; color:var(--ink-faint); text-align:center; margin:4px 0 0;">Elige un período para cargar el historial real.</p>
+      <p id="indiceStatus" style="font-size:11px; color:var(--gold); text-align:center; margin:2px 0 0;"></p>
     </div>
     <div class="detail-chart sub-chart" id="volumeChartWrap" style="display:none;">
       <p class="sub-chart-label">Volumen (real)</p>
@@ -2239,10 +2245,59 @@ function calcMACDSeries(closes, fast=12, slow=26, signalP=9){
   return {macdLine, signal, hist};
 }
 
+// ---- Indice de referencia superpuesto (S&P 500 / IPSA), mismo patron ----
+// visual que SMA/EMA pero con datos que vienen de OTRO endpoint (/history
+// con ticker=SP500 o IPSA) y en una escala totalmente distinta (miles de
+// puntos de indice vs. el precio de una accion) -- por eso se reescala
+// antes de dibujarlo, en vez de mezclarlo tal cual con los cierres.
+
+// Empareja cada fecha de la accion con el cierre del indice mas reciente
+// que no sea posterior a esa fecha. Las dos bolsas no cierran los mismos
+// días (feriados distintos, fines de semana), así que un cruce por fecha
+// exacta dejaría huecos de sobra; "el último dato disponible hasta ese
+// día" es la aproximación estándar para este tipo de comparación visual.
+function alinearIndicePorFecha(fechasStock, indicePuntos){
+  if(!indicePuntos || !indicePuntos.length) return fechasStock.map(() => null);
+  let j = 0;
+  return fechasStock.map(f => {
+    while(j+1 < indicePuntos.length && indicePuntos[j+1].date <= f) j++;
+    return indicePuntos[j].date <= f ? indicePuntos[j].close : null;
+  });
+}
+
+// Pide /history para el indice de referencia (S&P 500 o IPSA) en el mismo
+// período que el gráfico principal. No se llama sola: renderHistoryChart()
+// la dispara cuando el botón "indice" está activo y todavía no hay datos
+// para ese ticker/período, y se vuelve a redibujar cuando esta termina.
+//
+// A diferencia de ultimoHistorialCargado (que es DEL ticker abierto), esta
+// serie es la misma para cualquier accion del mismo mercado -- por eso NO
+// se descarta si el usuario cambia de accion mientras la peticion esta en
+// vuelo (dos acciones chilenas comparten el mismo IPSA). Solo se evita
+// redibujar si el panel de detalle ya se cerro del todo.
+let indiceComparacionEnCurso = null; // evita pedir la misma combinacion 2 veces si el usuario hace click rapido
+async function cargarIndiceComparacion(period, moneda){
+  const refTicker = moneda === 'USD' ? 'SP500' : 'IPSA';
+  const clave = refTicker + '|' + period;
+  if(indiceComparacionEnCurso === clave) return;
+  indiceComparacionEnCurso = clave;
+  try {
+    const resp = await fetch(`${BACKEND_URL}/history?ticker=${refTicker}&period=${period}`);
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    const body = await resp.json();
+    ultimoIndiceCargado = {refTicker, period, points: body.points || [], origen: body.origen};
+  } catch(e){
+    console.warn('Error cargando indice de comparacion:', e);
+    ultimoIndiceCargado = {refTicker, period, points: [], origen: 'error'};
+  }
+  indiceComparacionEnCurso = null;
+  if(openTicker) renderHistoryChart(); // el panel sigue abierto (en cualquier accion)
+}
+
 // ---- Renderizado del gráfico principal + overlays + subgráficos ----
 function renderHistoryChart(){
   if(!ultimoHistorialCargado || ultimoHistorialCargado.ticker !== openTicker) return;
-  const {points, dec, ticker} = ultimoHistorialCargado;
+  const {points, dec, ticker, period} = ultimoHistorialCargado;
   const svgEl = document.getElementById('historySvg');
   if(!svgEl) return;
   const sHist = todosLosStocks().find(x => x.ticker === ticker);
@@ -2261,6 +2316,43 @@ function renderHistoryChart(){
   if(overlaysActivos.ema) series.push({data: calcEMASeries(closes,20), color:'#7FB2E5', label:'EMA20'});
   let bb = null;
   if(overlaysActivos.bbands){ bb = calcBollinger(closes,20,2); }
+
+  // Indice de referencia: se reescala para arrancar en el mismo valor que
+  // la accion en el primer punto donde hay dato de ambos lados -- asi las
+  // dos lineas se pueden leer en el mismo eje, y a partir de ahi la
+  // distancia entre ellas ES la sobre/sub-performance relativa.
+  let indiceEstadoTexto = '';
+  const refTickerActual = monedaHist === 'USD' ? 'SP500' : 'IPSA';
+  if(overlaysActivos.indice){
+    const nombreIndice = refTickerActual === 'SP500' ? 'S&P 500' : 'IPSA';
+    if(ultimoIndiceCargado && ultimoIndiceCargado.refTicker === refTickerActual && ultimoIndiceCargado.period === period){
+      if(ultimoIndiceCargado.points.length){
+        const fechasStock = points.map(p => p.date);
+        const alineado = alinearIndicePorFecha(fechasStock, ultimoIndiceCargado.points);
+        const primerValido = alineado.findIndex(v => v != null);
+        if(primerValido !== -1 && closes[primerValido]){
+          const factor = closes[primerValido] / alineado[primerValido];
+          series.push({
+            data: alineado.map(v => v != null ? v*factor : null),
+            color: '#B98FD1',
+            label: `${nombreIndice} (reescalado)`
+          });
+          indiceEstadoTexto = `— ${nombreIndice} (línea morada), reescalado para partir del mismo punto que ${ticker}. La distancia entre las líneas es la diferencia de rendimiento, no el valor real del índice.`;
+        } else {
+          indiceEstadoTexto = `${nombreIndice}: sin datos que calcen con este período.`;
+        }
+      } else {
+        indiceEstadoTexto = refTickerActual === 'IPSA'
+          ? 'IPSA no disponible por ahora (fuente externa no respondió).'
+          : `${nombreIndice} no disponible por ahora.`;
+      }
+    } else {
+      cargarIndiceComparacion(period, monedaHist); // dispara la carga; este render se repite solo cuando llegue
+      indiceEstadoTexto = `Cargando ${nombreIndice}…`;
+    }
+  }
+  const indiceStatusEl = document.getElementById('indiceStatus');
+  if(indiceStatusEl) indiceStatusEl.textContent = indiceEstadoTexto;
 
   const allVals = [...closes];
   series.forEach(s => s.data.forEach(v => { if(v!=null) allVals.push(v); }));
