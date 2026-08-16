@@ -109,7 +109,12 @@
   .cartera-row-head .fav-btn.active{color:var(--gold);}
   .cartera-ticker{font-weight:600; font-size:13px;}
   .cartera-name{font-size:10.5px; color:var(--ink-faint); margin-left:6px;}
-  .cartera-price{margin-left:auto; font-size:13px; font-weight:600; color:var(--ink); white-space:nowrap; padding-left:6px;}
+  .cartera-price-wrap{margin-left:auto; padding-left:6px; text-align:right; white-space:nowrap;}
+  .cartera-price{font-size:13px; font-weight:600; color:var(--ink);}
+  /* Ganancia/perdida no realizada de ESA posicion: precio de hoy contra tu
+     propio precio de compra. No es la variacion del dia ni la distancia al
+     promedio -- esas ya viven en la tarjeta de la accion (ambiente Chile/USA). */
+  .cartera-price-pct{display:block; font-size:10.5px; font-weight:600; margin-top:1px;}
   .cartera-pos{font-size:10.5px; color:var(--ink-dim); margin:3px 0 6px;}
   /* Siempre en una fila (no se apila en celular): dos campos angostos con
      la etiqueta pegada al input, en vez de etiqueta-arriba-de-input. La
@@ -243,6 +248,7 @@
   .cs-box{flex:1; min-width:0; background:var(--bg-panel); border-radius:8px; padding:5px 4px; text-align:center;}
   .cs-box-label{display:block; font-size:9.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.03em;}
   .cs-box-val{display:block; font-size:13px; font-weight:600; margin-top:1px;}
+  .cs-box-sub{display:block; font-size:9px; color:var(--ink-faint); margin-top:1px; line-height:1.2;}
   .cs-ret{font-size:12px; color:var(--ink-dim); display:flex; justify-content:space-between; padding:3px 0;}
   .cs-ret .mono{font-weight:600;}
   .cs-rango{font-size:12px; color:var(--ink-dim); margin-top:4px;}
@@ -1381,17 +1387,24 @@ todosLosStocks().forEach(s => {
       <p class="cs-loading" data-el="csLoading">Cargando señales…</p>
       <div class="cs-boxes" data-el="csBoxes" style="display:none">
         <div class="cs-box">
-          <span class="cs-box-label">Puntaje</span>
-          <span class="cs-box-val mono" data-el="csPuntajeVal">···</span>
-        </div>
-        <div class="cs-box">
-          <span class="cs-box-label">RSI</span>
-          <span class="cs-box-val mono" data-el="csRsiVal">···</span>
+          <span class="cs-box-label">Extensión</span>
+          <span class="cs-box-val mono" data-el="csExtVal">···</span>
+          <span class="cs-box-sub" data-el="csExtSub"></span>
         </div>
         <div class="cs-box">
           <span class="cs-box-label">Tendencia</span>
           <span class="cs-box-val" data-el="csTendVal">···</span>
+          <span class="cs-box-sub" data-el="csTendSub"></span>
         </div>
+        <div class="cs-box">
+          <span class="cs-box-label">Evento</span>
+          <span class="cs-box-val" data-el="csEvtVal">···</span>
+          <span class="cs-box-sub" data-el="csEvtSub"></span>
+        </div>
+      </div>
+      <div class="cs-ret" data-el="csRsiRow" style="display:none">
+        <span>RSI (14)</span>
+        <span class="mono" data-el="csRsiVal"></span>
       </div>
       <div class="cs-ret" data-el="csRet3mRow" style="display:none">
         <span>Rentabilidad 3 meses</span>
@@ -2981,23 +2994,45 @@ function refrescarStatsDeTodasLasTarjetas(){
   });
 }
 
-const ICONOS_TENDENCIA = {alcista: '▲', bajista: '▼', neutra: '—'};
+const ICONOS_TENDENCIA = {alcista: '▲', bajista: '▼', neutra: '—', evento: '⚡'};
 const TITULOS_TENDENCIA = {
   alcista: 'Tendencia alcista',
   bajista: 'Tendencia bajista (caída sostenida bajo su media de 50 días)',
   neutra: 'Tendencia neutra',
+  evento: 'Rompió sus medias por un salto puntual (reporte o noticia), no por un deterioro sostenido',
 };
 
-// Llena la franja "puntaje/RSI/tendencia + rentabilidad + rango 5 años" de
-// una tarjeta de lista. Reemplaza el gráfico que antes iba ahí -- ese
-// gráfico nunca alcanzaba a mostrar nada real en la lista (solo se llenaba
-// de historial real recién abriendo el detalle de la acción), así que este
-// espacio quedaba vacío. Se llama tanto desde renderCard() (cada refresco
-// de precio) como desde fetchSignals()/obtenerRango5y() (cuando llega esa
-// data en su propio ciclo, más lento).
+// Los tres ejes, por separado en vez de comprimidos en un solo número:
+//
+//   EXTENSIÓN  qué tan lejos está de su propia LÍNEA DE TENDENCIA (no de un
+//              promedio plano -- ver _extension_regresion en data_source.py).
+//   TENDENCIA  hacia dónde va, y si lo que rompió sus medias fue un evento.
+//   EVENTO     días al próximo reporte, o el gap reciente que explica el
+//              movimiento.
+//
+// "-37" comprimía demasiado: una acción barata con la tendencia rota por un
+// reporte reciente y sin catalizador próximo se veía igual que una en caída
+// libre. Son situaciones completamente distintas.
+function textoExtension(z){
+  if(typeof z !== 'number') return {txt:'···', sub:'', color:'var(--ink-faint)'};
+  const a = Math.abs(z);
+  if(a < 1)   return {txt:z.toFixed(1)+'σ', sub:'en línea', color:'var(--ink-faint)'};
+  if(z <= -2) return {txt:z.toFixed(1)+'σ', sub:'muy bajo', color:'var(--verdigris)'};
+  if(z <= -1) return {txt:z.toFixed(1)+'σ', sub:'bajo', color:'var(--verdigris)'};
+  if(z >= 2)  return {txt:'+'+z.toFixed(1)+'σ', sub:'muy extendido', color:'var(--copper)'};
+  return {txt:'+'+z.toFixed(1)+'σ', sub:'extendido', color:'var(--copper)'};
+}
+
+// Llena la franja de los 3 ejes + rentabilidad + rango 5 años de una tarjeta
+// de lista. Reemplaza el gráfico que antes iba ahí -- ese gráfico nunca
+// alcanzaba a mostrar nada real en la lista (solo se llenaba de historial
+// real recién abriendo el detalle de la acción), así que este espacio
+// quedaba vacío. Se llama tanto desde renderCard() (cada refresco de
+// precio) como desde fetchSignals()/obtenerRango5y().
 function actualizarStatsCard(card, s){
   const loadingEl = card.querySelector('[data-el="csLoading"]');
   const boxesEl = card.querySelector('[data-el="csBoxes"]');
+  const rsiRow = card.querySelector('[data-el="csRsiRow"]');
   const ret3mRow = card.querySelector('[data-el="csRet3mRow"]');
   const ret1yRow = card.querySelector('[data-el="csRet1yRow"]');
   const rangoRow = card.querySelector('[data-el="csRangoRow"]');
@@ -3008,25 +3043,74 @@ function actualizarStatsCard(card, s){
     loadingEl.style.display = '';
     loadingEl.textContent = ev ? 'Sin datos suficientes para evaluar esta acción.' : 'Cargando señales…';
     boxesEl.style.display = 'none';
+    if(rsiRow) rsiRow.style.display = 'none';
     ret3mRow.style.display = 'none';
     ret1yRow.style.display = 'none';
   } else {
     loadingEl.style.display = 'none';
     boxesEl.style.display = '';
 
-    const puntajeVal = card.querySelector('[data-el="csPuntajeVal"]');
-    puntajeVal.textContent = (ev.puntaje >= 0 ? '+' : '') + Math.round(ev.puntaje);
-    puntajeVal.style.color = ev.puntaje >= 0 ? 'var(--verdigris)' : 'var(--copper)';
+    // --- Eje 1: extensión (distancia a su línea de tendencia) ---
+    const extEl = card.querySelector('[data-el="csExtVal"]');
+    const extSubEl = card.querySelector('[data-el="csExtSub"]');
+    const e = textoExtension(ev.zscore);
+    extEl.textContent = e.txt;
+    extEl.style.color = e.color;
+    if(extSubEl) extSubEl.textContent = e.sub;
+    extEl.parentElement.title = (ev.zscoreMetodo === 'regresion')
+      ? 'Desviaciones respecto de su línea de tendencia de 90 días (no de un promedio plano). Cerca de 0 = se comporta como su propia tendencia.'
+      : 'Desviaciones respecto de su promedio de 90 días (no se pudo calcular la línea de tendencia).';
 
-    const rsiVal = card.querySelector('[data-el="csRsiVal"]');
-    rsiVal.textContent = (typeof ev.rsi14 === 'number') ? ev.rsi14.toFixed(1) : '···';
-
+    // --- Eje 2: tendencia (dirección + pendiente) ---
     const tendVal = card.querySelector('[data-el="csTendVal"]');
+    const tendSub = card.querySelector('[data-el="csTendSub"]');
     const tendencia = ev.tendencia || 'neutra';
     tendVal.textContent = ICONOS_TENDENCIA[tendencia] || '—';
     tendVal.style.color = tendencia === 'alcista' ? 'var(--verdigris)'
-                         : tendencia === 'bajista' ? 'var(--copper)' : 'var(--ink-faint)';
-    tendVal.title = TITULOS_TENDENCIA[tendencia] || '';
+                         : tendencia === 'bajista' ? 'var(--copper)'
+                         : tendencia === 'evento' ? 'var(--gold)' : 'var(--ink-faint)';
+    if(tendSub){
+      tendSub.textContent = (typeof ev.pendientePct === 'number')
+        ? (ev.pendientePct >= 0 ? '+' : '') + ev.pendientePct.toFixed(2) + '%/día'
+        : tendencia;
+    }
+    tendVal.parentElement.title = TITULOS_TENDENCIA[tendencia] || '';
+
+    // --- Eje 3: evento (reporte próximo o gap reciente) ---
+    const evtVal = card.querySelector('[data-el="csEvtVal"]');
+    const evtSub = card.querySelector('[data-el="csEvtSub"]');
+    if(typeof ev.diasAReporte === 'number' && ev.diasAReporte <= 7){
+      evtVal.textContent = ev.diasAReporte + 'd';
+      evtVal.style.color = 'var(--copper)';
+      if(evtSub) evtSub.textContent = 'al reporte';
+      evtVal.parentElement.title = `Reporta el ${ev.fechaReporte}. Un reporte mueve el precio mucho más que cualquier señal técnica: esta lectura no es accionable hasta después.`;
+    } else if(typeof ev.gapPct === 'number' && typeof ev.gapDiasAtras === 'number' && ev.gapDiasAtras <= 15){
+      evtVal.textContent = (ev.gapPct >= 0 ? '+' : '') + (ev.gapPct * 100).toFixed(0) + '%';
+      evtVal.style.color = 'var(--gold)';
+      if(evtSub) evtSub.textContent = 'hace ' + ev.gapDiasAtras + 'd';
+      evtVal.parentElement.title = 'Salto puntual reciente (reporte o noticia). El movimiento viene de ese día, no de una tendencia.';
+    } else if(typeof ev.diasAReporte === 'number'){
+      evtVal.textContent = ev.diasAReporte + 'd';
+      evtVal.style.color = 'var(--ink-faint)';
+      if(evtSub) evtSub.textContent = 'al reporte';
+      evtVal.parentElement.title = `Próximo reporte de resultados: ${ev.fechaReporte}.`;
+    } else {
+      evtVal.textContent = '—';
+      evtVal.style.color = 'var(--ink-faint)';
+      if(evtSub) evtSub.textContent = 'sin evento';
+      evtVal.parentElement.title = 'Sin reporte próximo conocido ni salto reciente que explique el movimiento.';
+    }
+
+    if(rsiRow){
+      if(typeof ev.rsi14 === 'number'){
+        rsiRow.style.display = '';
+        const rsiVal = card.querySelector('[data-el="csRsiVal"]');
+        rsiVal.textContent = ev.rsi14.toFixed(1)
+          + (ev.rsi14 <= 30 ? ' · sobreventa' : ev.rsi14 >= 70 ? ' · sobrecompra' : '');
+        rsiVal.style.color = ev.rsi14 <= 30 ? 'var(--verdigris)'
+                            : ev.rsi14 >= 70 ? 'var(--copper)' : 'var(--ink-dim)';
+      } else rsiRow.style.display = 'none';
+    }
 
     if(typeof ev.ret3m === 'number'){
       ret3mRow.style.display = '';
@@ -3881,6 +3965,14 @@ function renderAmbienteCartera(){
            + `${pct !== null ? ', ' + signo + pct.toFixed(1) + '%' : ''} respecto del objetivo)`;
     }
 
+    // Relación entre el precio de hoy y TU precio de compra: es la
+    // ganancia/pérdida no realizada de esa posición, en %. Solo aplica si
+    // hay posición comprada Y precio actual -- si no, no se muestra nada en
+    // vez de un "0%" o un "—" que se pueda confundir con "sin ganancia".
+    const pctVsCompra = (held && precioActual !== null && pos.costoPromedio > 0)
+      ? (precioActual / pos.costoPromedio - 1) * 100
+      : null;
+
     const esFav = favoritos.has(s.ticker);
     return `
       <div class="cartera-row ${esFav ? 'is-favorite' : ''}" data-ticker="${s.ticker}">
@@ -3888,7 +3980,10 @@ function renderAmbienteCartera(){
           <button type="button" class="fav-btn ${esFav ? 'active' : ''}" data-accion="fav" data-ticker="${s.ticker}" title="Marcar como favorita">${esFav ? '★' : '☆'}</button>
           <span class="cartera-ticker mono" data-accion="abrir" data-ticker="${s.ticker}">${s.ticker}</span>
           <span class="cartera-name" data-accion="abrir" data-ticker="${s.ticker}">${s.name}</span>
-          <span class="cartera-price mono" data-accion="abrir" data-ticker="${s.ticker}">${precioActual !== null ? fmtMoneda2(precioActual, currency) : ''}</span>
+          <span class="cartera-price-wrap" data-accion="abrir" data-ticker="${s.ticker}">
+            <span class="cartera-price mono">${precioActual !== null ? fmtMoneda2(precioActual, currency) : ''}</span>
+            ${pctVsCompra !== null ? `<span class="cartera-price-pct mono" style="color:${pctVsCompra >= 0 ? 'var(--verdigris)' : 'var(--copper)'};" title="Precio de hoy respecto de tu precio de compra (${fmtMoneda2(pos.costoPromedio, currency)})">${pctVsCompra >= 0 ? '+' : ''}${pctVsCompra.toFixed(1)}%</span>` : ''}
+          </span>
         </div>
         <div class="cartera-pos">${held
           ? `Tienes ${fmtCantidad(pos.netoQ, currency)} título(s) · compra ${fmtMoneda2(pos.costoPromedio, currency)}`
