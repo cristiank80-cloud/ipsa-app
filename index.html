@@ -677,6 +677,27 @@
         <div class="msb-label" id="msbBenchmarkTitulo">Tu cartera vs. el índice</div>
         <div class="msb-val mono" id="msbBenchmarkValor" style="font-size:14px;">calculando…</div>
         <p class="analysis-empty" id="msbBenchmarkNota" style="padding:2px 0 0; text-align:left;"></p>
+        <!-- Solo Chile: Yahoo no entrega historial usable de ^IPSA (se
+             verificó en vivo: devuelve un solo punto viejo para cualquier
+             período), y Diario Financiero -- la fuente que sí funciona para
+             el IPSA -- solo publica el valor de HOY, no una serie. Como la
+             comparación necesita apenas dos números (el IPSA de tu fecha de
+             inicio y el de hoy), se pide el primero a mano una sola vez.
+             Es exacto y no depende de ninguna fuente que se pueda caer. -->
+        <div id="msbIpsaBaseWrap" style="display:none; margin-top:8px;">
+          <label class="msb-label" for="msbIpsaBase" style="display:block; margin-bottom:4px;">
+            IPSA en tu fecha de inicio (<span id="msbIpsaBaseFecha">—</span>)
+          </label>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <input type="number" step="any" min="0" inputmode="decimal" class="mov-input mono"
+                   id="msbIpsaBase" placeholder="ej. 6.450" style="flex:1; min-width:0;">
+            <button class="mov-btn" id="msbIpsaBaseGuardar" style="white-space:nowrap;">Guardar</button>
+          </div>
+          <p class="analysis-empty" style="padding:4px 0 0; text-align:left;">
+            Búscalo una vez en el histórico del IPSA (investing.com o Diario Financiero)
+            y guárdalo. Con eso la comparación queda funcionando.
+          </p>
+        </div>
       </div>
 
       <!-- Concentración por posición: % del valor de la cartera (en esta
@@ -706,12 +727,6 @@
       <div class="ud-dropdown" id="searchDropdown"></div>
     </div>
     <span class="search-hint" id="searchHint"></span>
-  </div>
-
-  <div class="disclaimer" id="w8benBlock" style="display:none; border-color:rgba(201,166,107,0.5);">
-    <b>W-8BEN.</b> De esto depende que la retención sobre dividendos de EE.UU. sea 15% en vez de 30% (Día 17 del plan de inversión). Vencimiento:
-    <input type="date" id="w8benFecha" class="mov-input mono" style="display:inline-block; width:auto; padding:4px 8px; margin:0 6px;">
-    <span id="w8benEstado" class="mono" style="font-weight:600;"></span>
   </div>
 
   <div class="layout" id="mainLayout">
@@ -1120,7 +1135,7 @@ let ambienteActivo = cargarAmbienteActivo();
 // Textos del disclaimer superior, uno por ambiente (sección 2.1/2.3 de la
 // spec v3: cada ambiente tiene su propia fuente de datos y hay que decirlo).
 const DISCLAIMER_CHILE = '<b>Datos reales de Yahoo Finance, con rezago.</b> Yahoo no publica de cuántos minutos es el rezago, así que cada precio muestra su antigüedad real: fíjate en la hora junto a cada acción y en el semáforo de estado. <b>El IPSA (y la UF/UTM) vienen directo de Diario Financiero</b>, no de Yahoo — el "Consultado" que ves junto al IPSA es el momento en que este servidor revisó esa página, no la hora exacta en que la bolsa fijó ese valor. <b>Yahoo no entrega puntas de compra/venta de la Bolsa de Santiago</b> — ese dato aparece como no disponible, nunca inventado. Toca cualquier tarjeta para ver el detalle.';
-const DISCLAIMER_USA = '<b>Datos reales de Yahoo Finance, con rezago.</b> Los ETF de este ambiente cotizan en USD y el tipo de cambio (USD/CLP) que ves arriba viene de Diario Financiero, igual que el UF/UTM. <b>El S&P 500 (^GSPC) viene de Yahoo Finance</b>, no de Diario Financiero. Revisa el bloque de W-8BEN más abajo: de eso depende la retención sobre dividendos. Toca cualquier tarjeta para ver el detalle.';
+const DISCLAIMER_USA = '<b>Datos reales de Yahoo Finance, con rezago.</b> Los ETF de este ambiente cotizan en USD y el tipo de cambio (USD/CLP) que ves arriba viene de Diario Financiero, igual que el UF/UTM. <b>El S&P 500 (^GSPC) viene de Yahoo Finance</b>, no de Diario Financiero. Toca cualquier tarjeta para ver el detalle.';
 
 // ---- cambiarAmbiente(nuevo): conmutador central de los 3 ambientes ----
 // No duplica componentes -- oculta/muestra los que ya existen (grilla,
@@ -1154,7 +1169,6 @@ function cambiarAmbiente(nuevo){
   const ufUtmBlock = document.getElementById('ufUtmBlock');
   const statusChile = document.getElementById('statusChile');
   const statusUsa = document.getElementById('statusUsa');
-  const w8benBlock = document.getElementById('w8benBlock');
   const topDisclaimer = document.getElementById('topDisclaimer');
 
   if(idxBlock) idxBlock.style.display = esChile ? '' : 'none';
@@ -1163,7 +1177,6 @@ function cambiarAmbiente(nuevo){
   if(ufUtmBlock) ufUtmBlock.style.display = esVistaConsolidada ? 'none' : '';
   if(statusChile) statusChile.style.display = esChile ? '' : 'none';
   if(statusUsa) statusUsa.style.display = esUsa ? '' : 'none';
-  if(w8benBlock) w8benBlock.style.display = esUsa ? '' : 'none';
   if(topDisclaimer) topDisclaimer.innerHTML = esUsa ? DISCLAIMER_USA : DISCLAIMER_CHILE;
 
   // Paneles principales vs. vista consolidada
@@ -1202,7 +1215,6 @@ function cambiarAmbiente(nuevo){
   // otro país antes de cambiar solas. renderAnalysis() ya elige los datos
   // correctos según ambienteActivo; solo faltaba llamarlo aquí, de inmediato.
   if(typeof renderAnalysis === 'function') renderAnalysis();
-  if(typeof renderW8ben === 'function') renderW8ben();
   if(esSeguir && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir();
   if(esCartera && typeof renderAmbienteCartera === 'function') renderAmbienteCartera();
   // Al entrar a EE.UU. o al consolidado, refrescar sus precios de inmediato:
@@ -1212,45 +1224,20 @@ function cambiarAmbiente(nuevo){
   if(typeof cerrarBuscadorUnificado === 'function'){ /* no-op guard, ver bloque 3 */ }
 }
 
-// ---- W-8BEN (sección 2.3 / "Día 17 del plan de inversión") ----
-// Solo persiste una fecha de vencimiento y calcula un estado en tres
-// colores -- no automatiza nada del trámite, eso lo hace el bróker.
-function cargarW8ben(){
+// ---- W-8BEN: BLOQUE ELIMINADO ----
+// Se saco de la interfaz a pedido. Solo queda `w8benState` como dato que
+// viaja en el respaldo (ver exportar/importar mas abajo): asi un archivo
+// exportado ANTES de este cambio se sigue pudiendo restaurar sin perder
+// nada ni romper la validacion, y si algun dia se quiere volver a mostrar
+// el bloque, el dato guardado sigue ahi.
+let w8benState = (() => {
   try {
     const raw = localStorage.getItem('ipsa_w8ben');
     return raw ? JSON.parse(raw) : { fecha: null };
   } catch(e){ return { fecha: null }; }
-}
+})();
 function guardarW8ben(w){
   try { localStorage.setItem('ipsa_w8ben', JSON.stringify(w)); } catch(e){}
-}
-let w8benState = cargarW8ben();
-
-function renderW8ben(){
-  const fechaEl = document.getElementById('w8benFecha');
-  const estadoEl = document.getElementById('w8benEstado');
-  if(!fechaEl || !estadoEl) return;
-  if(w8benState.fecha) fechaEl.value = w8benState.fecha;
-
-  if(!w8benState.fecha){
-    estadoEl.textContent = 'Sin fecha registrada';
-    estadoEl.style.color = 'var(--ink-faint)';
-    return;
-  }
-  const hoy = new Date();
-  const venc = new Date(w8benState.fecha + 'T00:00:00');
-  const diasRestantes = Math.round((venc - hoy) / 86400000);
-
-  if(diasRestantes < 0){
-    estadoEl.textContent = 'Vencido — renueva cuanto antes';
-    estadoEl.style.color = 'var(--copper)';
-  } else if(diasRestantes <= 60){
-    estadoEl.textContent = `Vence en ${diasRestantes} días — conviene renovar pronto`;
-    estadoEl.style.color = 'var(--gold)';
-  } else {
-    estadoEl.textContent = `Vigente (${diasRestantes} días restantes)`;
-    estadoEl.style.color = 'var(--verdigris)';
-  }
 }
 
 // ---- Recordatorio de aporte mensual (bloque 10, sección 5 de la spec v3) ----
@@ -4244,6 +4231,102 @@ function fmtPctCartera(v){
   return (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%';
 }
 
+// ---- IPSA base: el valor del índice en tu fecha de inicio ----
+// Se guarda junto con la fecha a la que corresponde. Si algún día registras
+// un movimiento MÁS ANTIGUO que el que tenías, la fecha de inicio cambia y
+// el valor guardado deja de servir -- por eso se compara la fecha antes de
+// usarlo, en vez de asumir que sigue siendo válido.
+function cargarIpsaBase(){
+  try {
+    const raw = localStorage.getItem('ipsa_base_benchmark');
+    return raw ? JSON.parse(raw) : { fecha: null, valor: null };
+  } catch(e){ return { fecha: null, valor: null }; }
+}
+function guardarIpsaBase(b){
+  try { localStorage.setItem('ipsa_base_benchmark', JSON.stringify(b)); } catch(e){}
+}
+let ipsaBaseState = cargarIpsaBase();
+
+function renderBenchmarkChile(fechaInicio, retorno){
+  const valorEl = document.getElementById('msbBenchmarkValor');
+  const notaEl = document.getElementById('msbBenchmarkNota');
+  const wrap = document.getElementById('msbIpsaBaseWrap');
+  const fechaEl = document.getElementById('msbIpsaBaseFecha');
+  const inputEl = document.getElementById('msbIpsaBase');
+  if(!valorEl || !notaEl) return;
+
+  if(fechaEl) fechaEl.textContent = fechaInicio;
+
+  // ¿El valor guardado corresponde a la fecha de inicio actual?
+  const baseValida = ipsaBaseState.valor > 0 && ipsaBaseState.fecha === fechaInicio;
+  if(inputEl && !inputEl.matches(':focus')){
+    inputEl.value = baseValida ? ipsaBaseState.valor : '';
+  }
+
+  if(!baseValida){
+    if(wrap) wrap.style.display = '';
+    valorEl.textContent = `Cartera ${fmtPctCartera(retorno.pct)} · IPSA —`;
+    valorEl.className = 'msb-val mono';
+    notaEl.textContent = ipsaBaseState.valor > 0
+      ? 'Tu fecha de inicio cambió (registraste un movimiento más antiguo). Actualiza el valor del IPSA para esa fecha.'
+      : 'Falta el valor del IPSA en tu fecha de inicio para poder comparar.';
+    return;
+  }
+
+  // El IPSA de HOY viene de Diario Financiero en cada refresco de precios
+  // (indexValue), no de Yahoo -- misma fuente que el número grande de arriba.
+  if(indexValue === null || !indexDisponible){
+    if(wrap) wrap.style.display = 'none';
+    valorEl.textContent = `Cartera ${fmtPctCartera(retorno.pct)} · IPSA —`;
+    valorEl.className = 'msb-val mono';
+    notaEl.textContent = 'Falta el valor del IPSA de hoy (Diario Financiero no respondió en el último ciclo). Se reintenta solo.';
+    return;
+  }
+
+  if(wrap) wrap.style.display = 'none';
+
+  const retornoIndice = indexValue / ipsaBaseState.valor - 1;
+  const diferenciaPP = (retorno.pct - retornoIndice) * 100;
+
+  valorEl.textContent = `Cartera ${fmtPctCartera(retorno.pct)} · IPSA ${fmtPctCartera(retornoIndice)}`;
+  valorEl.className = 'msb-val mono ' + (diferenciaPP >= 0 ? 'up' : 'down');
+
+  let nota = `Desde tu primer movimiento en CLP (${fechaInicio}), con el IPSA en `
+           + `${fmtCLP0(ipsaBaseState.valor)} ese día contra ${fmtCLP0(indexValue)} hoy. `;
+  nota += diferenciaPP >= 0
+    ? `Le ganas ${Math.abs(diferenciaPP).toFixed(1)} puntos al índice.`
+    : `Vas ${Math.abs(diferenciaPP).toFixed(1)} puntos detrás del índice.`;
+  nota += ' Retorno simple sobre el capital invertido (no es una TIR: no pondera cuándo entró cada aporte).';
+  if(!retorno.completo) nota += ' Cifra parcial: falta el precio real de alguna posición abierta.';
+  nota += ' El valor base del IPSA lo ingresaste tú.';
+  notaEl.textContent = nota;
+}
+
+function inicializarIpsaBase(){
+  const btn = document.getElementById('msbIpsaBaseGuardar');
+  const inputEl = document.getElementById('msbIpsaBase');
+  if(!btn || !inputEl) return;
+
+  const guardar = () => {
+    const valor = parseFloat(inputEl.value);
+    if(!valor || valor <= 0){
+      alert('Ingresa el valor del IPSA de ese día (un número mayor a cero).');
+      return;
+    }
+    const fechaInicio = primeraFechaMovimientos('CLP');
+    if(!fechaInicio){
+      alert('Primero registra al menos un movimiento en CLP.');
+      return;
+    }
+    ipsaBaseState = { fecha: fechaInicio, valor: valor };
+    guardarIpsaBase(ipsaBaseState);
+    actualizarBenchmarkCartera();
+  };
+
+  btn.addEventListener('click', guardar);
+  inputEl.addEventListener('keydown', (e) => { if(e.key === 'Enter') guardar(); });
+}
+
 let _benchmarkCalculando = false;
 async function actualizarBenchmarkCartera(){
   const box = document.getElementById('msbBenchmarkBox');
@@ -4252,17 +4335,6 @@ async function actualizarBenchmarkCartera(){
 
   const moneda = ambienteActivo === 'usa' ? 'USD' : 'CLP';
   const nombreIndice = moneda === 'USD' ? 'S&P 500' : 'IPSA';
-
-  // El IPSA (^IPSA) no tiene historial usable en Yahoo Finance -- se
-  // confirmó en vivo (ver conversación): /history?ticker=IPSA solo trae 1
-  // punto viejo, para cualquier período. No es un problema temporal del
-  // servidor, es una limitación de la fuente, así que en vez de mostrar el
-  // mensaje de error cada vez, se oculta el bloque entero para CLP. El S&P
-  // 500 (USD) sí tiene historial real y sigue funcionando normal.
-  if(moneda === 'CLP'){
-    box.style.display = 'none';
-    return;
-  }
 
   const fechaInicio = primeraFechaMovimientos(moneda);
   const retorno = retornoSimpleCartera(moneda);
@@ -4281,8 +4353,23 @@ async function actualizarBenchmarkCartera(){
     document.getElementById('msbBenchmarkValor').textContent = '•••• vs ••••';
     document.getElementById('msbBenchmarkValor').className = 'msb-val mono';
     document.getElementById('msbBenchmarkNota').textContent = '';
+    const wrapOculto = document.getElementById('msbIpsaBaseWrap');
+    if(wrapOculto) wrapOculto.style.display = 'none';
     return;
   }
+
+  // CHILE: no pasa por /history (Yahoo no entrega serie usable de ^IPSA --
+  // se verificó en vivo: un solo punto viejo para cualquier período). Se
+  // resuelve con los dos únicos números que la comparación necesita: el
+  // IPSA de hoy, que ya viene de Diario Financiero en cada refresco, y el
+  // de la fecha de inicio, que se ingresa a mano una sola vez.
+  if(moneda === 'CLP'){
+    renderBenchmarkChile(fechaInicio, retorno);
+    return;
+  }
+
+  const wrapIpsa = document.getElementById('msbIpsaBaseWrap');
+  if(wrapIpsa) wrapIpsa.style.display = 'none';
 
   if(_benchmarkCalculando) return; // ya hay un cálculo en curso, no pedir dos veces en paralelo
   _benchmarkCalculando = true;
@@ -4564,6 +4651,7 @@ function construirRespaldoUnificado(){
     tesis,
     favoritos: [...favoritos],
     w8ben: w8benState,
+    ipsaBase: ipsaBaseState,
   };
 }
 
@@ -4697,6 +4785,13 @@ function importarMovimientos(file){
       w8benState = (nuevo.w8ben && typeof nuevo.w8ben === 'object') ? nuevo.w8ben : { fecha: null };
       guardarW8ben(w8benState);
 
+      // Respaldos hechos ANTES de que existiera este campo no lo traen: en
+      // ese caso queda vacío y la app vuelve a pedir el valor, en vez de
+      // fallar al restaurar.
+      ipsaBaseState = (nuevo.ipsaBase && typeof nuevo.ipsaBase === 'object')
+        ? nuevo.ipsaBase : { fecha: null, valor: null };
+      guardarIpsaBase(ipsaBaseState);
+
       // Re-render de todo lo que depende de estos datos
       todosLosStocks().forEach(s => {
         const favBtn = cardEls[s.ticker] && cardEls[s.ticker].querySelector('[data-el="fav"]');
@@ -4710,7 +4805,6 @@ function importarMovimientos(file){
       renderMovimientos();
       renderResumenPortafolio();
       renderCaja();
-      renderW8ben();
       renderUltimoRespaldo();
       if(typeof renderRecordatorioAporte === 'function') renderRecordatorioAporte();
       if(ambienteActivo === 'seguir' && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir();
@@ -5076,8 +5170,8 @@ function updateClock(){
 
 inicializarFormularioMovimientos();
 inicializarFormularioCaja();
+inicializarIpsaBase();
 renderCaja();
-renderW8ben();
 inicializarPortafolio();
 hydrateFromCache();
 updateClock();
@@ -5123,14 +5217,6 @@ setInterval(fetchSignals, 60000);
   document.querySelectorAll('.env-btn').forEach(b => {
     b.addEventListener('click', () => cambiarAmbiente(b.dataset.amb));
   });
-  const w8benFechaInput = document.getElementById('w8benFecha');
-  if(w8benFechaInput){
-    w8benFechaInput.addEventListener('change', () => {
-      w8benState = { fecha: w8benFechaInput.value || null };
-      guardarW8ben(w8benState);
-      renderW8ben();
-    });
-  }
   cambiarAmbiente(ambienteActivo); // aplica el ambiente persistido (o "chile" por defecto) apenas carga
 })();
 
