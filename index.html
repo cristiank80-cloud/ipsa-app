@@ -2006,13 +2006,31 @@ function renderDetail(ticker){
   const ret1y = ret1yReal !== null ? ret1yReal : ret3m + (s.rand()-0.4) * 0.35;
   const rentabilidadEsReal = ret3mReal !== null && ret1yReal !== null;
 
-  const rsiVal = calcRSI(s.history, 14);
-  const sma20Val = calcSMA(s.history, 20);
-  const sma50Val = calcSMA(s.history, Math.min(40, s.history.length));
+  // RSI/SMA reales (sobre cierres diarios de Yahoo Finance, calculados en
+  // el backend -- ver data_source.py) tienen prioridad sobre el calculo
+  // local con los ticks recibidos en esta sesion: son mas precisos y no se
+  // reinician al recargar la app (el mismo motivo por el que se migraron
+  // las tarjetas, mas arriba en este archivo). El calculo local queda solo
+  // como respaldo: modo simulado, o mientras el primer /quotes todavia no
+  // responde.
+  const rsiVal = (liveMode && typeof s.rsi14 === 'number') ? s.rsi14 : calcRSI(s.history, 14);
+  const sma20Val = (liveMode && typeof s.sma20 === 'number') ? s.sma20 : calcSMA(s.history, 20);
+  const sma50Val = (liveMode && typeof s.sma50 === 'number') ? s.sma50 : calcSMA(s.history, Math.min(40, s.history.length));
   const rsiTexto = rsiVal === null ? 'Calculando…' :
     rsiVal + (rsiVal < 30 ? ' (sobrevendido)' : rsiVal > 70 ? ' (sobrecomprado)' : '');
   const sma20Texto = sma20Val === null ? 'Calculando…' : fmt(sma20Val, s.dec);
   const sma50Texto = sma50Val === null ? 'Calculando…' : fmt(sma50Val, s.dec);
+
+  // SMA200: a diferencia de las dos de arriba, no tiene respaldo local --
+  // 200 datos a un tick cada ~60s tardarian horas en juntarse y en la
+  // practica nunca se verian, asi que solo se muestra si vino real del
+  // backend. Si no vino (recien conectado, o el papel tiene menos de 200
+  // dias habiles de historial), se dice explicitamente en vez de dejar un
+  // "Calculando…" que nunca se resuelve.
+  const sma200Val = (liveMode && typeof s.sma200 === 'number') ? s.sma200 : null;
+  const sma200Texto = sma200Val !== null
+    ? fmt(sma200Val, s.dec)
+    : (liveMode ? 'No disponible (esperando datos o menos de 200 días de historial)' : 'No disponible en modo simulado');
 
   const patron = detectHeadAndShoulders(s.history);
   const patronTexto = patron
@@ -2129,16 +2147,20 @@ function renderDetail(ticker){
       </div>
     </div>
 
-    <p class="section-title" style="margin-top:16px;">Indicadores técnicos (sobre ${liveMode ? 'los últimos precios reales recibidos' : 'los ticks simulados'})</p>
+    <p class="section-title" style="margin-top:16px;">Indicadores técnicos (sobre ${liveMode ? 'cierres diarios reales de Yahoo Finance' : 'los ticks simulados'})</p>
     <table class="mini-table">
       <tr><td>RSI (14)</td><td>${rsiTexto}</td></tr>
       <tr><td>Media móvil 20</td><td>${sma20Texto}</td></tr>
       <tr><td>Media móvil 50</td><td>${sma50Texto}</td></tr>
+      <tr><td>Media móvil 200</td><td>${sma200Texto}</td></tr>
     </table>
     <p style="font-size:11.5px; color:var(--ink-faint); margin:8px 0 0; background:var(--bg-field); padding:8px 10px; border-radius:6px;">
       <b style="color:var(--ink-dim);">¿Qué es el RSI?</b> Mide qué tan rápido subió o bajó el precio recientemente, en una escala de 0 a 100. Sobre 70 = subió muy rápido (posible sobrecompra). Bajo 30 = cayó muy rápido (posible sobreventa). Cerca de 50 = sin sesgo claro.
     </p>
-    <p style="font-size:11px; color:var(--ink-faint); margin:6px 0 0;">${liveMode ? 'Se recalculan cada vez que llega una actualización real (cada ~60s), sobre pocos puntos todavía si recién te conectaste.' : 'Se calculan sobre los ticks simulados de esta demo (cada 2s).'} No son señales de compra/venta — solo describen el movimiento reciente.</p>
+    <p style="font-size:11.5px; color:var(--ink-faint); margin:6px 0 0; background:var(--bg-field); padding:8px 10px; border-radius:6px;">
+      <b style="color:var(--ink-dim);">¿Qué es la media móvil 200?</b> El precio promedio de los últimos 200 días hábiles (~un año de bolsa). Es la referencia de tendencia de largo plazo más usada: precio por sobre su SMA200 suele leerse como tendencia alcista de fondo; por debajo, bajista. Se calcula siempre sobre cierres diarios reales — nunca sobre ticks recientes, porque tardarían horas en juntar 200 datos.
+    </p>
+    <p style="font-size:11px; color:var(--ink-faint); margin:6px 0 0;">${liveMode ? 'RSI, SMA20 y SMA50 se actualizan con cada precio nuevo que llega (cada ~60s); si alguno todavía dice "Calculando…" es que el servidor no lo ha entregado aún.' : 'Se calculan sobre los ticks simulados de esta demo (cada 2s).'} No son señales de compra/venta — solo describen el movimiento reciente.</p>
 
     <p class="section-title" style="margin-top:16px;">Patrones técnicos (heurística, no es predicción)</p>
     <p style="font-size:11.5px; background:var(--bg-field); padding:10px 12px; border-radius:8px; color:${patron ? 'var(--gold)' : 'var(--ink-faint)'};">
@@ -5576,6 +5598,7 @@ async function fetchRealQuotes(){
         s.rsi14 = (typeof q.rsi14 === 'number') ? q.rsi14 : null;
         s.sma20 = (typeof q.sma20 === 'number') ? q.sma20 : null;
         s.sma50 = (typeof q.sma50 === 'number') ? q.sma50 : null;
+        s.sma200 = (typeof q.sma200 === 'number') ? q.sma200 : null;
         s.zscore = (typeof q.zscore === 'number') ? q.zscore : null;
         s.staleSeconds = (typeof q.staleSeconds === 'number') ? q.staleSeconds : null;
         s.marketTime = q.marketTime || null;
@@ -5664,6 +5687,7 @@ async function fetchRealQuotesUsa(){
         s.rsi14 = (typeof q.rsi14 === 'number') ? q.rsi14 : null;
         s.sma20 = (typeof q.sma20 === 'number') ? q.sma20 : null;
         s.sma50 = (typeof q.sma50 === 'number') ? q.sma50 : null;
+        s.sma200 = (typeof q.sma200 === 'number') ? q.sma200 : null;
         s.zscore = (typeof q.zscore === 'number') ? q.zscore : null;
         s.staleSeconds = (typeof q.staleSeconds === 'number') ? q.staleSeconds : null;
         s.marketTime = q.marketTime || null;
