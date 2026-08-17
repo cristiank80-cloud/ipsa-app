@@ -2285,10 +2285,29 @@ async function cargarIndiceComparacion(period, moneda){
     const resp = await fetch(`${BACKEND_URL}/history?ticker=${refTicker}&period=${period}`);
     if(!resp.ok) throw new Error('HTTP ' + resp.status);
     const body = await resp.json();
-    ultimoIndiceCargado = {refTicker, period, points: body.points || [], origen: body.origen};
+    let puntos = body.points || [];
+    let localesUsados = 0;
+    if(refTicker === 'IPSA'){
+      // El IPSA se completa con lo que este teléfono fue registrando día a
+      // día (ver registrarIpsaDelDia). El S&P 500 no lo necesita: Yahoo ya
+      // entrega su histórico completo y al día.
+      const fusion = fusionarIpsaConLocal(puntos);
+      puntos = fusion.puntos;
+      localesUsados = fusion.agregados;
+    }
+    ultimoIndiceCargado = {refTicker, period, points: puntos,
+                           origen: body.origen, localesUsados: localesUsados};
   } catch(e){
     console.warn('Error cargando indice de comparacion:', e);
-    ultimoIndiceCargado = {refTicker, period, points: [], origen: 'error'};
+    // Sin red no hay CSV del servidor, pero el registro local sí está en
+    // este teléfono -- se usa solo para no dejar el gráfico vacío.
+    if(refTicker === 'IPSA'){
+      const fusion = fusionarIpsaConLocal([]);
+      ultimoIndiceCargado = {refTicker, period, points: fusion.puntos,
+                             origen: 'solo_local', localesUsados: fusion.agregados};
+    } else {
+      ultimoIndiceCargado = {refTicker, period, points: [], origen: 'error'};
+    }
   }
   indiceComparacionEnCurso = null;
   if(openTicker) renderHistoryChart(); // el panel sigue abierto (en cualquier accion)
@@ -2338,6 +2357,13 @@ function renderHistoryChart(){
             label: `${nombreIndice} (reescalado)`
           });
           indiceEstadoTexto = `— ${nombreIndice} (línea morada), reescalado para partir del mismo punto que ${ticker}. La distancia entre las líneas es la diferencia de rendimiento, no el valor real del índice.`;
+          const nLocales = ultimoIndiceCargado.localesUsados || 0;
+          if(nLocales > 0){
+            indiceEstadoTexto += ` Incluye ${nLocales} ${nLocales === 1 ? 'día registrado' : 'días registrados'} por esta app.`;
+          }
+          if(ultimoIndiceCargado.origen === 'solo_local'){
+            indiceEstadoTexto += ' Sin conexión al servidor: solo se muestra lo guardado en este teléfono.';
+          }
         } else {
           indiceEstadoTexto = `${nombreIndice}: sin datos que calcen con este período.`;
         }
@@ -4323,6 +4349,101 @@ function fmtPctCartera(v){
   return (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%';
 }
 
+// ---- Registro local del IPSA día a día ----
+//
+// POR QUE EXISTE ESTO
+// ===================
+// El histórico del IPSA vive en un CSV congelado en el servidor
+// (ipsa_historico.csv) porque Yahoo tiene rota la serie de ^IPSA y el disco
+// de Render se borra en cada redeploy -- el backend NO puede ir guardando
+// el valor de cada día por su cuenta sin perderlo.
+//
+// La solución: lo guarda este teléfono. Cada vez que abres la app y llega
+// el IPSA de hoy (Diario Financiero, el mismo número grande de arriba), se
+// anota la fecha con su valor. Con el tiempo esto va cerrando solo la
+// distancia entre la última fecha del CSV y hoy.
+//
+// El S&P 500 NO necesita esto: Yahoo entrega su histórico completo sin
+// problemas, el backend lo trae al día en cada consulta.
+//
+// LIMITACION HONESTA: solo registra los días en que abriste la app. Si
+// pasas una semana sin abrirla, esos días quedan sin dato -- no se
+// inventan ni se interpolan. El gráfico simplemente une los puntos que sí
+// existen, igual que hace con feriados.
+//
+// Viaja en el respaldo unificado, así que cambiar de teléfono o reinstalar
+// no borra lo acumulado.
+const IPSA_SERIE_LOCAL_KEY = 'ipsa_serie_local';
+
+function cargarIpsaSerieLocal(){
+  try {
+    const raw = localStorage.getItem(IPSA_SERIE_LOCAL_KEY);
+    const obj = raw ? JSON.parse(raw) : {};
+    return (obj && typeof obj === 'object' && !Array.isArray(obj)) ? obj : {};
+  } catch(e){ return {}; }
+}
+function guardarIpsaSerieLocal(s){
+  try { localStorage.setItem(IPSA_SERIE_LOCAL_KEY, JSON.stringify(s)); } catch(e){}
+}
+let ipsaSerieLocal = cargarIpsaSerieLocal();
+
+// Fecha de HOY en Chile. No se usa toISOString() porque eso da UTC: en la
+// tarde/noche chilena ya es el día siguiente en UTC, y el valor quedaría
+// archivado con la fecha equivocada.
+function fechaHoyChile(){
+  try {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit'
+    }).format(new Date());
+  } catch(e){
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+}
+
+// Se llama cada vez que llega un refresco de precios con el IPSA adentro.
+// Sobrescribe el valor del día a propósito: el último dato del día es el
+// más cercano al cierre real.
+function registrarIpsaDelDia(){
+  if(indexValue === null || !indexDisponible) return;
+  const hoy = fechaHoyChile();
+  if(ipsaSerieLocal[hoy] === indexValue) return; // nada que escribir
+  ipsaSerieLocal[hoy] = indexValue;
+  guardarIpsaSerieLocal(ipsaSerieLocal);
+  // La serie del gráfico quedó obsoleta: se descarta para que la próxima
+  // vez que se muestre el índice se rearme con el punto nuevo incluido.
+  if(ultimoIndiceCargado && ultimoIndiceCargado.refTicker === 'IPSA'){
+    ultimoIndiceCargado = null;
+  }
+}
+
+// Fusiona lo que trajo el backend (CSV histórico + valor de hoy) con lo que
+// este teléfono fue acumulando. Ante una misma fecha en ambos lados gana el
+// backend: el CSV viene de una fuente oficial y lo local es un registro de
+// oportunidad, tomado a la hora en que se abrió la app (puede no ser el
+// cierre definitivo si la bolsa seguía abierta).
+function fusionarIpsaConLocal(puntosDelBackend){
+  const porFecha = {};
+  (puntosDelBackend || []).forEach(p => { porFecha[p.date] = p.close; });
+
+  let agregados = 0;
+  const primeraDelBackend = (puntosDelBackend && puntosDelBackend.length)
+    ? puntosDelBackend[0].date : null;
+  Object.keys(ipsaSerieLocal).forEach(fecha => {
+    // Respetar el período pedido: si el backend recortó a 1 mes, no se
+    // pueden meter puntos locales más viejos que ese recorte.
+    if(primeraDelBackend && fecha < primeraDelBackend) return;
+    if(porFecha[fecha] === undefined){
+      porFecha[fecha] = ipsaSerieLocal[fecha];
+      agregados++;
+    }
+  });
+
+  const fusionada = Object.keys(porFecha).sort()
+    .map(f => ({date: f, close: porFecha[f]}));
+  return {puntos: fusionada, agregados: agregados};
+}
+
 // ---- IPSA base: el valor del índice en tu fecha de inicio ----
 // Se guarda junto con la fecha a la que corresponde. Si algún día registras
 // un movimiento MÁS ANTIGUO que el que tenías, la fecha de inicio cambia y
@@ -4744,6 +4865,10 @@ function construirRespaldoUnificado(){
     favoritos: [...favoritos],
     w8ben: w8benState,
     ipsaBase: ipsaBaseState,
+    // Los valores del IPSA que este teléfono fue registrando día a día. Es
+    // lo único que no se puede volver a conseguir de ninguna fuente si se
+    // pierde -- por eso viaja en el respaldo (ver registrarIpsaDelDia).
+    ipsaSerieLocal: ipsaSerieLocal,
   };
 }
 
@@ -4883,6 +5008,23 @@ function importarMovimientos(file){
       ipsaBaseState = (nuevo.ipsaBase && typeof nuevo.ipsaBase === 'object')
         ? nuevo.ipsaBase : { fecha: null, valor: null };
       guardarIpsaBase(ipsaBaseState);
+
+      // El registro diario del IPSA se FUSIONA en vez de reemplazarse. Es la
+      // única excepción a la regla "restaurar reemplaza": son observaciones
+      // de un índice público, no datos personales del usuario -- si el
+      // respaldo trae días que este teléfono no tiene y viceversa, quedarse
+      // solo con un lado sería perder historia sin ninguna ganancia.
+      if(nuevo.ipsaSerieLocal && typeof nuevo.ipsaSerieLocal === 'object'
+         && !Array.isArray(nuevo.ipsaSerieLocal)){
+        Object.keys(nuevo.ipsaSerieLocal).forEach(f => {
+          const v = nuevo.ipsaSerieLocal[f];
+          if(typeof v === 'number' && isFinite(v) && ipsaSerieLocal[f] === undefined){
+            ipsaSerieLocal[f] = v;
+          }
+        });
+        guardarIpsaSerieLocal(ipsaSerieLocal);
+        ultimoIndiceCargado = null; // el gráfico se rearma con lo restaurado
+      }
 
       // Re-render de todo lo que depende de estos datos
       todosLosStocks().forEach(s => {
@@ -5047,6 +5189,9 @@ async function fetchRealQuotes(){
       indexStaleSeconds = null;
     }
     renderIndexDisplay();
+    // Se anota el IPSA de hoy en el registro local (ver registrarIpsaDelDia).
+    // Esto es lo que va cerrando la distancia entre el CSV del servidor y hoy.
+    registrarIpsaDelDia();
 
     // UF/UTM: mismo /quotes, mismo origen (Diario Financiero). Si por algún
     // motivo no vinieron en este ciclo, se deja el último valor conocido en
