@@ -86,7 +86,13 @@
   .seguir-val{font-size:20px; font-weight:600; margin-top:2px;}
   .seguir-cols{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
   @media(max-width:700px){ .seguir-cols{grid-template-columns:1fr;} }
-  .seguir-col-title{font-size:12.5px; font-weight:600; margin-bottom:8px;}
+  /* Color propio (dorado), distinto del copper/verdigris del panel de
+     señal tecnica de mas arriba -- a proposito: este panel es politica de
+     cartera del usuario, no lectura de precio, y antes el titulo casi
+     identico ("Revisar para compra/venta" vs "Para revisar como posible
+     compra/venta") generaba confusion entre ambos. Ver el comentario junto
+     a colsHTML (bloque 7) para el detalle. */
+  .seguir-col-title{font-size:12.5px; font-weight:600; margin-bottom:8px; color:var(--gold);}
   .seguir-row{padding:10px 12px; border:1px solid var(--hairline); border-radius:8px; margin-bottom:6px; cursor:pointer; background:var(--bg-panel);}
   .seguir-row:hover{border-color:var(--gold);}
   .seguir-row-head{display:flex; justify-content:space-between; align-items:center;}
@@ -416,6 +422,15 @@
   .ptb-table th:first-child, .ptb-table td:first-child{text-align:left;}
   .ptb-table td{text-align:right; padding:4px 6px; font-family:'IBM Plex Mono',monospace; color:var(--ink-dim); border-top:1px solid var(--hairline);}
   .ptb-table td:first-child{color:var(--ink);}
+  /* Editar un movimiento puntual (precio/cantidad) desde el detalle de
+     cartera -- ver iniciarEdicionMovimiento() y el listener delegado sobre
+     movsDetailPanel. Mismo lenguaje visual que .mi-del (icono discreto). */
+  .mov-edit-btn, .mov-save-btn, .mov-cancel-btn{
+    background:none; border:none; color:var(--ink-faint); cursor:pointer; font-size:13px; padding:2px 5px;
+  }
+  .mov-edit-btn:hover{color:var(--gold);}
+  .mov-save-btn:hover{color:var(--verdigris);}
+  .mov-cancel-btn:hover{color:var(--copper);}
   .ptb-totals{display:flex; flex-wrap:wrap; gap:14px; font-size:11.5px; color:var(--ink-dim); padding-top:6px; border-top:1px dashed var(--hairline);}
   .ptb-totals b{color:var(--ink);}
 
@@ -596,11 +611,11 @@
     </p>
     <div class="analysis-cols" id="analysisCols">
       <div class="analysis-col">
-        <p class="analysis-col-title down">Para revisar como posible compra</p>
+        <p class="analysis-col-title down">Señal técnica: posible compra</p>
         <div id="analysisDown" class="analysis-list"><p class="analysis-empty">Cargando datos reales…</p></div>
       </div>
       <div class="analysis-col">
-        <p class="analysis-col-title up">Para revisar como posible venta</p>
+        <p class="analysis-col-title up">Señal técnica: posible venta</p>
         <div id="analysisUp" class="analysis-list"><p class="analysis-empty">Cargando datos reales…</p></div>
       </div>
     </div>
@@ -1212,7 +1227,7 @@ function cambiarAmbiente(nuevo){
   if(typeof updateMarketStatusUsa === 'function') updateMarketStatusUsa();
   if(typeof renderMovimientos === 'function') renderMovimientos();
   if(typeof renderResumenPortafolio === 'function') renderResumenPortafolio();
-  // El panel "Para revisar como posible compra/venta" (RSI/z-score) no se
+  // El panel "Señal técnica: posible compra/venta" (RSI/z-score) no se
   // repintaba al cambiar de ambiente -- seguía mostrando los candidatos del
   // mercado anterior hasta que terminaba el próximo fetch de precios (unos
   // segundos después), dando la sensación de que "aparecen" acciones del
@@ -1893,48 +1908,14 @@ async function seedHistorialSiFalta(s){
   }
 }
 
-// ---- Noticias reales (Google News, vía el backend) ----
-const noticiasCache = {}; // {ticker: items[]} -- por sesion, para no repetir la consulta al re-render
-async function cargarNoticias(ticker){
-  const cont = document.getElementById('newsContainer');
-
-  if(noticiasCache[ticker]){
-    pintarNoticias(ticker, noticiasCache[ticker]);
-    return;
-  }
-
-  try {
-    const resp = await fetch(`${BACKEND_URL}/news?ticker=${encodeURIComponent(ticker)}`);
-    if(!resp.ok) throw new Error('HTTP ' + resp.status);
-    const body = await resp.json();
-    noticiasCache[ticker] = body.items || [];
-    pintarNoticias(ticker, noticiasCache[ticker]);
-  } catch(e){
-    console.warn('No se pudieron cargar noticias reales para', ticker, e);
-    if(ticker === openTicker && cont){
-      cont.textContent = 'No se pudieron cargar noticias reales ahora (¿backend despertando? vuelve a abrir esta acción en un momento).';
-    }
-  }
-}
-
-function pintarNoticias(ticker, items){
-  if(ticker !== openTicker) return; // el panel ya cambio de accion mientras esperabamos
-  const cont = document.getElementById('newsContainer');
-  if(!cont) return;
-
-  if(!items || items.length === 0){
-    cont.textContent = 'No se encontraron noticias recientes (últimas 48 horas) sobre esta acción en Google News.';
-    return;
-  }
-
-  cont.innerHTML = items.map(n => {
-    const fecha = new Date(n.published).toLocaleString('es-CL', {timeZone:'America/Santiago', dateStyle:'short', timeStyle:'short'});
-    return `<div style="margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--hairline);">
-      <a href="${n.link}" target="_blank" rel="noopener" style="color:var(--ink); text-decoration:none; font-weight:600; font-size:12.5px;">${n.title}</a>
-      <div style="color:var(--ink-faint); font-size:10.5px; margin-top:2px;">${fecha}</div>
-    </div>`;
-  }).join('');
-}
+// ---- Noticias: seccion quitada a pedido de Cristian (2026-08-17) ----
+// Vivia aca una seccion "Noticias recientes" que llamaba a GET /news
+// (Google News via el backend, ver news.py) dentro de cada tarjeta de
+// detalle. Se saco por completo: en la practica restaba mas de lo que
+// sumaba (resultados poco relevantes o vacios la mayoria de las veces, y
+// una llamada de red mas por cada accion que se abre). El endpoint
+// /news del backend se dejo intacto por si se retoma mas adelante con
+// otra fuente, pero el frontend ya no lo llama.
 
 function openDetail(ticker){
   openTicker = ticker;
@@ -2004,7 +1985,6 @@ function renderDetail(ticker){
   const objCarteraDetalle = (typeof alertasPrecio !== 'undefined' && alertasPrecio[s.ticker]) || {};
 
   seedHistorialSiFalta(s); // dispara en segundo plano; si trae datos, se re-dibuja solo
-  cargarNoticias(s.ticker); // idem, noticias reales en segundo plano
 
   // Maximo/minimo del dia: usa el dato real de Yahoo Finance si llegó;
   // si no, cae al maximo/minimo de lo real acumulado en esta sesión.
@@ -2165,10 +2145,6 @@ function renderDetail(ticker){
       ${patronTexto}
     </p>
 
-    <p class="section-title" style="margin-top:16px;">Noticias recientes</p>
-    <div id="newsContainer" style="font-size:12px; color:var(--ink-faint); background:var(--bg-field); padding:10px 12px; border-radius:8px;">
-      Buscando noticias reales (Google News)…
-    </div>
   `;
 
   document.getElementById('closeBtn').addEventListener('click', closeDetail);
@@ -3246,7 +3222,7 @@ function actualizarStatsCard(card, s){
   }
 }
 
-// A pedido: las listas "Para revisar como posible compra/venta" solo
+// A pedido: las listas "Señal técnica: posible compra/venta" solo
 // muestran los 2 primeros resultados; el resto queda detrás de un botón
 // "Ver X más" (mismo estilo que "Ver posición actual e historial completo"
 // de Mis movimientos) que también sirve para volver a ocultarlos. El
@@ -3694,6 +3670,46 @@ function aplicarMovimientoACaja(mov){
   guardarCaja();
 }
 
+// Editar cantidad y/o precio de un movimiento YA registrado (a pedido --
+// antes solo se podía agregar o borrar, nunca corregir un error de tipeo
+// sin borrar y volver a crearlo, lo que además perdía el orden original).
+// Devuelve false si el movimiento ya no existe (pudo borrarse desde otra
+// pestaña/respaldo entre que se abrió el editor y se guardó).
+//
+// OJO CON LA CAJA: aplicarMovimientoACaja() ya sumó/restó el monto VIEJO
+// al registrar este movimiento la primera vez. Si se edita cantidad o
+// precio sin tocar la caja, el saldo quedaría desincronizado en silencio
+// -- exactamente lo que esta app evita en todos lados. Por eso se ajusta
+// solo la DIFERENCIA entre el monto viejo y el nuevo, y se actualiza la
+// misma entrada del historial de caja (por id) en vez de crear una nueva
+// -- así un aporte o retiro manual que quedó mezclado en el mismo
+// historial no se ve afectado.
+function editarMovimiento(id, nuevaCantidad, nuevoPrecio){
+  const mov = movimientos.find(m => m.id === id);
+  if(!mov) return false;
+
+  const moneda = monedaDeMov(mov);
+  const signo = mov.tipo === 'compra' ? -1 : 1;
+  const montoViejo = signo * mov.cantidad * mov.precio;
+
+  mov.cantidad = nuevaCantidad;
+  mov.precio = nuevoPrecio;
+  saveMovimientos(movimientos);
+
+  const montoNuevo = signo * mov.cantidad * mov.precio;
+  const delta = montoNuevo - montoViejo;
+  if(delta !== 0){
+    caja[moneda] = (caja[moneda] || 0) + delta;
+    const entradaHistorial = caja.historial.find(h => h.id === id);
+    if(entradaHistorial){
+      entradaHistorial.monto = montoNuevo;
+      entradaHistorial.nota = `${mov.tipo === 'compra' ? 'Compra' : 'Venta'} de ${mov.cantidad} ${mov.ticker} @ ${mov.precio} (editado)`;
+    }
+    guardarCaja();
+  }
+  return true;
+}
+
 // Ingreso/retiro manual (aportes, dividendos, retiros de efectivo).
 function registrarMovimientoCaja(moneda, tipo, monto, nota){
   const signo = tipo === 'ingreso' ? 1 : -1;
@@ -3830,6 +3846,25 @@ function renderAmbienteSeguir(){
     </div>
 
     ${!cambioOk ? '<p class="seguir-empty">El tipo de cambio USD/CLP no está disponible o está vencido — la asignación y el patrimonio consolidado no se calculan hasta que vuelva.</p>' : ''}
+
+    <!-- Benchmark sintético: a pedido, en vez de comparar Chile contra el
+         IPSA y EE.UU. contra el S&P por separado (ninguno de los dos es TU
+         benchmark real si tienes plata en ambos), se compara el patrimonio
+         consolidado contra una mezcla ponderada de los dos índices. El peso
+         es editable -- hoy 30/70 pero puede pasar a 40/60, 20/80, etc. sin
+         tocar código. Se llena aparte via actualizarBenchmarkConsolidado()
+         (async: el S&P necesita historial del backend) -- mismo patrón que
+         msbBenchmarkBox en "Mi Cartera". -->
+    <div class="msb-benchmark" id="msbConsolidadoBox" style="margin-top:14px; padding-top:10px; border-top:1px solid var(--hairline);">
+      <div class="msb-label">Patrimonio consolidado vs. benchmark sintético</div>
+      <div class="msb-val mono" id="msbConsolidadoValor" style="font-size:14px;">calculando…</div>
+      <p class="analysis-empty" id="msbConsolidadoNota" style="padding:2px 0 0; text-align:left;"></p>
+      <div style="display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-top:8px; font-size:12px; color:var(--ink-dim);">
+        <span>Mezcla del benchmark:</span>
+        <input type="number" id="benchPesoIpsa" min="0" max="100" step="1" class="mov-input mono" style="width:56px; padding:4px 6px;">
+        <span>% IPSA / <span id="benchPesoSpTxt">—</span>% S&P 500</span>
+      </div>
+    </div>
   `;
 
   // ---- Asignación objetivo vs. real (sección 3.2 — Día 23) ----
@@ -3874,7 +3909,7 @@ function renderAmbienteSeguir(){
     </details>
   `;
 
-  // ---- "Revisar para compra/venta" -- SOLO reglas del plan, nunca de precio ----
+  // ---- "Según tu plan: compra/venta" -- SOLO reglas del plan, nunca de precio ----
   const compraRows = [];
   const ventaRows = [];
 
@@ -3926,12 +3961,12 @@ function renderAmbienteSeguir(){
   const colsHTML = `
     <div class="seguir-cols">
       <div>
-        <p class="seguir-col-title">Revisar para compra</p>
+        <p class="seguir-col-title">Según tu plan: compra</p>
         ${!totalCompleto ? '<p class="seguir-empty">No disponible todavía — falta tipo de cambio o algún precio real para calcular la asignación.</p>' : ''}
         ${compraRows.length ? compraRows.map(filaSeguir).join('') : '<p class="seguir-empty">Nada gatilló una regla de tu plan ahora mismo.</p>'}
       </div>
       <div>
-        <p class="seguir-col-title">Revisar para venta</p>
+        <p class="seguir-col-title">Según tu plan: venta</p>
         ${!totalCompleto ? '<p class="seguir-empty">No disponible todavía — falta tipo de cambio o algún precio real para calcular la asignación.</p>' : ''}
         ${ventaRows.length ? ventaRows.map(filaSeguir).join('') : '<p class="seguir-empty">Nada gatilló una regla de tu plan ahora mismo.</p>'}
       </div>
@@ -3971,6 +4006,26 @@ function renderAmbienteSeguir(){
       renderAmbienteSeguir();
     });
   });
+
+  // Peso del benchmark sintético (IPSA/S&P): editable, ver
+  // actualizarBenchmarkConsolidado(). El input se recrea en cada render (el
+  // innerHTML completo de arriba lo reemplaza), así que se reengancha el
+  // listener cada vez, igual que con .seguir-row de más arriba.
+  const inputPesoIpsa = document.getElementById('benchPesoIpsa');
+  const spTxtEl = document.getElementById('benchPesoSpTxt');
+  if(inputPesoIpsa){
+    if(!inputPesoIpsa.matches(':focus')) inputPesoIpsa.value = benchmarkPesos.ipsa;
+    if(spTxtEl) spTxtEl.textContent = 100 - benchmarkPesos.ipsa;
+    inputPesoIpsa.addEventListener('change', () => {
+      let v = parseFloat(inputPesoIpsa.value);
+      if(isNaN(v)) v = 30;
+      v = Math.max(0, Math.min(100, v));
+      benchmarkPesos.ipsa = v;
+      guardarBenchmarkPesos();
+      renderAmbienteSeguir();
+    });
+  }
+  if(typeof actualizarBenchmarkConsolidado === 'function') actualizarBenchmarkConsolidado();
 }
 
 // ---- Ambiente 4 · "Mi Cartera" (bloque 8) ----
@@ -4214,7 +4269,7 @@ function renderResumenPortafolio(){
 // "si UNA de mis posiciones se derrumba, ¿cuánto me duele?". Eso depende de
 // qué % de la cartera es esa posición, no de RSI ni de z-score -- por eso
 // vive aparte de "Análisis del momento" (que sí es sobre precio). Ya existía
-// una versión de esta misma regla adentro de "A seguir" ▸ Revisar para venta
+// una versión de esta misma regla adentro de "A seguir" ▸ Según tu plan: venta
 // (ver renderAmbienteSeguir(), "Máximo por posición · Días 14 y 23"), pero
 // solo aparecía ahí cuando YA se pasaba el máximo -- el resto del tiempo la
 // concentración real quedaba invisible. Esto la muestra siempre, no solo
@@ -4287,12 +4342,6 @@ function renderConcentracionCartera(){
 
 // ---- Comparación contra el índice ("cuánto le gano o le pierdo al
 // IPSA/S&P 500") ----
-// Retorno SIMPLE sobre el capital invertido desde el primer movimiento
-// registrado en esa moneda: (utilidad realizada + utilidad no realizada) /
-// total comprado histórico. A propósito NO es una TIR -- no pondera CUÁNDO
-// entró cada aporte, así que un aporte de ayer pesa igual que uno de hace
-// un año. Se dice así, explícito, en la nota de abajo: mismo criterio de
-// esta app de no fingir más precisión de la que el cálculo realmente tiene.
 const _benchmarkCache = {}; // "CLP"/"USD" -> {ts, puntos}
 const BENCHMARK_CACHE_MS = 20 * 60 * 1000; // 20 min, mismo orden que STATS_CACHE_TTL del backend
 
@@ -4300,6 +4349,95 @@ function primeraFechaMovimientos(moneda){
   const propios = movimientos.filter(m => monedaDeMov(m) === moneda);
   if(!propios.length) return null;
   return propios.reduce((min, m) => (m.fecha < min ? m.fecha : min), propios[0].fecha);
+}
+
+// ---- TIR real (XIRR), a pedido ----------------------------------------
+// Antes esto era un retorno SIMPLE: (utilidad realizada + no realizada) /
+// total comprado histórico. Sencillo, pero un aporte de ayer pesaba
+// EXACTAMENTE igual que uno de hace un año -- la propia app lo advertía
+// así, explícito, en la nota. Ahora se calcula la TIR real (mismo método
+// que XIRR de Excel/Google Sheets): la tasa anualizada que hace que el
+// valor presente de todos los flujos (cada compra como salida, cada venta
+// como entrada, más el valor de mercado de HOY de lo que todavía tienes
+// como una entrada final) sea cero. Un aporte reciente pesa menos que uno
+// viejo porque tuvo menos tiempo para rendir -- eso es justo lo que
+// "retorno simple" no podía distinguir.
+//
+// Si no se puede resolver (muy pocos flujos, todos del mismo signo, o
+// prácticamente sin tiempo transcurrido -- una TIR de un día se dispara a
+// un número sin sentido) se cae de vuelta al retorno simple de siempre,
+// nunca se deja el número en blanco pudiendo mostrar algo honesto. Cuál de
+// los dos se usó queda marcado en `metodo` para que la nota en pantalla lo
+// diga siempre, sin fingir precisión que el cálculo no tiene.
+function _xirrNPV(flujos, t0, rate){
+  return flujos.reduce((acc, f) => acc + f.monto / Math.pow(1 + rate, (f.fecha - t0) / 86400000 / 365), 0);
+}
+function _xirrDerivada(flujos, t0, rate){
+  return flujos.reduce((acc, f) => {
+    const potencia = (f.fecha - t0) / 86400000 / 365;
+    return potencia === 0 ? acc : acc - potencia * f.monto / Math.pow(1 + rate, potencia + 1);
+  }, 0);
+}
+function calcularXIRR(flujos){
+  if(!flujos || flujos.length < 2) return null;
+  if(!flujos.some(f => f.monto < 0) || !flujos.some(f => f.monto > 0)) return null; // sin cambio de signo, no hay tasa que resuelva esto
+  const t0 = flujos[0].fecha;
+
+  // Newton-Raphson primero (converge rápido cuando converge)...
+  let rate = 0.1;
+  for(let i = 0; i < 100; i++){
+    const npv = _xirrNPV(flujos, t0, rate);
+    const d = _xirrDerivada(flujos, t0, rate);
+    if(Math.abs(d) < 1e-10) break;
+    const siguiente = rate - npv / d;
+    if(!isFinite(siguiente) || siguiente <= -0.999999) break;
+    if(Math.abs(siguiente - rate) < 1e-7) return siguiente;
+    rate = siguiente;
+  }
+
+  // ...y si no convergió, bisección como respaldo -- más lenta, pero no
+  // diverge nunca si existe una raíz dentro del rango.
+  let lo = -0.999, hi = 10;
+  let npvLo = _xirrNPV(flujos, t0, lo), npvHi = _xirrNPV(flujos, t0, hi);
+  if(npvLo * npvHi > 0) return null; // sin cambio de signo en el rango: no se puede resolver
+  for(let i = 0; i < 200; i++){
+    const mid = (lo + hi) / 2;
+    const npvMid = _xirrNPV(flujos, t0, mid);
+    if(Math.abs(npvMid) < 1e-6) return mid;
+    if((npvMid > 0) === (npvLo > 0)){ lo = mid; npvLo = npvMid; } else { hi = mid; }
+  }
+  return (lo + hi) / 2;
+}
+
+// Arma los flujos de caja de una moneda: cada compra es salida (negativo),
+// cada venta es entrada (positivo), y se agrega un último flujo de HOY con
+// el valor de mercado de lo que todavía se tiene (como si se vendiera todo
+// hoy) -- el mismo truco que usa cualquier calculadora de TIR de cartera
+// personal para no tener que esperar a que se liquide la posición.
+function flujosXIRR(moneda){
+  const propios = movimientos.filter(m => monedaDeMov(m) === moneda);
+  if(!propios.length) return null;
+
+  const flujos = propios.map(m => ({
+    fecha: new Date(m.fecha + 'T00:00:00').getTime(),
+    monto: (m.tipo === 'compra' ? -1 : 1) * m.cantidad * m.precio,
+  }));
+
+  const portafolio = calcularPortafolio(moneda);
+  let valorHoy = 0, completo = true;
+  Object.values(portafolio).forEach(p => {
+    if(p.netoQ > 0){
+      if(p.valorActual === null) completo = false;
+      else valorHoy += p.valorActual;
+    }
+  });
+  if(valorHoy > 0) flujos.push({ fecha: Date.now(), monto: valorHoy });
+
+  flujos.sort((a,b) => a.fecha - b.fecha);
+  const spanDias = (flujos[flujos.length-1].fecha - flujos[0].fecha) / 86400000;
+  if(spanDias < 1) return null; // menos de un día de por medio: una TIR anualizada no dice nada útil aquí
+
+  return { flujos, completo };
 }
 
 function retornoSimpleCartera(moneda){
@@ -4314,13 +4452,50 @@ function retornoSimpleCartera(moneda){
     }
   });
   if(totalInvertido <= 0) return null;
-  return { pct: totalUtilidad / totalInvertido, completo };
+  return { pct: totalUtilidad / totalInvertido, completo, metodo: 'simple' };
 }
 
+// Punto de entrada único: intenta la TIR real primero, cae al retorno
+// simple si no se puede resolver. `metodo` ('xirr'|'simple') y
+// `motivoFallback` viajan en el resultado para que la nota en pantalla
+// siempre diga cuál de los dos se está mostrando y por qué.
+function retornoCartera(moneda){
+  const datos = flujosXIRR(moneda);
+  if(datos){
+    const tasa = calcularXIRR(datos.flujos);
+    if(tasa !== null) return { pct: tasa, completo: datos.completo, metodo: 'xirr' };
+  }
+  const simple = retornoSimpleCartera(moneda);
+  if(!simple) return null;
+  return { ...simple, motivoFallback: !datos
+    ? 'muy poco tiempo transcurrido desde tu primer movimiento, o datos insuficientes'
+    : 'no se pudo resolver una tasa con estos flujos' };
+}
+
+// Nota breve para pantalla explicando qué método produjo el % mostrado --
+// nunca se calla que es una aproximación cuando lo es.
+function notaMetodoCartera(retorno){
+  if(retorno.metodo === 'xirr'){
+    return ' TIR anualizada (XIRR): pondera cuándo entró cada aporte, no solo cuánto.';
+  }
+  return ' Retorno simple sobre el capital invertido (no es una TIR' +
+    (retorno.motivoFallback ? `: ${retorno.motivoFallback}` : ': no pondera cuándo entró cada aporte') + ').';
+}
+
+// Devuelve {puntos, ts, deFallback} en vez de solo el arreglo -- `ts` es
+// el momento en que ESOS puntos se consiguieron de verdad (no "ahora"), y
+// `deFallback` avisa cuando la petición de esta vuelta falló y lo que se
+// devuelve es la copia vieja en caché. Antes, si la petición fallaba, se
+// devolvía igual la caché vieja pero SIN avisar -- la comparación con el
+// S&P quedaba mostrando un número que podía tener horas (o el servidor
+// recién despertando) como si fuera fresco, sin el mismo badge de
+// antigüedad que ya usa el resto de las tarjetas (ver formatoHoraDato()/
+// textoAntiguedad() más arriba). Ahora los que consumen esto pueden avisar
+// igual que ellas.
 async function obtenerSerieIndice(moneda){
   const ahora = Date.now();
   const c = _benchmarkCache[moneda];
-  if(c && (ahora - c.ts) < BENCHMARK_CACHE_MS) return c.puntos;
+  if(c && (ahora - c.ts) < BENCHMARK_CACHE_MS) return { puntos: c.puntos, ts: c.ts, deFallback: false };
 
   const ticker = moneda === 'USD' ? '^GSPC' : 'IPSA';
   const fechaInicio = primeraFechaMovimientos(moneda);
@@ -4338,11 +4513,26 @@ async function obtenerSerieIndice(moneda){
     const j = await resp.json();
     const puntos = Array.isArray(j.points) ? j.points : [];
     _benchmarkCache[moneda] = { ts: ahora, puntos };
-    return puntos;
+    return { puntos, ts: ahora, deFallback: false };
   } catch(e){
     console.warn('[benchmark] No se pudo obtener el historial del índice:', e);
-    return c ? c.puntos : null; // si hay algo viejo en cache, mejor eso que nada
+    // Si hay algo viejo en caché, mejor eso que nada -- pero marcado como
+    // tal (deFallback:true) para que se avise en vez de mostrarlo como si
+    // fuera un dato fresco.
+    return c ? { puntos: c.puntos, ts: c.ts, deFallback: true } : { puntos: null, ts: null, deFallback: true };
   }
+}
+
+// Nota corta de antigüedad para pegar al final de la comparación con el
+// S&P -- mismo criterio de "avisar, no esconder" que el resto de la app.
+// Vacía si el dato es fresco y vino de una petición recién hecha: no hace
+// falta advertir de algo que no es un problema.
+function notaAntiguedadIndice(ts, deFallback){
+  if(!ts) return '';
+  const seg = (Date.now() - ts) / 1000;
+  const edad = textoAntiguedad(seg);
+  if(deFallback) return ` ⚠ Historial del S&P 500 en caché de ${edad} (el servidor no respondió recién; se reintenta solo).`;
+  return seg > 1800 ? ` (historial del S&P 500 en caché, de ${edad}).` : '';
 }
 
 function fmtPctCartera(v){
@@ -4509,7 +4699,7 @@ function renderBenchmarkChile(fechaInicio, retorno){
   nota += diferenciaPP >= 0
     ? `Le ganas ${Math.abs(diferenciaPP).toFixed(1)} puntos al índice.`
     : `Vas ${Math.abs(diferenciaPP).toFixed(1)} puntos detrás del índice.`;
-  nota += ' Retorno simple sobre el capital invertido (no es una TIR: no pondera cuándo entró cada aporte).';
+  nota += notaMetodoCartera(retorno);
   if(!retorno.completo) nota += ' Cifra parcial: falta el precio real de alguna posición abierta.';
   nota += ' El valor base del IPSA lo ingresaste tú.';
   notaEl.textContent = nota;
@@ -4550,7 +4740,7 @@ async function actualizarBenchmarkCartera(){
   const nombreIndice = moneda === 'USD' ? 'S&P 500' : 'IPSA';
 
   const fechaInicio = primeraFechaMovimientos(moneda);
-  const retorno = retornoSimpleCartera(moneda);
+  const retorno = retornoCartera(moneda);
 
   if(!fechaInicio || !retorno){
     box.style.display = 'none';
@@ -4589,17 +4779,20 @@ async function actualizarBenchmarkCartera(){
   const valorEl = document.getElementById('msbBenchmarkValor');
   const notaEl = document.getElementById('msbBenchmarkNota');
   try {
-    const puntos = await obtenerSerieIndice(moneda);
+    const { puntos, ts, deFallback } = await obtenerSerieIndice(moneda);
     if(!puntos || puntos.length < 2){
       valorEl.textContent = 'no se pudo comparar con el índice ahora';
       valorEl.className = 'msb-val mono';
       // El IPSA (^IPSA) no tiene historial usable en Yahoo Finance -- no es
       // un tema de arranque en frio del servidor (confirmado: la peticion
       // responde bien, solo trae 1 punto viejo). El S&P 500 (USD) si suele
-      // ser solo el arranque en frio, asi que ese mensaje se mantiene.
-      notaEl.textContent = moneda === 'CLP'
+      // ser solo el arranque en frio, asi que ese mensaje se mantiene. Si
+      // hay algo en caché aunque sea viejo, se avisa con notaAntiguedadIndice
+      // en vez de quedar en blanco -- antes esto podia "fallar en seco".
+      notaEl.textContent = (moneda === 'CLP'
         ? 'El historial del IPSA no está disponible por ahora (limitación de la fuente de datos, no del servidor). No es necesario esperar.'
-        : 'El servidor puede estar despertando (tarda ~50s la primera vez) o sin datos todavía. Se reintenta solo.';
+        : 'El servidor puede estar despertando (tarda ~50s la primera vez) o sin datos todavía. Se reintenta solo.')
+        + notaAntiguedadIndice(ts, deFallback);
       return;
     }
 
@@ -4617,7 +4810,7 @@ async function actualizarBenchmarkCartera(){
     if(!base || !actual || !base.close || !actual.close){
       valorEl.textContent = 'no se pudo comparar con el índice ahora';
       valorEl.className = 'msb-val mono';
-      notaEl.textContent = 'Faltan precios en el historial recibido.';
+      notaEl.textContent = 'Faltan precios en el historial recibido.' + notaAntiguedadIndice(ts, deFallback);
       return;
     }
 
@@ -4632,8 +4825,9 @@ async function actualizarBenchmarkCartera(){
     nota += diferenciaPP >= 0
       ? `Le ganas ${Math.abs(diferenciaPP).toFixed(1)} puntos al índice.`
       : `Vas ${Math.abs(diferenciaPP).toFixed(1)} puntos detrás del índice.`;
-    nota += ' Retorno simple sobre el capital invertido (no es una TIR: no pondera cuándo entró cada aporte).';
+    nota += notaMetodoCartera(retorno);
     if(!retorno.completo) nota += ' Cifra parcial: falta el precio real de alguna posición abierta.';
+    nota += notaAntiguedadIndice(ts, deFallback);
     notaEl.textContent = nota;
   } catch(e){
     console.warn('[benchmark] Error calculando comparación:', e);
@@ -4642,6 +4836,158 @@ async function actualizarBenchmarkCartera(){
     notaEl.textContent = '';
   } finally {
     _benchmarkCalculando = false;
+  }
+}
+
+// ---- Benchmark sintético consolidado (a pedido) --------------------------
+// Antes "Mi Cartera" comparaba Chile contra el IPSA y EE.UU. contra el S&P
+// 500 por separado -- pero si tienes plata en las dos monedas, NINGUNO de
+// los dos es tu benchmark real. Esto compara el patrimonio consolidado
+// contra una mezcla ponderada de ambos índices (peso editable en
+// benchmarkPesos, ver más abajo -- por defecto 30% IPSA / 70% S&P).
+function cargarBenchmarkPesos(){
+  try {
+    const raw = localStorage.getItem('ipsa_benchmark_pesos');
+    const b = raw ? JSON.parse(raw) : null;
+    const ipsa = (b && typeof b.ipsa === 'number' && b.ipsa >= 0 && b.ipsa <= 100) ? b.ipsa : 30;
+    return { ipsa };
+  } catch(e){ return { ipsa: 30 }; }
+}
+function guardarBenchmarkPesos(){
+  try { localStorage.setItem('ipsa_benchmark_pesos', JSON.stringify(benchmarkPesos)); } catch(e){}
+}
+let benchmarkPesos = cargarBenchmarkPesos();
+
+let _benchmarkConsolidadoCalculando = false;
+async function actualizarBenchmarkConsolidado(){
+  const box = document.getElementById('msbConsolidadoBox');
+  const valorEl = document.getElementById('msbConsolidadoValor');
+  const notaEl = document.getElementById('msbConsolidadoNota');
+  if(!box || !valorEl || !notaEl) return; // no estamos mirando "A seguir" ahora mismo
+
+  if(estaOculto()){
+    valorEl.textContent = '•••• vs ••••';
+    valorEl.className = 'msb-val mono';
+    notaEl.textContent = '';
+    return;
+  }
+
+  if(_benchmarkConsolidadoCalculando) return;
+  _benchmarkConsolidadoCalculando = true;
+  try {
+    const cambioOk = usdclpEsValido();
+    const portClp = calcularPortafolio('CLP');
+    const portUsd = calcularPortafolio('USD');
+    let valorClp = 0, valorClpCompleto = true;
+    Object.values(portClp).forEach(p => { if(p.netoQ > 0){ if(p.valorActual===null) valorClpCompleto=false; else valorClp += p.valorActual; } });
+    let valorUsd = 0, valorUsdCompleto = true;
+    Object.values(portUsd).forEach(p => { if(p.netoQ > 0){ if(p.valorActual===null) valorUsdCompleto=false; else valorUsd += p.valorActual; } });
+    const valorUsdEnClp = cambioOk ? valorUsd * usdclpValue : null;
+
+    const retornoClp = retornoCartera('CLP');
+    const retornoUsd = retornoCartera('USD');
+
+    // Retorno consolidado de TU cartera: blend por valor de mercado actual
+    // de cada pata. A propósito NO es una TIR única sobre flujos mezclados
+    // en dos monedas -- eso pediría el tipo de cambio HISTÓRICO de cada
+    // movimiento, que esta app no tiene y no va a inventar. Es la mejor
+    // aproximación posible con lo que hay: cuánto pesa HOY cada pata en tu
+    // patrimonio, multiplicado por la TIR real de esa pata.
+    const pesoClp = (valorClpCompleto && valorClp > 0) ? valorClp : 0;
+    const pesoUsdClp = (cambioOk && valorUsdCompleto && valorUsdEnClp > 0) ? valorUsdEnClp : 0;
+    const pesoTotal = pesoClp + pesoUsdClp;
+
+    let retornoCarteraConsolidado = null, carteraCompleta = true;
+    if(pesoTotal > 0){
+      let acumulado = 0, huboFalla = false;
+      if(pesoClp > 0){
+        if(!retornoClp) huboFalla = true;
+        else { acumulado += pesoClp * retornoClp.pct; if(!retornoClp.completo) carteraCompleta = false; }
+      }
+      if(pesoUsdClp > 0){
+        if(!retornoUsd) huboFalla = true;
+        else { acumulado += pesoUsdClp * retornoUsd.pct; if(!retornoUsd.completo) carteraCompleta = false; }
+      }
+      if(!huboFalla) retornoCarteraConsolidado = acumulado / pesoTotal;
+    }
+
+    if(retornoCarteraConsolidado === null){
+      valorEl.textContent = 'no se pudo calcular todavía';
+      valorEl.className = 'msb-val mono';
+      notaEl.textContent = !cambioOk
+        ? 'Falta el tipo de cambio USD/CLP para consolidar.'
+        : 'Registra al menos un movimiento (Chile o EE.UU.) con precio real disponible.';
+      return;
+    }
+
+    // Retorno de cada pata del benchmark, en SU propio período (misma
+    // fecha de inicio que ya usa la comparación de cada ambiente por
+    // separado en "Mi Cartera").
+    const pesoIpsaPct = (typeof benchmarkPesos.ipsa === 'number' ? benchmarkPesos.ipsa : 30) / 100;
+    const pesoSpPct = 1 - pesoIpsaPct;
+
+    let retornoIpsaPct = null, motivoIpsa = null;
+    const fechaInicioClp = primeraFechaMovimientos('CLP');
+    if(!fechaInicioClp){
+      motivoIpsa = 'sin movimientos en CLP';
+    } else {
+      const baseValida = ipsaBaseState.valor > 0 && ipsaBaseState.fecha === fechaInicioClp;
+      if(!baseValida) motivoIpsa = 'falta el valor del IPSA en tu fecha de inicio (ver "Mi Cartera" ▸ Chile)';
+      else if(indexValue === null || !indexDisponible) motivoIpsa = 'el IPSA de hoy no está disponible ahora';
+      else retornoIpsaPct = indexValue / ipsaBaseState.valor - 1;
+    }
+
+    let retornoSpPct = null, motivoSp = null, spTs = null, spFallback = false;
+    const fechaInicioUsd = primeraFechaMovimientos('USD');
+    if(!fechaInicioUsd){
+      motivoSp = 'sin movimientos en USD';
+    } else {
+      const { puntos, ts, deFallback } = await obtenerSerieIndice('USD');
+      spTs = ts; spFallback = deFallback;
+      if(!puntos || puntos.length < 2){
+        motivoSp = 'historial del S&P 500 no disponible ahora (el servidor puede estar despertando)';
+      } else {
+        const base = puntos.find(p => p.date >= fechaInicioUsd) || puntos[0];
+        const actual = puntos[puntos.length - 1];
+        if(base && actual && base.close && actual.close) retornoSpPct = actual.close / base.close - 1;
+        else motivoSp = 'faltan precios en el historial recibido';
+      }
+    }
+
+    // Si falta una pata, no se inventa: se muestra la cartera sola y se
+    // explica exactamente qué falta para completar la mezcla.
+    if(retornoIpsaPct === null || retornoSpPct === null){
+      valorEl.textContent = `Patrimonio consolidado ${fmtPctCartera(retornoCarteraConsolidado)} · benchmark no disponible`;
+      valorEl.className = 'msb-val mono';
+      const faltantes = [motivoIpsa && `IPSA: ${motivoIpsa}`, motivoSp && `S&P 500: ${motivoSp}`].filter(Boolean).join(' · ');
+      notaEl.textContent = `Falta al menos una pata del benchmark para poder mezclarlas (${faltantes}).` + notaAntiguedadIndice(spTs, spFallback);
+      return;
+    }
+
+    const retornoBenchmark = pesoIpsaPct * retornoIpsaPct + pesoSpPct * retornoSpPct;
+    const diferenciaPP = (retornoCarteraConsolidado - retornoBenchmark) * 100;
+
+    valorEl.textContent = `Patrimonio ${fmtPctCartera(retornoCarteraConsolidado)} · Benchmark ${fmtPctCartera(retornoBenchmark)}`;
+    valorEl.className = 'msb-val mono ' + (diferenciaPP >= 0 ? 'up' : 'down');
+
+    let nota = `Benchmark = ${(pesoIpsaPct*100).toFixed(0)}% IPSA (${fmtPctCartera(retornoIpsaPct)}) + `
+             + `${(pesoSpPct*100).toFixed(0)}% S&P 500 (${fmtPctCartera(retornoSpPct)}), cada uno desde tu fecha de inicio en esa moneda. `;
+    nota += diferenciaPP >= 0
+      ? `Le ganas ${Math.abs(diferenciaPP).toFixed(1)} puntos al benchmark.`
+      : `Vas ${Math.abs(diferenciaPP).toFixed(1)} puntos detrás del benchmark.`;
+    nota += notaAntiguedadIndice(spTs, spFallback);
+    nota += ' Tu patrimonio se pondera por cuánto vale HOY cada pata (Chile/EE.UU.); no es una TIR única '
+          + 'sobre flujos mezclados en dos monedas (pediría el tipo de cambio histórico de cada movimiento, '
+          + 'que esta app no tiene).';
+    if(!carteraCompleta) nota += ' Cifra parcial: falta el precio real de alguna posición abierta.';
+    notaEl.textContent = nota;
+  } catch(e){
+    console.warn('[benchmark-consolidado] Error calculando:', e);
+    valorEl.textContent = 'no se pudo calcular todavía';
+    valorEl.className = 'msb-val mono';
+    notaEl.textContent = '';
+  } finally {
+    _benchmarkConsolidadoCalculando = false;
   }
 }
 
@@ -4656,6 +5002,62 @@ function openMovsDetail(){
 function closeMovsDetail(){
   movsOverlay.classList.remove('open');
 }
+
+// Reemplaza las celdas de cantidad/precio de una fila por inputs editables
+// (ver el botón ✎ en filasCompra/filasVenta, dentro de renderMovsDetailPanel()).
+function iniciarEdicionMovimiento(tr, id){
+  const mov = movimientos.find(m => m.id === id);
+  if(!mov) return;
+  const tdCant = tr.querySelector('.mov-cant');
+  const tdPrec = tr.querySelector('.mov-prec');
+  const tdAcc = tr.querySelector('.mov-acciones');
+  if(!tdCant || !tdPrec || !tdAcc) return;
+
+  tdCant.innerHTML = `<input type="number" step="any" min="0" inputmode="decimal" class="mov-input mono mov-edit-cant" value="${mov.cantidad}" style="width:72px; padding:3px 5px;">`;
+  tdPrec.innerHTML = `<input type="number" step="any" min="0" inputmode="decimal" class="mov-input mono mov-edit-prec" value="${mov.precio}" style="width:84px; padding:3px 5px;">`;
+  tdAcc.innerHTML = `<button type="button" class="mov-save-btn" data-id="${id}" title="Guardar">✓</button>`
+                   + `<button type="button" class="mov-cancel-btn" title="Cancelar">✕</button>`;
+  const inputCant = tr.querySelector('.mov-edit-cant');
+  if(inputCant) inputCant.focus();
+}
+
+// Delegado UNA sola vez sobre movsDetailPanel -- su innerHTML se reemplaza
+// entero en cada renderMovsDetailPanel() (nueva fecha, nuevo movimiento,
+// cambio de ambiente, etc.), así que un listener puesto directo en un
+// botón de una fila no sobreviviría al siguiente redibujado. Mismo patrón
+// que inicializarToggleAnalisis() más arriba.
+movsDetailPanel.addEventListener('click', (e) => {
+  const btnEditar = e.target.closest('.mov-edit-btn');
+  if(btnEditar){
+    const tr = btnEditar.closest('tr[data-id]');
+    if(tr) iniciarEdicionMovimiento(tr, Number(btnEditar.dataset.id));
+    return;
+  }
+
+  const btnGuardar = e.target.closest('.mov-save-btn');
+  if(btnGuardar){
+    const tr = btnGuardar.closest('tr[data-id]');
+    if(!tr) return;
+    const id = Number(btnGuardar.dataset.id);
+    const inputCant = tr.querySelector('.mov-edit-cant');
+    const inputPrec = tr.querySelector('.mov-edit-prec');
+    const nuevaCantidad = inputCant ? parseFloat(inputCant.value) : NaN;
+    const nuevoPrecio = inputPrec ? parseFloat(inputPrec.value) : NaN;
+    if(!nuevaCantidad || nuevaCantidad <= 0 || !nuevoPrecio || nuevoPrecio <= 0){
+      alert('Cantidad y precio deben ser mayores a cero.');
+      return;
+    }
+    editarMovimiento(id, nuevaCantidad, nuevoPrecio);
+    renderMovsDetailPanel(); // refleja el cambio en la tabla y en los totales
+    if(typeof renderMovimientos === 'function') renderMovimientos(); // idem en el panel compacto y en la caja
+    return;
+  }
+
+  const btnCancelar = e.target.closest('.mov-cancel-btn');
+  if(btnCancelar){
+    renderMovsDetailPanel(); // descarta la edición en curso, vuelve a dibujar desde lo ya guardado
+  }
+});
 movsOverlay.addEventListener('click', e => { if(e.target === movsOverlay) closeMovsDetail(); });
 
 // ---- Asignación objetivo vs. real + tesis por posición (bloque 6,
@@ -4751,20 +5153,27 @@ function renderMovsDetailPanel(){
     if(p.netoQ > 0 && p.valorActual === null) hayNoRealizadaCompleta = false;
     if(p.netoQ > 0 && p.valorActual !== null) totalNoRealizada += p.utilidadNoRealizada;
 
+    // data-id en la fila + botón ✎ (a pedido): permite editar cantidad o
+    // precio de un movimiento puntual, no solo agregar/borrar el último.
+    // Ver iniciarEdicionMovimiento() y el listener delegado sobre
+    // movsDetailPanel más abajo -- el editor reemplaza estas celdas por
+    // inputs en el momento, sin volver a pedir el resto de los datos.
     const filasCompra = p.compras.map(m => `
-      <tr>
+      <tr data-id="${m.id}">
         <td>${m.fecha}</td>
-        <td>${fmtCantidad(m.cantidad, moneda)}</td>
-        <td>${fmt(m.precio, p.dec, moneda)}</td>
+        <td class="mov-cant">${fmtCantidad(m.cantidad, moneda)}</td>
+        <td class="mov-prec">${fmt(m.precio, p.dec, moneda)}</td>
         <td>${$$(m.cantidad*m.precio)}</td>
+        <td class="mov-acciones"><button type="button" class="mov-edit-btn" data-id="${m.id}" title="Editar cantidad o precio">✎</button></td>
       </tr>`).join('');
 
     const filasVenta = p.ventas.map(m => `
-      <tr>
+      <tr data-id="${m.id}">
         <td>${m.fecha}</td>
-        <td>${fmtCantidad(m.cantidad, moneda)}</td>
-        <td>${fmt(m.precio, p.dec, moneda)}</td>
+        <td class="mov-cant">${fmtCantidad(m.cantidad, moneda)}</td>
+        <td class="mov-prec">${fmt(m.precio, p.dec, moneda)}</td>
         <td>${$$(m.cantidad*m.precio)}</td>
+        <td class="mov-acciones"><button type="button" class="mov-edit-btn" data-id="${m.id}" title="Editar cantidad o precio">✎</button></td>
       </tr>`).join('');
 
     return `
@@ -4789,14 +5198,14 @@ function renderMovsDetailPanel(){
         ${p.compras.length ? `
         <p style="font-size:11px; color:var(--ink-faint); margin:8px 0 4px;">Compras</p>
         <table class="ptb-table">
-          <thead><tr><th>Fecha</th><th>Q</th><th>P</th><th>PxQ</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Q</th><th>P</th><th>PxQ</th><th></th></tr></thead>
           <tbody>${filasCompra}</tbody>
         </table>` : ''}
 
         ${p.ventas.length ? `
         <p style="font-size:11px; color:var(--ink-faint); margin:8px 0 4px;">Ventas</p>
         <table class="ptb-table">
-          <thead><tr><th>Fecha</th><th>Q</th><th>P</th><th>PxQ</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Q</th><th>P</th><th>PxQ</th><th></th></tr></thead>
           <tbody>${filasVenta}</tbody>
         </table>` : ''}
 
