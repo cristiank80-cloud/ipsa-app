@@ -880,7 +880,72 @@ const ALERT_THRESHOLD = 0.96; // 4% bajo el promedio
 const PERIOD_LABELS = {'1d':'1D','5d':'5D','1mo':'1M','3mo':'3M','6mo':'6M','ytd':'YTD','1y':'1A','5y':'5A','8y':'8A','10y':'10A'};
 const OVERLAY_LABELS = {sma:'SMA', ema:'EMA', bbands:'BBands', macd:'MACD', rsi:'RSI', volume:'Volume'};
 let ultimoHistorialCargado = null; // {ticker, period, points, dec} -- sobrevive a re-renders del panel
-let overlaysActivos = {sma:false, ema:false, bbands:false, macd:false, rsi:false, volume:false, indice:false};
+let overlaysActivos = {sma:false, ema:false, bbands:false, macd:false, rsi:false, volume:false, indice:false, fuerza:false, weinstein:false};
+// Colores de fondo por "caso" diario (fuerza relativa/absoluta) y por "fase"
+// semanal (Weinstein), igual criterio que CASO_COLOR/FASE_COLOR (semaforo)
+// pero en version translucida para pintar detras de las velas del grafico.
+// Mismos colores que CASO_COLOR/FASE_COLOR (definidos mas abajo, ver
+// renderDiagnosticoFuerza) pero en version translucida rgba() -- los CSS
+// var(--x) no sirven aqui porque se usan como fill de <rect> generados en
+// JS puro, no interpretados por el navegador como color de texto/borde.
+const CASO_BG_COLOR = {
+  OPORTUNIDAD: 'rgba(44,128,114,0.16)',   // --verdigris
+  DIVERGENCIA: 'rgba(179,74,50,0.14)',    // --copper
+  DECLIVE: 'rgba(179,74,50,0.16)',        // --copper (mas intenso: declive es peor que divergencia)
+  SOBREEXTENDIDA: 'rgba(144,111,55,0.16)',// --gold
+  RECUPERANDO: 'rgba(60,121,176,0.16)',   // celeste propio, igual que CASO_COLOR.RECUPERANDO
+};
+const FASE_BG_COLOR = {
+  1: 'rgba(104,114,125,0.14)',  // --ink-faint
+  2: 'rgba(44,128,114,0.16)',   // --verdigris
+  3: 'rgba(144,111,55,0.16)',   // --gold
+  4: 'rgba(179,74,50,0.16)',    // --copper
+};
+function colorFondoCaso(caso) { return CASO_BG_COLOR[caso] || null; }
+function colorFondoFase(fase) { return FASE_BG_COLOR[fase] || null; }
+// Alinea una serie de zonas (fecha -> valor) contra las fechas del grafico
+// (mismo patron que alinearIndicePorFecha: para cada fecha del grafico, usa
+// el valor de zona vigente en la fecha igual o inmediatamente anterior).
+function alinearZonasPorFecha(fechasGrafico, serieZonas, campoValor) {
+  if (!serieZonas || !serieZonas.length) return fechasGrafico.map(() => null);
+  const ordenada = serieZonas; // el backend ya la entrega ordenada por fecha
+  let j = 0;
+  const out = [];
+  for (let i = 0; i < fechasGrafico.length; i++) {
+    const f = fechasGrafico[i];
+    while (j + 1 < ordenada.length && ordenada[j + 1].date <= f) j++;
+    if (ordenada[j] && ordenada[j].date <= f) {
+      out.push(ordenada[j][campoValor]);
+    } else {
+      out.push(null);
+    }
+  }
+  return out;
+}
+// Construye rectangulos de fondo SVG fusionando corridas consecutivas del
+// mismo valor de zona, usando el mismo mapeo x(i) que renderHistoryChart.
+function construirBandasFondo(valoresPorBarra, colorFn, xFn, plotW_, top, height) {
+  let svg = '';
+  const n = valoresPorBarra.length;
+  if (!n) return svg;
+  let inicio = 0;
+  for (let i = 1; i <= n; i++) {
+    const cambia = i === n || valoresPorBarra[i] !== valoresPorBarra[inicio];
+    if (cambia) {
+      const valor = valoresPorBarra[inicio];
+      const color = colorFn(valor);
+      if (color) {
+        const mediaSlot = n > 1 ? (xFn(1) - xFn(0)) / 2 : 0;
+        const x0 = xFn(inicio) - mediaSlot;
+        const xEnd = (i === n ? xFn(n - 1) + mediaSlot : xFn(i) - mediaSlot);
+        const w = Math.max(0, xEnd - x0);
+        svg += `<rect x="${x0.toFixed(2)}" y="${top}" width="${w.toFixed(2)}" height="${height}" fill="${color}" />`;
+      }
+      inicio = i;
+    }
+  }
+  return svg;
+}
 // Serie del indice de referencia (S&P 500 o IPSA) para el boton "indice" del
 // grafico. Igual patron que ultimoHistorialCargado: sobrevive a re-renders,
 // se descarta cuando cambia el ticker/periodo de referencia.
@@ -2101,6 +2166,8 @@ function renderDetail(ticker){
       <div class="axis-labels" id="historyAxisLabels"></div>
       <p id="historyStatus" style="font-size:11px; color:var(--ink-faint); text-align:center; margin:4px 0 0;">Elige un período para cargar el historial real.</p>
       <p id="indiceStatus" style="font-size:11px; color:var(--gold); text-align:center; margin:2px 0 0;"></p>
+      <p id="historyLeyenda" style="font-size:11px; text-align:center; margin:2px 0 0;"></p>
+      <p id="zonaFondoLeyenda" style="font-size:10.5px; color:var(--ink-faint); text-align:center; margin:2px 0 0;"></p>
     </div>
     <div class="detail-chart sub-chart" id="volumeChartWrap" style="display:none;">
       <p class="sub-chart-label">Volumen (real)</p>
@@ -2210,7 +2277,10 @@ async function cargarDiagnosticoFuerza(ticker){
   } finally {
     diagFuerzaEnCurso.delete(ticker);
   }
-  if(openTicker === ticker) renderDiagnosticoFuerza(ticker);
+  if(openTicker === ticker){
+    renderDiagnosticoFuerza(ticker);
+    renderHistoryChart(); // por si el fondo del grafico (fuerza/weinstein) estaba esperando este dato
+  }
 }
 
 // Colores de los "casos" del diario -- mismo criterio de semaforo que ya
@@ -2290,13 +2360,30 @@ function renderDiagnosticoFuerza(ticker){
     <p style="font-size:10.5px; color:var(--ink-faint); margin-top:8px;">Semana cerrada hasta ${s.semanaCerradaHasta} (${s.semanasDeHistorial} semanas de historial). La semana en curso no se cuenta todavía.</p>
   `;
 
+  const btnFuerza = (d && d.disponible) ? `<button type="button" class="overlay-btn${overlaysActivos.fuerza ? ' active' : ''}" style="font-size:10px; padding:2px 8px;" onclick="toggleZonaFondo('fuerza','${ticker}')">${overlaysActivos.fuerza ? '● Fondo en el gráfico' : '○ Ver en el gráfico'}</button>` : '';
+  const btnWeinstein = (s && s.disponible) ? `<button type="button" class="overlay-btn${overlaysActivos.weinstein ? ' active' : ''}" style="font-size:10px; padding:2px 8px;" onclick="toggleZonaFondo('weinstein','${ticker}')">${overlaysActivos.weinstein ? '● Fondo en el gráfico' : '○ Ver en el gráfico'}</button>` : '';
+
   wrap.innerHTML = `
-    <p style="font-size:11px; font-weight:600; color:var(--ink-dim); margin:4px 0 6px;">Diagnóstico diario</p>
+    <p style="font-size:11px; font-weight:600; color:var(--ink-dim); margin:4px 0 6px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+      <span>Diagnóstico diario (fuerza relativa y absoluta)</span>${btnFuerza}
+    </p>
     ${bloqueDiario}
-    <p style="font-size:11px; font-weight:600; color:var(--ink-dim); margin:14px 0 6px;">Fase semanal</p>
+    <p style="font-size:11px; font-weight:600; color:var(--ink-dim); margin:14px 0 6px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
+      <span>Fase semanal (Weinstein)</span>${btnWeinstein}
+    </p>
     ${bloqueSemanal}
     <p style="font-size:10.5px; color:var(--ink-faint); margin-top:10px;">No es recomendación de compra ni de venta — material educativo (clase de Inversapiens), calculado sobre cierres reales de Yahoo Finance.</p>
   `;
+}
+
+// Prende/apaga el fondo de color en el grafico de precio para el caso
+// diario o la fase semanal -- mismo patron que los botones overlay-btn
+// normales (SMA, EMA, etc.), pero viven junto a cada bloque de diagnostico
+// en vez de la fila de overlays, porque ahi ya esta muy cargada.
+function toggleZonaFondo(kind, ticker){
+  overlaysActivos[kind] = !overlaysActivos[kind];
+  renderDiagnosticoFuerza(ticker);
+  renderHistoryChart();
 }
 
 // ---- Matemática de indicadores, todo sobre precios reales de /history ----
@@ -2513,7 +2600,35 @@ function renderHistoryChart(){
   const linePts = closes.map((v,i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
   const areaPts = `${AXIS_GUTTER},${h} ${linePts} ${AXIS_GUTTER+plotW},${h}`;
 
-  let svg = `<polygon points="${areaPts}" fill="${fillColor}"></polygon>`;
+  // Bandas de fondo estilo TradingView: pintan la zona (caso diario o fase
+  // semanal de Weinstein) vigente en cada fecha del grafico, usando las
+  // series completas que trae /diagnostico (serieCasos / serieFases).
+  let zonaSvg = '';
+  let zonaLeyendaTexto = '';
+  const diag = diagFuerzaCache[ticker];
+  if((overlaysActivos.fuerza || overlaysActivos.weinstein) && !diag){
+    cargarDiagnosticoFuerza(ticker); // dispara la carga; este render se repite solo cuando llegue (ver el finally de esa funcion)
+  }
+  const fechasGrafico = points.map(p => p.date);
+  if(overlaysActivos.fuerza && diag && diag.diario && diag.diario.serieCasos && diag.diario.serieCasos.length){
+    const valores = alinearZonasPorFecha(fechasGrafico, diag.diario.serieCasos, 'caso');
+    zonaSvg += construirBandasFondo(valores, colorFondoCaso, x, plotW, 0, h);
+    zonaLeyendaTexto = 'Fondo = caso diario: verde = oportunidad, celeste = recuperando, dorado = sobreextendida, cobre = divergencia/declive.';
+  } else if(overlaysActivos.fuerza){
+    zonaLeyendaTexto = 'Fondo por caso diario: cargando…';
+  }
+  if(overlaysActivos.weinstein && diag && diag.semanal && diag.semanal.serieFases && diag.semanal.serieFases.length){
+    const valores = alinearZonasPorFecha(fechasGrafico, diag.semanal.serieFases, 'fase');
+    zonaSvg += construirBandasFondo(valores, colorFondoFase, x, plotW, 0, h);
+    zonaLeyendaTexto = (zonaLeyendaTexto ? zonaLeyendaTexto + ' ' : '') +
+      'Fondo = fase semanal (Weinstein): gris = fase 1, verde = fase 2, dorado = fase 3, cobre = fase 4.';
+  } else if(overlaysActivos.weinstein){
+    zonaLeyendaTexto = (zonaLeyendaTexto ? zonaLeyendaTexto + ' ' : '') + 'Fondo por fase semanal: cargando…';
+  }
+  const zonaLeyendaEl = document.getElementById('zonaFondoLeyenda');
+  if(zonaLeyendaEl) zonaLeyendaEl.textContent = zonaLeyendaTexto;
+
+  let svg = zonaSvg + `<polygon points="${areaPts}" fill="${fillColor}"></polygon>`;
 
   if(bb){
     const upperPts = bb.upper.map((v,i)=> v!=null ? `${x(i).toFixed(1)},${y(v).toFixed(1)}` : null).filter(Boolean).join(' ');
@@ -2645,6 +2760,10 @@ function wireOverlayButtons(){
       Object.keys(overlaysActivos).forEach(k => overlaysActivos[k] = false);
       document.querySelectorAll('.overlay-btn').forEach(b => b.classList.remove('active'));
       renderHistoryChart();
+      // Los botones "Ver en el gráfico" del bloque de diagnostico (fuerza/
+      // weinstein) tienen texto propio ademas de la clase .active -- hay que
+      // redibujar ese bloque para que el texto tambien vuelva a "apagado".
+      if(openTicker && diagFuerzaCache[openTicker]) renderDiagnosticoFuerza(openTicker);
     });
   }
   const btnAyuda = document.getElementById('btnAyudaIndicadores');
