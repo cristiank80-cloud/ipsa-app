@@ -2167,6 +2167,11 @@ function renderDetail(ticker){
       ${patronTexto}
     </p>
 
+    <p class="section-title" style="margin-top:16px;">Fuerza y fase (Weinstein / Inversapiens)</p>
+    <div id="diagFuerzaWrap">
+      <p style="font-size:12px; color:var(--ink-faint); padding:8px 0;">Cargando diagnóstico…</p>
+    </div>
+
   `;
 
   document.getElementById('closeBtn').addEventListener('click', closeDetail);
@@ -2175,6 +2180,123 @@ function renderDetail(ticker){
   buildSpark(document.getElementById('detailSvg'), s.history, s.avg, threshold, s.dec, 160, 600, true, moneda, document.getElementById('detailAxisLabels'));
   updateDetailClock();
   wirePeriodSelector(s);
+  cargarDiagnosticoFuerza(s.ticker);
+}
+
+// ---- Diagnostico diario (Fuerza Relativa y Absoluta) + fase semanal
+// (Weinstein), ver /diagnostico en el backend (indicador_fuerza_fase.py).
+// Es el puerto de los dos indicadores .pine que Cristian usa en TradingView
+// (clase de Inversapiens) -- una lectura DISTINTA y complementaria al
+// puntaje compuesto de signals.py que ya muestra la tarjeta de lista, no un
+// reemplazo. Mismo patron que seedHistorialSiFalta(): se pide en segundo
+// plano al abrir el detalle y se redibuja solo cuando llega, sin bloquear
+// la apertura del panel.
+const diagFuerzaCache = {};      // ticker -> ultima respuesta de /diagnostico
+const diagFuerzaEnCurso = new Set();
+async function cargarDiagnosticoFuerza(ticker){
+  if(diagFuerzaCache[ticker]){ renderDiagnosticoFuerza(ticker); return; }
+  if(diagFuerzaEnCurso.has(ticker)) return;
+  diagFuerzaEnCurso.add(ticker);
+  try {
+    const resp = await fetch(`${BACKEND_URL}/diagnostico?ticker=${encodeURIComponent(ticker)}`);
+    if(resp.ok){
+      diagFuerzaCache[ticker] = await resp.json();
+    } else {
+      diagFuerzaCache[ticker] = {error: `HTTP ${resp.status}`};
+    }
+  } catch(e){
+    console.warn('No se pudo obtener /diagnostico para', ticker, e);
+    diagFuerzaCache[ticker] = {error: 'sin conexión con el backend'};
+  } finally {
+    diagFuerzaEnCurso.delete(ticker);
+  }
+  if(openTicker === ticker) renderDiagnosticoFuerza(ticker);
+}
+
+// Colores de los "casos" del diario -- mismo criterio de semaforo que ya
+// usa el resto del panel (verdigris=comprar/sano, copper=esperar/vender,
+// gold=sobreextendida). RECUPERANDO usa un celeste propio porque no calza
+// bien en ninguno de los dos ejes existentes (ni alerta ni oportunidad).
+const CASO_COLOR = {
+  OPORTUNIDAD: 'var(--verdigris)',
+  DIVERGENCIA: 'var(--copper)',
+  DECLIVE: 'var(--copper)',
+  SOBREEXTENDIDA: 'var(--gold)',
+  RECUPERANDO: '#3C79B0',
+};
+const FASE_COLOR = {1: 'var(--ink-faint)', 2: 'var(--verdigris)', 3: 'var(--gold)', 4: 'var(--copper)', 0: 'var(--ink-faint)'};
+
+function tickIcono(b){ return b ? '✓' : '·'; }
+function tickColor(b){ return b ? 'var(--verdigris)' : 'var(--ink-faint)'; }
+
+function renderDiagnosticoFuerza(ticker){
+  const wrap = document.getElementById('diagFuerzaWrap');
+  if(!wrap || openTicker !== ticker) return;
+  const data = diagFuerzaCache[ticker];
+  if(!data || data.error){
+    wrap.innerHTML = `<p style="font-size:12px; color:var(--ink-faint); padding:8px 0;">${data && data.error ? 'No se pudo cargar el diagnóstico (' + data.error + ').' : 'Cargando diagnóstico…'}</p>`;
+    return;
+  }
+
+  const d = data.diario, s = data.semanal;
+
+  const bloqueDiario = (!d || !d.disponible) ? `
+    <p style="font-size:12px; color:var(--ink-faint); padding:6px 0;">${(d && d.motivo) || 'Sin datos suficientes todavía.'}</p>
+  ` : `
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; border-radius:8px; background:${CASO_COLOR[d.caso] || 'var(--bg-field)'}22; border:1px solid ${CASO_COLOR[d.caso] || 'var(--ink-faint)'}55; margin-bottom:8px;">
+      <div>
+        <div style="font-size:13px; font-weight:600; color:${CASO_COLOR[d.caso] || 'var(--ink-dim)'};">${d.casoTexto}</div>
+        <div style="font-size:11px; color:var(--ink-faint); margin-top:2px;">${d.decision}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="mono" style="font-size:15px; font-weight:600;">${d.score}/8</div>
+        <div style="font-size:10.5px; color:var(--ink-faint);">${d.lecturaAbsoluta}</div>
+      </div>
+    </div>
+    ${d.velaEnCurso ? '<p style="font-size:11px; color:var(--gold); margin:0 0 8px;">⚠ El dato de hoy puede seguir moviéndose hasta el cierre.</p>' : ''}
+    <table class="mini-table">
+      <tr><td>Fuerza relativa vs. ${data.mercado === 'usa' ? 'S&P 500' : 'IPSA'}</td><td>${d.fuerzaRelativa.disponible ? d.fuerzaRelativa.lectura : 'sin datos del índice'}</td></tr>
+      <tr><td>Distancia a la EMA21${d.sobreextendida ? ' ⚠' : ''}</td><td>${d.distanciaEMA21Pct != null ? d.distanciaEMA21Pct.toFixed(1) + '%' : '—'}</td></tr>
+      <tr><td>Escalón 1 (SMA50) — vende mitad</td><td class="mono">${fmt(d.stops.sma50, 2)}${d.stops.perdioSMA50 ? ' ⚠ perdida' : ''}</td></tr>
+      <tr><td>Escalón 2 (SMA150) — vende todo</td><td class="mono">${fmt(d.stops.sma150, 2)}${d.stops.perdioSMA150 ? ' ⚠ perdida' : ''}</td></tr>
+    </table>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 10px; margin-top:6px; font-size:11px;">
+      ${[['f1','Sobre media larga'],['f2','Corta sobre larga'],['f3','Media larga sube'],['f4','Media corta sube'],['f5','Máximos crecientes'],['f6','Mínimos crecientes'],['f7','RSI mejorando'],['f8','Sobre media corta']].map(([k,txt]) =>
+        `<div style="color:${tickColor(d.checks[k])};">${tickIcono(d.checks[k])} ${txt}</div>`).join('')}
+    </div>
+  `;
+
+  const bloqueSemanal = (!s || !s.disponible) ? `
+    <p style="font-size:12px; color:var(--ink-faint); padding:6px 0;">${(s && s.motivo) || 'Sin datos suficientes todavía.'}</p>
+  ` : `
+    <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; border-radius:8px; background:${FASE_COLOR[s.fase]}22; border:1px solid ${FASE_COLOR[s.fase]}55; margin-bottom:8px;">
+      <div>
+        <div style="font-size:13px; font-weight:600; color:${FASE_COLOR[s.fase]};">FASE ${s.fase} · ${s.nombreFase}</div>
+        <div style="font-size:11px; color:var(--ink-faint); margin-top:2px;">${s.accionFase}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="mono" style="font-size:15px; font-weight:600;">${s.scoreConfirmaciones}/5</div>
+        <div style="font-size:10.5px; color:var(--ink-faint);">${s.veredicto}</div>
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 10px; font-size:11px;">
+      <div style="color:${tickColor(s.confirmaciones.c1_precioSobreMedia)};">${tickIcono(s.confirmaciones.c1_precioSobreMedia)} Precio sobre la media</div>
+      <div style="color:${tickColor(s.confirmaciones.c2_pendientePositiva)};">${tickIcono(s.confirmaciones.c2_pendientePositiva)} Pendiente positiva</div>
+      <div style="color:${tickColor(s.confirmaciones.c3_rompioMaximo30sem)};">${tickIcono(s.confirmaciones.c3_rompioMaximo30sem)} Rompió máximo 30 sem</div>
+      <div style="color:${tickColor(s.confirmaciones.c4_fuerzaRelativa)};">${tickIcono(s.confirmaciones.c4_fuerzaRelativa)} Fuerza relativa creciente</div>
+      <div style="color:${tickColor(s.confirmaciones.c5_volumen)};">${tickIcono(s.confirmaciones.c5_volumen)} Volumen de ruptura${!s.volumenDisponible ? ' (sin dato)' : ''}</div>
+    </div>
+    ${s.techoConfirmado ? '<p style="font-size:11.5px; color:var(--copper); background:var(--copper-soft); padding:6px 8px; border-radius:6px; margin-top:8px;">⚠ TECHO CONFIRMADO — señales de agotamiento (' + s.scoreAgotamiento + '/5).</p>' : ''}
+    <p style="font-size:10.5px; color:var(--ink-faint); margin-top:8px;">Semana cerrada hasta ${s.semanaCerradaHasta} (${s.semanasDeHistorial} semanas de historial). La semana en curso no se cuenta todavía.</p>
+  `;
+
+  wrap.innerHTML = `
+    <p style="font-size:11px; font-weight:600; color:var(--ink-dim); margin:4px 0 6px;">Diagnóstico diario</p>
+    ${bloqueDiario}
+    <p style="font-size:11px; font-weight:600; color:var(--ink-dim); margin:14px 0 6px;">Fase semanal</p>
+    ${bloqueSemanal}
+    <p style="font-size:10.5px; color:var(--ink-faint); margin-top:10px;">No es recomendación de compra ni de venta — material educativo (clase de Inversapiens), calculado sobre cierres reales de Yahoo Finance.</p>
+  `;
 }
 
 // ---- Matemática de indicadores, todo sobre precios reales de /history ----
