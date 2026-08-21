@@ -137,6 +137,49 @@
      cuando la media esta por encima del stop guardado: el stop sube o se
      queda, nunca baja, asi que una media que cayo no tiene nada que
      sugerir. No cambia el valor solo -- hay que tocar el boton. */
+  /* ---- Plataformas (Racional / Interactive Brokers) ---- */
+  .plat-chip{display:inline-block; font-size:9px; font-weight:600; border-radius:4px;
+             padding:2px 6px; white-space:nowrap; letter-spacing:.02em; vertical-align:1px;}
+  .plat-chip.plat-A{background:rgba(44,128,114,0.14); color:var(--verdigris);}
+  .plat-chip.plat-B{background:rgba(144,111,55,0.16); color:var(--gold);}
+  .plat-chip.plat-none{background:rgba(179,74,50,0.12); color:var(--copper);}
+  .plat-migrar{border:1px solid rgba(179,74,50,0.4); background:rgba(179,74,50,0.05);
+               border-radius:8px; padding:10px 12px; margin-bottom:10px; font-size:11.5px;
+               color:var(--ink-dim); line-height:1.55;}
+  .plat-migrar b{color:var(--ink);}
+  .plat-migrar .pm-btns{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .plat-block{background:var(--bg-panel); border:1px solid var(--hairline); border-radius:12px;
+              padding:14px; margin-bottom:12px;}
+  .plat-nombres{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
+  .plat-nombre-campo{display:flex; align-items:center; gap:6px; font-size:11.5px;}
+  .plat-nombre-campo input{padding:5px 8px; border:1px solid var(--hairline); border-radius:6px;
+                           background:var(--bg-field); font-size:12px; width:150px;}
+  .plat-cols{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  @media(max-width:560px){ .plat-cols{grid-template-columns:1fr;} }
+  .plat-card{border:1px solid var(--hairline); border-radius:9px; padding:11px 12px;}
+  .plat-card-total{font-size:17px; font-weight:600; margin:6px 0 8px;}
+  .plat-kv{display:grid; grid-template-columns:1fr auto; gap:3px 10px; font-size:11.5px; color:var(--ink-dim);}
+  .plat-kv b{color:var(--ink); font-family:'IBM Plex Mono',monospace; font-weight:600;}
+  .plat-sin{color:var(--copper);}
+  /* ---- Esperando entrada (condicion + caducidad) ---- */
+  .esp-row{border:1px solid var(--hairline); border-radius:9px; padding:10px 12px; margin-bottom:7px; background:var(--bg-panel);}
+  .esp-row.esp-lista{border-color:var(--verdigris); background:rgba(44,128,114,0.04);}
+  .esp-row.esp-caducada{border-color:var(--copper); background:rgba(179,74,50,0.04);}
+  .esp-head{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .esp-tk{font-weight:600; font-size:13.5px; cursor:pointer;}
+  .esp-estado{font-size:9.5px; font-weight:600; padding:2px 7px; border-radius:20px; letter-spacing:.02em; margin-left:auto;}
+  .esp-esperando{background:var(--bg-field); color:var(--ink-faint);}
+  .esp-ok{background:var(--verdigris-soft); color:var(--verdigris);}
+  .esp-vencida{background:var(--copper-soft); color:var(--copper);}
+  .esp-cond{font-size:11.5px; color:var(--ink-dim); margin-top:5px; line-height:1.5;}
+  .esp-cond b{color:var(--ink); font-family:'IBM Plex Mono',monospace;}
+  .esp-btns{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .esp-btns button{font-size:10.5px; padding:4px 9px; border-radius:6px; border:1px solid var(--hairline);
+                   background:var(--bg-field); color:var(--ink-dim); cursor:pointer; font-weight:600;}
+  .esp-btns button:hover{border-color:var(--gold); color:var(--gold);}
+  .esp-form{display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:10px;}
+  .esp-form input, .esp-form select{padding:6px 8px; border:1px solid var(--hairline); border-radius:6px;
+                                    background:var(--bg-field); font-size:12px;}
   .cartera-sug{margin-top:5px;}
   .stop-sug{
     display:inline-flex; align-items:center; gap:5px; width:100%;
@@ -670,8 +713,10 @@
       <input type="number" id="movCantidad" class="mov-input" placeholder="Cantidad" min="0.00000001" step="any">
       <input type="number" id="movPrecio" class="mov-input" placeholder="Precio" min="0" step="0.01">
       <input type="date" id="movFecha" class="mov-input">
+      <select id="movPlat" class="mov-input" title="En qué plataforma se hizo esta operación"></select>
       <button id="movGuardar" class="mov-btn">Registrar</button>
     </div>
+    <div id="platMigrar" class="plat-migrar" style="display:none;"></div>
     <div id="movsList" class="movs-list"><p class="analysis-empty">Sin movimientos registrados todavía.</p></div>
 
     <!-- Caja por moneda (bloque 5 de la spec v3, sección 3.1). Se ajusta sola
@@ -692,6 +737,7 @@
         </select>
         <input type="number" id="cajaMonto" class="mov-input" placeholder="Monto" min="0" step="0.01">
         <input type="text" id="cajaNota" class="mov-input" placeholder="Nota (opcional)" style="flex:1; min-width:120px;">
+        <select id="cajaPlat" class="mov-input" title="En qué plataforma entra o sale esta plata"></select>
         <button id="cajaGuardar" class="mov-btn">Registrar</button>
       </div>
     </div>
@@ -3807,7 +3853,63 @@ function movimientosDelAmbiente(amb){
   return movimientos.filter(m => monedaDeMov(m) === moneda);
 }
 
+// Aviso de movimientos sin plataforma. Aparece solo si los hay, ofrece
+// asignarlos en bloque, y no hace NADA por su cuenta. Un movimiento viejo
+// no sabe donde se hizo, y adivinarlo (por moneda, por fecha, por lo que
+// sea) seria inventar un dato -- justo lo que esta app no hace.
+function renderAvisoPlataforma(){
+  const el = document.getElementById('platMigrar');
+  if(!el) return;
+  const sinPlat = movimientosSinPlat();
+  const sinCajaClp = cajaSinAsignar('CLP');
+  const sinCajaUsd = cajaSinAsignar('USD');
+  const hayCaja = Math.abs(sinCajaClp) > 0.005 || Math.abs(sinCajaUsd) > 0.005;
+
+  if(sinPlat.length === 0 && !hayCaja){ el.style.display = 'none'; return; }
+  el.style.display = '';
+
+  const partesCaja = [];
+  if(Math.abs(sinCajaClp) > 0.005) partesCaja.push(fmtMoneda2(sinCajaClp, 'CLP'));
+  if(Math.abs(sinCajaUsd) > 0.005) partesCaja.push(fmtMoneda2(sinCajaUsd, 'USD'));
+
+  el.innerHTML = `
+    <b>Falta decir dónde está esta plata.</b>
+    ${sinPlat.length ? `Hay <b>${sinPlat.length}</b> movimiento(s) sin plataforma` : ''}
+    ${sinPlat.length && partesCaja.length ? ' y ' : ''}
+    ${partesCaja.length ? `<b>${partesCaja.join(' + ')}</b> de caja sin repartir` : ''}.
+    Son de antes de que la app separara Racional de Interactive Brokers. No los asigno solo:
+    no tengo cómo saber dónde se hicieron.
+    <div class="pm-btns">
+      ${PLAT_IDS.map(id => `<button class="mov-btn" data-accion="migrar-plat" data-plat="${id}"
+        title="Marca todo lo que está sin asignar como ${nombrePlat(id)}">Todo a ${nombrePlat(id)}</button>`).join('')}
+    </div>
+    <div style="margin-top:6px; font-size:10.5px; color:var(--ink-faint);">
+      Si están repartidos entre las dos, asigna todo a una y corrige después los que no
+      correspondan desde "Ver posición actual e historial completo".
+    </div>`;
+
+  el.querySelectorAll('[data-accion="migrar-plat"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const destino = btn.dataset.plat;
+      const n = movimientosSinPlat().length;
+      if(!confirm(`Marcar ${n} movimiento(s) y la caja sin repartir como "${nombrePlat(destino)}".\n\n`
+                + `Esto no cambia ningún monto: solo dice dónde están. Se puede corregir uno por uno después.`)) return;
+      movimientos.forEach(m => { if(!platDeMov(m)) m.plat = destino; });
+      saveMovimientos(movimientos);
+      ['CLP','USD'].forEach(mon => {
+        const falta = cajaSinAsignar(mon);
+        if(Math.abs(falta) > 0.005) caja.plat[destino][mon] = (caja.plat[destino][mon] || 0) + falta;
+      });
+      guardarCaja();
+      renderMovimientos();
+      renderCaja();
+      if(typeof renderAmbienteSeguir === 'function' && ambienteActivo === 'seguir') renderAmbienteSeguir();
+    });
+  });
+}
+
 function renderMovimientos(){
+  renderAvisoPlataforma();
   const listEl = document.getElementById('movsList');
   const countEl = document.getElementById('movsCount');
   const movsAmbiente = movimientosDelAmbiente(ambienteActivo);
@@ -3843,6 +3945,7 @@ function renderMovimientos(){
         <span class="mono">${ultimo.ticker}</span>
         <span>${fmtCantidad(ultimo.cantidad, monedaDeMov(ultimo))} tít.</span>
         <span class="mono">${fmtMoneda2(ultimo.precio, monedaDeMov(ultimo))}</span>
+        ${chipPlat(platDeMov(ultimo))}
         <span style="color:var(--ink-faint);">${ultimo.fecha}</span>
         <button class="mi-del" data-id="${ultimo.id}" title="Eliminar">✕</button>
       </div>`;
@@ -3907,7 +4010,9 @@ function inicializarFormularioMovimientos(){
     }
 
     const currency = monedaDeTicker(ticker);
-    const mov = { id: Date.now(), ticker, tipo, cantidad, precio, fecha, currency };
+    const platEl = document.getElementById('movPlat');
+    const plat = (platEl && (platEl.value === 'A' || platEl.value === 'B')) ? platEl.value : 'A';
+    const mov = { id: Date.now(), ticker, tipo, cantidad, precio, fecha, currency, plat };
     movimientos.push(mov);
     saveMovimientos(movimientos);
     // Caja por moneda (sección 3.1): compra descuenta, venta suma,
@@ -3920,6 +4025,7 @@ function inicializarFormularioMovimientos(){
     document.getElementById('movPrecio').value = '';
   });
 
+  refrescarSelectoresPlat();
   renderMovimientos();
 }
 
@@ -3995,6 +4101,22 @@ function estaOculto(){
 // compra/venta registrada en "Mis movimientos" y editable a mano para
 // aportes, dividendos o retiros. Nunca se mezclan CLP y USD en el mismo
 // saldo -- igual criterio que calcularPortafolio().
+function normalizarCajaPlat(p){
+  const num = v => (typeof v === 'number' && isFinite(v)) ? v : 0;
+  const src = (p && typeof p === 'object') ? p : {};
+  return {
+    A: { CLP: num(src.A && src.A.CLP), USD: num(src.A && src.A.USD) },
+    B: { CLP: num(src.B && src.B.CLP), USD: num(src.B && src.B.USD) },
+  };
+}
+// Lo que hay en la caja de una moneda y NO esta repartido entre las dos
+// plataformas. Con movimientos viejos esto arranca siendo el total entero.
+function cajaSinAsignar(moneda){
+  const total = caja[moneda] || 0;
+  const rep = (caja.plat.A[moneda] || 0) + (caja.plat.B[moneda] || 0);
+  return total - rep;
+}
+
 function cargarCaja(){
   try {
     const raw = localStorage.getItem('ipsa_caja');
@@ -4004,14 +4126,149 @@ function cargarCaja(){
       USD: (c && typeof c.USD === 'number') ? c.USD : 0,
       historial: (c && Array.isArray(c.historial)) ? c.historial : [],
       actualizado: (c && c.actualizado) || null,
+      // Desglose por plataforma. NO reemplaza a CLP/USD: esos siguen siendo
+      // el total y la unica verdad. Esto es un reparto que puede estar
+      // INCOMPLETO -- lo que falte para llegar al total se muestra como
+      // "sin asignar" en vez de repartirse a ojo. Ver PLATAFORMAS.
+      plat: normalizarCajaPlat(c && c.plat),
     };
-  } catch(e){ return { CLP: 0, USD: 0, historial: [], actualizado: null }; }
+  } catch(e){ return { CLP: 0, USD: 0, historial: [], actualizado: null, plat: normalizarCajaPlat(null) }; }
 }
 function guardarCaja(){
   caja.actualizado = new Date().toISOString();
   try { localStorage.setItem('ipsa_caja', JSON.stringify(caja)); } catch(e){}
 }
 let caja = cargarCaja();
+
+// =========================================================================
+// PLATAFORMAS  (bloque nuevo, agosto 2026)
+// =========================================================================
+// Cristian tiene la plata repartida en DOS plataformas: Racional e
+// Interactive Brokers. Hasta ahora la app separaba solo por moneda, que era
+// suficiente cuando "CLP" y "USD" coincidian con "Chile" y "EE.UU.". Ya no:
+// Racional lleva las dos monedas adentro (las chilenas que quedan, en pesos,
+// y acciones de EE.UU. en dolares), asi que la moneda dejo de contestar
+// "¿donde esta esta plata?".
+//
+// DECISION DE DISEÑO, la mas importante de este bloque
+// =====================================================
+// Los PESOS y el TOPE del 15% se calculan sobre el patrimonio TOTAL, no por
+// plataforma. El riesgo es de Cristian, no de la plataforma: una posicion
+// que pesa 24% dentro de Racional pero 15% del total es una posicion de 15%,
+// y medirla por plataforma daria una alarma falsa (o taparia una real).
+// Lo unico que SI es por plataforma es el APORTE: la plata nueva solo puede
+// comprar donde ya esta, sin transferirla.
+//
+// LOS MOVIMIENTOS VIEJOS NO TIENEN PLATAFORMA
+// ============================================
+// Y no se les inventa una. Un movimiento sin `plat` queda como "sin
+// asignar", se muestra en rojo y la app ofrece asignarlos en bloque -- pero
+// nunca lo hace sola. Inventar la plataforma de una compra vieja seria
+// exactamente el tipo de dato falso que esta app evita en todos lados.
+const PLAT_IDS = ['A', 'B'];
+const PLAT_DEFAULT = { A: 'Racional', B: 'Interactive Brokers' };
+
+function cargarPlataformas(){
+  try {
+    const raw = localStorage.getItem('ipsa_plataformas');
+    const p = raw ? JSON.parse(raw) : null;
+    return {
+      A: (p && typeof p.A === 'string' && p.A.trim()) ? p.A.trim() : PLAT_DEFAULT.A,
+      B: (p && typeof p.B === 'string' && p.B.trim()) ? p.B.trim() : PLAT_DEFAULT.B,
+    };
+  } catch(e){ return Object.assign({}, PLAT_DEFAULT); }
+}
+let plataformas = cargarPlataformas();
+function guardarPlataformas(){
+  try { localStorage.setItem('ipsa_plataformas', JSON.stringify(plataformas)); } catch(e){}
+}
+function nombrePlat(id){
+  if(id === 'A' || id === 'B') return plataformas[id] || PLAT_DEFAULT[id];
+  return 'Sin asignar';
+}
+// Devuelve 'A', 'B' o null. null = movimiento viejo, anterior a este campo.
+function platDeMov(m){ return (m && (m.plat === 'A' || m.plat === 'B')) ? m.plat : null; }
+function chipPlat(id){
+  const clase = (id === 'A' || id === 'B') ? 'plat-' + id : 'plat-none';
+  return `<span class="plat-chip ${clase}">${nombrePlat(id)}</span>`;
+}
+function opcionesPlatHTML(sel){
+  return PLAT_IDS.map(id =>
+    `<option value="${id}"${id === sel ? ' selected' : ''}>${nombrePlat(id)}</option>`).join('');
+}
+// Refresca los dos <select> del formulario y todo lo que muestra nombres.
+function refrescarSelectoresPlat(){
+  ['movPlat','cajaPlat'].forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const previo = el.value || 'A';
+    el.innerHTML = opcionesPlatHTML(previo);
+  });
+}
+function movimientosSinPlat(){ return movimientos.filter(m => !platDeMov(m)); }
+
+// =========================================================================
+// ESPERANDO ENTRADA  (bloque nuevo, agosto 2026)
+// =========================================================================
+// "A seguir" era una lista de nombres que Cristian miraba, sin nada escrito
+// sobre por que estaban ahi. Eso funciona con 5 nombres; con las ~12
+// candidatas que va a entregar cada corrida del embudo, en seis meses son 70
+// acciones y ninguna se acuerda de por que entro.
+//
+// La regla nueva: un nombre no entra sin contestar "¿que estoy esperando que
+// pase?". Esa frase ES la alerta, y viene con fecha de caducidad.
+//
+// LOS TRES FINALES POSIBLES
+// ==========================
+//   1. Se cumple la condicion  -> suena la alerta, se compra.
+//   2. Se rompe                 -> Cristian la saca (la fase se ve en su detalle).
+//   3. Nunca vuelve             -> a los N dias la app PREGUNTA si la saca.
+// Sin el tercer caso la lista se convierte en un cementerio de acciones que
+// se arrancaron. La caducidad es lo unico que la mantiene corta.
+//
+// POR QUE SOLO SIRVE SI NO TIENES LA ACCION
+// ==========================================
+// La alerta de precio de esta app es un solo campo por ticker ("avisar si
+// baja de"). Si YA tienes la posicion, ese campo es tu STOP (regla 4 del
+// metodo) y pisarlo con un precio de entrada seria borrar tu stop sin avisar.
+// Por eso una accion con posicion abierta no puede tener condicion de
+// entrada: no es una limitacion tecnica, es que la pregunta ya no aplica.
+const ESPERA_DIAS_DEFAULT = 90;
+
+function cargarEspera(){
+  try {
+    const raw = localStorage.getItem('ipsa_espera');
+    const e = raw ? JSON.parse(raw) : null;
+    return (e && typeof e === 'object' && !Array.isArray(e)) ? e : {};
+  } catch(err){ return {}; }
+}
+let espera = cargarEspera();
+function guardarEspera(){
+  try { localStorage.setItem('ipsa_espera', JSON.stringify(espera)); } catch(e){}
+}
+function hoyISO(){ return new Date().toLocaleDateString('en-CA', {timeZone:'America/Santiago'}); }
+function diasEntre(isoA, isoB){
+  const a = new Date(isoA + 'T00:00:00'), b = new Date(isoB + 'T00:00:00');
+  return Math.round((b - a) / 86400000);
+}
+function diasRestantes(reg){
+  if(!reg || !reg.desde) return null;
+  return (reg.dias || ESPERA_DIAS_DEFAULT) - diasEntre(reg.desde, hoyISO());
+}
+// null = no hay precio objetivo, o todavia no hay precio real de la accion.
+// NUNCA devuelve true por falta de datos.
+function esperaCumplida(ticker, reg){
+  if(!reg || typeof reg.precio !== 'number') return null;
+  const s = todosLosStocks().find(x => x.ticker === ticker);
+  if(!s || typeof s.price !== 'number') return null;
+  return reg.dir === 'sube' ? (s.price >= reg.precio) : (s.price <= reg.precio);
+}
+function tienePosicion(ticker){
+  const s = todosLosStocks().find(x => x.ticker === ticker);
+  if(!s) return false;
+  const port = calcularPortafolio(s.currency === 'USD' ? 'USD' : 'CLP');
+  return !!(port[ticker] && port[ticker].netoQ > 0);
+}
 
 // Se llama automáticamente al registrar una compra o venta: compra
 // descuenta de la caja de esa moneda, venta suma -- así la caja siempre
@@ -4023,8 +4280,14 @@ function aplicarMovimientoACaja(mov){
   const signo = mov.tipo === 'compra' ? -1 : 1;
   const monto = signo * mov.cantidad * mov.precio;
   caja[moneda] = (caja[moneda] || 0) + monto;
+  // El desglose por plataforma sigue al total SOLO si el movimiento dice en
+  // que plataforma fue. Si no lo dice, el monto queda en "sin asignar" --
+  // el total sigue cuadrando, y la parte que falta se ve.
+  const plat = platDeMov(mov);
+  if(plat) caja.plat[plat][moneda] = (caja.plat[plat][moneda] || 0) + monto;
   caja.historial.push({
-    id: mov.id, fecha: mov.fecha, moneda, tipo: mov.tipo === 'compra' ? 'auto-compra' : 'auto-venta',
+    id: mov.id, fecha: mov.fecha, moneda, plat,
+    tipo: mov.tipo === 'compra' ? 'auto-compra' : 'auto-venta',
     monto, nota: `${mov.tipo === 'compra' ? 'Compra' : 'Venta'} de ${mov.cantidad} ${mov.ticker} @ ${mov.precio}`,
   });
   guardarCaja();
@@ -4060,6 +4323,8 @@ function editarMovimiento(id, nuevaCantidad, nuevoPrecio){
   const delta = montoNuevo - montoViejo;
   if(delta !== 0){
     caja[moneda] = (caja[moneda] || 0) + delta;
+    const platEd = platDeMov(mov);
+    if(platEd) caja.plat[platEd][moneda] = (caja.plat[platEd][moneda] || 0) + delta;
     const entradaHistorial = caja.historial.find(h => h.id === id);
     if(entradaHistorial){
       entradaHistorial.monto = montoNuevo;
@@ -4071,12 +4336,15 @@ function editarMovimiento(id, nuevaCantidad, nuevoPrecio){
 }
 
 // Ingreso/retiro manual (aportes, dividendos, retiros de efectivo).
-function registrarMovimientoCaja(moneda, tipo, monto, nota){
+function registrarMovimientoCaja(moneda, tipo, monto, nota, plat){
   const signo = tipo === 'ingreso' ? 1 : -1;
-  caja[moneda] = (caja[moneda] || 0) + signo * Math.abs(monto);
+  const delta = signo * Math.abs(monto);
+  caja[moneda] = (caja[moneda] || 0) + delta;
+  const p = (plat === 'A' || plat === 'B') ? plat : null;
+  if(p) caja.plat[p][moneda] = (caja.plat[p][moneda] || 0) + delta;
   caja.historial.push({
     id: Date.now(), fecha: new Date().toLocaleDateString('en-CA', {timeZone:'America/Santiago'}),
-    moneda, tipo, monto: signo * Math.abs(monto), nota: nota || '',
+    moneda, tipo, monto: delta, nota: nota || '', plat: p,
   });
   guardarCaja();
 }
@@ -4113,7 +4381,9 @@ function inicializarFormularioCaja(){
       return;
     }
     const moneda = ambienteActivo === 'usa' ? 'USD' : 'CLP';
-    registrarMovimientoCaja(moneda, tipo, monto, nota);
+    const platEl = document.getElementById('cajaPlat');
+    const plat = (platEl && (platEl.value === 'A' || platEl.value === 'B')) ? platEl.value : 'A';
+    registrarMovimientoCaja(moneda, tipo, monto, nota, plat);
     document.getElementById('cajaMonto').value = '';
     document.getElementById('cajaNota').value = '';
     renderCaja();
@@ -4130,6 +4400,162 @@ function inicializarFormularioCaja(){
 // excepción. Si el tipo de cambio no está disponible, se muestra "no
 // disponible" en vez de inventar una conversión.
 let asignacionPanelAbierto = true; // se ajusta con el clic del usuario, no se resetea en cada refresco
+// Patrimonio partido por plataforma. Se dibuja dentro del ambiente "A
+// seguir", que ya es donde vive la vista consolidada de las dos monedas.
+//
+// OJO CON LO QUE ESTE PANEL **NO** HACE: no calcula pesos ni topes por
+// plataforma. Eso se mide sobre el total (ver el comentario del bloque
+// PLATAFORMAS). Aca solo se contesta "¿cuanto tengo en cada una?", que es
+// una pregunta operativa -- para transferir, para saber con que puedes
+// comprar hoy sin mover plata entre corredoras.
+function platformasHTML(portClp, portUsd, oculto, cambioOk){
+  // Valor en acciones por plataforma. Un movimiento sin plataforma no se
+  // reparte: engorda la fila "sin asignar".
+  const acciones = { A:{CLP:0,USD:0}, B:{CLP:0,USD:0}, null:{CLP:0,USD:0} };
+  let hayPrecioIncompleto = false;
+
+  [['CLP', portClp], ['USD', portUsd]].forEach(([moneda, port]) => {
+    Object.values(port).forEach(pos => {
+      if(pos.netoQ <= 0) return;
+      if(pos.valorActual === null){ hayPrecioIncompleto = true; return; }
+      // El valor de una posicion se reparte entre plataformas segun de
+      // donde vino cada titulo comprado, en proporcion a la cantidad neta.
+      // Es una aproximacion honesta: si compraste 10 en Racional y 5 en
+      // IBKR, el valor de hoy se parte 2/3 - 1/3. No hay forma de hacerlo
+      // exacto sin llevar lotes por plataforma, y eso es mucho aparato
+      // para lo que resuelve.
+      const compradoPorPlat = { A:0, B:0, null:0 };
+      let compradoTotal = 0;
+      pos.compras.forEach(m => {
+        const k = platDeMov(m) || 'null';
+        compradoPorPlat[k] += m.cantidad; compradoTotal += m.cantidad;
+      });
+      if(compradoTotal <= 0){ acciones['null'][moneda] += pos.valorActual; return; }
+      ['A','B','null'].forEach(k => {
+        acciones[k][moneda] += pos.valorActual * (compradoPorPlat[k] / compradoTotal);
+      });
+    });
+  });
+
+  const enClp = (v, moneda) => moneda === 'CLP' ? v : (cambioOk ? v * usdclpValue : null);
+  const totalDe = (k) => {
+    const partes = [
+      enClp(acciones[k].CLP, 'CLP'), enClp(acciones[k].USD, 'USD'),
+      enClp(k === 'null' ? cajaSinAsignar('CLP') : (caja.plat[k].CLP || 0), 'CLP'),
+      enClp(k === 'null' ? cajaSinAsignar('USD') : (caja.plat[k].USD || 0), 'USD'),
+    ];
+    return partes.some(x => x === null) ? null : partes.reduce((a,b) => a+b, 0);
+  };
+
+  const tarjeta = (k) => {
+    const esSin = k === 'null';
+    const total = totalDe(k);
+    const cajaClp = esSin ? cajaSinAsignar('CLP') : (caja.plat[k].CLP || 0);
+    const cajaUsd = esSin ? cajaSinAsignar('USD') : (caja.plat[k].USD || 0);
+    const nada = Math.abs(acciones[k].CLP) < 0.005 && Math.abs(acciones[k].USD) < 0.005
+              && Math.abs(cajaClp) < 0.005 && Math.abs(cajaUsd) < 0.005;
+    if(esSin && nada) return '';
+    return `<div class="plat-card" ${esSin ? 'style="border-color:var(--copper);"' : ''}>
+      ${chipPlat(esSin ? null : k)}
+      <div class="plat-card-total mono ${esSin ? 'plat-sin' : ''}">${
+        total !== null ? fmtMoneda(total, oculto, 'CLP') : 'Falta tipo de cambio'}</div>
+      <div class="plat-kv">
+        ${Math.abs(acciones[k].CLP) > 0.005 ? `<span>Acciones Chile</span><b>${fmtMoneda(acciones[k].CLP, oculto, 'CLP')}</b>` : ''}
+        ${Math.abs(acciones[k].USD) > 0.005 ? `<span>Acciones EE.UU.</span><b>${fmtMoneda(acciones[k].USD, oculto, 'USD')}</b>` : ''}
+        ${Math.abs(cajaClp) > 0.005 ? `<span>Caja CLP</span><b>${fmtMoneda(cajaClp, oculto, 'CLP')}</b>` : ''}
+        ${Math.abs(cajaUsd) > 0.005 ? `<span>Caja USD</span><b>${fmtMoneda(cajaUsd, oculto, 'USD')}</b>` : ''}
+        ${nada ? `<span style="color:var(--ink-faint);">Sin nada registrado todavía</span><b></b>` : ''}
+      </div>
+      ${esSin ? `<div style="font-size:10.5px; color:var(--copper); margin-top:8px; line-height:1.5;">
+        Movimientos anteriores a que la app separara plataformas. Asígnalos desde
+        "Mis movimientos" — hay un botón arriba de la lista.</div>` : ''}
+    </div>`;
+  };
+
+  const nombres = PLAT_IDS.map(id => `
+    <label class="plat-nombre-campo">${chipPlat(id)}
+      <input type="text" data-plat-nombre="${id}" value="${nombrePlat(id).replace(/"/g,'&quot;')}"
+             maxlength="28" title="Cambiar el nombre de esta plataforma"></label>`).join('');
+
+  return `<div class="plat-block">
+    <div class="plat-nombres">${nombres}</div>
+    <div class="plat-cols">${tarjeta('A')}${tarjeta('B')}</div>
+    ${tarjeta('null')}
+    <p style="font-size:10.5px; color:var(--ink-faint); margin:10px 0 0; line-height:1.55;">
+      Todo convertido a pesos con el tipo de cambio de arriba, solo para poder sumarlo.
+      ${hayPrecioIncompleto ? '<b style="color:var(--copper);">Falta el precio real de alguna posición, así que estos totales están incompletos.</b>' : ''}
+      Los pesos objetivo y el tope del 15 % NO se miden por plataforma: se miden sobre el total,
+      porque el riesgo es tuyo y no de la corredora.</p>
+  </div>`;
+}
+
+// Panel "Esperando entrada". Vive en el ambiente "A seguir", que pasa de ser
+// una lista pasiva a ser la sala de espera entre "es candidata" y "la compre".
+function esperaHTML(){
+  const tickers = Object.keys(espera).sort();
+  const filas = tickers.map(tk => {
+    const reg = espera[tk];
+    const s = todosLosStocks().find(x => x.ticker === tk);
+    const moneda = s ? s.currency : 'USD';
+    const restantes = diasRestantes(reg);
+    const cumplida = esperaCumplida(tk, reg);
+    const vencida = restantes !== null && restantes <= 0;
+    const conPos = tienePosicion(tk);
+
+    let clase = '', pill = ['esp-esperando', 'esperando'];
+    if(cumplida === true){ clase = 'esp-lista'; pill = ['esp-ok', 'se cumplió']; }
+    else if(vencida){ clase = 'esp-caducada'; pill = ['esp-vencida', `caducó hace ${Math.abs(restantes)} d`]; }
+
+    const precioHoy = (s && typeof s.price === 'number') ? s.price : null;
+    const distancia = (precioHoy !== null && typeof reg.precio === 'number' && reg.precio > 0)
+      ? `${((precioHoy / reg.precio - 1) * 100).toFixed(1)}%` : null;
+
+    return `<div class="esp-row ${clase}" data-esp="${tk}">
+      <div class="esp-head">
+        <span class="esp-tk" data-accion="esp-abrir" data-ticker="${tk}">${tk}</span>
+        <span style="font-size:10.5px;color:var(--ink-faint);">${s ? s.name : ''}</span>
+        <span class="esp-estado ${pill[0]}">${pill[1]}</span>
+      </div>
+      <div class="esp-cond">
+        ${reg.condicion ? reg.condicion.replace(/</g,'&lt;') : 'Sin condición escrita'}
+        ${typeof reg.precio === 'number'
+          ? ` — entras cuando ${reg.dir === 'sube' ? 'suba a' : 'baje a'} <b>${fmtMoneda2(reg.precio, moneda)}</b>`
+          : ' — <span style="color:var(--copper);">sin precio, así que no hay alerta que suene</span>'}
+        ${precioHoy !== null ? `<br>Hoy: <b>${fmtMoneda2(precioHoy, moneda)}</b>${distancia ? ` (${distancia} del objetivo)` : ''}` : ''}
+        ${restantes !== null && !vencida ? `<br><span style="color:var(--ink-faint);">Quedan ${restantes} días de los ${reg.dias || ESPERA_DIAS_DEFAULT}.</span>` : ''}
+        ${conPos ? `<br><span style="color:var(--copper);">Ya tienes esta acción — acá la alerta es tu stop, no una entrada. Sácala de esta lista.</span>` : ''}
+      </div>
+      <div class="esp-btns">
+        ${vencida ? `<button data-accion="esp-renovar" data-ticker="${tk}">Renovar ${ESPERA_DIAS_DEFAULT} días</button>` : ''}
+        <button data-accion="esp-editar" data-ticker="${tk}">Cambiar condición</button>
+        <button data-accion="esp-sacar" data-ticker="${tk}">Sacar de la lista</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const opciones = todosLosStocks()
+    .filter(s => !espera[s.ticker])
+    .map(s => `<option value="${s.ticker}">${s.ticker} — ${s.name}</option>`).join('');
+
+  return `<div class="plat-block">
+    <div class="esp-form">
+      <select id="espTicker" style="flex:1; min-width:150px;"><option value="">Elige una acción…</option>${opciones}</select>
+      <select id="espDir"><option value="baja">cuando baje a</option><option value="sube">cuando suba a</option></select>
+      <input type="number" id="espPrecio" placeholder="Precio" step="any" min="0" style="width:100px;">
+      <input type="text" id="espCond" placeholder="¿Qué esperas? (ej: vuelva a su media 50)" style="flex:1; min-width:170px;">
+      <button class="mov-btn" id="espAgregar">Agregar</button>
+    </div>
+    ${filas || '<p class="seguir-empty">Nada esperando entrada. Una acción entra acá cuando te interesa pero todavía no es el momento — y entra con la condición escrita, no como un nombre suelto.</p>'}
+    <p style="font-size:10.5px; color:var(--ink-faint); margin:10px 0 0; line-height:1.55;">
+      El precio objetivo se guarda además como alerta de precio, así que el aviso te llega al celular igual que
+      los demás. A los ${ESPERA_DIAS_DEFAULT} días la app te pregunta si la sacas: sin eso, esta lista se llena de
+      acciones que se te arrancaron y nunca vuelven.<br>
+      El selector solo ofrece acciones del universo que la app sigue con precio propio (${todosLosStocks().length}).
+      Una candidata del S&amp;P 500 que no esté ahí todavía no se puede vigilar acá — eso llega junto con el
+      módulo Explorar, que es el que las va a mandar.</p>
+  </div>`;
+}
+
 function renderAmbienteSeguir(){
   const viewEl = document.getElementById('viewSeguir');
   if(!viewEl) return;
@@ -4336,10 +4762,108 @@ function renderAmbienteSeguir(){
   viewEl.innerHTML = `
     <p class="section-title" style="margin-top:0;">Patrimonio</p>
     ${patrimonioHTML}
+    <p class="section-title">Dónde está tu plata</p>
+    ${platformasHTML(portClp, portUsd, oculto, cambioOk)}
+    <p class="section-title">Esperando entrada — qué miro y qué espero que pase</p>
+    ${esperaHTML()}
     ${asignacionHTML}
     <p class="section-title">Qué revisar (solo reglas de tu propia política de inversión — nada basado en movimiento de precio ni indicadores técnicos)</p>
     ${colsHTML}
   `;
+
+  // ---- Esperando entrada ----
+  // El precio objetivo se escribe TAMBIEN en alertasPrecio para que el push
+  // llegue por el camino que ya existe (/alertas-precio + notify.py). No se
+  // duplica la maquinaria de notificaciones: se reusa.
+  function guardarCondicion(tk, dir, precio, cond, dias){
+    espera[tk] = {
+      condicion: cond || '',
+      precio: (typeof precio === 'number' && isFinite(precio) && precio > 0) ? precio : null,
+      dir: dir === 'sube' ? 'sube' : 'baja',
+      desde: hoyISO(),
+      dias: dias || ESPERA_DIAS_DEFAULT,
+    };
+    guardarEspera();
+    if(espera[tk].precio !== null && !tienePosicion(tk)){
+      if(!alertasPrecio[tk]) alertasPrecio[tk] = {sube:null, baja:null};
+      alertasPrecio[tk][espera[tk].dir === 'sube' ? 'sube' : 'baja'] = espera[tk].precio;
+      guardarAlertasPrecio();
+      sincronizarAlertasPrecio();
+    }
+    renderAmbienteSeguir();
+  }
+
+  const btnAgregar = document.getElementById('espAgregar');
+  if(btnAgregar){
+    btnAgregar.addEventListener('click', () => {
+      const tk = document.getElementById('espTicker').value;
+      if(!tk){ alert('Elige una acción de la lista.'); return; }
+      if(tienePosicion(tk)){
+        alert(`Ya tienes ${tk} comprada.\n\n`
+            + 'En una acción que ya tienes, la alerta de precio es tu STOP (la media 50). '
+            + 'Ponerle acá un precio de entrada te borraría el stop sin avisar, así que no se puede.');
+        return;
+      }
+      const precio = parseFloat(document.getElementById('espPrecio').value);
+      const cond = document.getElementById('espCond').value.trim();
+      if(!cond && !(precio > 0)){
+        alert('Escribe qué estás esperando, o al menos un precio objetivo.\n\n'
+            + 'Un nombre sin condición es justo lo que esta lista trata de evitar.');
+        return;
+      }
+      guardarCondicion(tk, document.getElementById('espDir').value, precio, cond);
+    });
+  }
+
+  viewEl.querySelectorAll('[data-accion="esp-abrir"]').forEach(el => {
+    el.addEventListener('click', () => openDetail(el.dataset.ticker));
+  });
+  viewEl.querySelectorAll('[data-accion="esp-sacar"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tk = btn.dataset.ticker;
+      if(!confirm(`Sacar ${tk} de "esperando entrada".\n\nLa alerta de precio que tenga se mantiene — bórrala aparte en Mi Cartera si tampoco la quieres.`)) return;
+      delete espera[tk];
+      guardarEspera();
+      renderAmbienteSeguir();
+    });
+  });
+  viewEl.querySelectorAll('[data-accion="esp-renovar"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tk = btn.dataset.ticker, reg = espera[tk];
+      if(!reg) return;
+      reg.desde = hoyISO();
+      guardarEspera();
+      renderAmbienteSeguir();
+    });
+  });
+  viewEl.querySelectorAll('[data-accion="esp-editar"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tk = btn.dataset.ticker, reg = espera[tk] || {};
+      const cond = prompt(`¿Qué estás esperando que pase con ${tk}?`, reg.condicion || '');
+      if(cond === null) return;
+      const pStr = prompt(`Precio objetivo para ${tk} (deja vacío si no quieres alerta):`,
+                          reg.precio !== null && reg.precio !== undefined ? String(reg.precio) : '');
+      if(pStr === null) return;
+      const precio = pStr.trim() === '' ? null : parseFloat(pStr);
+      guardarCondicion(tk, reg.dir, precio, cond.trim(), reg.dias);
+    });
+  });
+
+  viewEl.querySelectorAll('[data-plat-nombre]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const id = inp.dataset.platNombre;
+      const nuevo = inp.value.trim();
+      plataformas[id] = nuevo || PLAT_DEFAULT[id];
+      guardarPlataformas();
+      refrescarSelectoresPlat();
+
+      espera = (nuevo.espera && typeof nuevo.espera === 'object' && !Array.isArray(nuevo.espera))
+        ? nuevo.espera : {};
+      guardarEspera();
+      renderAmbienteSeguir();
+      renderMovimientos();
+    });
+  });
 
   viewEl.querySelectorAll('.seguir-row[data-ticker]').forEach(el => {
     el.addEventListener('click', () => openDetail(el.dataset.ticker));
@@ -5702,14 +6226,21 @@ function renderMovsDetailPanel(){
 // asignación objetivo + tesis por posición, favoritos y W-8BEN. Restaurar
 // REEMPLAZA, no mezcla -- y antes de reemplazar, muestra qué se va a
 // perder para que la decisión sea informada.
-const RESPALDO_VERSION = 3;
+// v4 (agosto 2026): agrega `plataformas` (los nombres) y el campo `plat`
+// dentro de cada movimiento y de caja. Un respaldo v3 se restaura sin
+// problema -- lo que no traiga plataforma queda "sin asignar", que es
+// exactamente el estado correcto para un dato que no existia.
+const RESPALDO_VERSION = 4;
 
 function construirRespaldoUnificado(){
   return {
     version: RESPALDO_VERSION,
     exportado: new Date().toISOString(),
     movimientos,
-    caja: { CLP: caja.CLP, USD: caja.USD, historial: caja.historial, actualizado: caja.actualizado },
+    caja: { CLP: caja.CLP, USD: caja.USD, historial: caja.historial,
+            actualizado: caja.actualizado, plat: caja.plat },
+    plataformas,
+    espera,
     asignacion,
     tesis,
     favoritos: [...favoritos],
@@ -5834,9 +6365,19 @@ function importarMovimientos(file){
             USD: typeof nuevo.caja.USD === 'number' ? nuevo.caja.USD : 0,
             historial: Array.isArray(nuevo.caja.historial) ? nuevo.caja.historial : [],
             actualizado: nuevo.caja.actualizado || null,
+            // Un respaldo v3 no trae `plat`: queda en cero y todo el saldo
+            // aparece como "sin asignar", que es la verdad.
+            plat: normalizarCajaPlat(nuevo.caja.plat),
           }
-        : { CLP: 0, USD: 0, historial: [], actualizado: null };
+        : { CLP: 0, USD: 0, historial: [], actualizado: null, plat: normalizarCajaPlat(null) };
       guardarCaja();
+
+      plataformas = (nuevo.plataformas && typeof nuevo.plataformas === 'object')
+        ? { A: (typeof nuevo.plataformas.A === 'string' && nuevo.plataformas.A.trim()) ? nuevo.plataformas.A.trim() : PLAT_DEFAULT.A,
+            B: (typeof nuevo.plataformas.B === 'string' && nuevo.plataformas.B.trim()) ? nuevo.plataformas.B.trim() : PLAT_DEFAULT.B }
+        : Object.assign({}, PLAT_DEFAULT);
+      guardarPlataformas();
+      refrescarSelectoresPlat();
 
       const asigDefault = { rentaVariable:65, liquidez:35, chile:35, global:65, banda:5, maxPorPosicion:7, umbralCajaClp:null, umbralCajaUsd:null };
       asignacion = (nuevo.asignacion && typeof nuevo.asignacion === 'object') ? Object.assign({}, asigDefault, nuevo.asignacion) : asigDefault;
