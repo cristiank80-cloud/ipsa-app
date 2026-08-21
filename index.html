@@ -196,6 +196,61 @@
   .cartera-dist{font-size:10.5px; margin-top:3px; color:var(--ink-faint);}
   .cartera-empty{font-size:12px; color:var(--ink-faint); padding:8px 0;}
 
+  /* Bloque 9: Ambiente 5 · Explorar (la primera alerta). El método completo
+     -- sectores, embudo, Weinstein, fuerza -- corre en el backend; acá solo
+     se muestra el resultado, empezando por la alerta, no por el embudo. */
+  .expl-run-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
+  .expl-run-btn{
+    background:var(--gold); color:#fff; border:none; border-radius:8px; padding:11px 18px;
+    font-size:13.5px; font-weight:600; cursor:pointer; letter-spacing:.01em;
+  }
+  .expl-run-btn:hover{opacity:.92;}
+  .expl-run-btn:disabled{opacity:.5; cursor:default;}
+  .expl-run-nota{font-size:11px; color:var(--ink-faint); line-height:1.5;}
+  .expl-progress-wrap{background:var(--bg-panel); border:1px solid var(--hairline); border-radius:12px; padding:14px 16px; margin-bottom:14px;}
+  .expl-progress-etapa{font-size:12.5px; color:var(--ink-dim); margin-bottom:8px;}
+  .expl-progress-bar{position:relative; height:8px; background:var(--bg-field); border-radius:4px; overflow:hidden;}
+  .expl-progress-fill{position:absolute; top:0; left:0; height:100%; background:var(--gold); border-radius:4px; transition:width .4s ease;}
+  .expl-progress-pct{font-size:11px; color:var(--ink-faint); margin-top:6px; text-align:right;}
+  /* La alerta: lo único que hace falta leer si vas apurado. Color propio
+     (dorado fuerte) para que no se confunda ni con el panel de señal técnica
+     (copper/verdigris) ni con "A seguir" (dorado suave). */
+  .expl-alert{
+    background:linear-gradient(135deg, rgba(144,111,55,0.14), rgba(144,111,55,0.04));
+    border:1px solid rgba(144,111,55,0.4); border-radius:14px; padding:18px; margin-bottom:16px;
+  }
+  .expl-alert-frase{font-size:14.5px; font-weight:600; color:var(--ink); line-height:1.5; margin-bottom:10px;}
+  .expl-alert-meta{display:flex; gap:14px; flex-wrap:wrap; font-size:11px; color:var(--ink-dim);}
+  .expl-alert-meta b{color:var(--gold);}
+  .expl-tags{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;}
+  .expl-tag{font-size:10.5px; font-weight:600; padding:3px 9px; border-radius:20px; background:var(--bg-panel); border:1px solid var(--hairline); color:var(--ink-dim);}
+  .expl-section-title{font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--gold); margin:20px 0 10px; border-bottom:1px solid var(--hairline); padding-bottom:6px;}
+  .expl-section-nota{font-size:11px; color:var(--ink-faint); margin:-4px 0 10px; line-height:1.5;}
+  .expl-card{border:1px solid var(--hairline); border-radius:10px; padding:12px 14px; margin-bottom:8px; background:var(--bg-panel);}
+  .expl-card.expl-mano{border-color:rgba(144,111,55,0.4); background:rgba(144,111,55,0.03);}
+  .expl-card-head{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .expl-card-tk{font-weight:600; font-size:14px; cursor:pointer;}
+  .expl-card-nombre{font-size:10.5px; color:var(--ink-faint);}
+  .expl-card-score{margin-left:auto; font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:20px; background:var(--verdigris-soft); color:var(--verdigris);}
+  .expl-card-meta{font-size:11px; color:var(--ink-dim); margin-top:6px; line-height:1.6;}
+  .expl-card-falta{font-size:10.5px; color:var(--copper); margin-top:4px;}
+  .expl-card-btns{display:flex; gap:6px; flex-wrap:wrap; margin-top:9px;}
+  .expl-card-btns a, .expl-card-btns button{
+    font-size:10.5px; padding:4px 9px; border-radius:6px; border:1px solid var(--hairline);
+    background:var(--bg-field); color:var(--ink-dim); cursor:pointer; font-weight:600; text-decoration:none;
+  }
+  .expl-card-btns a:hover, .expl-card-btns button:hover{border-color:var(--gold); color:var(--gold);}
+  .expl-card-btns .expl-ya{color:var(--verdigris); border-color:rgba(79,156,142,0.35); cursor:default;}
+  .expl-empty{font-size:12px; color:var(--ink-faint); padding:8px 0; line-height:1.6;}
+  .expl-fuerza-row{display:flex; justify-content:space-between; font-size:11.5px; padding:5px 0; border-bottom:1px solid var(--hairline);}
+  .expl-fuerza-row:last-child{border-bottom:none;}
+  .expl-fuerza-nombre{color:var(--ink-dim);}
+  .expl-fuerza-val{font-family:'IBM Plex Mono',monospace; font-weight:600;}
+  .expl-fuerza-val.up{color:var(--verdigris);}
+  .expl-fuerza-val.down{color:var(--copper);}
+  .expl-embudo-pasos{font-size:11.5px; color:var(--ink-dim); line-height:1.8;}
+  .expl-embudo-pasos b{color:var(--ink); font-family:'IBM Plex Mono',monospace;}
+
   /* Rediseño Patrimonio (imagen 1 del pedido): total + desglose Cartera/Caja por país. */
   .patr-total{background:var(--bg-panel); border:1px solid var(--hairline); border-radius:12px; padding:16px; margin-bottom:14px; text-align:center;}
   .patr-total-label{font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.03em;}
@@ -594,6 +649,7 @@
          tres vistas -- el ambiente activo se persiste y la app abre donde
          el usuario la dejó. -->
     <div class="env-selector" id="envSelector">
+      <button type="button" class="env-btn" data-amb="explorar">Explorar</button>
       <button type="button" class="env-btn" data-amb="chile">Chile · CLP</button>
       <button type="button" class="env-btn" data-amb="usa">EE.UU. · USD</button>
       <button type="button" class="env-btn" data-amb="seguir">A seguir</button>
@@ -832,6 +888,10 @@
   <!-- Ambiente 4 · Mi Cartera (favoritos + precios objetivo, imagen 2 del
        pedido). Se construye en el bloque 8; aquí solo el contenedor. -->
   <div class="ambiente-view" id="viewCartera" style="display:none;"></div>
+
+  <!-- Ambiente 5 · Explorar (bloque 9): la primera alerta. Se construye
+       más abajo; aquí solo el contenedor, igual que los otros tres. -->
+  <div class="ambiente-view" id="viewExplorar" style="display:none;"></div>
 
   <div class="overlay" id="overlay">
     <div class="detail" id="detailPanel"></div>
@@ -1366,7 +1426,11 @@ function stocksDelAmbiente(amb){
 function cargarAmbienteActivo(){
   try {
     const v = localStorage.getItem('ipsa_ambiente_activo');
-    return (v === 'usa' || v === 'seguir') ? v : 'chile';
+    // OJO: "cartera" faltaba en esta lista (bug de antes de Explorar) --
+    // cerrar la app parada en Mi Cartera la hacía volver a Chile sola, sin
+    // avisar. Se corrige de paso porque cambiarAmbiente() de más abajo sí
+    // aceptaba "cartera" desde siempre: las dos listas deben coincidir.
+    return (v === 'usa' || v === 'seguir' || v === 'cartera' || v === 'explorar') ? v : 'chile';
   } catch(e){ return 'chile'; }
 }
 function guardarAmbienteActivo(a){
@@ -1387,7 +1451,7 @@ const DISCLAIMER_USA = '<b>Datos reales de Yahoo Finance, con rezago.</b> Los ET
 // bloque. El ambiente "seguir" (consolidado) se construye en el bloque 7;
 // por ahora solo conmuta la vista, #viewSeguir puede llegar vacío.
 function cambiarAmbiente(nuevo){
-  if(nuevo !== 'chile' && nuevo !== 'usa' && nuevo !== 'seguir' && nuevo !== 'cartera') return;
+  if(nuevo !== 'chile' && nuevo !== 'usa' && nuevo !== 'seguir' && nuevo !== 'cartera' && nuevo !== 'explorar') return;
   ambienteActivo = nuevo;
   guardarAmbienteActivo(nuevo);
 
@@ -1400,9 +1464,10 @@ function cambiarAmbiente(nuevo){
   const esUsa = nuevo === 'usa';
   const esSeguir = nuevo === 'seguir';
   const esCartera = nuevo === 'cartera';
-  // "Mi Cartera" es una vista consolidada como "A seguir" -- oculta la
-  // grilla de tarjetas y los paneles de análisis/movimientos igual que ella.
-  const esVistaConsolidada = esSeguir || esCartera;
+  const esExplorar = nuevo === 'explorar';
+  // "Mi Cartera" y "Explorar" son vistas consolidadas como "A seguir" --
+  // ocultan la grilla de tarjetas y los paneles de análisis/movimientos.
+  const esVistaConsolidada = esSeguir || esCartera || esExplorar;
 
   // Bloques de índice / estado de mercado / UF-UTM / disclaimer
   const idxBlock = document.getElementById('idxBlock');
@@ -1429,6 +1494,7 @@ function cambiarAmbiente(nuevo){
   const footerNote = document.getElementById('footerNote');
   const viewSeguir = document.getElementById('viewSeguir');
   const viewCartera = document.getElementById('viewCartera');
+  const viewExplorar = document.getElementById('viewExplorar');
 
   if(topDisclaimer) topDisclaimer.style.display = esVistaConsolidada ? 'none' : '';
   if(analysisPanelWrap) analysisPanelWrap.style.display = esVistaConsolidada ? 'none' : '';
@@ -1441,6 +1507,7 @@ function cambiarAmbiente(nuevo){
   if(footerNote) footerNote.style.display = esVistaConsolidada ? 'none' : '';
   if(viewSeguir) viewSeguir.style.display = esSeguir ? '' : 'none';
   if(viewCartera) viewCartera.style.display = esCartera ? '' : 'none';
+  if(viewExplorar) viewExplorar.style.display = esExplorar ? '' : 'none';
 
   // Re-renderizar los componentes compartidos con el ambiente ya cambiado
   if(typeof renderGridOrder === 'function') renderGridOrder();
@@ -1459,6 +1526,7 @@ function cambiarAmbiente(nuevo){
   if(typeof renderAnalysis === 'function') renderAnalysis();
   if(esSeguir && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir();
   if(esCartera && typeof renderAmbienteCartera === 'function') renderAmbienteCartera();
+  if(esExplorar && typeof renderAmbienteExplorar === 'function') renderAmbienteExplorar();
   // Al entrar a EE.UU. o al consolidado, refrescar sus precios de inmediato:
   // el refresco periódico de arriba está apagado mientras se mira Chile, así
   // que sin esto el usuario vería datos de hace rato al cambiarse.
@@ -4391,6 +4459,287 @@ function inicializarFormularioCaja(){
   });
 }
 
+// ---- Ambiente 5 · "Explorar" (bloque 9) ----
+// El método completo de Cristian -- sectores → embudo → fase de Weinstein →
+// fuerza relativa → sin repetir industria -- corre entero en el backend
+// (explorar.py). Este bloque solo pide el resultado y lo muestra.
+//
+// REENCUADRE "PRIMERA ALERTA" (agosto 2026, a pedido explícito): esto NO es
+// un informe que hay que leer de punta a punta, ni una pantalla que fuerza a
+// pasar por el embudo antes de ver algo. Se abre y lo primero que se ve es
+// la alerta -- cuántas candidatas, cuáles, con link directo a TradingView,
+// que es donde Cristian hace el análisis en profundidad de verdad. El resto
+// (sectores, industrias, el embudo paso a paso) queda abajo, en <details>,
+// para el que quiera mirarlo, no como paso obligado.
+//
+// NO CORRE SOLO. Un barrido de ~536 acciones cuesta minutos y le pega fuerte
+// a Yahoo -- por diseño (ver la nota larga en explorar.py) solo se dispara
+// cuando Cristian aprieta el botón.
+let explorarEstado = undefined;      // undefined = todavía no se consultó; null = se consultó, viene en camino u objeto real
+let explorarResultado = undefined;   // undefined = no pedido; null = no hay; objeto = el último análisis completo
+let explorarError = null;
+let explorarPollTimer = null;
+let explorarPeticionEnCurso = false; // true SOLO mientras la petición a /explorar/run está en el aire
+
+async function explorarPedirEstado(){
+  try {
+    const resp = await fetchConPlazo(BACKEND_URL + '/explorar/estado', {}, 20000);
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    explorarEstado = await resp.json();
+    explorarError = null;
+  } catch(e){
+    explorarError = 'No se pudo consultar el servidor. Si llevaba un rato sin usarse, puede estar despertando (hasta 50 segundos en el plan gratis) — espera un momento y vuelve a intentar.';
+  }
+  if(ambienteActivo === 'explorar') renderAmbienteExplorar();
+  return explorarEstado;
+}
+
+async function explorarPedirResultado(){
+  try {
+    const resp = await fetchConPlazo(BACKEND_URL + '/explorar/resultado', {}, 25000);
+    const data = await resp.json();
+    if(resp.ok && data.hayResultado){
+      explorarResultado = data.analisis;
+      explorarError = null;
+    } else {
+      explorarResultado = null;
+    }
+  } catch(e){
+    explorarError = 'No se pudo traer el resultado del análisis. Intenta de nuevo en un momento.';
+  }
+  if(ambienteActivo === 'explorar') renderAmbienteExplorar();
+}
+
+function explorarDetenerPolling(){
+  if(explorarPollTimer){ clearInterval(explorarPollTimer); explorarPollTimer = null; }
+}
+
+function explorarEmpezarPolling(){
+  if(explorarPollTimer) return; // ya hay uno andando -- no duplicar
+  // Cada 8 s: /explorar/estado "es barato, no toca la red" (server.py dixit),
+  // así que preguntar seguido no cuesta nada ni gasta presupuesto de Yahoo.
+  explorarPollTimer = setInterval(async () => {
+    const est = await explorarPedirEstado();
+    if(est && est.estado !== 'corriendo'){
+      explorarDetenerPolling();
+      if(est.estado === 'listo') await explorarPedirResultado();
+    }
+  }, 8000);
+}
+
+async function explorarEjecutar(){
+  if(explorarPeticionEnCurso) return;
+  explorarPeticionEnCurso = true;
+  explorarError = null;
+  renderAmbienteExplorar();
+  try {
+    // 60 s de plazo: el plan gratis de Render puede tardar hasta 50 s en
+    // despertar si nadie lo usaba (ver PASOS-FASE-3A.md).
+    const resp = await fetchConPlazo(BACKEND_URL + '/explorar/run', {method: 'GET'}, 60000);
+    const data = await resp.json();
+    explorarEstado = data.estado || explorarEstado;
+    // Si venía 409 "ya_corriendo" no es un error -- solo hay que engancharse
+    // a la corrida que ya está en curso, que es justo lo que hace el polling.
+    explorarEmpezarPolling();
+  } catch(e){
+    explorarError = 'No se pudo arrancar el análisis. Si el servidor estaba dormido esto puede tardar hasta 50 segundos — inténtalo de nuevo.';
+  }
+  explorarPeticionEnCurso = false;
+  renderAmbienteExplorar();
+}
+
+function explorarEstaEnGrilla(tk){
+  return todosLosStocks().some(s => s.ticker === tk);
+}
+
+function explorarFechaHTML(analisis){
+  if(!analisis || !analisis.generado) return '';
+  try {
+    const d = new Date(analisis.generado);
+    return d.toLocaleString('es-CL', {timeZone:'America/Santiago', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) + ' (hora Chile)';
+  } catch(e){ return ''; }
+}
+
+// Una tarjeta por candidata -- finalista o "para revisar a mano". Mismo
+// componente para las dos: la única diferencia real es la advertencia de
+// qué dato faltó, y el borde dorado tenue que marca "esta no pasó sola, hay
+// que decidir a mano".
+function explorarTarjetaHTML(c, tipo){
+  const enGrilla = explorarEstaEnGrilla(c.ticker);
+  const yaEnEspera = !!espera[c.ticker];
+  const yaTiene = tienePosicion(c.ticker);
+  const fase = (c.fase !== null && c.fase !== undefined) ? `Fase ${c.fase}` : 'fase no disponible';
+  // La fase 2 tiene 5 confirmaciones posibles (indicador_fuerza_fase.py); el
+  // umbral para pasar el embudo es >=4, pero el máximo real es 5, no 4.
+  const conf = (typeof c.confirmaciones === 'number') ? `${c.confirmaciones}/5 confirmaciones` : '';
+  const score = (typeof c.score === 'number') ? `Score ${c.score}/8` : '';
+  const fr = c.fuerzaRelativa || {};
+  const frTxt = fr.disponible ? (fr.pendientePositiva ? 'fuerza relativa subiendo' : 'fuerza relativa cayendo') : 'fuerza relativa no disponible';
+
+  return `<div class="expl-card ${tipo === 'mano' ? 'expl-mano' : ''}">
+    <div class="expl-card-head">
+      <span class="expl-card-tk"${enGrilla ? ` data-accion="expl-abrir" data-ticker="${c.ticker}" style="cursor:pointer;"` : ''}>${c.ticker}</span>
+      <span class="expl-card-nombre">${(c.nombre || '').replace(/</g,'&lt;')}${c.sector ? ' · ' + c.sector.replace(/</g,'&lt;') : ''}</span>
+      ${score ? `<span class="expl-card-score">${score}</span>` : ''}
+    </div>
+    <div class="expl-card-meta">
+      ${fase}${conf ? ' · ' + conf : ''} · ${frTxt}<br>
+      Precio: <b>US$${typeof c.precio === 'number' ? c.precio.toLocaleString('es-CL') : '—'}</b>
+      ${typeof c.capB === 'number' ? ` · Cap.: US$${c.capB.toFixed(1)} B` : ''}
+    </div>
+    ${tipo === 'mano' && c.faltan && c.faltan.length
+      ? `<div class="expl-card-falta">Le falta: ${c.faltan.join(', ')} — por eso no es finalista directa; se marca para revisar a mano.</div>`
+      : ''}
+    <div class="expl-card-btns">
+      <a href="${c.tradingview}" target="_blank" rel="noopener">Abrir en TradingView ↗</a>
+      ${enGrilla ? `<button type="button" data-accion="expl-abrir" data-ticker="${c.ticker}">Ver ficha</button>` : ''}
+      ${!enGrilla ? '<span style="font-size:10px;color:var(--ink-faint);align-self:center;">Fuera de tu grilla — por ahora solo TradingView</span>'
+        : yaTiene ? '<span class="expl-ya" style="border:none;">Ya la tienes</span>'
+        : yaEnEspera ? '<span class="expl-ya">✓ en "A seguir"</span>'
+        : `<button type="button" data-accion="expl-agregar-seguir" data-ticker="${c.ticker}">+ A seguir</button>`}
+    </div>
+  </div>`;
+}
+
+function explorarResultadoHTML(analisis){
+  const a = analisis.alerta || {};
+  const finalistas = analisis.finalistas || [];
+  const mano = analisis.revisarAMano || [];
+  const sectores = analisis.sectores || [];
+  const industrias = analisis.industrias || [];
+  const embudo = analisis.embudo || {};
+  const notas = analisis.notas || [];
+
+  const filaFuerza = (x) => {
+    const m12 = (x.fuerza && typeof x.fuerza.m12 === 'number') ? x.fuerza.m12 : null;
+    const cls = m12 === null ? '' : (m12 >= 0 ? 'up' : 'down');
+    return `<div class="expl-fuerza-row"><span class="expl-fuerza-nombre">${x.nombre}</span><span class="expl-fuerza-val ${cls}">${m12 === null ? '—' : (m12>=0?'+':'') + m12.toFixed(1) + '%'}</span></div>`;
+  };
+
+  return `
+    <div class="expl-alert">
+      <div class="expl-alert-frase">${(a.frase || '').replace(/</g,'&lt;')}</div>
+      <div class="expl-alert-meta">
+        <span>Cobertura: <b>${a.cobertura != null ? a.cobertura + '%' : '—'}</b></span>
+        <span>Generado: <b>${explorarFechaHTML(analisis)}</b></span>
+        ${embudo.seCortoPorTiempo ? `<span style="color:var(--copper);">Se cortó por tiempo — vuelve a correrlo para sumar cobertura</span>` : ''}
+      </div>
+      ${(a.sectoresFuertes && a.sectoresFuertes.length) ? `<div class="expl-tags">${a.sectoresFuertes.map(s=>`<span class="expl-tag">${s.replace(/</g,'&lt;')}</span>`).join('')}</div>` : ''}
+    </div>
+
+    <p class="expl-section-title">Candidatas (${finalistas.length})</p>
+    <p class="expl-section-nota">Pasaron los siete filtros completos: precio, tendencia, capitalización, crecimiento, fase 2 con al menos 4 confirmaciones, y fuerza relativa subiendo con score ≥ 6. Una por industria — si dos calzaban, quedó la de mejor score.</p>
+    ${finalistas.length ? finalistas.map(c => explorarTarjetaHTML(c, 'finalista')).join('')
+      : '<p class="expl-empty">Ninguna esta vez. No es un error del filtro — es exigente a propósito, y "0 candidatas" es un resultado tan válido como cualquier otro.</p>'}
+
+    <p class="expl-section-title">Para revisar a mano (${mano.length})</p>
+    <p class="expl-section-nota">Técnicamente sanas — misma fase y fuerza que las candidatas — pero les faltó un dato (capitalización o crecimiento) que Yahoo no entregó. Esconderlas sería peor que mostrarlas con la advertencia: el dato que falta se ve en TradingView en dos segundos.</p>
+    ${mano.length ? mano.map(c => explorarTarjetaHTML(c, 'mano')).join('')
+      : '<p class="expl-empty">Ninguna esta vez.</p>'}
+
+    <details class="expl-details">
+      <summary class="expl-section-title" style="cursor:pointer; display:inline-block;">Sectores e industrias (detalle)</summary>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:8px;">
+        <div><div style="font-size:11px;color:var(--ink-faint);margin-bottom:4px;">Sectores (12 meses vs. S&amp;P 500)</div>${sectores.map(filaFuerza).join('')}</div>
+        <div><div style="font-size:11px;color:var(--ink-faint);margin-bottom:4px;">Industrias (12 meses vs. S&amp;P 500)</div>${industrias.map(filaFuerza).join('')}</div>
+      </div>
+    </details>
+
+    <details class="expl-details">
+      <summary class="expl-section-title" style="cursor:pointer; display:inline-block;">Cómo llegó a este resultado (el embudo, paso a paso)</summary>
+      <div class="expl-embudo-pasos">
+        Universo: <b>${embudo.universoTotal ?? '—'}</b> · Revisadas: <b>${embudo.revisadas ?? '—'}</b> (${embudo.cobertura ?? '—'}%) · Ya en caché al empezar: <b>${embudo.veniaEnCache ?? '—'}</b><br>
+        ${(embudo.pasos || []).map(p => `${p.filtro}: <b>${p.quedan}</b>`).join(' → ')}
+      </div>
+      ${notas.length ? `<ul style="font-size:11px; color:var(--ink-faint); line-height:1.6; margin:8px 0 0; padding-left:16px;">${notas.map(n=>`<li>${n.replace(/</g,'&lt;')}</li>`).join('')}</ul>` : ''}
+    </details>
+  `;
+}
+
+function renderAmbienteExplorar(){
+  const viewEl = document.getElementById('viewExplorar');
+  if(!viewEl) return;
+
+  // Primera vez que se entra a este ambiente en la sesión: preguntar de
+  // verdad al servidor en vez de asumir "nunca corrido" -- puede haber una
+  // corrida en curso o un resultado de hace un rato (vive 24 h en memoria).
+  if(explorarEstado === undefined){
+    explorarEstado = null; // marca "ya se pidió", evita disparar el fetch dos veces
+    explorarPedirEstado().then(est => {
+      if(est && est.estado === 'corriendo') explorarEmpezarPolling();
+      else if(est && est.hayResultado) explorarPedirResultado();
+    });
+  }
+
+  const est = explorarEstado;
+  const corriendo = !!(est && est.estado === 'corriendo');
+  const analisis = explorarResultado;
+  const ocupado = corriendo || explorarPeticionEnCurso;
+
+  let cuerpoHTML = '';
+  if(explorarError) cuerpoHTML += `<p class="expl-empty" style="color:var(--copper);">${explorarError}</p>`;
+
+  if(est === null && !explorarError){
+    cuerpoHTML += `<p class="expl-empty">Consultando el servidor…</p>`;
+  } else if(corriendo){
+    const pct = est.progreso || 0;
+    cuerpoHTML += `
+      <div class="expl-progress-wrap">
+        <div class="expl-progress-etapa">${(est.etapa || 'Corriendo…').replace(/</g,'&lt;')}</div>
+        <div class="expl-progress-bar"><div class="expl-progress-fill" style="width:${pct}%;"></div></div>
+        <div class="expl-progress-pct">${pct}%</div>
+      </div>
+      <p class="expl-run-nota">Puedes cambiar de ambiente y volver — esto sigue en el servidor aunque cierres la app. Suele tomar entre 4 y 7 minutos.</p>`;
+  }
+
+  if(analisis){
+    cuerpoHTML += explorarResultadoHTML(analisis);
+  } else if(!corriendo && est && est.estado !== 'corriendo' && !explorarError){
+    cuerpoHTML += `<p class="expl-empty">${est.hayResultado
+      ? 'Hay un resultado guardado pero no se pudo traer todavía — reintenta en un momento.'
+      : 'Todavía no se ha corrido el análisis. Aprieta "Ejecutar análisis" para tener la primera alerta del día.'}</p>`;
+  }
+
+  viewEl.innerHTML = `
+    <p class="section-title" style="margin-top:0;">Explorar — primera alerta</p>
+    <p class="expl-run-nota" style="margin-bottom:10px;">
+      Barre el S&amp;P 500 + el Nasdaq-100 + tu grilla (536 acciones en total), aplica el método completo
+      — precio, tendencia, capitalización, crecimiento, fase de Weinstein y fuerza relativa — y te deja
+      lo que vale la pena abrir en TradingView, que es donde haces el análisis en profundidad. No corre
+      solo: lo pides tú, cuando te sientas a revisar el mercado.
+    </p>
+    <div class="expl-run-row">
+      <button type="button" class="expl-run-btn" id="explBtnRun" ${ocupado ? 'disabled' : ''}>
+        ${explorarPeticionEnCurso ? 'Arrancando…' : corriendo ? 'Corriendo…' : analisis ? 'Volver a ejecutar' : 'Ejecutar análisis'}
+      </button>
+      ${analisis && !corriendo ? `<span class="expl-run-nota">Último resultado: ${explorarFechaHTML(analisis)}</span>` : ''}
+    </div>
+    ${cuerpoHTML}
+  `;
+
+  const btn = document.getElementById('explBtnRun');
+  if(btn) btn.addEventListener('click', explorarEjecutar);
+
+  viewEl.querySelectorAll('[data-accion="expl-abrir"]').forEach(el => {
+    el.addEventListener('click', () => openDetail(el.dataset.ticker));
+  });
+
+  viewEl.querySelectorAll('[data-accion="expl-agregar-seguir"]').forEach(b => {
+    b.addEventListener('click', () => {
+      const tk = b.dataset.ticker;
+      if(tienePosicion(tk)){ alert(`Ya tienes ${tk} comprada — no se puede agregar como entrada.`); return; }
+      if(espera[tk]){ alert(`${tk} ya está en "A seguir ▸ Esperando entrada".`); return; }
+      const c = (analisis.finalistas || []).concat(analisis.revisarAMano || []).find(x => x.ticker === tk);
+      const precioRef = (c && typeof c.sma50 === 'number') ? c.sma50 : null;
+      guardarCondicion(tk, 'baja', precioRef,
+        'Candidata de Explorar — revisar entrada en TradingView antes de comprar', ESPERA_DIAS_DEFAULT);
+      alert(`${tk} agregada a "A seguir ▸ Esperando entrada"`
+        + (precioRef ? ` con aviso si baja a ${fmtMoneda2(precioRef, 'USD')} (su media 50).` : ', sin precio de aviso (no se pudo calcular la media 50).')
+        + '\n\nAjusta la condición ahí si prefieres otro precio.');
+    });
+  });
+}
+
 // ---- Ambiente 3 · "A seguir" (bloque 7, sección 2.4 de la spec v3) ----
 // Regla de diseño central de la spec: "este ambiente NO genera señales
 // propias". No usa /signals ni ningún indicador técnico -- solo compara
@@ -4554,6 +4903,32 @@ function esperaHTML(){
       Una candidata del S&amp;P 500 que no esté ahí todavía no se puede vigilar acá — eso llega junto con el
       módulo Explorar, que es el que las va a mandar.</p>
   </div>`;
+}
+
+// Movida a nivel de módulo (antes vivía anidada dentro de renderAmbienteSeguir)
+// porque el módulo Explorar (bloque 9, más abajo) también necesita mandar
+// candidatas a "esperando entrada" con la condición ya escrita -- y es
+// exactamente la misma operación, no una parecida. Repetirla en dos lados
+// es el tipo de cosa que se desincroniza con el tiempo.
+function guardarCondicion(tk, dir, precio, cond, dias){
+  espera[tk] = {
+    condicion: cond || '',
+    precio: (typeof precio === 'number' && isFinite(precio) && precio > 0) ? precio : null,
+    dir: dir === 'sube' ? 'sube' : 'baja',
+    desde: hoyISO(),
+    dias: dias || ESPERA_DIAS_DEFAULT,
+  };
+  guardarEspera();
+  if(espera[tk].precio !== null && !tienePosicion(tk)){
+    if(!alertasPrecio[tk]) alertasPrecio[tk] = {sube:null, baja:null};
+    alertasPrecio[tk][espera[tk].dir === 'sube' ? 'sube' : 'baja'] = espera[tk].precio;
+    guardarAlertasPrecio();
+    sincronizarAlertasPrecio();
+  }
+  // Redibuja lo que esté realmente en pantalla -- puede ser "A seguir" (el
+  // formulario de siempre) o "Explorar" (una tarjeta de candidata).
+  if(ambienteActivo === 'seguir' && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir();
+  if(ambienteActivo === 'explorar' && typeof renderAmbienteExplorar === 'function') renderAmbienteExplorar();
 }
 
 function renderAmbienteSeguir(){
@@ -4772,27 +5147,8 @@ function renderAmbienteSeguir(){
   `;
 
   // ---- Esperando entrada ----
-  // El precio objetivo se escribe TAMBIEN en alertasPrecio para que el push
-  // llegue por el camino que ya existe (/alertas-precio + notify.py). No se
-  // duplica la maquinaria de notificaciones: se reusa.
-  function guardarCondicion(tk, dir, precio, cond, dias){
-    espera[tk] = {
-      condicion: cond || '',
-      precio: (typeof precio === 'number' && isFinite(precio) && precio > 0) ? precio : null,
-      dir: dir === 'sube' ? 'sube' : 'baja',
-      desde: hoyISO(),
-      dias: dias || ESPERA_DIAS_DEFAULT,
-    };
-    guardarEspera();
-    if(espera[tk].precio !== null && !tienePosicion(tk)){
-      if(!alertasPrecio[tk]) alertasPrecio[tk] = {sube:null, baja:null};
-      alertasPrecio[tk][espera[tk].dir === 'sube' ? 'sube' : 'baja'] = espera[tk].precio;
-      guardarAlertasPrecio();
-      sincronizarAlertasPrecio();
-    }
-    renderAmbienteSeguir();
-  }
-
+  // guardarCondicion() ahora vive a nivel de módulo (justo antes de esta
+  // función) -- Explorar la reusa tal cual.
   const btnAgregar = document.getElementById('espAgregar');
   if(btnAgregar){
     btnAgregar.addEventListener('click', () => {
