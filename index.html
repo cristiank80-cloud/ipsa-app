@@ -133,6 +133,21 @@
   .cartera-campo.sube span{color:var(--verdigris);}
   .cartera-campo.baja span{color:var(--copper);}
   .cartera-campo input{width:100%; min-width:0; padding:4px 5px; border:1px solid var(--hairline); border-radius:5px; background:var(--bg-field); font-size:12px; box-sizing:border-box;}
+  /* Sugerencia de stop en la media 50 (regla 4 del metodo). Aparece SOLO
+     cuando la media esta por encima del stop guardado: el stop sube o se
+     queda, nunca baja, asi que una media que cayo no tiene nada que
+     sugerir. No cambia el valor solo -- hay que tocar el boton. */
+  .cartera-sug{margin-top:5px;}
+  .stop-sug{
+    display:inline-flex; align-items:center; gap:5px; width:100%;
+    background:rgba(144,111,55,0.10); border:1px solid rgba(144,111,55,0.32);
+    border-radius:6px; padding:4px 8px; font-size:10.5px; font-weight:600;
+    color:var(--gold); cursor:pointer; text-align:left; line-height:1.4;
+  }
+  .stop-sug:hover{background:rgba(144,111,55,0.18);}
+  .stop-sug .ss-val{font-family:'IBM Plex Mono',monospace;}
+  .stop-sug .ss-cta{margin-left:auto; white-space:nowrap; text-decoration:underline;}
+  .cartera-sug-nota{font-size:10px; color:var(--ink-faint); line-height:1.45; margin-top:4px;}
   /* Se sigue usando en el patrimonio consolidado (equivalente USD→CLP) más
      abajo -- no es exclusiva de las tarjetas de "Mi Cartera". */
   .cartera-dist{font-size:10.5px; margin-top:3px; color:var(--ink-faint);}
@@ -607,18 +622,29 @@
     <b>Datos reales de Yahoo Finance, con rezago.</b> Yahoo no publica de cuántos minutos es el rezago, así que cada precio muestra su antigüedad real: fíjate en la hora junto a cada acción y en el semáforo de estado. <b>El IPSA (y la UF/UTM) vienen directo de Diario Financiero</b>, no de Yahoo — el "Consultado" que ves junto al IPSA es el momento en que este servidor revisó esa página, no la hora exacta en que la bolsa fijó ese valor. <b>Yahoo no entrega puntas de compra/venta de la Bolsa de Santiago</b> — ese dato aparece como no disponible, nunca inventado. Toca cualquier tarjeta para ver el detalle.
   </p>
 
+  <!-- Panel de distancia al promedio (z-score / RSI, via signals.py).
+       AGOSTO 2026: se le quito el veredicto. Antes las dos columnas se
+       titulaban "Señal técnica: posible compra" y "posible venta", y eso
+       chocaba de frente con el diagnostico de fases: una accion en fase 4
+       aparecia como "posible compra" solo por estar lejos de su promedio.
+       Y ese es justamente el punto ciego de esta medida -- una accion en
+       caida libre esta "lejos bajo su promedio" TODO el camino hacia
+       abajo, sin dejar de estarlo nunca.
+       Ahora este panel describe el dato y no opina: quien decide QUE
+       comprar es el embudo, quien decide CUANDO es el diagnostico de
+       fase/fuerza. Ver "como-encaja-todo" en la carpeta del proyecto. -->
   <div class="analysis-panel" id="analysisPanelWrap">
-    <p class="feed-title">Análisis del momento <span class="analysis-refresh" id="analysisRefresh">···</span></p>
+    <p class="feed-title">Distancia a su promedio <span class="analysis-refresh" id="analysisRefresh">···</span></p>
     <p class="analysis-disclaimer">
-      Esto NO es una recomendación de compra o venta — es un resumen de reglas estadísticas explícitas (distancia a su propio promedio, RSI, tendencia SMA20/SMA50 y liquidez). Decide tú con esta información; yo no soy asesor financiero, no conozco tu situación completa y el precio viene de Yahoo Finance con rezago. Las marcadas con ⚠ están más lejos de su promedio, pero en una tendencia bajista sostenida — no son una oportunidad detectada, es una acción cayendo, y se muestran atenuadas a propósito.
+      Esto NO es una señal de compra ni de venta, y no dice si una acción está barata o cara — solo mide <b>cuánto se separó de su propio promedio</b> (distancia al promedio de 90 días, RSI, tendencia SMA20/SMA50 y liquidez). Ojo con la trampa de este dato: una acción que va cayendo aparece "lejos bajo su promedio" durante toda la caída, y no deja de estarlo nunca. Para saber si vale la pena, mira su fase y su fuerza en el detalle. El precio viene de Yahoo Finance con rezago y yo no soy asesor financiero. Las marcadas con ⚠ están además en una tendencia bajista sostenida, y se muestran atenuadas a propósito.
     </p>
     <div class="analysis-cols" id="analysisCols">
       <div class="analysis-col">
-        <p class="analysis-col-title down">Señal técnica: posible compra</p>
+        <p class="analysis-col-title down">Más lejos <b>bajo</b> su promedio</p>
         <div id="analysisDown" class="analysis-list"><p class="analysis-empty">Cargando datos reales…</p></div>
       </div>
       <div class="analysis-col">
-        <p class="analysis-col-title up">Señal técnica: posible venta</p>
+        <p class="analysis-col-title up">Más lejos <b>sobre</b> su promedio</p>
         <div id="analysisUp" class="analysis-list"><p class="analysis-empty">Cargando datos reales…</p></div>
       </div>
     </div>
@@ -821,62 +847,74 @@
 
 <script>
 const stocks = [
-  {ticker:'AGUAS-A', name:'Aguas Andinas',       base:339,   dec:0, currency:'CLP'},
-  {ticker:'ANDINA-B', name:'Embotelladora Andina', base:2350, dec:0, currency:'CLP'},
-  {ticker:'BCI',     name:'Banco de Crédito e Inversiones', base:38500, dec:0, currency:'CLP'},
-  {ticker:'BSANTANDER', name:'Banco Santander Chile', base:79.5, dec:2, currency:'CLP'},
-  {ticker:'CAP',     name:'Minería',             base:6900,  dec:0, currency:'CLP'},
-  {ticker:'CCU',     name:'Bebidas',             base:6950,  dec:0, currency:'CLP'},
-  {ticker:'CENCOSUD', name:'Retail',             base:2580,  dec:0, currency:'CLP'},
-  {ticker:'CHILE',   name:'Banco de Chile',      base:129,   dec:2, currency:'CLP'},
-  {ticker:'CMPC',    name:'Forestal/Celulosa',   base:1210,  dec:0, currency:'CLP'},
-  {ticker:'COLBUN',  name:'Electricidad',        base:145,   dec:2, currency:'CLP'},
-  {ticker:'CONCHATORO', name:'Viña Concha y Toro', base:1090, dec:0, currency:'CLP'},
+  // ---------------------------------------------------------------------
+  // Ambiente 1 (Chile) -- REDUCIDO A 5 NOMBRES en agosto 2026.
+  // ---------------------------------------------------------------------
+  // Cristian esta cerrando su exposicion a Chile; estas cinco son las
+  // unicas posiciones que le quedan. Las otras 45 no se borraron: quedan
+  // comentadas mas abajo, en el mismo orden, y volver a activar cualquiera
+  // es descomentar su linea.
+  //
+  // ESTA LISTA DEBE COINCIDIR CON TICKERS DE backend/main.py. Si un ticker
+  // esta aca y no alla, la tarjeta aparece pero nunca recibe precio (queda
+  // "Calculando..." para siempre). Si esta alla y no aca, el backend gasta
+  // una peticion por algo que la app no muestra.
+  // {ticker:'AGUAS-A', name:'Aguas Andinas',       base:339,   dec:0, currency:'CLP'},
+  // {ticker:'ANDINA-B', name:'Embotelladora Andina', base:2350, dec:0, currency:'CLP'},
+  // {ticker:'BCI',     name:'Banco de Crédito e Inversiones', base:38500, dec:0, currency:'CLP'},
+  // {ticker:'BSANTANDER', name:'Banco Santander Chile', base:79.5, dec:2, currency:'CLP'},
+  // {ticker:'CAP',     name:'Minería',             base:6900,  dec:0, currency:'CLP'},
+  // {ticker:'CCU',     name:'Bebidas',             base:6950,  dec:0, currency:'CLP'},
+  // {ticker:'CENCOSUD', name:'Retail',             base:2580,  dec:0, currency:'CLP'},
+  // {ticker:'CHILE',   name:'Banco de Chile',      base:129,   dec:2, currency:'CLP'},
+  // {ticker:'CMPC',    name:'Forestal/Celulosa',   base:1210,  dec:0, currency:'CLP'},
+  // {ticker:'COLBUN',  name:'Electricidad',        base:145,   dec:2, currency:'CLP'},
+  // {ticker:'CONCHATORO', name:'Viña Concha y Toro', base:1090, dec:0, currency:'CLP'},
   {ticker:'COPEC',   name:'Combustibles/Forestal', base:7280, dec:0, currency:'CLP'},
-  {ticker:'ECL',     name:'Engie Energía Chile', base:520,   dec:0, currency:'CLP'},
-  {ticker:'ENELAM',  name:'Enel Américas',       base:85,    dec:2, currency:'CLP'},
-  {ticker:'ENELCHILE', name:'Enel Chile',        base:68,    dec:2, currency:'CLP'},
-  {ticker:'ENTEL',   name:'Telecomunicaciones',  base:5750,  dec:0, currency:'CLP'},
+  // {ticker:'ECL',     name:'Engie Energía Chile', base:520,   dec:0, currency:'CLP'},
+  // {ticker:'ENELAM',  name:'Enel Américas',       base:85,    dec:2, currency:'CLP'},
+  // {ticker:'ENELCHILE', name:'Enel Chile',        base:68,    dec:2, currency:'CLP'},
+  // {ticker:'ENTEL',   name:'Telecomunicaciones',  base:5750,  dec:0, currency:'CLP'},
   {ticker:'FALABELLA', name:'Retail',           base:3150,  dec:0, currency:'CLP'},
-  {ticker:'IAM',     name:'Inversiones Aguas Metropolitanas', base:1180, dec:0, currency:'CLP'},
+  // {ticker:'IAM',     name:'Inversiones Aguas Metropolitanas', base:1180, dec:0, currency:'CLP'},
   {ticker:'LTM',     name:'LATAM Airlines',      base:23.4,  dec:2, currency:'CLP'},
-  {ticker:'MALLPLAZA', name:'Mallplaza',         base:1620,  dec:0, currency:'CLP'},
-  {ticker:'PARAUCO', name:'Parque Arauco',       base:1980,  dec:0, currency:'CLP'},
+  // {ticker:'MALLPLAZA', name:'Mallplaza',         base:1620,  dec:0, currency:'CLP'},
+  // {ticker:'PARAUCO', name:'Parque Arauco',       base:1980,  dec:0, currency:'CLP'},
   {ticker:'RIPLEY',  name:'Ripley',              base:340,   dec:0, currency:'CLP'},
-  {ticker:'SMU',     name:'Supermercados',       base:145,   dec:0, currency:'CLP'},
-  {ticker:'SONDA',   name:'Software/TI',         base:960,   dec:0, currency:'CLP'},
-  {ticker:'SQM-B',   name:'SQM · Litio',        base:65000, dec:0, currency:'CLP'},
-  {ticker:'VAPORES', name:'Naviera',             base:49,    dec:0, currency:'CLP'},
-  {ticker:'ANTARCHILE', name:'Holding Forestal/Combustibles', base:7690, dec:0, currency:'CLP'},
-  {ticker:'QUINENCO', name:'Holding (Banca/Industria)', base:4300, dec:0, currency:'CLP'},
-  {ticker:'HABITAT', name:'AFP Habitat',         base:1225,  dec:0, currency:'CLP'},
-  {ticker:'CUPRUM',  name:'AFP Cuprum',          base:20500, dec:0, currency:'CLP'},
-  {ticker:'PROVIDA', name:'AFP Provida',         base:1450,  dec:0, currency:'CLP'},
-  {ticker:'PLANVITAL', name:'AFP PlanVital',     base:135,   dec:0, currency:'CLP'},
-  {ticker:'SK',      name:'Sigdo Koppers · Industrial', base:1790, dec:0, currency:'CLP'},
-  {ticker:'CAMANCHACA', name:'Pesquera Camanchaca', base:62, dec:0, currency:'CLP'},
-  {ticker:'ALMENDRAL', name:'Holding (controla Entel)', base:35, dec:0, currency:'CLP'},
-  {ticker:'ENELGXCH', name:'Enel Generación Chile', base:340, dec:0, currency:'CLP'},
-  {ticker:'WATTS',   name:'Alimentos/Lácteos',   base:410,   dec:0, currency:'CLP'},
-  {ticker:'CRISTALES', name:'Cristalerías de Chile', base:2050, dec:0, currency:'CLP'},
-  {ticker:'BESALCO', name:'Construcción',        base:1265,  dec:0, currency:'CLP'},
-  {ticker:'PUCOBRE', name:'Minería · Cobre',     base:2900,  dec:0, currency:'CLP'},
-  {ticker:'LIPIGAS', name:'Gas licuado',         base:410,   dec:0, currency:'CLP'},
-  {ticker:'BLUMAR',  name:'Pesquera',            base:220,   dec:0, currency:'CLP'},
-  {ticker:'ORO-BLANCO', name:'Holding (SQM)',    base:10.3,  dec:2, currency:'CLP'},
-  {ticker:'AAISA',   name:'Holding (ILC)',       base:1900,  dec:0, currency:'CLP'},
-  {ticker:'ENJOY',   name:'Casinos (en reorganización judicial)', base:0.6, dec:2, currency:'CLP'},
-  {ticker:'INDISA',  name:'Clínica Indisa · Salud', base:2900, dec:0, currency:'CLP'},
+  // {ticker:'SMU',     name:'Supermercados',       base:145,   dec:0, currency:'CLP'},
+  // {ticker:'SONDA',   name:'Software/TI',         base:960,   dec:0, currency:'CLP'},
+  // {ticker:'SQM-B',   name:'SQM · Litio',        base:65000, dec:0, currency:'CLP'},
+  // {ticker:'VAPORES', name:'Naviera',             base:49,    dec:0, currency:'CLP'},
+  // {ticker:'ANTARCHILE', name:'Holding Forestal/Combustibles', base:7690, dec:0, currency:'CLP'},
+  // {ticker:'QUINENCO', name:'Holding (Banca/Industria)', base:4300, dec:0, currency:'CLP'},
+  // {ticker:'HABITAT', name:'AFP Habitat',         base:1225,  dec:0, currency:'CLP'},
+  // {ticker:'CUPRUM',  name:'AFP Cuprum',          base:20500, dec:0, currency:'CLP'},
+  // {ticker:'PROVIDA', name:'AFP Provida',         base:1450,  dec:0, currency:'CLP'},
+  // {ticker:'PLANVITAL', name:'AFP PlanVital',     base:135,   dec:0, currency:'CLP'},
+  // {ticker:'SK',      name:'Sigdo Koppers · Industrial', base:1790, dec:0, currency:'CLP'},
+  // {ticker:'CAMANCHACA', name:'Pesquera Camanchaca', base:62, dec:0, currency:'CLP'},
+  // {ticker:'ALMENDRAL', name:'Holding (controla Entel)', base:35, dec:0, currency:'CLP'},
+  // {ticker:'ENELGXCH', name:'Enel Generación Chile', base:340, dec:0, currency:'CLP'},
+  // {ticker:'WATTS',   name:'Alimentos/Lácteos',   base:410,   dec:0, currency:'CLP'},
+  // {ticker:'CRISTALES', name:'Cristalerías de Chile', base:2050, dec:0, currency:'CLP'},
+  // {ticker:'BESALCO', name:'Construcción',        base:1265,  dec:0, currency:'CLP'},
+  // {ticker:'PUCOBRE', name:'Minería · Cobre',     base:2900,  dec:0, currency:'CLP'},
+  // {ticker:'LIPIGAS', name:'Gas licuado',         base:410,   dec:0, currency:'CLP'},
+  // {ticker:'BLUMAR',  name:'Pesquera',            base:220,   dec:0, currency:'CLP'},
+  // {ticker:'ORO-BLANCO', name:'Holding (SQM)',    base:10.3,  dec:2, currency:'CLP'},
+  // {ticker:'AAISA',   name:'Holding (ILC)',       base:1900,  dec:0, currency:'CLP'},
+  // {ticker:'ENJOY',   name:'Casinos (en reorganización judicial)', base:0.6, dec:2, currency:'CLP'},
+  // {ticker:'INDISA',  name:'Clínica Indisa · Salud', base:2900, dec:0, currency:'CLP'},
   {ticker:'SOCOVESA', name:'Inmobiliaria/Construcción', base:156, dec:0, currency:'CLP'},
   // Agregadas en v3 (bloque 9) -- verificadas contra Yahoo Finance antes de
   // sumarlas (ver comentario en backend/main.py). "base" es solo una
   // semilla para el primer render antes de que llegue el precio real de
   // Yahoo -- nunca se muestra como dato verdadero.
-  {ticker:'ITAUCL', name:'Banco Itaú Chile', base:1.1, dec:2, currency:'CLP'},
-  {ticker:'CENCOSHOPP', name:'Cencosud Shopping', base:1500, dec:0, currency:'CLP'},
-  {ticker:'ILC', name:'Inversiones La Construcción', base:13000, dec:0, currency:'CLP'},
-  {ticker:'SALFACORP', name:'SalfaCorp · Construcción', base:400, dec:0, currency:'CLP'},
-  {ticker:'SMSAAM', name:'Sociedad Matriz SAAM · Naviera', base:40, dec:2, currency:'CLP'},
+  // {ticker:'ITAUCL', name:'Banco Itaú Chile', base:1.1, dec:2, currency:'CLP'},
+  // {ticker:'CENCOSHOPP', name:'Cencosud Shopping', base:1500, dec:0, currency:'CLP'},
+  // {ticker:'ILC', name:'Inversiones La Construcción', base:13000, dec:0, currency:'CLP'},
+  // {ticker:'SALFACORP', name:'SalfaCorp · Construcción', base:400, dec:0, currency:'CLP'},
+  // {ticker:'SMSAAM', name:'Sociedad Matriz SAAM · Naviera', base:40, dec:2, currency:'CLP'},
 ];
 
 const ALERT_THRESHOLD = 0.96; // 4% bajo el promedio
@@ -1195,6 +1233,72 @@ const stocksUSA = [
   {ticker:'ENVA',   name:"Enova International",                       dec:2, currency:'USD'},
   {ticker:'PAYS',   name:"Paysign",                                    dec:2, currency:'USD'},
   {ticker:'WT',     name:"WisdomTree",                                 dec:2, currency:'USD'},
+
+  // ---------------------------------------------------------------------
+  // NASDAQ-100 (agosto 2026)
+  // ---------------------------------------------------------------------
+  // Se agrego con el presupuesto de peticiones que liberaron las 45
+  // chilenas que salieron de `stocks`. Solo los miembros del indice que NO
+  // estaban ya arriba. Debe coincidir con TICKERS_USA de backend/main.py.
+  {ticker:'GOOG',    name:"Alphabet (clase C)",                               dec:2, currency:'USD'},
+  {ticker:'ADI',     name:"Analog Devices",                                   dec:2, currency:'USD'},
+  {ticker:'ADP',     name:"Automatic Data Processing",                        dec:2, currency:'USD'},
+  {ticker:'ADSK',    name:"Autodesk",                                         dec:2, currency:'USD'},
+  {ticker:'AEP',     name:"American Electric Power",                          dec:2, currency:'USD'},
+  {ticker:'AXON',    name:"Axon Enterprise",                                  dec:2, currency:'USD'},
+  {ticker:'AZN',     name:"AstraZeneca",                                      dec:2, currency:'USD'},
+  {ticker:'BIIB',    name:"Biogen",                                           dec:2, currency:'USD'},
+  {ticker:'BKR',     name:"Baker Hughes",                                     dec:2, currency:'USD'},
+  {ticker:'CCEP',    name:"Coca-Cola Europacific Partners",                   dec:2, currency:'USD'},
+  {ticker:'CDNS',    name:"Cadence Design Systems",                           dec:2, currency:'USD'},
+  {ticker:'CDW',     name:"CDW Corporation",                                  dec:2, currency:'USD'},
+  {ticker:'CEG',     name:"Constellation Energy",                             dec:2, currency:'USD'},
+  {ticker:'CHTR',    name:"Charter Communications",                           dec:2, currency:'USD'},
+  {ticker:'CMCSA',   name:"Comcast",                                          dec:2, currency:'USD'},
+  {ticker:'CPRT',    name:"Copart",                                           dec:2, currency:'USD'},
+  {ticker:'CSGP',    name:"CoStar Group",                                     dec:2, currency:'USD'},
+  {ticker:'CSX',     name:"CSX Corporation",                                  dec:2, currency:'USD'},
+  {ticker:'CTAS',    name:"Cintas",                                           dec:2, currency:'USD'},
+  {ticker:'CTSH',    name:"Cognizant",                                        dec:2, currency:'USD'},
+  {ticker:'DASH',    name:"DoorDash",                                         dec:2, currency:'USD'},
+  {ticker:'DDOG',    name:"Datadog",                                          dec:2, currency:'USD'},
+  {ticker:'DXCM',    name:"DexCom",                                           dec:2, currency:'USD'},
+  {ticker:'EA',      name:"Electronic Arts",                                  dec:2, currency:'USD'},
+  {ticker:'EXC',     name:"Exelon",                                           dec:2, currency:'USD'},
+  {ticker:'FANG',    name:"Diamondback Energy",                               dec:2, currency:'USD'},
+  {ticker:'FAST',    name:"Fastenal",                                         dec:2, currency:'USD'},
+  {ticker:'FTNT',    name:"Fortinet",                                         dec:2, currency:'USD'},
+  {ticker:'GEHC',    name:"GE HealthCare",                                    dec:2, currency:'USD'},
+  {ticker:'GFS',     name:"GlobalFoundries",                                  dec:2, currency:'USD'},
+  {ticker:'GILD',    name:"Gilead Sciences",                                  dec:2, currency:'USD'},
+  {ticker:'HON',     name:"Honeywell",                                        dec:2, currency:'USD'},
+  {ticker:'IDXX',    name:"IDEXX Laboratories",                               dec:2, currency:'USD'},
+  {ticker:'KDP',     name:"Keurig Dr Pepper",                                 dec:2, currency:'USD'},
+  {ticker:'KHC',     name:"Kraft Heinz",                                      dec:2, currency:'USD'},
+  {ticker:'LULU',    name:"Lululemon",                                        dec:2, currency:'USD'},
+  {ticker:'MAR',     name:"Marriott International",                           dec:2, currency:'USD'},
+  {ticker:'MCHP',    name:"Microchip Technology",                             dec:2, currency:'USD'},
+  {ticker:'MNST',    name:"Monster Beverage",                                 dec:2, currency:'USD'},
+  {ticker:'MSTR',    name:"MicroStrategy",                                    dec:2, currency:'USD'},
+  {ticker:'NXPI',    name:"NXP Semiconductors",                               dec:2, currency:'USD'},
+  {ticker:'ODFL',    name:"Old Dominion Freight Line",                        dec:2, currency:'USD'},
+  {ticker:'ON',      name:"ON Semiconductor",                                 dec:2, currency:'USD'},
+  {ticker:'ORLY',    name:"O'Reilly Automotive",                              dec:2, currency:'USD'},
+  {ticker:'PAYX',    name:"Paychex",                                          dec:2, currency:'USD'},
+  {ticker:'PCAR',    name:"PACCAR",                                           dec:2, currency:'USD'},
+  {ticker:'PDD',     name:"PDD Holdings",                                     dec:2, currency:'USD'},
+  {ticker:'REGN',    name:"Regeneron",                                        dec:2, currency:'USD'},
+  {ticker:'ROP',     name:"Roper Technologies",                               dec:2, currency:'USD'},
+  {ticker:'ROST',    name:"Ross Stores",                                      dec:2, currency:'USD'},
+  {ticker:'SNPS',    name:"Synopsys",                                         dec:2, currency:'USD'},
+  {ticker:'TEAM',    name:"Atlassian",                                        dec:2, currency:'USD'},
+  {ticker:'TMUS',    name:"T-Mobile US",                                      dec:2, currency:'USD'},
+  {ticker:'TTD',     name:"The Trade Desk",                                   dec:2, currency:'USD'},
+  {ticker:'TTWO',    name:"Take-Two Interactive",                             dec:2, currency:'USD'},
+  {ticker:'VRSK',    name:"Verisk Analytics",                                 dec:2, currency:'USD'},
+  {ticker:'WDAY',    name:"Workday",                                          dec:2, currency:'USD'},
+  {ticker:'XEL',     name:"Xcel Energy",                                      dec:2, currency:'USD'},
+  {ticker:'ZS',      name:"Zscaler",                                          dec:2, currency:'USD'},
 ];
 const stateUSA = stocksUSA.map(s => ({
   ...s,
@@ -1884,7 +1988,8 @@ function addAlert(ticker, direccion, ev){
   if(empty) empty.remove();
   const now = new Date().toLocaleTimeString('es-CL', {timeZone:'America/Santiago', hour12:false});
   const esVenta = direccion === 'venta';
-  const etiqueta = esVenta ? 'posible venta' : 'posible compra';
+  // Sin veredicto, igual que el panel de arriba: describe la distancia.
+  const etiqueta = esVenta ? 'sobre su promedio' : 'bajo su promedio';
   const dist = (ev && typeof ev.distanciaPromedio === 'number') ? ev.distanciaPromedio : null;
   const distTxt = dist !== null
     ? `${Math.abs(dist).toFixed(1)}% ${esVenta ? 'sobre' : 'bajo'} su promedio`
@@ -4365,6 +4470,69 @@ function renderAmbienteCartera(){
     });
   }
 
+  // ---- Regla 4 del metodo: el stop va cerca de la media 50 ----------------
+  //
+  // El campo "Vta si baja" de esta tarjeta YA ES el stop -- lo unico que
+  // faltaba era decirle donde ponerlo. Esto muestra la media 50 al lado,
+  // con un boton que la copia al campo.
+  //
+  // DECISIONES, todas a pedido de Cristian (ver conversacion agosto 2026):
+  //
+  //  * NO cambia el valor solo. La app sugiere; el que decide es el. Un
+  //    stop que se mueve sin avisar es un stop en el que no confias.
+  //  * Solo sugiere si el valor propuesto es MAYOR al stop guardado. El
+  //    stop sube o se queda, nunca baja: si la media 50 cayo por debajo de
+  //    tu stop actual, no hay nada que sugerir y el boton no aparece.
+  //  * Solo con posicion abierta. Un stop sobre algo que no tienes no
+  //    significa nada.
+  //  * Se propone 2% BAJO la media, no la media exacta. Un stop pegado al
+  //    numero exacto te saca con cualquier respiro normal del precio; el
+  //    metodo dice "cerca de la media 50", no "en la media 50".
+  //  * Si el precio ya cerro BAJO su media 50 no se sugiere nada: ahi no
+  //    hay stop que mover, hay una salida que ejecutar, y se dice con esas
+  //    palabras en vez de ofrecer un boton que no corresponde.
+  //
+  // s.sma50 viene de /quotes (se asigna en el refresco de precios); puede
+  // ser null mientras el servidor no lo haya entregado, y en ese caso esto
+  // no dibuja nada -- nunca inventa un numero.
+  const MARGEN_STOP = 0.98;
+  function sugerenciaStopHTML(s, pos, obj, currency){
+    const held = pos && pos.netoQ > 0;
+    if(!held) return '';
+    const ma = (typeof s.sma50 === 'number' && isFinite(s.sma50) && s.sma50 > 0) ? s.sma50 : null;
+    if(ma === null) return '';
+    const precio = (typeof s.price === 'number') ? s.price : null;
+
+    if(precio !== null && precio < ma){
+      return `<div class="cartera-sug-nota">Cerró bajo su media 50 (${fmtMoneda2(ma, currency)}).
+              Acá no hay stop que mover: es una salida.</div>`;
+    }
+    // Se redondea ANTES de comparar. Si se compara el valor crudo contra el
+    // stop ya guardado, la sugerencia nunca se apaga: despues de tocar el
+    // boton quedan 184.63 guardados contra 184.632 propuestos, y el boton
+    // seguiria diciendo "subir stop" para siempre por tres milesimas.
+    const propuesto = ma * MARGEN_STOP;
+    const redondeado = currency === 'CLP' ? Math.round(propuesto) : Math.round(propuesto * 100) / 100;
+    const actual = (obj.baja !== null && obj.baja !== undefined && obj.baja !== '')
+      ? Number(obj.baja) : null;
+    if(actual !== null && redondeado <= actual){
+      const yaEsta = Math.abs(redondeado - actual) < 1e-9;
+      return `<div class="cartera-sug-nota">${yaEsta
+        ? `Tu stop ya está donde manda la media 50 (${fmtMoneda2(ma, currency)}). Cuando la media suba, acá te aviso.`
+        : `Media 50 en ${fmtMoneda2(ma, currency)} — queda bajo tu stop, así que se mantiene.
+           El stop sube o se queda, nunca baja.`}</div>`;
+    }
+    const riesgo = (precio !== null && precio > 0)
+      ? ` · arriesgas ${((precio - redondeado) / precio * 100).toFixed(1)}%` : '';
+    return `<div class="cartera-sug">
+      <button type="button" class="stop-sug" data-accion="usar-sma" data-ticker="${s.ticker}"
+              data-valor="${redondeado}"
+              title="Pone ${fmtMoneda2(redondeado, currency)} en 'Vta si baja' (2% bajo la media 50 de ${fmtMoneda2(ma, currency)})">
+        <span>Media 50 · <span class="ss-val">${fmtMoneda2(redondeado, currency)}</span>${riesgo}</span>
+        <span class="ss-cta">${actual === null ? 'poner stop' : 'subir stop'}</span>
+      </button></div>`;
+  }
+
   const filaCartera = (s, pos, currency) => {
     const held = pos && pos.netoQ > 0;
     const obj = alertasPrecio[s.ticker] || {};
@@ -4415,6 +4583,7 @@ function renderAmbienteCartera(){
                    value="${(obj.baja !== null && obj.baja !== undefined) ? obj.baja : ''}" placeholder="—">
           </label>
         </div>
+        ${sugerenciaStopHTML(s, pos, obj, currency)}
       </div>`;
   };
 
@@ -4464,6 +4633,23 @@ function renderAmbienteCartera(){
   });
   viewEl.querySelectorAll('[data-accion="abrir"]').forEach(el => {
     el.addEventListener('click', () => openDetail(el.dataset.ticker));
+  });
+  // Boton "poner/subir stop": copia la media 50 al campo "Vta si baja" por
+  // el MISMO camino que si Cristian lo hubiera escrito a mano -- guarda en
+  // local y sincroniza la alerta con el backend. Asi el stop movido a mano
+  // y el movido con el boton son indistinguibles para el resto de la app.
+  viewEl.querySelectorAll('[data-accion="usar-sma"]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const ticker = btn.dataset.ticker;
+      const v = parseFloat(btn.dataset.valor);
+      if(!isFinite(v)) return;
+      if(!alertasPrecio[ticker]) alertasPrecio[ticker] = {sube: null, baja: null};
+      alertasPrecio[ticker].baja = v;
+      guardarAlertasPrecio();
+      sincronizarAlertasPrecio();
+      renderAmbienteCartera();
+    });
   });
   viewEl.querySelectorAll('.cartera-campo input').forEach(input => {
     input.addEventListener('change', () => {
