@@ -246,6 +246,16 @@
   .expl-card-btns a:hover, .expl-card-btns button:hover{border-color:var(--gold); color:var(--gold);}
   .expl-card-btns .expl-ya{color:var(--verdigris); border-color:rgba(79,156,142,0.35); cursor:default;}
   .expl-empty{font-size:12px; color:var(--ink-faint); padding:8px 0; line-height:1.6;}
+  /* Aviso de "este resultado está incompleto". Va antes de la alerta y no
+     se parece a nada más de la pantalla, a propósito: es lo único que puede
+     invalidar todo lo que viene abajo. */
+  .expl-roto{
+    border:1px solid rgba(179,74,50,0.5); background:rgba(179,74,50,0.07);
+    border-radius:12px; padding:14px 16px; margin-bottom:14px;
+    font-size:12.5px; color:var(--ink-dim); line-height:1.6;
+  }
+  .expl-roto b{color:var(--copper);}
+  .expl-roto-tec{font-size:10.5px; color:var(--ink-faint); font-family:'IBM Plex Mono',monospace; word-break:break-all;}
   .expl-fuerza-row{display:flex; justify-content:space-between; font-size:11.5px; padding:5px 0; border-bottom:1px solid var(--hairline);}
   .expl-fuerza-row:last-child{border-bottom:none;}
   .expl-fuerza-nombre{color:var(--ink-dim);}
@@ -5229,7 +5239,26 @@ function explorarResultadoHTML(analisis){
     return `<div class="expl-fuerza-row"><span class="expl-fuerza-nombre">${x.nombre}</span><span class="expl-fuerza-val ${cls}">${m12 === null ? '—' : (m12>=0?'+':'') + m12.toFixed(1) + '%'}</span></div>`;
   };
 
+  // Si el embudo se cortó porque Yahoo no entregó la capitalización, eso
+  // cambia el significado de TODO lo de abajo: "0 candidatas" deja de
+  // querer decir "no había ninguna" y pasa a querer decir "no se pudieron
+  // evaluar". Va arriba de la alerta y en rojo, porque es lo primero que
+  // hay que saber — sin esto, comparas contra TradingView y no cuadra.
+  const ff = analisis.fuentesFundamentales || null;
+  const embudoCortado = !!(ff && ff.pedidos > 0 && ff.conCapitalizacion === 0);
+  const avisoDatos = embudoCortado ? `
+    <div class="expl-roto">
+      <b>Este resultado está incompleto: faltan los fundamentales.</b>
+      Ninguna de las ${ff.pedidos} acciones que llegaron al filtro de capitalización trajo ese dato
+      desde Yahoo, así que el embudo se cortó ahí. <b>"0 candidatas" acá no significa que no
+      hubiera: significa que no se pudieron evaluar.</b> Por eso no cuadra con TradingView.
+      ${ff.crumb && ff.crumb.tiene === false
+        ? `<br><span class="expl-roto-tec">Motivo: Yahoo no entregó el token de sesión (${String(ff.crumb.motivo).replace(/</g,'&lt;')}).</span>`
+        : `<br><span class="expl-roto-tec">Motivo: ${JSON.stringify(ff.motivosFicha || {}).replace(/</g,'&lt;')} · lote: ${JSON.stringify(ff.motivosLote || []).replace(/</g,'&lt;')}</span>`}
+    </div>` : '';
+
   return `
+    ${avisoDatos}
     <div class="expl-alert">
       <div class="expl-alert-frase">${(a.frase || '').replace(/</g,'&lt;')}</div>
       <div class="expl-alert-meta">
@@ -5243,7 +5272,13 @@ function explorarResultadoHTML(analisis){
     <p class="expl-section-title">Candidatas (${finalistas.length})</p>
     <p class="expl-section-nota">Pasaron los siete filtros completos: precio, tendencia, capitalización, crecimiento, fase 2 con al menos 4 confirmaciones, y fuerza relativa subiendo con score ≥ 6. Una por industria — si dos calzaban, quedó la de mejor score.</p>
     ${finalistas.length ? finalistas.map(c => explorarTarjetaHTML(c, 'finalista')).join('')
-      : '<p class="expl-empty">Ninguna esta vez. No es un error del filtro — es exigente a propósito, y "0 candidatas" es un resultado tan válido como cualquier otro.</p>'}
+      : embudoCortado
+        // Cuando el embudo se cortó, el texto de siempre ("0 es un resultado
+        // válido") sería mentira: acá el cero no lo produjo el filtro, lo
+        // produjo la falta de datos. Decir lo contrario justo debajo del
+        // aviso rojo es peor que no decir nada.
+        ? '<p class="expl-empty" style="color:var(--copper);">No se puede saber todavía. El embudo se cortó antes de llegar acá por lo que dice el aviso de arriba — este cero no lo decidió el filtro. Vuelve a ejecutar el análisis más tarde.</p>'
+        : '<p class="expl-empty">Ninguna esta vez. No es un error del filtro — es exigente a propósito, y "0 candidatas" es un resultado tan válido como cualquier otro.</p>'}
 
     <p class="expl-section-title">Para revisar a mano (${mano.length})</p>
     <p class="expl-section-nota">Técnicamente sanas — misma fase y fuerza que las candidatas — pero les faltó un dato (capitalización o crecimiento) que Yahoo no entregó. Esconderlas sería peor que mostrarlas con la advertencia: el dato que falta se ve en TradingView en dos segundos.</p>
@@ -5263,6 +5298,8 @@ function explorarResultadoHTML(analisis){
       <div class="expl-embudo-pasos">
         Universo: <b>${embudo.universoTotal ?? '—'}</b> · Revisadas: <b>${embudo.revisadas ?? '—'}</b> (${embudo.cobertura ?? '—'}%) · Ya en caché al empezar: <b>${embudo.veniaEnCache ?? '—'}</b><br>
         ${(embudo.pasos || []).map(p => `${p.filtro}: <b>${p.quedan}</b>`).join(' → ')}
+        ${ff ? `<br><span style="color:var(--ink-faint);">Fundamentales: <b>${ff.conCapitalizacion}</b> de ${ff.pedidos} con capitalización
+          (${ff.porLote} por lote) · <b>${ff.conCrecimiento}</b> con crecimiento.</span>` : ''}
       </div>
       ${notas.length ? `<ul style="font-size:11px; color:var(--ink-faint); line-height:1.6; margin:8px 0 0; padding-left:16px;">${notas.map(n=>`<li>${n.replace(/</g,'&lt;')}</li>`).join('')}</ul>` : ''}
     </details>
