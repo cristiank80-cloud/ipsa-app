@@ -167,6 +167,10 @@
   .esp-row.esp-caducada{border-color:var(--copper); background:rgba(179,74,50,0.04);}
   .esp-head{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
   .esp-tk{font-weight:600; font-size:13.5px; cursor:pointer;}
+  .esp-watch{
+    font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px; letter-spacing:.03em;
+    background:rgba(144,111,55,0.14); color:var(--gold); text-transform:uppercase;
+  }
   .esp-estado{font-size:9.5px; font-weight:600; padding:2px 7px; border-radius:20px; letter-spacing:.02em; margin-left:auto;}
   .esp-esperando{background:var(--bg-field); color:var(--ink-faint);}
   .esp-ok{background:var(--verdigris-soft); color:var(--verdigris);}
@@ -272,14 +276,34 @@
   .asig-bar-objetivo{position:absolute; top:-2px; width:2px; height:12px; background:var(--ink);}
   .asig-tesis{width:100%; margin-top:6px; font-size:11.5px; padding:6px 8px; border-radius:6px; border:1px solid var(--hairline); background:var(--bg-field); color:var(--ink); resize:vertical; min-height:36px; font-family:inherit;}
   .asig-fuera{color:var(--copper);}
-  .env-selector{display:flex; gap:4px; background:var(--bg-field); border-radius:9px; padding:3px;}
+  /* Cinco ambientes. `flex:1 1 auto` + `min-width:0` deja que las pestañas
+     se repartan el ancho disponible en vez de desbordarse, y el
+     overflow-x:auto es la red de seguridad para pantallas absurdamente
+     angostas -- pero con las etiquetas cortas de abajo no debería activarse
+     nunca en un celular normal. */
+  .env-selector{
+    display:flex; gap:4px; background:var(--bg-field); border-radius:9px; padding:3px;
+    overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none;
+  }
+  .env-selector::-webkit-scrollbar{display:none;}
   .env-btn{
     background:none; border:none; color:var(--ink-dim); font-size:12.5px; font-weight:600;
     padding:7px 12px; border-radius:6px; cursor:pointer; letter-spacing:.01em; white-space:nowrap;
+    flex:0 0 auto;
   }
   .env-btn:hover{color:var(--ink);}
   .env-btn.active{background:var(--bg-panel); color:var(--gold); box-shadow:0 1px 2px rgba(0,0,0,0.06);}
-  @media(max-width:600px){ .env-btn{padding:6px 9px; font-size:11.5px;} }
+  /* Etiqueta larga por defecto; la corta solo aparece en pantalla angosta. */
+  .env-corto{display:none;}
+  @media(max-width:640px){
+    .env-largo{display:none;}
+    .env-corto{display:inline;}
+    .env-btn{padding:7px 8px; font-size:11.5px; flex:1 1 auto; text-align:center;}
+  }
+  @media(max-width:400px){
+    .env-btn{padding:7px 5px; font-size:10.5px; letter-spacing:0;}
+    .env-selector{gap:2px; padding:2px;}
+  }
   @media(max-width:600px){
     .topbar{padding:14px 16px;}
     .index-value{font-size:24px;}
@@ -441,6 +465,15 @@
   }
   .analysis-cols{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
   @media(max-width:560px){ .analysis-cols{grid-template-columns:1fr;} }
+  /* Chile en modo salida: con una sola columna visible, la rejilla de dos
+     dejaría media pantalla vacía. */
+  .analysis-cols.solo-salida{grid-template-columns:1fr;}
+  .analysis-solo-salida{
+    font-size:11.5px; color:var(--ink-dim); line-height:1.55; margin:12px 0 0;
+    padding:9px 11px; border-left:2px solid var(--copper); background:rgba(179,74,50,0.05);
+    border-radius:0 7px 7px 0;
+  }
+  .analysis-solo-salida b{color:var(--ink);}
   .analysis-col-title{font-size:11px; text-transform:uppercase; letter-spacing:.06em; margin:0 0 8px; font-weight:600;}
   .analysis-col-title.down{color:var(--copper);}
   .analysis-col-title.up{color:var(--verdigris);}
@@ -632,6 +665,61 @@
   .tx-table th{text-align:left; font-weight:500; color:var(--ink-faint); text-transform:uppercase; font-size:9.5px; letter-spacing:.05em; padding-bottom:6px;}
   .tx-table td{padding:5px 0; border-top:1px solid var(--hairline); font-family:'IBM Plex Mono',monospace; color:var(--ink-dim);}
   .tx-table td:first-child{color:var(--ink);}
+
+  /* ---- Línea de estado (detalle de cada acción) ---- */
+  /* El color lo pone la URGENCIA, no el estado: lo que tiene que saltar a la
+     vista es "hay algo que hacer", no "esta la tienes". Un estado bonito con
+     una acción pendiente urgente tiene que verse urgente. */
+  .lest{border-radius:10px; padding:11px 13px; margin-bottom:14px; border:1px solid var(--hairline); background:var(--bg-field);}
+  .lest-urg-alta{border-color:rgba(179,74,50,0.45); background:rgba(179,74,50,0.06);}
+  .lest-urg-media{border-color:rgba(144,111,55,0.42); background:rgba(144,111,55,0.06);}
+  .lest-top{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px;}
+  .lest-pill{
+    font-size:9.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+    padding:3px 8px; border-radius:20px; background:var(--bg-panel); color:var(--ink-dim);
+    border:1px solid var(--hairline); white-space:nowrap;
+  }
+  .lest-tienes .lest-pill{color:var(--verdigris); border-color:rgba(44,128,114,0.4);}
+  .lest-esperas .lest-pill{color:var(--gold); border-color:rgba(144,111,55,0.4);}
+  .lest-candidata .lest-pill{color:var(--gold); border-color:rgba(144,111,55,0.4);}
+  .lest-vendida .lest-pill, .lest-mirando .lest-pill{color:var(--ink-faint);}
+  .lest-detalle{font-size:11.5px; color:var(--ink-dim);}
+  .lest-pendiente{font-size:12.5px; color:var(--ink); line-height:1.55;}
+  .lest-pendiente b{color:var(--ink-faint); font-weight:600; font-size:10px; text-transform:uppercase; letter-spacing:.05em; display:block; margin-bottom:2px;}
+  .lest-urg-alta .lest-pendiente{color:var(--copper); font-weight:600;}
+
+  /* ---- Glosario ("¿Qué significa cada cosa?") ---- */
+  .glos-nav{
+    display:flex; gap:5px; flex-wrap:wrap; margin-bottom:14px; padding-bottom:12px;
+    border-bottom:1px solid var(--hairline);
+  }
+  .glos-nav-btn{
+    background:var(--bg-field); border:1px solid var(--hairline); color:var(--ink-dim);
+    padding:6px 11px; border-radius:16px; font-size:11.5px; cursor:pointer; font-weight:600;
+  }
+  .glos-nav-btn:hover{border-color:var(--gold); color:var(--ink);}
+  .glos-nav-btn.active{background:rgba(144,111,55,0.14); border-color:var(--gold); color:var(--gold);}
+  .glos-sec{display:none;}
+  .glos-sec.active{display:block;}
+  .glos-sec-title{
+    font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--gold);
+    margin:0 0 12px; font-weight:600;
+  }
+  .glos-item{margin-bottom:18px;}
+  .glos-item > b{color:var(--ink); font-size:13.5px; display:block; margin-bottom:5px;}
+  .glos-item p{font-size:12.5px; color:var(--ink-dim); line-height:1.6; margin:0 0 7px;}
+  .glos-item p:last-child{margin-bottom:0;}
+  .glos-item b{color:var(--ink);}
+  .glos-lista{margin:0 0 7px; padding-left:18px; font-size:12.5px; color:var(--ink-dim); line-height:1.65;}
+  .glos-lista li{margin-bottom:4px;}
+  .glos-nota{
+    font-size:11.5px !important; color:var(--ink-faint) !important;
+    border-left:2px solid var(--hairline); padding-left:9px; margin-top:8px !important;
+  }
+  .glos-cierre{
+    font-size:11.5px; color:var(--ink-faint); line-height:1.6;
+    border-top:1px dashed var(--hairline); padding-top:12px; margin:6px 0 0;
+  }
 </style>
 </head>
 <body>
@@ -648,12 +736,18 @@
     <!-- Selector de ambientes (sección 2.1 de la spec v3). Un solo archivo,
          tres vistas -- el ambiente activo se persiste y la app abre donde
          el usuario la dejó. -->
+    <!-- Cada pestaña lleva DOS etiquetas: la larga y una corta. En pantalla
+         angosta se muestra la corta (ver .env-largo/.env-corto en el CSS).
+         Con cinco ambientes las etiquetas completas ya no caben en un
+         celular -- "Mi Cartera" quedaba cortada por el borde. Acortar el
+         texto es mejor que dejar la fila con scroll horizontal: una pestaña
+         que hay que descubrir arrastrando es una pestaña que no existe. -->
     <div class="env-selector" id="envSelector">
-      <button type="button" class="env-btn" data-amb="explorar">Explorar</button>
-      <button type="button" class="env-btn" data-amb="chile">Chile · CLP</button>
-      <button type="button" class="env-btn" data-amb="usa">EE.UU. · USD</button>
-      <button type="button" class="env-btn" data-amb="seguir">A seguir</button>
-      <button type="button" class="env-btn" data-amb="cartera">Mi Cartera</button>
+      <button type="button" class="env-btn" data-amb="explorar"><span class="env-largo">Explorar</span><span class="env-corto">Explorar</span></button>
+      <button type="button" class="env-btn" data-amb="chile"><span class="env-largo">Chile · CLP</span><span class="env-corto">Chile</span></button>
+      <button type="button" class="env-btn" data-amb="usa"><span class="env-largo">EE.UU. · USD</span><span class="env-corto">EE.UU.</span></button>
+      <button type="button" class="env-btn" data-amb="seguir"><span class="env-largo">A seguir</span><span class="env-corto">A seguir</span></button>
+      <button type="button" class="env-btn" data-amb="cartera"><span class="env-largo">Mi Cartera</span><span class="env-corto">Cartera</span></button>
     </div>
 
     <div class="index-block" id="idxBlock">
@@ -705,6 +799,13 @@
            interruptor que oculta cifras monetarias en los tres ambientes,
            no solo en el panel de movimientos. -->
       <button id="btnOcultarCifras" class="live-pill" style="cursor:pointer; background:none;" title="Ocultar/mostrar cifras en todos los ambientes">👁️</button>
+      <!-- Glosario. Antes la ayuda vivía SOLO dentro del detalle de una
+           acción, en la fila de indicadores del gráfico, y cubría nada más
+           los seis trazados del gráfico. Pero la app usa muchas más cosas
+           con nombre propio (fase de Weinstein, score, fuerza relativa,
+           distancia al promedio) y no había dónde consultarlas sin abrir
+           una acción primero. Ahora se llega desde cualquier pantalla. -->
+      <button id="btnGlosario" class="live-pill" style="cursor:pointer; background:none;" title="¿Qué significa cada cosa?">📖 Glosario</button>
       <span class="mono clock" id="clock">--:--:--</span>
     </div>
   </div>
@@ -738,7 +839,13 @@
       Esto NO es una señal de compra ni de venta, y no dice si una acción está barata o cara — solo mide <b>cuánto se separó de su propio promedio</b> (distancia al promedio de 90 días, RSI, tendencia SMA20/SMA50 y liquidez). Ojo con la trampa de este dato: una acción que va cayendo aparece "lejos bajo su promedio" durante toda la caída, y no deja de estarlo nunca. Para saber si vale la pena, mira su fase y su fuerza en el detalle. El precio viene de Yahoo Finance con rezago y yo no soy asesor financiero. Las marcadas con ⚠ están además en una tendencia bajista sostenida, y se muestran atenuadas a propósito.
     </p>
     <div class="analysis-cols" id="analysisCols">
-      <div class="analysis-col">
+      <!-- La columna "bajo su promedio" es, en la práctica, la columna de
+           entrada: son las que se ven "baratas" respecto de sí mismas. En
+           Chile se oculta a propósito (ver renderAnalysis) -- Cristian está
+           cerrando su exposición a Chile, y mostrarle ahí una lista de
+           candidatas a comprar es invitarlo a hacer justo lo contrario de
+           lo que decidió. La columna sigue existiendo para EE.UU. -->
+      <div class="analysis-col" id="analysisColDown">
         <p class="analysis-col-title down">Más lejos <b>bajo</b> su promedio</p>
         <div id="analysisDown" class="analysis-list"><p class="analysis-empty">Cargando datos reales…</p></div>
       </div>
@@ -747,6 +854,12 @@
         <div id="analysisUp" class="analysis-list"><p class="analysis-empty">Cargando datos reales…</p></div>
       </div>
     </div>
+    <p class="analysis-solo-salida" id="analysisSoloSalida" style="display:none;">
+      <b>Chile está en modo salida.</b> La columna de las que están lejos <b>bajo</b> su promedio
+      (las que se ven "baratas") no se muestra acá a propósito: decidiste cerrar tu exposición a
+      Chile, no ampliarla. Queda solo el lado de arriba, que es el que sirve para decidir cuándo
+      vender. En EE.UU. se ven las dos.
+    </p>
   </div>
 
   <div class="movs-panel" id="movsPanelWrap">
@@ -897,56 +1010,252 @@
     <div class="detail" id="detailPanel"></div>
   </div>
 
+  <!-- GLOSARIO. Se abre desde el botón "📖 Glosario" de la barra superior
+       (desde cualquier pantalla) y también desde el "❓ Ayuda" de la fila de
+       indicadores del gráfico, que salta directo a la sección del gráfico.
+       Los números que aparecen acá (30 semanas, 150/50 días, 8 señales, 5
+       confirmaciones) son los REALES del backend -- están tomados de
+       indicador_fuerza_fase.py y explorar.py, no inventados para el texto.
+       Si algún día se cambian allá, hay que cambiarlos acá. -->
   <div class="overlay" id="helpOverlay" style="z-index:60;">
-    <div class="detail" style="max-width:480px;">
+    <div class="detail" style="max-width:560px;">
       <div class="detail-top">
         <div>
-          <div class="detail-name">¿Qué significa cada indicador?</div>
-          <div class="detail-sub">Explicación simple, sin tecnicismos</div>
+          <div class="detail-name">¿Qué significa cada cosa?</div>
+          <div class="detail-sub">En castellano, sin tecnicismos</div>
         </div>
         <button class="close-btn" id="btnCerrarAyuda">✕</button>
       </div>
-      <div style="display:flex; flex-direction:column; gap:14px; font-size:13px; color:var(--ink-dim); line-height:1.5;">
-        <div>
-          <b style="color:var(--ink);">SMA — Media móvil simple</b><br>
-          El precio promedio de los últimos días, sin darle más peso a ninguno.
-          Sirve para ver la tendencia general "suavizada", sin el ruido del día a día.
+
+      <div class="glos-nav" id="glosNav">
+        <button type="button" class="glos-nav-btn" data-glos="fase">Fase y fuerza</button>
+        <button type="button" class="glos-nav-btn" data-glos="promedio">Promedios y RSI</button>
+        <button type="button" class="glos-nav-btn" data-glos="embudo">El embudo</button>
+        <button type="button" class="glos-nav-btn" data-glos="cartera">Tu cartera</button>
+        <button type="button" class="glos-nav-btn" data-glos="grafico">El gráfico</button>
+      </div>
+
+      <div class="glos-body">
+
+        <div class="glos-sec" id="glos-fase">
+          <p class="glos-sec-title">Fase y fuerza — el "cuándo"</p>
+
+          <div class="glos-item">
+            <b>Fase de Weinstein (1 a 4)</b>
+            <p>Se calcula sobre velas <b>semanales</b>, comparando el precio con su media de
+            30 semanas y con la inclinación de esa media. Las cuatro fases son un ciclo:</p>
+            <ul class="glos-lista">
+              <li><b>Fase 1 — Base.</b> Terminó de caer y está plana. Ni sube ni baja. No es
+              momento de entrar: puede quedarse ahí meses.</li>
+              <li><b>Fase 2 — Avance.</b> Rompió hacia arriba y la media va subiendo. Es la
+              única fase en la que este método compra.</li>
+              <li><b>Fase 3 — Techo.</b> Dejó de hacer máximos nuevos, la media se aplanó.
+              Es zona de tomar utilidades, no de agregar.</li>
+              <li><b>Fase 4 — Caída.</b> Bajo su media, con la media cayendo. Acá no se compra
+              "porque está barata": puede seguir bajando mucho más.</li>
+            </ul>
+          </div>
+
+          <div class="glos-item">
+            <b>Confirmaciones (X de 5)</b>
+            <p>Estar en fase 2 no basta. La app cuenta cinco cosas que deberían pasar al mismo
+            tiempo, y el método exige al menos <b>4 de 5</b>:</p>
+            <ul class="glos-lista">
+              <li>El precio está sobre su media de 30 semanas.</li>
+              <li>Esa media va subiendo (no plana).</li>
+              <li>Rompió su máximo de las últimas 30 semanas hace poco (8 semanas o menos).</li>
+              <li>Le está ganando al S&amp;P 500 (fuerza relativa subiendo).</li>
+              <li>El volumen del último tramo es más alto que su promedio (30 % más).</li>
+            </ul>
+            <p>Con 3 dice "no entra todavía". Con menos, "esperar".</p>
+          </div>
+
+          <div class="glos-item">
+            <b>Score de fuerza (0 a 8)</b>
+            <p>Distinto de lo anterior: este se calcula sobre velas <b>diarias</b> y suma ocho
+            señales de que la acción va bien por dentro — precio sobre su media de 150 días,
+            media de 50 sobre la de 150, las dos medias subiendo, máximos y mínimos de 10 días
+            más altos que hace 10 días, RSI más alto que hace 20 días, y precio sobre su media
+            de 50. El embudo pide <b>6 o más</b>.</p>
+            <p class="glos-nota">Fase = ¿en qué parte del ciclo está? · Score = ¿cómo se ve por
+            dentro hoy? Los dos tienen que estar bien.</p>
+          </div>
+
+          <div class="glos-item">
+            <b>Fuerza relativa</b>
+            <p>No es lo mismo que el RSI, aunque en inglés compartan iniciales. Acá significa:
+            <b>comparada con el S&amp;P 500, ¿va ganando o perdiendo?</b> Una acción que sube
+            10 % en un año donde el mercado subió 25 % no es fuerte: es lenta. El método pide
+            que esa línea vaya <b>subiendo</b>, no solo que el precio suba.</p>
+          </div>
         </div>
-        <div>
-          <b style="color:var(--ink);">EMA — Media móvil exponencial</b><br>
-          Parecida a la SMA, pero le da más importancia a los precios más
-          recientes. Reacciona más rápido a cambios nuevos que la SMA.
+
+        <div class="glos-sec" id="glos-promedio">
+          <p class="glos-sec-title">Promedios y RSI — el ruido de todos los días</p>
+
+          <div class="glos-item">
+            <b>SMA — Media móvil simple</b>
+            <p>El precio promedio de los últimos N días, sin darle más peso a ninguno. Sirve
+            para ver la tendencia "suavizada", sin el ruido del día a día. La app usa varias:
+            <b>SMA 20</b> (muy corto plazo), <b>SMA 50</b> (la que se usa como stop en tu
+            cartera) y <b>SMA 200</b> (la tendencia de fondo).</p>
+          </div>
+
+          <div class="glos-item">
+            <b>SMA 200 — la línea de agua</b>
+            <p>Es la media de los últimos 200 días de bolsa (unos 10 meses). La lectura simple:
+            <b>por encima</b>, la tendencia larga es alcista; <b>por debajo</b>, es bajista.
+            Casi todo el daño grande de una acción ocurre bajo su SMA 200. Por eso el embudo
+            pide que la SMA 50 esté <i>sobre</i> la SMA 200: es la forma corta de decir "la
+            tendencia de fondo ya se dio vuelta hacia arriba".</p>
+            <p class="glos-nota">Si una acción tiene menos de 200 días de historial, este dato
+            aparece como "no disponible" — nunca aproximado.</p>
+          </div>
+
+          <div class="glos-item">
+            <b>RSI (14 días)</b>
+            <p>Un número de 0 a 100 que compara cuánto subió contra cuánto bajó en las últimas
+            14 sesiones. Sobre <b>70</b> se lee como "subió mucho y rápido"; bajo <b>30</b>,
+            "cayó mucho y rápido". No es una garantía de nada: una acción fuerte puede pasar
+            semanas sobre 70, y una en caída libre puede pasar meses bajo 30.</p>
+          </div>
+
+          <div class="glos-item">
+            <b>Distancia a su promedio (z-score)</b>
+            <p>Mide cuánto se separó el precio de su propio promedio de 90 días, medido en
+            "desviaciones" — o sea, comparado con lo que es normal <i>para esa acción</i>.
+            Un z de −2σ significa "está más abajo de lo que suele estar".</p>
+            <p class="glos-nota"><b>Ojo con la trampa de este dato:</b> una acción que va
+            cayendo aparece "lejos bajo su promedio" durante <i>toda</i> la caída, y no deja de
+            estarlo nunca. Por eso este panel describe y no opina: quién decide <b>qué</b> mirar
+            es el embudo, y quién decide <b>cuándo</b> es la fase.</p>
+          </div>
+
+          <div class="glos-item">
+            <b>Volumen</b>
+            <p>Cuántos títulos se transaron. Un movimiento de precio con volumen alto suele ser
+            más confiable que el mismo movimiento con poco volumen. El embudo pide al menos
+            <b>2 millones de acciones al día</b> (promedio de 90 días) para que puedas entrar y
+            salir sin mover el precio tú mismo.</p>
+          </div>
         </div>
-        <div>
-          <b style="color:var(--ink);">BBands — Bandas de Bollinger</b><br>
-          Una franja arriba y abajo del precio promedio que se hace más ancha
-          cuando la acción se mueve mucho, y más angosta cuando está tranquila.
-          Si el precio toca el borde de la franja, se ha movido bastante más
-          de lo habitual para esa acción.
+
+        <div class="glos-sec" id="glos-embudo">
+          <p class="glos-sec-title">El embudo — el "qué"</p>
+
+          <div class="glos-item">
+            <b>Los siete filtros</b>
+            <p>Explorar recorre el S&amp;P 500 + el Nasdaq-100 + tu grilla y va descartando en
+            este orden:</p>
+            <ul class="glos-lista">
+              <li><b>Precio ≥ 10 USD</b> — descarta chatarra.</li>
+              <li><b>Volumen 90 d ≥ 2 M</b> — que se pueda comprar y vender de verdad.</li>
+              <li><b>Precio &gt; SMA 50</b> — el precio va adelante de su propia media.</li>
+              <li><b>SMA 50 &gt; SMA 200</b> — la tendencia de fondo es alcista.</li>
+              <li><b>Capitalización ≥ 2 mil millones USD</b> — empresas de tamaño real.</li>
+              <li><b>Crecimiento de utilidades ≥ 25 %</b> — gana más que hace un año.</li>
+              <li><b>Crecimiento de ventas ≥ 25 %</b> — y además vende más.</li>
+            </ul>
+            <p>Lo que sobrevive pasa por fase de Weinstein y fuerza, y al final se deja
+            <b>una por industria</b> para no terminar con cinco versiones de la misma apuesta.</p>
+          </div>
+
+          <div class="glos-item">
+            <b>Capitalización bursátil</b>
+            <p>Lo que vale la empresa entera en bolsa: precio de la acción × número de acciones.
+            Se mide en miles de millones de dólares ("B", por <i>billion</i>). Sirve para no
+            terminar comprando una empresa tan chica que cualquier noticia la mueve 30 %.</p>
+          </div>
+
+          <div class="glos-item">
+            <b>"Para revisar a mano"</b>
+            <p>Acciones que pasaron todo lo que <i>se pudo medir</i> y están técnicamente sanas,
+            pero a las que Yahoo no le entregó algún dato (casi siempre la capitalización).
+            No desaparecen: salen aparte, diciendo qué dato faltó. Ese número se ve en
+            TradingView en dos segundos.</p>
+          </div>
+
+          <div class="glos-item">
+            <b>Cobertura</b>
+            <p>De cuántas acciones del universo alcanzó a decidir esa corrida. Yahoo limita las
+            peticiones cuando le llegan cientos seguidas, así que cada corrida tiene un
+            presupuesto de tiempo y va acumulando en caché. Una cobertura de 60 % con 4 nombres
+            buenos <b>sirve igual</b>: esto es una primera alerta, no un informe que tenga que
+            estar completo para valer.</p>
+          </div>
         </div>
-        <div>
-          <b style="color:var(--ink);">MACD</b><br>
-          Compara dos promedios (uno más rápido y uno más lento) para mostrar
-          si el impulso de la acción está acelerando hacia arriba o hacia
-          abajo. No es un precio, es una señal de "fuerza" del movimiento.
+
+        <div class="glos-sec" id="glos-cartera">
+          <p class="glos-sec-title">Tu cartera — las cinco reglas</p>
+
+          <div class="glos-item">
+            <b>Peso objetivo y tope por posición</b>
+            <p>Cuánto <i>debería</i> pesar cada posición dentro del total, y el máximo que
+            aceptas que pese una sola (por defecto 15 %). Se mide siempre sobre el
+            <b>total</b>, nunca por plataforma: una posición que pesa 24 % dentro de Racional
+            pero 15 % del total es una posición de 15 %. El riesgo es tuyo, no de la corredora.</p>
+          </div>
+
+          <div class="glos-item">
+            <b>Stop en la media 50</b>
+            <p>El precio al que sales si la cosa se da vuelta. La regla que elegiste: ponerlo en
+            la <b>SMA 50</b>. La app te sugiere subirlo cuando la media sube — pero
+            <b>nunca lo baja sola</b>, y nunca lo cambia sin que toques el botón. Un stop que
+            baja no es un stop.</p>
+          </div>
+
+          <div class="glos-item">
+            <b>Esperando entrada</b>
+            <p>La sala de espera entre "me interesa" y "la compré". Una acción entra con dos
+            cosas obligatorias: <b>qué esperas que pase</b> y <b>hasta cuándo</b> (90 días).
+            Cumplido el plazo, la app te pregunta si la renuevas o la sacas — sin eso, la lista
+            se llena de nombres que se te arrancaron hace meses.</p>
+            <p class="glos-nota">Una acción que ya tienes comprada no puede tener condición de
+            entrada: en esa, la alerta de precio es tu <b>stop</b>, y ponerle un precio de
+            entrada te lo borraría sin avisar.</p>
+          </div>
+
+          <div class="glos-item">
+            <b>Aporte y caja</b>
+            <p>El recordatorio principal de la app no es "una acción cayó": es <b>"es día 25 y
+            todavía no registras tu aporte de este mes"</b>. La caja se ajusta sola con cada
+            compra y venta, y se separa por plataforma porque la plata no se teletransporta
+            entre corredoras.</p>
+          </div>
         </div>
-        <div>
-          <b style="color:var(--ink);">RSI — Fuerza relativa</b><br>
-          Un número de 0 a 100 que mide qué tan "sobrecomprada" o
-          "sobrevendida" está la acción. Sobre 70 suele leerse como que ha
-          subido mucho y podría corregir; bajo 30, que ha caído mucho y
-          podría rebotar. No es una garantía, solo una referencia.
+
+        <div class="glos-sec" id="glos-grafico">
+          <p class="glos-sec-title">El gráfico — los trazados que puedes encender</p>
+
+          <div class="glos-item">
+            <b>EMA — Media móvil exponencial</b>
+            <p>Parecida a la SMA, pero le da más importancia a los precios recientes. Reacciona
+            más rápido a cambios nuevos.</p>
+          </div>
+          <div class="glos-item">
+            <b>BBands — Bandas de Bollinger</b>
+            <p>Una franja arriba y abajo del promedio que se ensancha cuando la acción se mueve
+            mucho y se angosta cuando está tranquila. Si el precio toca un borde, se movió
+            bastante más de lo habitual <i>para esa acción</i>.</p>
+          </div>
+          <div class="glos-item">
+            <b>MACD</b>
+            <p>Compara un promedio rápido con uno lento para mostrar si el impulso está
+            acelerando hacia arriba o hacia abajo. No es un precio: es la fuerza del movimiento.</p>
+          </div>
+          <div class="glos-item">
+            <b>Fondo "Fuerza" y fondo "Weinstein"</b>
+            <p>Pintan el fondo del gráfico con el estado de cada día o semana, para que veas
+            <i>cuándo</i> cambió de fase en vez de solo saber en cuál está hoy.
+            Weinstein: gris = fase 1, verde = fase 2, naranjo = fase 3, rojo = fase 4.</p>
+          </div>
         </div>
-        <div>
-          <b style="color:var(--ink);">Volume — Volumen</b><br>
-          Cuántos títulos se transaron. Un movimiento de precio con volumen
-          alto suele ser más confiable que el mismo movimiento con poco
-          volumen (pocas personas comprando o vendiendo).
-        </div>
-        <div style="font-size:11.5px; color:var(--ink-faint); border-top:1px dashed var(--hairline); padding-top:10px;">
-          Estos indicadores son referencias históricas, no predicciones. Ninguno
-          te dice qué hacer — la decisión de comprar o vender siempre es tuya.
-        </div>
+
+        <p class="glos-cierre">
+          Todos estos son datos históricos, no predicciones, y vienen de Yahoo Finance con
+          rezago. Ninguno te dice qué hacer — la decisión de comprar o vender siempre es tuya.
+          Esta app no es asesoría financiera.
+        </p>
       </div>
     </div>
   </div>
@@ -1412,8 +1721,100 @@ const stateUSA = stocksUSA.map(s => ({
   dayHigh: null, dayLow: null, volume: null, montoTransado: null, ret3m: null, ret1y: null,
   rand: seedRand(s.ticker),
 }));
-function todosLosStocks(){ return state.concat(stateUSA); }
+// ---- WATCHLIST PERSONAL (candidatas de Explorar fuera de la grilla) ----
+// El agujero que tapa: Explorar barre 536 acciones pero la grilla que recibe
+// precio son 172. Cuando encontraba una candidata fuera de esas 172, no había
+// forma de vigilarla: ni precio, ni "esperando entrada", ni push. Era un
+// nombre en una lista y nada más.
+//
+// Cómo funciona: el ticker se guarda acá, se le avisa al servidor (POST
+// /watchlist) y desde el siguiente ciclo viene con precio dentro de
+// /quotes-usa, igual que cualquier acción de la grilla. El push de precio
+// objetivo funciona solo, porque el backend evalúa los objetivos contra esa
+// misma tanda de precios -- no hubo que duplicar nada.
+//
+// TERCERA LISTA, NO UNA GRILLA MÁS GRANDE. `stateWatch` va aparte de
+// `stateUSA` a propósito: estas acciones NO se dibujan como tarjetas. Si se
+// mezclaran, cada candidata que agregas te ensuciaría la grilla de EE.UU.
+// con una tarjeta más, que es justo lo que la separación grilla/universo
+// existía para evitar. Se pueden buscar, abrir en el detalle y mandar a
+// "esperando entrada" -- nada más.
+const WATCHLIST_MAX = 15;   // igual que WATCHLIST_MAX en server.py
+
+function cargarWatchlist(){
+  try {
+    const raw = localStorage.getItem('ipsa_watchlist');
+    const v = raw ? JSON.parse(raw) : [];
+    return Array.isArray(v) ? v.filter(x => x && typeof x.ticker === 'string') : [];
+  } catch(e){ return []; }
+}
+function guardarWatchlist(){
+  try { localStorage.setItem('ipsa_watchlist', JSON.stringify(watchlist)); } catch(e){}
+}
+let watchlist = cargarWatchlist();
+
+function nuevoStockWatch(ticker, nombre){
+  return {
+    ticker, name: nombre || ticker, currency: 'USD', dec: 2, base: 0,
+    esWatchlist: true,
+    avg: null, price: null, history: [], inAlert: false,
+    dayHigh: null, dayLow: null, volume: null, montoTransado: null,
+    ret3m: null, ret1y: null,
+    rand: seedRand(ticker),
+  };
+}
+let stateWatch = watchlist.map(w => nuevoStockWatch(w.ticker, w.name));
+
+// Le dice al servidor a quién más pedirle precio. Mismo patrón que
+// sincronizarAlertasPrecio(): el teléfono es la fuente de verdad y el
+// servidor solo guarda una copia. Falla en silencio a propósito -- si no hay
+// red, la watchlist local sigue existiendo y se reintenta al abrir la app.
+async function sincronizarWatchlist(){
+  try {
+    await fetch(BACKEND_URL + '/watchlist', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({tickers: watchlist.map(w => w.ticker)}),
+    });
+  } catch(e){ console.warn('No se pudo sincronizar la watchlist:', e); }
+}
+
+function estaEnGrilla(ticker){
+  return state.some(s => s.ticker === ticker) || stateUSA.some(s => s.ticker === ticker);
+}
+function estaEnWatchlist(ticker){
+  return watchlist.some(w => w.ticker === ticker);
+}
+
+// Devuelve {ok:true} o {ok:false, motivo:'...'}. Nunca lanza: quien la llama
+// necesita poder mostrarle el motivo al usuario.
+function agregarAWatchlist(ticker, nombre){
+  if(estaEnGrilla(ticker)) return {ok:false, motivo:'ya está en la grilla — ya recibe precio'};
+  if(estaEnWatchlist(ticker)) return {ok:false, motivo:'ya está en tu watchlist'};
+  if(watchlist.length >= WATCHLIST_MAX){
+    return {ok:false, motivo:`tu watchlist ya tiene ${WATCHLIST_MAX} acciones, que es el tope. `
+      + 'Saca alguna que ya no estés esperando y vuelve a intentar.'};
+  }
+  watchlist.push({ticker, name: nombre || ticker});
+  guardarWatchlist();
+  stateWatch.push(nuevoStockWatch(ticker, nombre));
+  sincronizarWatchlist();
+  fetchRealQuotesUsa();   // para que aparezca con precio de inmediato
+  return {ok:true};
+}
+
+function sacarDeWatchlist(ticker){
+  watchlist = watchlist.filter(w => w.ticker !== ticker);
+  stateWatch = stateWatch.filter(s => s.ticker !== ticker);
+  guardarWatchlist();
+  sincronizarWatchlist();
+}
+
+function todosLosStocks(){ return state.concat(stateUSA, stateWatch); }
 function stocksDelAmbiente(amb){
+  // OJO: stateWatch NO entra acá para 'usa'. Esta función alimenta la grilla
+  // de tarjetas, y las de watchlist no tienen tarjeta (ver el comentario de
+  // arriba). Sí entran en 'seguir', que es una lista y no una grilla.
   if(amb === 'usa') return stateUSA;
   if(amb === 'seguir') return todosLosStocks(); // el buscador de "A seguir" cubre ambos mercados (sección 6.3 de la spec v3)
   return state;
@@ -1775,7 +2176,11 @@ function renderGridOrder(){
   const resto = visibles.filter(s => !favoritos.has(s.ticker));
   const ordenFinal = favoritas.concat(resto);
 
-  ordenFinal.forEach(s => grid.appendChild(cardEls[s.ticker])); // reordena moviendo los nodos existentes
+  // Las de la watchlist NO tienen tarjeta (ver el bloque WATCHLIST más
+  // arriba): existen para "esperando entrada" y para el detalle, no para la
+  // grilla. Por eso hay que saltarlas acá -- sin este guardia, appendChild
+  // recibía `undefined` y reventaba el render de la grilla completa.
+  ordenFinal.forEach(s => { if(cardEls[s.ticker]) grid.appendChild(cardEls[s.ticker]); }); // reordena moviendo los nodos existentes
 
   // Oculta las del otro ambiente Y las que no calzan con la búsqueda.
   //
@@ -1786,7 +2191,9 @@ function renderGridOrder(){
   // gringos aparecían todos mezclados en la vista de Chile.
   const visiblesSet = new Set(visibles);
   todosLosStocks().forEach(s => {
-    cardEls[s.ticker].style.display = visiblesSet.has(s) ? '' : 'none';
+    const card = cardEls[s.ticker];
+    if(!card) return;   // acción de watchlist: no tiene tarjeta que ocultar
+    card.style.display = visiblesSet.has(s) ? '' : 'none';
   });
 
   const hint = document.getElementById('searchHint');
@@ -2254,8 +2661,13 @@ function renderDetail(ticker){
           <button class="close-btn" id="closeBtn">✕</button>
         </div>
       </div>
+      ${lineaEstadoHTML(s.ticker)}
       <p style="padding:36px 0; text-align:center; color:var(--ink-faint);">Cargando datos reales de Yahoo Finance…</p>
     `;
+    // La línea de estado va TAMBIÉN acá, en la rama de "todavía sin precio".
+    // Si la tienes comprada o la estás esperando, eso no depende del precio
+    // de hoy: se sabe igual. Dejar esta pantalla en blanco mientras Yahoo
+    // responde era perder justo el dato que no necesita a Yahoo.
     document.getElementById('closeBtn').addEventListener('click', closeDetail);
     inicializarFavBtnDetalle(s.ticker);
     return;
@@ -2338,6 +2750,8 @@ function renderDetail(ticker){
         <button class="close-btn" id="closeBtn">✕</button>
       </div>
     </div>
+
+    ${lineaEstadoHTML(s.ticker)}
 
     <div class="value-row">
       <div class="vitem">
@@ -2979,12 +3393,42 @@ function wireOverlayButtons(){
   }
   const btnAyuda = document.getElementById('btnAyudaIndicadores');
   if(btnAyuda){
-    btnAyuda.addEventListener('click', () => {
-      const helpOverlay = document.getElementById('helpOverlay');
-      if(helpOverlay) helpOverlay.classList.add('open');
-    });
+    // Desde el gráfico se abre el glosario ya parado en la sección del
+    // gráfico, que es lo que el usuario estaba mirando cuando preguntó.
+    btnAyuda.addEventListener('click', () => abrirGlosario('grafico'));
   }
 }
+
+// ---- Glosario ----
+// Se abre desde dos lados: el botón "📖 Glosario" de la barra superior (que
+// entra por "Fase y fuerza", lo primero que hay que entender del método) y
+// el "❓ Ayuda" de la fila del gráfico (que entra por "El gráfico").
+function abrirGlosario(seccion){
+  const helpOverlay = document.getElementById('helpOverlay');
+  if(!helpOverlay) return;
+  helpOverlay.classList.add('open');
+  mostrarSeccionGlosario(seccion || 'fase');
+}
+
+function mostrarSeccionGlosario(seccion){
+  document.querySelectorAll('.glos-sec').forEach(el => {
+    el.classList.toggle('active', el.id === 'glos-' + seccion);
+  });
+  document.querySelectorAll('.glos-nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.glos === seccion);
+  });
+  // Al cambiar de sección, volver arriba: si venías del final de una sección
+  // larga, la siguiente arrancaba a media altura y parecía cortada.
+  const panel = document.querySelector('#helpOverlay .detail');
+  if(panel) panel.scrollTop = 0;
+}
+
+document.querySelectorAll('.glos-nav-btn').forEach(b => {
+  b.addEventListener('click', () => mostrarSeccionGlosario(b.dataset.glos));
+});
+
+const btnGlosarioTop = document.getElementById('btnGlosario');
+if(btnGlosarioTop) btnGlosarioTop.addEventListener('click', () => abrirGlosario('fase'));
 
 function closeHelpOverlay(){
   const helpOverlay = document.getElementById('helpOverlay');
@@ -3187,6 +3631,12 @@ function formatoHoraDato(marketTime, staleSeconds){
 // ---- Render de una tarjeta con lo que se sepa en este momento ----
 function renderCard(s){
   const card = cardEls[s.ticker];
+  // Las acciones de la watchlist no tienen tarjeta: se les pide precio y se
+  // pueden abrir en el detalle, pero no se dibujan en la grilla. Quien llama
+  // acá no siempre lo sabe (seedHistorialSiFalta, por ejemplo, corre sobre
+  // cualquier acción que se abra), así que el guardia va acá y no en cada
+  // sitio que llama.
+  if(!card) return;
   const priceEl = card.querySelector('[data-el="price"]');
   const deltaEl = card.querySelector('[data-el="delta"]');
   const priceClpEl = card.querySelector('[data-el="priceClp"]');
@@ -3745,6 +4195,18 @@ function renderAnalysis(){
 
   // Ambiente "A seguir" no usa este panel (queda oculto por cambiarAmbiente()).
   if(ambienteActivo === 'seguir') return;
+
+  // ---- Chile en modo salida: sin columna de entrada -----------------------
+  // Se resuelve acá y no en cambiarAmbiente() porque renderAnalysis() corre
+  // también con cada refresco de precios: si solo se ocultara al cambiar de
+  // pestaña, cualquier refresco la volvería a dejar visible.
+  const soloSalida = ambienteActivo === 'chile';
+  const colDown = document.getElementById('analysisColDown');
+  const colsWrap = document.getElementById('analysisCols');
+  const notaSalida = document.getElementById('analysisSoloSalida');
+  if(colDown) colDown.style.display = soloSalida ? 'none' : '';
+  if(colsWrap) colsWrap.classList.toggle('solo-salida', soloSalida);
+  if(notaSalida) notaSalida.style.display = soloSalida ? '' : 'none';
 
   function candItemHTML(ev, esVenta){
     const flagged = Array.isArray(ev.banderas) && ev.banderas.length > 0;
@@ -4338,6 +4800,154 @@ function tienePosicion(ticker){
   return !!(port[ticker] && port[ticker].netoQ > 0);
 }
 
+// ---- LÍNEA DE ESTADO (una sola pantalla, una sola acción pendiente) ----
+// La prueba que puso Cristian: "cualquier acción que abras debería decirte en
+// una sola pantalla dónde está parada y cuál es la única acción pendiente
+// sobre ella. Si tienes que revisar tres pestañas para saberlo, todavía
+// falta." Esto es esa línea.
+//
+// Hasta ahora el dato existía, pero repartido: la posición en Mi Cartera, la
+// condición en A seguir, el stop en un campo de otra tarjeta, y si era
+// candidata solo en Explorar. Había que abrir cuatro lugares para armar la
+// respuesta en la cabeza.
+//
+// UN SOLO ESTADO A LA VEZ, y en este orden de prioridad:
+//   la tienes > la esperas > es candidata > la vendiste > solo la miras
+// El orden no es estético: si tienes la acción comprada, lo único que
+// importa es tu stop -- que además sea candidata de Explorar es ruido en ese
+// momento. La app tiene que contestar UNA pregunta, no listar cuatro.
+const MARGEN_STOP = 0.98;
+
+function estadoDeAccion(ticker){
+  const s = todosLosStocks().find(x => x.ticker === ticker);
+  if(!s) return null;
+  const moneda = s.currency === 'USD' ? 'USD' : 'CLP';
+  const pos = calcularPortafolio(moneda)[ticker];
+  const obj = (typeof alertasPrecio !== 'undefined' && alertasPrecio[ticker]) || {};
+  const precio = (typeof s.price === 'number') ? s.price : null;
+  const sma50 = (typeof s.sma50 === 'number' && isFinite(s.sma50) && s.sma50 > 0) ? s.sma50 : null;
+
+  // ---- 1 · La tienes comprada -------------------------------------------
+  if(pos && pos.netoQ > 0){
+    const stop = (obj.baja !== null && obj.baja !== undefined && obj.baja !== '') ? Number(obj.baja) : null;
+    let pendiente, urgencia = 'ok';
+
+    if(precio !== null && stop !== null && precio <= stop){
+      pendiente = `El precio (${fmtMoneda2(precio, moneda)}) ya tocó tu stop de ${fmtMoneda2(stop, moneda)}. Esto es una salida.`;
+      urgencia = 'alta';
+    } else if(sma50 !== null && precio !== null && precio < sma50){
+      pendiente = `Cerró bajo su media 50 (${fmtMoneda2(sma50, moneda)}). Acá no hay stop que mover: es una salida.`;
+      urgencia = 'alta';
+    } else if(stop === null){
+      pendiente = sma50 !== null
+        ? `No tiene stop definido. La regla que elegiste lo pone en la media 50 — hoy sería ${fmtMoneda2(redondearStop(sma50 * MARGEN_STOP, moneda), moneda)}.`
+        : 'No tiene stop definido, y todavía no hay media 50 para proponerte uno.';
+      urgencia = 'media';
+    } else if(sma50 !== null && redondearStop(sma50 * MARGEN_STOP, moneda) > stop){
+      pendiente = `Tu stop está en ${fmtMoneda2(stop, moneda)} y la media 50 ya manda ${fmtMoneda2(redondearStop(sma50 * MARGEN_STOP, moneda), moneda)}. Súbelo en Mi Cartera.`;
+      urgencia = 'media';
+    } else {
+      pendiente = stop !== null
+        ? `Nada pendiente. Tu stop está en ${fmtMoneda2(stop, moneda)}, donde manda la media 50.`
+        : 'Nada pendiente.';
+    }
+    const costo = (typeof pos.costoPromedio === 'number') ? pos.costoPromedio : null;
+    const gan = (costo !== null && precio !== null && costo > 0) ? (precio / costo - 1) * 100 : null;
+    return {
+      clase: 'tienes', etiqueta: 'La tienes',
+      detalle: `${pos.netoQ} ${pos.netoQ === 1 ? 'título' : 'títulos'}`
+        + (costo !== null ? ` a ${fmtMoneda2(costo, moneda)} promedio` : '')
+        + (gan !== null ? ` · ${gan >= 0 ? '+' : ''}${gan.toFixed(1)}%` : ''),
+      pendiente, urgencia,
+    };
+  }
+
+  // ---- 2 · La estás esperando -------------------------------------------
+  const reg = (typeof espera !== 'undefined' && espera[ticker]) || null;
+  if(reg){
+    const cumplida = esperaCumplida(ticker, reg);
+    const restantes = diasRestantes(reg);
+    let pendiente, urgencia = 'ok';
+    if(cumplida === true){
+      pendiente = 'Se cumplió lo que esperabas. Ábrela en TradingView y decide si entras.';
+      urgencia = 'alta';
+    } else if(restantes !== null && restantes <= 0){
+      pendiente = `Caducó hace ${Math.abs(restantes)} días sin cumplirse. Renuévala o sácala de la lista.`;
+      urgencia = 'media';
+    } else if(typeof reg.precio === 'number' && precio !== null){
+      const dist = ((precio / reg.precio - 1) * 100).toFixed(1);
+      pendiente = `Nada pendiente: esperar. Está a ${dist}% de tu precio de entrada (${fmtMoneda2(reg.precio, moneda)})`
+        + (restantes !== null ? `, quedan ${restantes} días.` : '.');
+    } else {
+      pendiente = 'Nada pendiente: esperar.'
+        + (typeof reg.precio !== 'number' ? ' Ojo: no tiene precio objetivo, así que no hay alerta que suene.' : '');
+      if(typeof reg.precio !== 'number') urgencia = 'media';
+    }
+    return {
+      clase: 'esperas', etiqueta: 'La estás esperando',
+      detalle: reg.condicion ? reg.condicion : 'sin condición escrita',
+      pendiente, urgencia,
+    };
+  }
+
+  // ---- 3 · Es candidata de Explorar --------------------------------------
+  if(typeof explorarResultado !== 'undefined' && explorarResultado){
+    const fin = (explorarResultado.finalistas || []).find(c => c.ticker === ticker);
+    const mano = (explorarResultado.revisarAMano || []).find(c => c.ticker === ticker);
+    const c = fin || mano;
+    if(c){
+      return {
+        clase: 'candidata', etiqueta: fin ? 'Candidata de Explorar' : 'Candidata — falta un dato',
+        detalle: [
+          c.fase != null ? `Fase ${c.fase}` : null,
+          typeof c.score === 'number' ? `score ${c.score}/8` : null,
+          (mano && c.faltan && c.faltan.length) ? `le falta: ${c.faltan.join(', ')}` : null,
+        ].filter(Boolean).join(' · '),
+        pendiente: 'Ábrela en TradingView para decidir. Si te convence pero todavía no es el momento, mándala a "esperando entrada".',
+        urgencia: 'media',
+      };
+    }
+  }
+
+  // ---- 4 · La vendiste ----------------------------------------------------
+  // "Sin posición" y "nunca la tuviste" son cosas distintas: si hay
+  // movimientos registrados y el neto quedó en cero, es una posición cerrada.
+  const tuvoMovimientos = movimientos.some(m => m.ticker === ticker);
+  if(tuvoMovimientos){
+    return {
+      clase: 'vendida', etiqueta: 'La vendiste',
+      detalle: 'sin posición abierta',
+      pendiente: 'Nada pendiente. Si quieres volver a entrar, mándala a "esperando entrada" con una condición escrita.',
+      urgencia: 'ok',
+    };
+  }
+
+  // ---- 5 · Solo la miras --------------------------------------------------
+  const esFav = (typeof favoritos !== 'undefined' && favoritos.has(ticker));
+  return {
+    clase: 'mirando', etiqueta: esFav ? 'Solo la miras (favorita)' : 'Solo la miras',
+    detalle: esFav ? 'marcada con estrella' : 'sin posición ni condición',
+    pendiente: 'Nada pendiente. Está acá porque la miras, no porque la app espere algo de ella.',
+    urgencia: 'ok',
+  };
+}
+
+function redondearStop(v, moneda){
+  return moneda === 'CLP' ? Math.round(v) : Math.round(v * 100) / 100;
+}
+
+function lineaEstadoHTML(ticker){
+  const e = estadoDeAccion(ticker);
+  if(!e) return '';
+  return `<div class="lest lest-${e.clase} lest-urg-${e.urgencia}">
+    <div class="lest-top">
+      <span class="lest-pill">${e.etiqueta}</span>
+      <span class="lest-detalle">${String(e.detalle).replace(/</g,'&lt;')}</span>
+    </div>
+    <div class="lest-pendiente"><b>Lo único pendiente:</b> ${String(e.pendiente).replace(/</g,'&lt;')}</div>
+  </div>`;
+}
+
 // Se llama automáticamente al registrar una compra o venta: compra
 // descuenta de la caja de esa moneda, venta suma -- así la caja siempre
 // refleja el efectivo disponible sin que el usuario tenga que anotarlo
@@ -4548,8 +5158,10 @@ async function explorarEjecutar(){
   renderAmbienteExplorar();
 }
 
-function explorarEstaEnGrilla(tk){
-  return todosLosStocks().some(s => s.ticker === tk);
+// ¿La app ya le puede dar precio a este ticker? Cubre las dos formas de
+// tenerlo: en la grilla de siempre, o en la watchlist personal.
+function explorarTienePrecio(tk){
+  return estaEnGrilla(tk) || estaEnWatchlist(tk);
 }
 
 function explorarFechaHTML(analisis){
@@ -4565,7 +5177,8 @@ function explorarFechaHTML(analisis){
 // qué dato faltó, y el borde dorado tenue que marca "esta no pasó sola, hay
 // que decidir a mano".
 function explorarTarjetaHTML(c, tipo){
-  const enGrilla = explorarEstaEnGrilla(c.ticker);
+  const tienePrecio = explorarTienePrecio(c.ticker);
+  const enWatch = estaEnWatchlist(c.ticker);
   const yaEnEspera = !!espera[c.ticker];
   const yaTiene = tienePosicion(c.ticker);
   const fase = (c.fase !== null && c.fase !== undefined) ? `Fase ${c.fase}` : 'fase no disponible';
@@ -4578,7 +5191,7 @@ function explorarTarjetaHTML(c, tipo){
 
   return `<div class="expl-card ${tipo === 'mano' ? 'expl-mano' : ''}">
     <div class="expl-card-head">
-      <span class="expl-card-tk"${enGrilla ? ` data-accion="expl-abrir" data-ticker="${c.ticker}" style="cursor:pointer;"` : ''}>${c.ticker}</span>
+      <span class="expl-card-tk"${tienePrecio ? ` data-accion="expl-abrir" data-ticker="${c.ticker}" style="cursor:pointer;"` : ''}>${c.ticker}</span>
       <span class="expl-card-nombre">${(c.nombre || '').replace(/</g,'&lt;')}${c.sector ? ' · ' + c.sector.replace(/</g,'&lt;') : ''}</span>
       ${score ? `<span class="expl-card-score">${score}</span>` : ''}
     </div>
@@ -4592,11 +5205,11 @@ function explorarTarjetaHTML(c, tipo){
       : ''}
     <div class="expl-card-btns">
       <a href="${c.tradingview}" target="_blank" rel="noopener">Abrir en TradingView ↗</a>
-      ${enGrilla ? `<button type="button" data-accion="expl-abrir" data-ticker="${c.ticker}">Ver ficha</button>` : ''}
-      ${!enGrilla ? '<span style="font-size:10px;color:var(--ink-faint);align-self:center;">Fuera de tu grilla — por ahora solo TradingView</span>'
-        : yaTiene ? '<span class="expl-ya" style="border:none;">Ya la tienes</span>'
+      ${tienePrecio ? `<button type="button" data-accion="expl-abrir" data-ticker="${c.ticker}">Ver ficha</button>` : ''}
+      ${yaTiene ? '<span class="expl-ya" style="border:none;">Ya la tienes</span>'
         : yaEnEspera ? '<span class="expl-ya">✓ en "A seguir"</span>'
         : `<button type="button" data-accion="expl-agregar-seguir" data-ticker="${c.ticker}">+ A seguir</button>`}
+      ${enWatch ? '<span style="font-size:10px;color:var(--ink-faint);align-self:center;">vigilada (watchlist)</span>' : ''}
     </div>
   </div>`;
 }
@@ -4730,12 +5343,28 @@ function renderAmbienteExplorar(){
       if(tienePosicion(tk)){ alert(`Ya tienes ${tk} comprada — no se puede agregar como entrada.`); return; }
       if(espera[tk]){ alert(`${tk} ya está en "A seguir ▸ Esperando entrada".`); return; }
       const c = (analisis.finalistas || []).concat(analisis.revisarAMano || []).find(x => x.ticker === tk);
+
+      // Si está fuera de la grilla, primero hay que empezar a vigilarla: sin
+      // precio propio, la condición de entrada existiría pero nunca podría
+      // cumplirse ni avisar. Esto es lo que antes no se podía hacer.
+      let avisoWatch = '';
+      if(!explorarTienePrecio(tk)){
+        const r = agregarAWatchlist(tk, (c && c.nombre) || tk);
+        if(!r.ok){
+          alert(`No se pudo empezar a vigilar ${tk}: ${r.motivo}`);
+          return;
+        }
+        avisoWatch = `\n\n${tk} no estaba en tu grilla, así que se agregó a tu watchlist personal `
+          + `(${watchlist.length} de ${WATCHLIST_MAX}). Desde el próximo ciclo empieza a recibir precio.`;
+      }
+
       const precioRef = (c && typeof c.sma50 === 'number') ? c.sma50 : null;
       guardarCondicion(tk, 'baja', precioRef,
         'Candidata de Explorar — revisar entrada en TradingView antes de comprar', ESPERA_DIAS_DEFAULT);
       alert(`${tk} agregada a "A seguir ▸ Esperando entrada"`
         + (precioRef ? ` con aviso si baja a ${fmtMoneda2(precioRef, 'USD')} (su media 50).` : ', sin precio de aviso (no se pudo calcular la media 50).')
-        + '\n\nAjusta la condición ahí si prefieres otro precio.');
+        + '\n\nAjusta la condición ahí si prefieres otro precio.'
+        + avisoWatch);
     });
   });
 }
@@ -4859,10 +5488,12 @@ function esperaHTML(){
     const distancia = (precioHoy !== null && typeof reg.precio === 'number' && reg.precio > 0)
       ? `${((precioHoy / reg.precio - 1) * 100).toFixed(1)}%` : null;
 
+    const enWatch = estaEnWatchlist(tk);
     return `<div class="esp-row ${clase}" data-esp="${tk}">
       <div class="esp-head">
         <span class="esp-tk" data-accion="esp-abrir" data-ticker="${tk}">${tk}</span>
         <span style="font-size:10.5px;color:var(--ink-faint);">${s ? s.name : ''}</span>
+        ${enWatch ? '<span class="esp-watch" title="No está en tu grilla: la app le pide precio aparte, gracias a tu watchlist personal">watchlist</span>' : ''}
         <span class="esp-estado ${pill[0]}">${pill[1]}</span>
       </div>
       <div class="esp-cond">
@@ -4899,9 +5530,11 @@ function esperaHTML(){
       El precio objetivo se guarda además como alerta de precio, así que el aviso te llega al celular igual que
       los demás. A los ${ESPERA_DIAS_DEFAULT} días la app te pregunta si la sacas: sin eso, esta lista se llena de
       acciones que se te arrancaron y nunca vuelven.<br>
-      El selector solo ofrece acciones del universo que la app sigue con precio propio (${todosLosStocks().length}).
-      Una candidata del S&amp;P 500 que no esté ahí todavía no se puede vigilar acá — eso llega junto con el
-      módulo Explorar, que es el que las va a mandar.</p>
+      El selector de acá abajo ofrece las ${todosLosStocks().length} acciones que la app sigue con precio propio.
+      <b>Una candidata del S&amp;P 500 que no esté en esa lista sí se puede vigilar ahora</b>: mándala desde
+      Explorar con "+ A seguir" y entra sola a tu <b>watchlist personal</b>
+      (${watchlist.length} de ${WATCHLIST_MAX} usadas), que es un cupo aparte para las que están fuera de la
+      grilla. El tope existe porque cada acción vigilada es una petición más a Yahoo en cada ciclo.</p>
   </div>`;
 }
 
@@ -5180,6 +5813,18 @@ function renderAmbienteSeguir(){
       if(!confirm(`Sacar ${tk} de "esperando entrada".\n\nLa alerta de precio que tenga se mantiene — bórrala aparte en Mi Cartera si tampoco la quieres.`)) return;
       delete espera[tk];
       guardarEspera();
+      // Si además estaba en la watchlist, se pregunta aparte en vez de
+      // sacarla sola: dejar de vigilarla es perder su precio, y puede que
+      // la quieras seguir mirando aunque ya no la estés esperando. Tampoco
+      // se deja sola para siempre: sin preguntar, el cupo de 15 se llenaría
+      // de acciones que dejaron de importar hace meses.
+      if(estaEnWatchlist(tk)){
+        if(confirm(`${tk} también está en tu watchlist personal (las que no están en la grilla).\n\n`
+                 + `¿Dejar de pedirle precio también? Libera un cupo de los ${WATCHLIST_MAX}.\n\n`
+                 + 'Aceptar = dejar de vigilarla · Cancelar = seguir viendo su precio')){
+          sacarDeWatchlist(tk);
+        }
+      }
       renderAmbienteSeguir();
     });
   });
@@ -5213,9 +5858,19 @@ function renderAmbienteSeguir(){
       guardarPlataformas();
       refrescarSelectoresPlat();
 
-      espera = (nuevo.espera && typeof nuevo.espera === 'object' && !Array.isArray(nuevo.espera))
-        ? nuevo.espera : {};
-      guardarEspera();
+      // BUG CORREGIDO (agosto 2026): acá había tres líneas copiadas por
+      // error desde el código de restaurar respaldo:
+      //
+      //     espera = (nuevo.espera && ...) ? nuevo.espera : {};
+      //     guardarEspera();
+      //
+      // Pero en ESTE contexto `nuevo` es el texto del input (el nombre de la
+      // plataforma), no el objeto del respaldo. Un string no tiene `.espera`,
+      // así que la condición siempre daba falso y la lista "esperando
+      // entrada" se BORRABA ENTERA -- y se guardaba borrada -- cada vez que
+      // editabas el nombre de una plataforma. Silenciosamente.
+      // Acá no hay nada que hacer con `espera`: renombrar una corredora no
+      // tiene por qué tocar la lista de acciones que estás esperando.
       renderAmbienteSeguir();
       renderMovimientos();
     });
@@ -5375,7 +6030,10 @@ function renderAmbienteCartera(){
   // s.sma50 viene de /quotes (se asigna en el refresco de precios); puede
   // ser null mientras el servidor no lo haya entregado, y en ese caso esto
   // no dibuja nada -- nunca inventa un numero.
-  const MARGEN_STOP = 0.98;
+  // MARGEN_STOP se declara ahora a nivel de módulo (junto a lineaEstadoHTML)
+  // porque la línea de estado del detalle propone el MISMO stop. Dos
+  // constantes con el mismo valor en dos lados es exactamente cómo se
+  // termina con la app sugiriendo 2% bajo la media en un lado y 3% en otro.
   function sugerenciaStopHTML(s, pos, obj, currency){
     const held = pos && pos.netoQ > 0;
     if(!held) return '';
@@ -6586,7 +7244,12 @@ function renderMovsDetailPanel(){
 // dentro de cada movimiento y de caja. Un respaldo v3 se restaura sin
 // problema -- lo que no traiga plataforma queda "sin asignar", que es
 // exactamente el estado correcto para un dato que no existia.
-const RESPALDO_VERSION = 4;
+// v5 (agosto 2026): agrega `watchlist`. Sin esto, restaurar un respaldo en
+// un telefono nuevo dejaria las acciones de "esperando entrada" que estan
+// fuera de la grilla SIN precio y sin alerta -- la condicion existiria pero
+// nunca podria cumplirse. Un respaldo v4 se restaura igual: la watchlist
+// queda vacia, que es el estado correcto para un dato que no existia.
+const RESPALDO_VERSION = 5;
 
 function construirRespaldoUnificado(){
   return {
@@ -6597,6 +7260,7 @@ function construirRespaldoUnificado(){
             actualizado: caja.actualizado, plat: caja.plat },
     plataformas,
     espera,
+    watchlist,
     asignacion,
     tesis,
     favoritos: [...favoritos],
@@ -6734,6 +7398,26 @@ function importarMovimientos(file){
         : Object.assign({}, PLAT_DEFAULT);
       guardarPlataformas();
       refrescarSelectoresPlat();
+
+      // "Esperando entrada". Esta línea FALTABA acá: la restauración de
+      // `espera` había quedado por error dentro del manejador que renombra
+      // plataformas (ver el comentario largo allá arriba), así que un
+      // respaldo v4 se restauraba perdiendo la lista completa. Ahora está
+      // donde corresponde.
+      espera = (nuevo.espera && typeof nuevo.espera === 'object' && !Array.isArray(nuevo.espera))
+        ? nuevo.espera : {};
+      guardarEspera();
+
+      // Watchlist personal (v5). Un respaldo anterior no la trae y queda
+      // vacía. Se le avisa al servidor de inmediato: si no, las acciones de
+      // "esperando entrada" que están fuera de la grilla quedarían sin
+      // precio hasta la próxima vez que se tocara algo.
+      watchlist = Array.isArray(nuevo.watchlist)
+        ? nuevo.watchlist.filter(w => w && typeof w.ticker === 'string').slice(0, WATCHLIST_MAX)
+        : [];
+      guardarWatchlist();
+      stateWatch = watchlist.map(w => nuevoStockWatch(w.ticker, w.name));
+      sincronizarWatchlist();
 
       const asigDefault = { rentaVariable:65, liquidez:35, chile:35, global:65, banda:5, maxPorPosicion:7, umbralCajaClp:null, umbralCajaUsd:null };
       asignacion = (nuevo.asignacion && typeof nuevo.asignacion === 'object') ? Object.assign({}, asigDefault, nuevo.asignacion) : asigDefault;
@@ -6987,30 +7671,44 @@ async function fetchRealQuotesUsa(){
     const body = await resp.json();
     const quotes = body.quotes || {};
 
+    // Copiar los campos de una cotización a su acción. Se extrajo a una
+    // función porque ahora la usan DOS listas (la grilla y la watchlist) --
+    // tenerlo dos veces era garantía de que algún campo nuevo se agregara
+    // en una y no en la otra.
+    function aplicarQuote(s, q){
+      s.price = q.price;
+      if(typeof q.avg === 'number' && q.avg > 0){ s.avg = q.avg; }
+      s.dayHigh = (typeof q.dayHigh === 'number') ? q.dayHigh : null;
+      s.dayLow = (typeof q.dayLow === 'number') ? q.dayLow : null;
+      s.volume = (typeof q.volume === 'number') ? q.volume : null;
+      s.montoTransado = (typeof q.montoTransado === 'number') ? q.montoTransado : null;
+      s.ret3m = (typeof q.ret3m === 'number') ? q.ret3m : null;
+      s.ret1y = (typeof q.ret1y === 'number') ? q.ret1y : null;
+      s.bid = null; s.ask = null; s.bidSize = null; s.askSize = null; // Yahoo no las publica
+      s.rsi14 = (typeof q.rsi14 === 'number') ? q.rsi14 : null;
+      s.sma20 = (typeof q.sma20 === 'number') ? q.sma20 : null;
+      s.sma50 = (typeof q.sma50 === 'number') ? q.sma50 : null;
+      s.sma200 = (typeof q.sma200 === 'number') ? q.sma200 : null;
+      s.zscore = (typeof q.zscore === 'number') ? q.zscore : null;
+      s.staleSeconds = (typeof q.staleSeconds === 'number') ? q.staleSeconds : null;
+      s.marketTime = q.marketTime || null;
+      pushHistory(s.history, s.price);
+    }
+
     let recibidos = 0;
     stateUSA.forEach(s => {
       const q = quotes[s.ticker];
-      if(q && typeof q.price === 'number'){
-        s.price = q.price;
-        if(typeof q.avg === 'number' && q.avg > 0){ s.avg = q.avg; }
-        s.dayHigh = (typeof q.dayHigh === 'number') ? q.dayHigh : null;
-        s.dayLow = (typeof q.dayLow === 'number') ? q.dayLow : null;
-        s.volume = (typeof q.volume === 'number') ? q.volume : null;
-        s.montoTransado = (typeof q.montoTransado === 'number') ? q.montoTransado : null;
-        s.ret3m = (typeof q.ret3m === 'number') ? q.ret3m : null;
-        s.ret1y = (typeof q.ret1y === 'number') ? q.ret1y : null;
-        s.bid = null; s.ask = null; s.bidSize = null; s.askSize = null; // Yahoo no las publica
-        s.rsi14 = (typeof q.rsi14 === 'number') ? q.rsi14 : null;
-        s.sma20 = (typeof q.sma20 === 'number') ? q.sma20 : null;
-        s.sma50 = (typeof q.sma50 === 'number') ? q.sma50 : null;
-        s.sma200 = (typeof q.sma200 === 'number') ? q.sma200 : null;
-        s.zscore = (typeof q.zscore === 'number') ? q.zscore : null;
-        s.staleSeconds = (typeof q.staleSeconds === 'number') ? q.staleSeconds : null;
-        s.marketTime = q.marketTime || null;
-        pushHistory(s.history, s.price);
-        recibidos++;
-      }
+      if(q && typeof q.price === 'number'){ aplicarQuote(s, q); recibidos++; }
       renderCard(s);
+    });
+
+    // La watchlist se llena con los mismos datos pero NO dibuja tarjeta, y
+    // no cuenta para el "N/M datos reales" de la píldora de estado: ese
+    // número es sobre la grilla, y sumarle la watchlist haría que el
+    // denominador cambiara solo cada vez que agregas o sacas una candidata.
+    stateWatch.forEach(s => {
+      const q = quotes[s.ticker];
+      if(q && typeof q.price === 'number') aplicarQuote(s, q);
     });
 
     indexDisponibleUsa = (body.indexDisponible === true);
@@ -7205,6 +7903,18 @@ setInterval(fetchSignals, 60000);
   });
   cambiarAmbiente(ambienteActivo); // aplica el ambiente persistido (o "chile" por defecto) apenas carga
 })();
+
+// ---- Watchlist: avisarle al servidor apenas abre la app ----
+// Mismo motivo que sincronizarAlertasPrecio(): el disco de Render es
+// efímero, así que después de cada despliegue el servidor se despierta con
+// la watchlist vacía. Reenviarla al abrir es lo que hace que se repueble
+// sola, sin que Cristian tenga que acordarse de nada.
+//
+// Se manda SIEMPRE, incluso vacía: si la sacaste toda desde otro
+// dispositivo, esto es lo que hace que el servidor deje de pedir esos
+// precios. Mandarla no cuesta nada -- el servidor compara con lo que ya
+// tenía y solo fuerza un refresco de precios si la lista cambió de verdad.
+sincronizarWatchlist();
 
 // ---- Recordatorio de aporte mensual: listener + primer render ----
 (function inicializarRecordatorioAporte(){
