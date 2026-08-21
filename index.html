@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IPSA Monitor</title>
+<title>Monitor de Acciones</title>
 <link rel="manifest" href="manifest.json">
 <!-- El estándar reemplazó a apple-mobile-web-app-capable por
      mobile-web-app-capable. Se dejan los dos: Safari viejo todavía lee el
@@ -11,7 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="IPSA Monitor">
+<meta name="apple-mobile-web-app-title" content="Monitor de Acciones">
 <link rel="apple-touch-icon" href="icon-192.png">
 <!-- Sin esto el navegador pide /favicon.ico y anota un 404 en la consola
      cada vez que se abre la app. Se reusa el ícono que ya existe. -->
@@ -59,6 +59,7 @@
   .brand-text .eyebrow{font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink-dim); margin:0 0 2px;}
   .brand-text .title{font-size:16px; font-weight:600; margin:0; color:var(--ink);}
   .index-block{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap;}
+  .index-label{font-size:11px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-dim); width:100%; margin:0 0 -6px;}
   .index-value{font-size:30px; font-weight:600; letter-spacing:-0.01em;}
   .index-delta{font-size:14px; font-weight:500; padding:3px 8px; border-radius:5px;}
   /* Fecha y hora del valor del IPSA. Esto es lo que faltaba: sin esto no
@@ -527,7 +528,7 @@
       <div class="brand-mark"></div>
       <div class="brand-text">
         <p class="eyebrow">Bolsa de Santiago</p>
-        <p class="title">IPSA Monitor</p>
+        <p class="title">Monitor de Acciones</p>
       </div>
     </div>
 
@@ -542,6 +543,7 @@
     </div>
 
     <div class="index-block" id="idxBlock">
+      <span class="index-label">IPSA</span>
       <span class="mono index-value" id="idxValue">···</span>
       <span class="mono index-delta" id="idxDelta">+0,00%</span>
       <span class="mono index-time" id="idxTime"></span>
@@ -554,6 +556,7 @@
 
     <!-- Ambiente 2: mismo patrón que el IPSA de arriba, referencia S&P 500. -->
     <div class="index-block" id="idxBlockUsa" style="display:none;">
+      <span class="index-label">S&amp;P 500</span>
       <span class="mono index-value" id="idxValueUsa">···</span>
       <span class="mono index-delta" id="idxDeltaUsa">+0,00%</span>
       <span class="mono index-time" id="idxTimeUsa"></span>
@@ -882,24 +885,29 @@ const OVERLAY_LABELS = {sma:'SMA', ema:'EMA', bbands:'BBands', macd:'MACD', rsi:
 let ultimoHistorialCargado = null; // {ticker, period, points, dec} -- sobrevive a re-renders del panel
 let overlaysActivos = {sma:false, ema:false, bbands:false, macd:false, rsi:false, volume:false, indice:false, fuerza:false, weinstein:false};
 // Colores de fondo por "caso" diario (fuerza relativa/absoluta) y por "fase"
-// semanal (Weinstein), igual criterio que CASO_COLOR/FASE_COLOR (semaforo)
-// pero en version translucida para pintar detras de las velas del grafico.
-// Mismos colores que CASO_COLOR/FASE_COLOR (definidos mas abajo, ver
-// renderDiagnosticoFuerza) pero en version translucida rgba() -- los CSS
-// var(--x) no sirven aqui porque se usan como fill de <rect> generados en
-// JS puro, no interpretados por el navegador como color de texto/borde.
+// semanal (Weinstein) para pintar detras de las velas del grafico -- MISMOS
+// colores que usan los .pine originales en TradingView (no los colores del
+// semaforo CASO_COLOR/FASE_COLOR de mas abajo, que son otra paleta para las
+// tarjetas del panel). Ver bgcolor() en los dos scripts fuente:
+//   fuerza_relativa_y_absoluta_diario.pine: rojo=divergencia, verde=oportunidad,
+//     amarillo=sobreextendida, aqua=recuperando (color.new(x, 90) = 10% opaco)
+//   weinstein_fases_y_confirmaciones.pine: colFase = fase1 gris, fase2 verde,
+//     fase3 naranjo, fase4 rojo (color.new(colFase, fase==2 ? 88 : 90))
+// DECLIVE no existe en el .pine original (es el caso nuevo que agregamos --
+// ver la cabecera de indicador_fuerza_fase.py, fix #4); reusa el rojo de
+// divergencia pero mas intenso, porque es un declive mas severo.
 const CASO_BG_COLOR = {
-  OPORTUNIDAD: 'rgba(44,128,114,0.16)',   // --verdigris
-  DIVERGENCIA: 'rgba(179,74,50,0.14)',    // --copper
-  DECLIVE: 'rgba(179,74,50,0.16)',        // --copper (mas intenso: declive es peor que divergencia)
-  SOBREEXTENDIDA: 'rgba(144,111,55,0.16)',// --gold
-  RECUPERANDO: 'rgba(60,121,176,0.16)',   // celeste propio, igual que CASO_COLOR.RECUPERANDO
+  OPORTUNIDAD: 'rgba(76,175,80,0.14)',    // color.green
+  DIVERGENCIA: 'rgba(244,67,54,0.13)',    // color.red
+  DECLIVE: 'rgba(211,47,47,0.18)',        // color.red, mas intenso (declive > divergencia)
+  SOBREEXTENDIDA: 'rgba(255,214,0,0.18)', // color.yellow
+  RECUPERANDO: 'rgba(0,188,212,0.16)',    // color.aqua
 };
 const FASE_BG_COLOR = {
-  1: 'rgba(104,114,125,0.14)',  // --ink-faint
-  2: 'rgba(44,128,114,0.16)',   // --verdigris
-  3: 'rgba(144,111,55,0.16)',   // --gold
-  4: 'rgba(179,74,50,0.16)',    // --copper
+  1: 'rgba(158,158,158,0.14)',  // color.gray
+  2: 'rgba(76,175,80,0.16)',    // color.green (el .pine la pinta un poco mas opaca que el resto)
+  3: 'rgba(255,152,0,0.15)',    // color.orange
+  4: 'rgba(244,67,54,0.15)',    // color.red
 };
 function colorFondoCaso(caso) { return CASO_BG_COLOR[caso] || null; }
 function colorFondoFase(fase) { return FASE_BG_COLOR[fase] || null; }
@@ -2097,11 +2105,6 @@ function renderDetail(ticker){
     ? fmt(sma200Val, s.dec)
     : (liveMode ? 'No disponible (esperando datos o menos de 200 días de historial)' : 'No disponible en modo simulado');
 
-  const patron = detectHeadAndShoulders(s.history);
-  const patronTexto = patron
-    ? `⚠️ Posible Hombro-Cabeza-Hombro detectado (patrón bajista) — cuello en ${fmt(patron.cuello, s.dec)}. Recuerda: es una heurística geométrica, no una certeza; falsos positivos son comunes.`
-    : 'No se detectó el patrón en el rango visible ahora mismo. Eso no garantiza que no exista uno más amplio ni que no vaya a formarse.';
-
   detailPanel.innerHTML = `
     <div class="detail-top">
       <div>
@@ -2157,6 +2160,8 @@ function renderDetail(ticker){
     <div class="period-row" id="overlayRow" style="margin-top:10px;">
       ${['sma','ema','bbands','macd','rsi','volume'].map(k => `<button class="overlay-btn" data-overlay="${k}">${OVERLAY_LABELS[k]}</button>`).join('')}
       <button class="overlay-btn" data-overlay="indice" title="Compara el movimiento de ${s.ticker} contra ${moneda === 'USD' ? 'el S&P 500' : 'el IPSA'} en el mismo período, reescalado para que quepa en el mismo gráfico.">${moneda === 'USD' ? 'S&P 500' : 'IPSA'}</button>
+      <button class="overlay-btn" data-overlay="fuerza" title="Pinta el fondo del gráfico con el caso diario de fuerza relativa/absoluta (verde=oportunidad, celeste=recuperando, amarillo=sobreextendida, rojo=divergencia/declive).">Fuerza</button>
+      <button class="overlay-btn" data-overlay="weinstein" title="Pinta el fondo del gráfico con la fase semanal de Weinstein (gris=fase 1, verde=fase 2, naranjo=fase 3, rojo=fase 4).">Weinstein</button>
       <button class="overlay-btn" id="btnLimpiarOverlays">Limpiar</button>
       <button class="overlay-btn" id="btnAyudaIndicadores" title="¿Qué significa cada indicador?">❓ Ayuda</button>
     </div>
@@ -2229,12 +2234,7 @@ function renderDetail(ticker){
     </p>
     <p style="font-size:11px; color:var(--ink-faint); margin:6px 0 0;">${liveMode ? 'RSI, SMA20 y SMA50 se actualizan con cada precio nuevo que llega (cada ~60s); si alguno todavía dice "Calculando…" es que el servidor no lo ha entregado aún.' : 'Se calculan sobre los ticks simulados de esta demo (cada 2s).'} No son señales de compra/venta — solo describen el movimiento reciente.</p>
 
-    <p class="section-title" style="margin-top:16px;">Patrones técnicos (heurística, no es predicción)</p>
-    <p style="font-size:11.5px; background:var(--bg-field); padding:10px 12px; border-radius:8px; color:${patron ? 'var(--gold)' : 'var(--ink-faint)'};">
-      ${patronTexto}
-    </p>
-
-    <p class="section-title" style="margin-top:16px;">Fuerza y fase (Weinstein / Inversapiens)</p>
+    <p class="section-title" style="margin-top:16px;">Análisis detallado</p>
     <div id="diagFuerzaWrap">
       <p style="font-size:12px; color:var(--ink-faint); padding:8px 0;">Cargando diagnóstico…</p>
     </div>
@@ -2326,12 +2326,16 @@ function renderDiagnosticoFuerza(ticker){
     ${d.velaEnCurso ? '<p style="font-size:11px; color:var(--gold); margin:0 0 8px;">⚠ El dato de hoy puede seguir moviéndose hasta el cierre.</p>' : ''}
     <table class="mini-table">
       <tr><td>Fuerza relativa vs. ${data.mercado === 'usa' ? 'S&P 500' : 'IPSA'}</td><td>${d.fuerzaRelativa.disponible ? d.fuerzaRelativa.lectura : 'sin datos del índice'}</td></tr>
-      <tr><td>Distancia a la EMA21${d.sobreextendida ? ' ⚠' : ''}</td><td>${d.distanciaEMA21Pct != null ? d.distanciaEMA21Pct.toFixed(1) + '%' : '—'}</td></tr>
+      ${d.fuerzaRelativa.disponible ? `
+      <tr><td style="color:${tickColor(d.fuerzaRelativa.pendientePositiva)};">${tickIcono(d.fuerzaRelativa.pendientePositiva)} Pendiente positiva (~1 mes)</td><td></td></tr>
+      <tr><td style="color:${tickColor(d.fuerzaRelativa.lider)};">${tickIcono(d.fuerzaRelativa.lider)} Líder (máximo de ~3 meses)</td><td></td></tr>
+      ` : ''}
+      <tr><td>Distancia a la EMA21 (solo si está sobreextendida)${d.sobreextendida ? ' ⚠' : ''}</td><td>${d.distanciaEMA21Pct != null ? d.distanciaEMA21Pct.toFixed(1) + '%' : '—'}</td></tr>
       <tr><td>Escalón 1 (SMA50) — vende mitad</td><td class="mono">${fmt(d.stops.sma50, 2)}${d.stops.perdioSMA50 ? ' ⚠ perdida' : ''}</td></tr>
       <tr><td>Escalón 2 (SMA150) — vende todo</td><td class="mono">${fmt(d.stops.sma150, 2)}${d.stops.perdioSMA150 ? ' ⚠ perdida' : ''}</td></tr>
     </table>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 10px; margin-top:6px; font-size:11px;">
-      ${[['f1','Sobre media larga'],['f2','Corta sobre larga'],['f3','Media larga sube'],['f4','Media corta sube'],['f5','Máximos crecientes'],['f6','Mínimos crecientes'],['f7','RSI mejorando'],['f8','Sobre media corta']].map(([k,txt]) =>
+      ${[['f1','Cierre sobre media larga'],['f2','Media corta sobre larga'],['f3','Media larga subiendo'],['f4','Media corta subiendo'],['f5','Máximos crecientes'],['f6','Mínimos crecientes'],['f7','RSI mejorando'],['f8','Cierre sobre media corta']].map(([k,txt]) =>
         `<div style="color:${tickColor(d.checks[k])};">${tickIcono(d.checks[k])} ${txt}</div>`).join('')}
     </div>
   `;
@@ -2349,41 +2353,33 @@ function renderDiagnosticoFuerza(ticker){
         <div style="font-size:10.5px; color:var(--ink-faint);">${s.veredicto}</div>
       </div>
     </div>
+    <p style="font-size:10.5px; font-weight:600; color:var(--ink-dim); margin:0 0 4px;">Confirmaciones de fase 2</p>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 10px; font-size:11px;">
       <div style="color:${tickColor(s.confirmaciones.c1_precioSobreMedia)};">${tickIcono(s.confirmaciones.c1_precioSobreMedia)} Precio sobre la media</div>
       <div style="color:${tickColor(s.confirmaciones.c2_pendientePositiva)};">${tickIcono(s.confirmaciones.c2_pendientePositiva)} Pendiente positiva</div>
       <div style="color:${tickColor(s.confirmaciones.c3_rompioMaximo30sem)};">${tickIcono(s.confirmaciones.c3_rompioMaximo30sem)} Rompió máximo 30 sem</div>
       <div style="color:${tickColor(s.confirmaciones.c4_fuerzaRelativa)};">${tickIcono(s.confirmaciones.c4_fuerzaRelativa)} Fuerza relativa creciente</div>
-      <div style="color:${tickColor(s.confirmaciones.c5_volumen)};">${tickIcono(s.confirmaciones.c5_volumen)} Volumen de ruptura${!s.volumenDisponible ? ' (sin dato)' : ''}</div>
+      <div style="color:${tickColor(s.confirmaciones.c5_volumen)};">${tickIcono(s.confirmaciones.c5_volumen)} Volumen no se ha secado${!s.volumenDisponible ? ' (sin dato)' : ''}</div>
     </div>
-    ${s.techoConfirmado ? '<p style="font-size:11.5px; color:var(--copper); background:var(--copper-soft); padding:6px 8px; border-radius:6px; margin-top:8px;">⚠ TECHO CONFIRMADO — señales de agotamiento (' + s.scoreAgotamiento + '/5).</p>' : ''}
+    <p style="font-size:10.5px; font-weight:600; color:var(--ink-dim); margin:10px 0 4px;">Señales de agotamiento</p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 10px; font-size:11px;">
+      <div style="color:${s.agotamiento.a1_mediaDejoDeSubir ? 'var(--gold)' : 'var(--ink-faint)'};">${tickIcono(s.agotamiento.a1_mediaDejoDeSubir)} La media dejó de subir</div>
+      <div style="color:${s.agotamiento.a2_sinMaximosNuevos ? 'var(--gold)' : 'var(--ink-faint)'};">${tickIcono(s.agotamiento.a2_sinMaximosNuevos)} Sin máximos nuevos</div>
+      <div style="color:${s.agotamiento.a3_pierdeFuerzaRelativa ? 'var(--gold)' : 'var(--ink-faint)'};">${tickIcono(s.agotamiento.a3_pierdeFuerzaRelativa)} Pierde fuerza relativa</div>
+      <div style="color:${s.agotamiento.a4_cierraBajoMedia ? 'var(--gold)' : 'var(--ink-faint)'};">${tickIcono(s.agotamiento.a4_cierraBajoMedia)} Cierra bajo la media</div>
+      <div style="color:${s.agotamiento.a5_distribucion ? 'var(--gold)' : 'var(--ink-faint)'};">${tickIcono(s.agotamiento.a5_distribucion)} Distribución (vol. bajista)</div>
+    </div>
+    <p style="font-size:11px; margin-top:6px; color:${s.techoConfirmado ? 'var(--copper)' : 'var(--ink-faint)'};">${s.techoConfirmado ? '⚠ TECHO CONFIRMADO' : (s.scoreAgotamiento >= 3 ? 'vigilar' : 'sin agotamiento')} — ${s.scoreAgotamiento}/5</p>
     <p style="font-size:10.5px; color:var(--ink-faint); margin-top:8px;">Semana cerrada hasta ${s.semanaCerradaHasta} (${s.semanasDeHistorial} semanas de historial). La semana en curso no se cuenta todavía.</p>
   `;
 
-  const btnFuerza = (d && d.disponible) ? `<button type="button" class="overlay-btn${overlaysActivos.fuerza ? ' active' : ''}" style="font-size:10px; padding:2px 8px;" onclick="toggleZonaFondo('fuerza','${ticker}')">${overlaysActivos.fuerza ? '● Fondo en el gráfico' : '○ Ver en el gráfico'}</button>` : '';
-  const btnWeinstein = (s && s.disponible) ? `<button type="button" class="overlay-btn${overlaysActivos.weinstein ? ' active' : ''}" style="font-size:10px; padding:2px 8px;" onclick="toggleZonaFondo('weinstein','${ticker}')">${overlaysActivos.weinstein ? '● Fondo en el gráfico' : '○ Ver en el gráfico'}</button>` : '';
-
   wrap.innerHTML = `
-    <p style="font-size:11px; font-weight:600; color:var(--ink-dim); margin:4px 0 6px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
-      <span>Diagnóstico diario (fuerza relativa y absoluta)</span>${btnFuerza}
-    </p>
+    <p style="font-size:11px; font-weight:600; color:var(--ink-dim); margin:4px 0 6px;">Diagnóstico diario (fuerza relativa y absoluta)</p>
     ${bloqueDiario}
-    <p style="font-size:11px; font-weight:600; color:var(--ink-dim); margin:14px 0 6px; display:flex; align-items:center; justify-content:space-between; gap:8px;">
-      <span>Fase semanal (Weinstein)</span>${btnWeinstein}
-    </p>
+    <p style="font-size:11px; font-weight:600; color:var(--ink-dim); margin:14px 0 6px;">Fase semanal (Weinstein)</p>
     ${bloqueSemanal}
-    <p style="font-size:10.5px; color:var(--ink-faint); margin-top:10px;">No es recomendación de compra ni de venta — material educativo (clase de Inversapiens), calculado sobre cierres reales de Yahoo Finance.</p>
+    <p style="font-size:10.5px; color:var(--ink-faint); margin-top:10px;">No es recomendación de compra ni de venta — material educativo (clase de Inversapiens), calculado sobre cierres reales de Yahoo Finance. Los botones "Fuerza" y "Weinstein" en la fila de indicadores del gráfico (arriba) pintan el fondo con estos mismos colores.</p>
   `;
-}
-
-// Prende/apaga el fondo de color en el grafico de precio para el caso
-// diario o la fase semanal -- mismo patron que los botones overlay-btn
-// normales (SMA, EMA, etc.), pero viven junto a cada bloque de diagnostico
-// en vez de la fila de overlays, porque ahi ya esta muy cargada.
-function toggleZonaFondo(kind, ticker){
-  overlaysActivos[kind] = !overlaysActivos[kind];
-  renderDiagnosticoFuerza(ticker);
-  renderHistoryChart();
 }
 
 // ---- Matemática de indicadores, todo sobre precios reales de /history ----
@@ -2613,7 +2609,7 @@ function renderHistoryChart(){
   if(overlaysActivos.fuerza && diag && diag.diario && diag.diario.serieCasos && diag.diario.serieCasos.length){
     const valores = alinearZonasPorFecha(fechasGrafico, diag.diario.serieCasos, 'caso');
     zonaSvg += construirBandasFondo(valores, colorFondoCaso, x, plotW, 0, h);
-    zonaLeyendaTexto = 'Fondo = caso diario: verde = oportunidad, celeste = recuperando, dorado = sobreextendida, cobre = divergencia/declive.';
+    zonaLeyendaTexto = 'Fondo = caso diario: verde = oportunidad, celeste = recuperando, amarillo = sobreextendida, rojo = divergencia/declive.';
   } else if(overlaysActivos.fuerza){
     zonaLeyendaTexto = 'Fondo por caso diario: cargando…';
   }
@@ -2621,7 +2617,7 @@ function renderHistoryChart(){
     const valores = alinearZonasPorFecha(fechasGrafico, diag.semanal.serieFases, 'fase');
     zonaSvg += construirBandasFondo(valores, colorFondoFase, x, plotW, 0, h);
     zonaLeyendaTexto = (zonaLeyendaTexto ? zonaLeyendaTexto + ' ' : '') +
-      'Fondo = fase semanal (Weinstein): gris = fase 1, verde = fase 2, dorado = fase 3, cobre = fase 4.';
+      'Fondo = fase semanal (Weinstein): gris = fase 1, verde = fase 2, naranjo = fase 3, rojo = fase 4.';
   } else if(overlaysActivos.weinstein){
     zonaLeyendaTexto = (zonaLeyendaTexto ? zonaLeyendaTexto + ' ' : '') + 'Fondo por fase semanal: cargando…';
   }
@@ -2760,10 +2756,6 @@ function wireOverlayButtons(){
       Object.keys(overlaysActivos).forEach(k => overlaysActivos[k] = false);
       document.querySelectorAll('.overlay-btn').forEach(b => b.classList.remove('active'));
       renderHistoryChart();
-      // Los botones "Ver en el gráfico" del bloque de diagnostico (fuerza/
-      // weinstein) tienen texto propio ademas de la clase .active -- hay que
-      // redibujar ese bloque para que el texto tambien vuelva a "apagado".
-      if(openTicker && diagFuerzaCache[openTicker]) renderDiagnosticoFuerza(openTicker);
     });
   }
   const btnAyuda = document.getElementById('btnAyudaIndicadores');
@@ -6455,7 +6447,7 @@ async function probarNotificacionLocal(){
     if(Notification.permission !== 'granted'){
       return { ok:false, info };
     }
-    await reg.showNotification('IPSA Monitor · prueba local', {
+    await reg.showNotification('Monitor de Acciones · prueba local', {
       body: 'Si ves esto, el teléfono SÍ puede mostrar notificaciones de la app. El problema estaría en el envío desde el servidor.',
       tag: 'ipsa-prueba-local',
     });
@@ -6537,7 +6529,7 @@ document.getElementById('notifyBtn').addEventListener('click', async () => {
       + (r.ok
           ? '\n\nSe acaba de mostrar una notificación de prueba local.\n'
             + 'Si la VISTE: el teléfono está bien.\n'
-            + 'Si NO la viste: revisa Ajustes → Notificaciones → IPSA Monitor.'
+            + 'Si NO la viste: revisa Ajustes → Notificaciones → Monitor de Acciones.'
           : '\n\n⚠️ No se pudo mostrar la notificación de prueba local.')
       + '\n\nDatos técnicos:\n· ' + r.info.join('\n· '));
     return;
