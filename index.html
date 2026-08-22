@@ -356,6 +356,26 @@
   .asig-bar-objetivo{position:absolute; top:-2px; width:2px; height:12px; background:var(--ink);}
   .asig-tesis{width:100%; margin-top:6px; font-size:11.5px; padding:6px 8px; border-radius:6px; border:1px solid var(--hairline); background:var(--bg-field); color:var(--ink); resize:vertical; min-height:36px; font-family:inherit;}
   .asig-fuera{color:var(--copper);}
+  /* Sizing de posiciones (planilla de riesgo por operación, portada a la
+     ficha de cada acción). Mismo patrón visual que asig-box: un <details>
+     con inputs numéricos chicos y un resultado abajo. */
+  .siz-box{margin-top:10px; padding-top:10px; border-top:1px dashed var(--hairline); margin-bottom:16px;}
+  .siz-cfg{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;}
+  .siz-cfg label{display:flex; flex-direction:column; gap:3px; font-size:10.5px; color:var(--ink-dim);}
+  .siz-cfg input{padding:4px 6px; border:1px solid var(--hairline); border-radius:5px; background:var(--bg-field); font-size:12px; box-sizing:border-box;}
+  .siz-guia{margin-top:10px; font-size:10.5px; color:var(--ink-faint);}
+  .siz-guia table{width:100%; border-collapse:collapse;}
+  .siz-guia td{padding:3px 4px; border-bottom:1px solid var(--hairline);}
+  .siz-guia td:last-child{text-align:right; white-space:nowrap; font-family:'IBM Plex Mono',monospace;}
+  .siz-guia-nota{margin-top:4px; line-height:1.4;}
+  .siz-resultado{margin-top:10px; padding:10px 12px; border-radius:8px; background:var(--bg-field);}
+  .siz-fila{display:flex; justify-content:space-between; gap:8px; font-size:12px; padding:2px 0;}
+  .siz-fila span:first-child{color:var(--ink-dim);}
+  .siz-veredicto{margin-top:8px; font-weight:700; font-size:12.5px;}
+  .siz-veredicto-ok{color:var(--verdigris);}
+  .siz-v-no .siz-veredicto, .siz-v-revisa{color:var(--copper);}
+  .siz-v-falta .siz-veredicto{color:var(--gold);}
+  .siz-vacio{margin-top:10px; font-size:11.5px; color:var(--ink-faint); padding:8px 0;}
   /* Cinco ambientes. `flex:1 1 auto` + `min-width:0` deja que las pestañas
      se repartan el ancho disponible en vez de desbordarse, y el
      overflow-x:auto es la red de seguridad para pantallas absurdamente
@@ -2866,6 +2886,8 @@ function renderDetail(ticker){
 
     <button id="btnRegistrarMov" class="mov-btn" style="width:100%; margin-bottom:16px;">📝 Registrar compra/venta de ${s.ticker}</button>
 
+    ${sizingHTML(s.ticker)}
+
     <div class="detail-chart">
       <svg viewBox="0 0 600 160" width="100%" height="160" preserveAspectRatio="none" id="detailSvg"></svg>
       <div class="axis-labels" id="detailAxisLabels"></div>
@@ -2967,6 +2989,7 @@ function renderDetail(ticker){
 
   document.getElementById('closeBtn').addEventListener('click', closeDetail);
   document.getElementById('btnRegistrarMov').addEventListener('click', () => registrarDesdeDetalle(s.ticker, s.price));
+  wireSizing(s.ticker);
   inicializarFavBtnDetalle(s.ticker);
   buildSpark(document.getElementById('detailSvg'), s.history, s.avg, threshold, s.dec, 160, 600, true, moneda, document.getElementById('detailAxisLabels'));
   updateDetailClock();
@@ -5037,6 +5060,237 @@ function lineaEstadoHTML(ticker){
     </div>
     <div class="lest-pendiente"><b>Lo único pendiente:</b> ${String(e.pendiente).replace(/</g,'&lt;')}</div>
   </div>`;
+}
+
+// ============================================================================
+// SIZING DE POSICIONES  (planilla de Cristian, portada a la ficha de cada
+// acción -- agosto 2026)
+// ============================================================================
+// Misma planilla, mismas fórmulas, mismo orden de pasos. Lo único que
+// cambia es de dónde sale el "stop" de cada fila: la planilla usaba la
+// SMA50 tal cual; acá se usa SMA50 * MARGEN_STOP (regla 4 del método, la
+// misma que ya propone el resto de la app para el stop real). Si el
+// cálculo asumiera un stop más pegado al precio del que Cristian realmente
+// va a usar, el riesgo en dólares quedaría subestimado -- ver el botón
+// "poner/subir stop" de Mi Cartera, que usa exactamente el mismo número.
+//
+// Persistencia: los parámetros (Paso 1 de la planilla) son los mismos para
+// cualquier acción que se mire, así que viajan en localStorage y no por
+// ticker -- se llenan una vez y quedan.
+const DEFAULT_SIZING = {
+  carteraValor: null, perdidaTotal: 0.12, nPosiciones: 12,
+  gapEsperado: 0.40, pisoOperativo: 0.04, paramGap: 0.08,
+};
+function cargarSizing(){
+  try {
+    const raw = localStorage.getItem('ipsa_sizing');
+    const s = raw ? JSON.parse(raw) : null;
+    return {
+      carteraValor:  (s && typeof s.carteraValor === 'number' && s.carteraValor > 0) ? s.carteraValor : DEFAULT_SIZING.carteraValor,
+      perdidaTotal:  (s && typeof s.perdidaTotal === 'number' && s.perdidaTotal > 0) ? s.perdidaTotal : DEFAULT_SIZING.perdidaTotal,
+      nPosiciones:   (s && typeof s.nPosiciones === 'number' && s.nPosiciones >= 1) ? Math.round(s.nPosiciones) : DEFAULT_SIZING.nPosiciones,
+      gapEsperado:   (s && typeof s.gapEsperado === 'number' && s.gapEsperado > 0) ? s.gapEsperado : DEFAULT_SIZING.gapEsperado,
+      pisoOperativo: (s && typeof s.pisoOperativo === 'number' && s.pisoOperativo >= 0) ? s.pisoOperativo : DEFAULT_SIZING.pisoOperativo,
+      paramGap:      (s && typeof s.paramGap === 'number' && s.paramGap >= 0) ? s.paramGap : DEFAULT_SIZING.paramGap,
+    };
+  } catch(e){ return Object.assign({}, DEFAULT_SIZING); }
+}
+function guardarSizing(){
+  try { localStorage.setItem('ipsa_sizing', JSON.stringify(sizing)); } catch(e){}
+}
+let sizing = cargarSizing();
+let sizingPanelAbierto = false;
+
+// Paso 2 de la planilla: lo que sale solo, sin que Cristian tenga que
+// decidir nada más. R = cuánto arriesgas POR posición si el plan es que
+// TODAS las posiciones toquen el stop a la vez.
+function sizingGlobal(cfg){
+  const R_pct = cfg.nPosiciones > 0 ? cfg.perdidaTotal / cfg.nPosiciones : null;
+  const R_usd = (R_pct !== null && typeof cfg.carteraValor === 'number' && cfg.carteraValor > 0)
+    ? cfg.carteraValor * R_pct : null;
+  const pesoObjetivo = cfg.nPosiciones > 0 ? 1 / cfg.nPosiciones : null;
+  const techoPorGap = cfg.gapEsperado > 0 ? cfg.paramGap / cfg.gapEsperado : null;
+  const techoEfectivo = (pesoObjetivo !== null && techoPorGap !== null) ? Math.min(pesoObjetivo, techoPorGap) : null;
+  return { R_pct, R_usd, pesoObjetivo, techoPorGap, techoEfectivo };
+}
+
+// Paso 3: ¿cuánto compro de una candidata que todavía no tengo?
+function sizingNueva(precio, stop, cfg, glob){
+  if(typeof precio !== 'number' || precio <= 0 || typeof stop !== 'number' || glob.R_pct === null) return null;
+  const distancia = (precio - stop) / precio;
+  if(distancia <= 0){
+    return { distancia, veredicto: 'REVISA', mensaje: 'El stop está sobre el precio: revisa el dato antes de seguir.' };
+  }
+  const rd = glob.R_pct / distancia;
+  const pesoFinal = (glob.techoEfectivo !== null) ? Math.min(glob.techoEfectivo, rd) : rd;
+  const compra = pesoFinal >= cfg.pisoOperativo;
+  const sinCartera = !(typeof cfg.carteraValor === 'number' && cfg.carteraValor > 0);
+  const monto = (compra && !sinCartera) ? cfg.carteraValor * pesoFinal : 0;
+  const nAcciones = monto > 0 ? Math.floor(monto / precio) : 0;
+  const riesgoUsd = nAcciones > 0 ? nAcciones * (precio - stop) : 0;
+  const riesgoPct = (!sinCartera && riesgoUsd > 0) ? riesgoUsd / cfg.carteraValor : 0;
+  const invertidoReal = nAcciones * precio;
+  return {
+    distancia, rd, pesoFinal, monto, nAcciones, riesgoUsd, riesgoPct, invertidoReal, sinCartera,
+    veredicto: !compra ? 'NO_COMPRAS' : (sinCartera ? 'FALTA_CARTERA' : 'COMPRA'),
+    mensaje: !compra
+      ? 'Muy lejos de la media: el peso que le tocaría es menor que tu piso operativo.'
+      : (sinCartera ? 'Escribe el valor de tu cartera para ver el monto y la cantidad.' : null),
+  };
+}
+
+// Paso 4: ¿cuánto puedo aumentar en una que ya tengo?
+function sizingAumentar(nAcciones, costoInvertido, stop, precioHoy, cfg, glob){
+  if(typeof precioHoy !== 'number' || precioHoy <= 0 || typeof stop !== 'number'
+     || typeof nAcciones !== 'number' || typeof costoInvertido !== 'number' || glob.R_usd === null) return null;
+  if(precioHoy <= stop){
+    return { veredicto: 'REVISA', mensaje: 'El stop está sobre el precio de hoy: revisa el dato antes de seguir.' };
+  }
+  const riesgoActualUsd = Math.max(0, costoInvertido - nAcciones * stop);
+  const riesgoActualPct = riesgoActualUsd / cfg.carteraValor;
+  const espacioQueQueda = Math.max(0, glob.R_usd - riesgoActualUsd);
+  const porRiesgo = Math.floor(espacioQueQueda / (precioHoy - stop));
+  const techoPeso = glob.techoEfectivo !== null ? glob.techoEfectivo * cfg.carteraValor : 0;
+  const porPeso = Math.floor(Math.max(0, techoPeso - nAcciones * precioHoy) / precioHoy);
+  const maxAcciones = Math.min(porRiesgo, porPeso);
+  const monto = maxAcciones > 0 ? maxAcciones * precioHoy : 0;
+  return {
+    riesgoActualUsd, riesgoActualPct, espacioQueQueda, maxAcciones, monto,
+    veredicto: maxAcciones > 0 ? 'PUEDES_AUMENTAR' : 'NO_AUMENTAS',
+    mensaje: maxAcciones > 0 ? null : 'Sin espacio de riesgo o de peso para aumentar ahora mismo.',
+  };
+}
+
+function pct1Siz(v){ return (v*100).toFixed(1) + '%'; }
+function filaSiz(pares){
+  return pares.map(([k,v]) => `<div class="siz-fila"><span>${k}</span><span class="mono">${v}</span></div>`).join('');
+}
+
+function sizingNuevaHTML(r, moneda){
+  if(!r) return `<div class="siz-vacio">Completa "Nº posiciones objetivo" y "pérdida total" para ver el cálculo.</div>`;
+  if(r.veredicto === 'REVISA') return `<div class="siz-resultado siz-v-revisa">${r.mensaje}</div>`;
+  const filas = [
+    ['Distancia al stop', pct1Siz(r.distancia)],
+    ['Peso que da R ÷ D', pct1Siz(r.rd)],
+    ['Peso final (el menor techo)', pct1Siz(r.pesoFinal)],
+  ];
+  if(r.veredicto === 'NO_COMPRAS'){
+    return `<div class="siz-resultado siz-v-no">${filaSiz(filas)}<div class="siz-veredicto">NO COMPRAS: ${r.mensaje}</div></div>`;
+  }
+  if(r.veredicto === 'FALTA_CARTERA'){
+    return `<div class="siz-resultado siz-v-falta">${filaSiz(filas)}<div class="siz-veredicto">${r.mensaje}</div></div>`;
+  }
+  return `<div class="siz-resultado siz-v-compra">
+    ${filaSiz(filas)}
+    ${filaSiz([
+      ['Monto a comprar', fmtMoneda2(r.monto, moneda)],
+      ['Nº de acciones', String(r.nAcciones)],
+      ['Riesgo $', fmtMoneda2(r.riesgoUsd, moneda)],
+      ['Riesgo % de tu cartera', pct1Siz(r.riesgoPct)],
+      ['Invertido real', fmtMoneda2(r.invertidoReal, moneda)],
+    ])}
+    <div class="siz-veredicto siz-veredicto-ok">COMPRA</div>
+  </div>`;
+}
+
+function sizingAumentarHTML(r, moneda){
+  if(!r) return `<div class="siz-vacio">Escribe el valor de tu cartera para ver esto.</div>`;
+  if(r.veredicto === 'REVISA') return `<div class="siz-resultado siz-v-revisa">${r.mensaje}</div>`;
+  const filas = [
+    ['Riesgo actual $', fmtMoneda2(r.riesgoActualUsd, moneda)],
+    ['Riesgo actual % de tu cartera', pct1Siz(r.riesgoActualPct)],
+    ['Espacio que queda $', fmtMoneda2(r.espacioQueQueda, moneda)],
+  ];
+  if(r.veredicto === 'NO_AUMENTAS'){
+    return `<div class="siz-resultado siz-v-no">${filaSiz(filas)}<div class="siz-veredicto">NO AUMENTAS: ${r.mensaje}</div></div>`;
+  }
+  return `<div class="siz-resultado siz-v-compra">
+    ${filaSiz(filas)}
+    ${filaSiz([
+      ['Máx. acciones a comprar', String(r.maxAcciones)],
+      ['Monto', fmtMoneda2(r.monto, moneda)],
+    ])}
+    <div class="siz-veredicto siz-veredicto-ok">PUEDES AUMENTAR</div>
+  </div>`;
+}
+
+function sizingHTML(ticker){
+  const s = todosLosStocks().find(x => x.ticker === ticker);
+  if(!s || typeof s.price !== 'number') return '';
+  const moneda = s.currency === 'USD' ? 'USD' : 'CLP';
+  const sma50 = (typeof s.sma50 === 'number' && isFinite(s.sma50) && s.sma50 > 0) ? s.sma50 : null;
+  const stop = sma50 !== null ? redondearStop(sma50 * MARGEN_STOP, moneda) : null;
+  const pos = calcularPortafolio(moneda)[ticker];
+  const held = !!(pos && pos.netoQ > 0);
+  const glob = sizingGlobal(sizing);
+
+  const inputsHTML = `
+    <div class="siz-cfg">
+      <label>Cartera (${moneda === 'USD' ? 'USD' : 'CLP'})<input type="number" id="sizCartera" class="mono" min="0" value="${sizing.carteraValor !== null ? sizing.carteraValor : ''}" placeholder="—"></label>
+      <label>Pérdida total si TODAS tocan el stop (%)<input type="number" id="sizPerdida" class="mono" min="0" max="100" value="${(sizing.perdidaTotal*100).toFixed(0)}"></label>
+      <label>Nº posiciones objetivo<input type="number" id="sizNPos" class="mono" min="1" value="${sizing.nPosiciones}"></label>
+      <label>Gap de desastre esperado (%)<input type="number" id="sizGap" class="mono" min="1" max="100" value="${(sizing.gapEsperado*100).toFixed(0)}"></label>
+      <label>Piso operativo (%)<input type="number" id="sizPiso" class="mono" min="0" max="100" value="${(sizing.pisoOperativo*100).toFixed(0)}"></label>
+      <label>Pérdida máx. tolerada en el gap (%)<input type="number" id="sizParamGap" class="mono" min="0" max="100" value="${(sizing.paramGap*100).toFixed(0)}"></label>
+    </div>
+    <div class="siz-guia">
+      <table><tbody>
+        <tr><td>Mega-cap diversificada (Apple, Microsoft, J&amp;J)</td><td>−20 a −25%</td></tr>
+        <tr><td>Large-cap con expectativas altas (Meta, Netflix, Nvidia)</td><td>−30 a −40%</td></tr>
+        <tr><td>Mid-cap de crecimiento, múltiplo alto</td><td>−40 a −50%</td></tr>
+        <tr><td>Small cap, biotech, un solo producto</td><td>−60 a −80%</td></tr>
+      </tbody></table>
+      <div class="siz-guia-nota">Referencia para elegir el "gap de desastre esperado" de arriba — la app no la aplica sola.</div>
+    </div>
+  `;
+
+  let resultadoHTML;
+  if(sma50 === null){
+    resultadoHTML = `<div class="siz-vacio">Todavía no hay media 50 para ${ticker}: sin eso no hay stop, y sin stop no hay cálculo.</div>`;
+  } else if(held){
+    const costoInvertido = (typeof pos.costoPromedio === 'number') ? pos.costoPromedio * pos.netoQ : null;
+    const r = (costoInvertido !== null) ? sizingAumentar(pos.netoQ, costoInvertido, stop, s.price, sizing, glob) : null;
+    resultadoHTML = sizingAumentarHTML(r, moneda);
+  } else {
+    const r = sizingNueva(s.price, stop, sizing, glob);
+    resultadoHTML = sizingNuevaHTML(r, moneda);
+  }
+
+  return `<details class="siz-box" id="sizDetails" ${sizingPanelAbierto ? 'open' : ''}>
+    <summary class="section-title" style="cursor:pointer; margin:0;">¿Cuánto ${held ? 'aumento' : 'compro'}? · sizing de posiciones</summary>
+    ${inputsHTML}
+    ${resultadoHTML}
+  </details>`;
+}
+
+function wireSizing(ticker){
+  const det = document.getElementById('sizDetails');
+  if(!det) return;
+  det.addEventListener('toggle', () => { sizingPanelAbierto = det.open; });
+
+  function wireCampoSizing(id, key, esCartera){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('change', () => {
+      const raw = el.value === '' ? null : parseFloat(el.value);
+      if(esCartera){
+        sizing.carteraValor = (raw === null || isNaN(raw) || raw <= 0) ? null : raw;
+      } else if(key === 'nPosiciones'){
+        sizing.nPosiciones = (raw === null || isNaN(raw) || raw < 1) ? DEFAULT_SIZING.nPosiciones : Math.round(raw);
+      } else {
+        // Los demás campos viajan en % en la pantalla y en fracción adentro.
+        sizing[key] = (raw === null || isNaN(raw) || raw < 0) ? DEFAULT_SIZING[key] : raw / 100;
+      }
+      guardarSizing();
+      renderDetail(ticker);
+    });
+  }
+  wireCampoSizing('sizCartera', 'carteraValor', true);
+  wireCampoSizing('sizPerdida', 'perdidaTotal');
+  wireCampoSizing('sizNPos', 'nPosiciones');
+  wireCampoSizing('sizGap', 'gapEsperado');
+  wireCampoSizing('sizPiso', 'pisoOperativo');
+  wireCampoSizing('sizParamGap', 'paramGap');
 }
 
 // Se llama automáticamente al registrar una compra o venta: compra
@@ -7679,7 +7933,7 @@ function renderMovsDetailPanel(){
 // fuera de la grilla SIN precio y sin alerta -- la condicion existiria pero
 // nunca podria cumplirse. Un respaldo v4 se restaura igual: la watchlist
 // queda vacia, que es el estado correcto para un dato que no existia.
-const RESPALDO_VERSION = 5;
+const RESPALDO_VERSION = 6;
 
 function construirRespaldoUnificado(){
   return {
@@ -7692,6 +7946,7 @@ function construirRespaldoUnificado(){
     espera,
     watchlist,
     asignacion,
+    sizing,
     tesis,
     favoritos: [...favoritos],
     w8ben: w8benState,
@@ -7852,6 +8107,11 @@ function importarMovimientos(file){
       const asigDefault = { rentaVariable:65, liquidez:35, chile:35, global:65, banda:5, maxPorPosicion:7, umbralCajaClp:null, umbralCajaUsd:null };
       asignacion = (nuevo.asignacion && typeof nuevo.asignacion === 'object') ? Object.assign({}, asigDefault, nuevo.asignacion) : asigDefault;
       guardarAsignacion();
+
+      // Sizing de posiciones (v6). Un respaldo anterior no lo trae -- queda
+      // en los valores por defecto de la planilla, nunca en blanco a medias.
+      sizing = (nuevo.sizing && typeof nuevo.sizing === 'object') ? Object.assign({}, DEFAULT_SIZING, nuevo.sizing) : Object.assign({}, DEFAULT_SIZING);
+      guardarSizing();
 
       tesis = (nuevo.tesis && typeof nuevo.tesis === 'object') ? nuevo.tesis : {};
       guardarTesis();
