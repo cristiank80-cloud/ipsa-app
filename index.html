@@ -265,6 +265,76 @@
   .expl-embudo-pasos{font-size:11.5px; color:var(--ink-dim); line-height:1.8;}
   .expl-embudo-pasos b{color:var(--ink); font-family:'IBM Plex Mono',monospace;}
 
+  /* ---- Embudo por etapas (rediseño sobre el prototipo) ---- */
+  /* Riel de pasos: se ve dónde estás y cuántas quedan en cada etapa sin
+     tener que bajar. Scroll horizontal porque son 5 y no caben. */
+  .exp-riel{display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin-bottom:14px; scrollbar-width:none;}
+  .exp-riel::-webkit-scrollbar{display:none;}
+  .exp-riel-btn{
+    flex:0 0 auto; background:var(--bg-panel); border:1px solid var(--hairline);
+    border-radius:9px; padding:8px 11px; cursor:pointer; text-align:left; min-width:82px;
+  }
+  .exp-riel-btn .rb-n{font-size:9px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-faint);}
+  .exp-riel-btn .rb-t{font-size:12px; font-weight:600; color:var(--ink); margin-top:2px; white-space:nowrap;}
+  .exp-riel-btn .rb-c{font-size:14px; font-weight:700; color:var(--ink-dim); margin-top:3px; font-family:'IBM Plex Mono',monospace;}
+  .exp-riel-btn.active{border-color:var(--gold); background:rgba(144,111,55,0.10);}
+  .exp-riel-btn.active .rb-t, .exp-riel-btn.active .rb-c{color:var(--gold);}
+
+  /* Barras del embudo */
+  .exp-grupo{font-size:9.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-faint); margin:12px 0 6px;}
+  .exp-paso{display:flex; align-items:center; gap:10px; margin-bottom:9px;}
+  .exp-paso-izq{flex:1; min-width:0;}
+  .exp-paso-tit{font-size:12px; color:var(--ink); font-weight:600;}
+  .exp-paso-sub{font-size:10.5px; color:var(--ink-faint);}
+  .exp-barra{height:15px; border-radius:4px; background:var(--bg-field); overflow:hidden; margin-top:4px;}
+  .exp-barra span{display:block; height:100%; border-radius:4px; transition:width .35s ease;
+                  background:linear-gradient(90deg, var(--verdigris), #4FA495);}
+  .exp-barra.estricta span{background:linear-gradient(90deg, var(--gold), #B8945A);}
+  .exp-barra.apagada span{background:var(--hairline);}
+  .exp-paso-der{text-align:right; min-width:64px;}
+  .exp-paso-num{font-family:'IBM Plex Mono',monospace; font-size:15px; font-weight:700; color:var(--ink);}
+  .exp-paso-caen{font-size:10px; color:var(--copper); cursor:pointer; text-decoration:underline; white-space:nowrap;}
+  .exp-paso-caen.vacio{color:var(--ink-faint); cursor:default; text-decoration:none;}
+  .exp-caidos{
+    background:var(--bg-field); border-radius:8px; padding:9px 11px; margin:-4px 0 10px;
+    font-size:11px; color:var(--ink-dim); line-height:1.7; max-height:190px; overflow-y:auto;
+  }
+  .exp-caidos b{font-family:'IBM Plex Mono',monospace; color:var(--ink);}
+  .exp-caido{display:flex; justify-content:space-between; gap:10px; padding:2px 0; border-bottom:1px solid var(--hairline);}
+  .exp-caido:last-child{border-bottom:none;}
+  .exp-caido .ec-val{font-family:'IBM Plex Mono',monospace; color:var(--copper); white-space:nowrap;}
+
+  /* Controles de umbral */
+  .exp-ctrl{display:flex; align-items:center; gap:9px; font-size:11.5px; color:var(--ink-dim); flex-wrap:wrap; margin-bottom:9px;}
+  .exp-ctrl > span:first-child{min-width:118px;}
+  .exp-ctrl input[type=range]{flex:1; min-width:110px; accent-color:var(--gold); height:24px;}
+  .exp-ctrl b{font-family:'IBM Plex Mono',monospace; color:var(--ink); min-width:62px; text-align:right;}
+  .exp-toggle{display:flex; align-items:center; gap:9px; padding:9px 11px; border:1px solid var(--hairline);
+              border-radius:9px; margin-bottom:7px; cursor:pointer; background:var(--bg-panel);}
+  .exp-toggle input{width:19px; height:19px; accent-color:var(--gold); flex-shrink:0;}
+  .exp-toggle-txt{font-size:11.5px; color:var(--ink-dim); line-height:1.5;}
+  .exp-toggle-txt b{color:var(--ink); display:block; font-size:12.5px; margin-bottom:1px;}
+  .exp-reset{background:none; border:1px solid var(--hairline); border-radius:7px; color:var(--ink-dim);
+             font-size:11px; padding:6px 11px; cursor:pointer; font-weight:600;}
+  .exp-reset:hover{border-color:var(--gold); color:var(--gold);}
+  .exp-limite{
+    font-size:10.5px; color:var(--copper); line-height:1.55; margin:8px 0 0;
+    padding:8px 10px; background:rgba(179,74,50,0.05); border-left:2px solid var(--copper); border-radius:0 6px 6px 0;
+  }
+  /* Tabla de sobrevivientes */
+  .exp-tabla-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .exp-tabla{width:100%; border-collapse:collapse; font-size:11.5px; font-family:'IBM Plex Mono',monospace;}
+  .exp-tabla th{font-family:'IBM Plex Sans',sans-serif; font-size:9.5px; text-transform:uppercase;
+                letter-spacing:.05em; color:var(--ink-faint); text-align:right; padding:0 0 6px 10px; font-weight:600; white-space:nowrap;}
+  .exp-tabla th:first-child{text-align:left; padding-left:0;}
+  .exp-tabla td{padding:6px 0 6px 10px; border-top:1px solid var(--hairline); text-align:right; color:var(--ink-dim); white-space:nowrap;}
+  .exp-tabla td:first-child{text-align:left; padding-left:0; color:var(--ink); font-weight:600; cursor:pointer;}
+  .exp-tabla .ok{color:var(--verdigris);}
+  .exp-tabla .no{color:var(--copper);}
+  .exp-ttm{font-size:8.5px; padding:1px 4px; border-radius:3px; vertical-align:1px; font-family:'IBM Plex Sans',sans-serif;}
+  .exp-ttm.es-ttm{background:var(--verdigris-soft); color:var(--verdigris);}
+  .exp-ttm.es-trim{background:rgba(144,111,55,0.16); color:var(--gold);}
+
   /* Rediseño Patrimonio (imagen 1 del pedido): total + desglose Cartera/Caja por país. */
   .patr-total{background:var(--bg-panel); border:1px solid var(--hairline); border-radius:12px; padding:16px; margin-bottom:14px; text-align:center;}
   .patr-total-label{font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.03em;}
@@ -303,15 +373,26 @@
   }
   .env-btn:hover{color:var(--ink);}
   .env-btn.active{background:var(--bg-panel); color:var(--gold); box-shadow:0 1px 2px rgba(0,0,0,0.06);}
-  /* Etiqueta larga por defecto; la corta solo aparece en pantalla angosta. */
+  /* Etiqueta larga por defecto; la corta solo aparece en pantalla angosta.
+     Las pestañas son el control que más se usa en toda la app, así que se
+     dimensionan para el DEDO, no para que sobre espacio: 44 px de alto es
+     el mínimo cómodo para tocar en un celular. Antes quedaron en 11,5 px de
+     letra y se veían apretadas. */
   .env-corto{display:none;}
   @media(max-width:640px){
     .env-largo{display:none;}
     .env-corto{display:inline;}
-    .env-btn{padding:7px 8px; font-size:11.5px; flex:1 1 auto; text-align:center;}
+    .env-btn{
+      padding:12px 6px; font-size:13px; flex:1 1 auto; text-align:center;
+      min-height:44px; display:flex; align-items:center; justify-content:center;
+    }
+    .env-selector{gap:3px; padding:3px;}
   }
-  @media(max-width:400px){
-    .env-btn{padding:7px 5px; font-size:10.5px; letter-spacing:0;}
+  /* El corte baja a 360 px (antes 400): a 390 px —el ancho más común de
+     celular— las etiquetas cortas caben perfectamente a 13 px, y bajarlas a
+     12 px ahí era encoger sin necesidad. Bajo 360 px sí hace falta. */
+  @media(max-width:360px){
+    .env-btn{padding:12px 3px; font-size:12px; letter-spacing:-0.01em;}
     .env-selector{gap:2px; padding:2px;}
   }
   @media(max-width:600px){
@@ -5224,26 +5305,123 @@ function explorarTarjetaHTML(c, tipo){
   </div>`;
 }
 
+// ---- EL EMBUDO, RECALCULADO EN EL TELÉFONO ----
+// El backend manda las métricas crudas de cada acción revisada (bloque
+// `acciones`). Con eso, mover un umbral no cuesta una corrida de 5 minutos:
+// se rehace el embudo entero acá, al instante, y se puede mostrar QUIÉNES
+// se cayeron en cada filtro — que es lo que hacía bien el prototipo.
+//
+// LO QUE SÍ TIENE LÍMITE: los fundamentales solo se pidieron para las que
+// pasaron precio/volumen/tendencia, y la fase de Weinstein solo para las más
+// líquidas de esas. Aflojar un filtro más allá de ese conjunto no se puede
+// resolver acá; la app lo dice en vez de mostrar un número incompleto.
+const EXPL_UMBRALES_DEF = {precio:10, volM:2, capB:2, crecimiento:25, score:6};
+let explUmbrales = cargarExplUmbrales();
+let explFiltros = cargarExplFiltros();   // qué etapas están encendidas
+let explPaso = 0;                        // 0 = la alerta (el resultado), ver PASOS
+let explCaidosAbiertos = {};             // qué listas de "se cayeron" están desplegadas
+
+function cargarExplUmbrales(){
+  try {
+    const v = JSON.parse(localStorage.getItem('ipsa_expl_umbrales') || 'null');
+    return Object.assign({}, EXPL_UMBRALES_DEF, (v && typeof v === 'object') ? v : {});
+  } catch(e){ return Object.assign({}, EXPL_UMBRALES_DEF); }
+}
+function guardarExplUmbrales(){
+  try { localStorage.setItem('ipsa_expl_umbrales', JSON.stringify(explUmbrales)); } catch(e){}
+}
+function cargarExplFiltros(){
+  const def = {weinstein:true, fuerza:true, dedup:true};
+  try {
+    const v = JSON.parse(localStorage.getItem('ipsa_expl_filtros') || 'null');
+    return Object.assign({}, def, (v && typeof v === 'object') ? v : {});
+  } catch(e){ return def; }
+}
+function guardarExplFiltros(){
+  try { localStorage.setItem('ipsa_expl_filtros', JSON.stringify(explFiltros)); } catch(e){}
+}
+
+// Cada filtro sabe evaluarse a sí mismo y sabe explicar por qué botó a una
+// acción. Tenerlo en un solo lugar es lo que permite que la barra, el
+// contador y la lista de caídos nunca se contradigan.
+function explEtapas(){
+  const u = explUmbrales;
+  const num = v => (typeof v === 'number' && isFinite(v));
+  return [
+    {grupo:'Calidad', id:'precio', tit:`Precio ≥ ${u.precio} USD`, sub:'descarta chatarra',
+     pasa:a => num(a.p) && a.p >= u.precio, val:a => num(a.p) ? `US$${a.p}` : 'sin precio'},
+    {grupo:null, id:'volM', tit:`Volumen 90 d ≥ ${u.volM.toFixed(1).replace('.',',')} M`, sub:'entras y sales sin mover el precio',
+     pasa:a => num(a.v) && a.v >= u.volM, val:a => num(a.v) ? `${a.v} M` : 'sin volumen'},
+    {grupo:'Tendencia', id:'sma50', tit:'Precio > SMA 50', sub:'el precio lidera', estricta:true,
+     pasa:a => num(a.c50) && a.p > a.c50, val:a => num(a.c50) ? `SMA50 ${a.c50}` : 'sin SMA 50'},
+    {grupo:null, id:'cruce', tit:'SMA 50 > SMA 200', sub:'la tendencia de fondo es alcista', estricta:true,
+     pasa:a => num(a.c50) && num(a.c200) && a.c50 > a.c200, val:a => (num(a.c50)&&num(a.c200)) ? `${a.c50} vs ${a.c200}` : 'sin SMA 200'},
+    {grupo:'Tamaño y crecimiento', id:'capB', tit:`Capitalización ≥ ${u.capB.toFixed(1).replace('.',',')} B`, sub:'empresas de tamaño real', estricta:true,
+     pasa:a => num(a.cB) && a.cB >= u.capB, val:a => num(a.cB) ? `${a.cB} B` : 'sin dato'},
+    {grupo:null, id:'crecBpa', tit:`Crecimiento BPA ≥ ${u.crecimiento} %`, sub:'gana más que hace un año', estricta:true,
+     pasa:a => num(a.gB) && a.gB >= u.crecimiento, val:a => num(a.gB) ? `${a.gB}%` : 'sin dato'},
+    {grupo:null, id:'crecVentas', tit:`Crecimiento ingresos ≥ ${u.crecimiento} %`, sub:'y además vende más', estricta:true,
+     pasa:a => num(a.gV) && a.gV >= u.crecimiento, val:a => num(a.gV) ? `${a.gV}%` : 'sin dato'},
+    {grupo:'Momento (los dos que TradingView no tiene)', id:'weinstein', tit:'Fase 2 con ≥ 4 confirmaciones', sub:'Weinstein, velas semanales',
+     estricta:true, opcional:true, activo:explFiltros.weinstein,
+     pasa:a => a.f === 2 && num(a.cf) && a.cf >= 4,
+     val:a => a.dg ? (a.f == null ? 'sin fase' : `fase ${a.f}${num(a.cf)?` · ${a.cf}/5`:''}`) : 'no diagnosticada'},
+    {grupo:null, id:'fuerza', tit:`Score ≥ ${u.score} y fuerza relativa subiendo`, sub:'le gana al S&P 500',
+     estricta:true, opcional:true, activo:explFiltros.fuerza,
+     pasa:a => num(a.sc) && a.sc >= u.score && a.fr === 1,
+     val:a => a.dg ? `score ${num(a.sc)?a.sc:'—'} · fuerza ${a.fr===1?'sube':a.fr===0?'baja':'sin dato'}` : 'no diagnosticada'},
+  ];
+}
+
+// Devuelve {filas:[{etapa, entran, quedan, caen:[...]}], sobreviven:[...]}
+function explCorrerEmbudo(acciones){
+  const filas = [];
+  let vivos = acciones.slice();
+  explEtapas().forEach(e => {
+    const activa = e.opcional ? e.activo : true;
+    if(!activa){
+      filas.push({etapa:e, entran:vivos.length, quedan:vivos.length, caen:[], apagada:true});
+      return;
+    }
+    const entran = vivos.length;
+    const pasan = [], caen = [];
+    vivos.forEach(a => (e.pasa(a) ? pasan : caen).push(a));
+    vivos = pasan;
+    filas.push({etapa:e, entran, quedan:vivos.length, caen, apagada:false});
+  });
+  return {filas, sobreviven:vivos};
+}
+
+// Una por industria, como el paso 5 del método.
+function explDedup(lista){
+  const vistas = {}, finales = [], repetidas = [];
+  lista.slice().sort((a,b) => (b.sc||0) - (a.sc||0) || a.t.localeCompare(b.t)).forEach(a => {
+    const ind = a['in'] || '(industria desconocida)';
+    if(vistas[ind]){ repetidas.push(Object.assign({}, a, {repiteCon: vistas[ind]})); }
+    else { vistas[ind] = a.t; finales.push(a); }
+  });
+  return {finales, repetidas};
+}
+
+function explFmtCrec(a){
+  const n = (typeof a.gB === 'number') ? a.gB : null;
+  if(n === null) return '<span class="no">—</span>';
+  const et = a.gF === 'ttm' ? '<span class="exp-ttm es-ttm">TTM</span>'
+           : a.gF === 'trimestral' ? '<span class="exp-ttm es-trim">TRIM</span>' : '';
+  return `<span class="${n >= 0 ? 'ok' : 'no'}">${n}%</span> ${et}`;
+}
+
 function explorarResultadoHTML(analisis){
   const a = analisis.alerta || {};
-  const finalistas = analisis.finalistas || [];
-  const mano = analisis.revisarAMano || [];
   const sectores = analisis.sectores || [];
   const industrias = analisis.industrias || [];
   const embudo = analisis.embudo || {};
   const notas = analisis.notas || [];
+  const acciones = analisis.acciones || [];
+  const alcance = analisis.alcance || {};
+  const u = explUmbrales;
 
-  const filaFuerza = (x) => {
-    const m12 = (x.fuerza && typeof x.fuerza.m12 === 'number') ? x.fuerza.m12 : null;
-    const cls = m12 === null ? '' : (m12 >= 0 ? 'up' : 'down');
-    return `<div class="expl-fuerza-row"><span class="expl-fuerza-nombre">${x.nombre}</span><span class="expl-fuerza-val ${cls}">${m12 === null ? '—' : (m12>=0?'+':'') + m12.toFixed(1) + '%'}</span></div>`;
-  };
-
-  // Si el embudo se cortó porque Yahoo no entregó la capitalización, eso
-  // cambia el significado de TODO lo de abajo: "0 candidatas" deja de
-  // querer decir "no había ninguna" y pasa a querer decir "no se pudieron
-  // evaluar". Va arriba de la alerta y en rojo, porque es lo primero que
-  // hay que saber — sin esto, comparas contra TradingView y no cuadra.
+  // ---- Aviso de resultado incompleto (fundamentales que no llegaron) -----
   const ff = analisis.fuentesFundamentales || null;
   const embudoCortado = !!(ff && ff.pedidos > 0 && ff.conCapitalizacion === 0);
   const avisoDatos = embudoCortado ? `
@@ -5257,49 +5435,205 @@ function explorarResultadoHTML(analisis){
         : `<br><span class="expl-roto-tec">Motivo: ${JSON.stringify(ff.motivosFicha || {}).replace(/</g,'&lt;')} · lote: ${JSON.stringify(ff.motivosLote || []).replace(/</g,'&lt;')}</span>`}
     </div>` : '';
 
+  // ---- Si el análisis es viejo y no trae métricas crudas ----------------
+  // Un resultado guardado de antes de esta versión no tiene `acciones`. En
+  // vez de dibujar un embudo vacío que parecería decir "no pasó ninguna",
+  // se pide correr de nuevo.
+  if(!acciones.length){
+    return `${avisoDatos}
+      <p class="expl-empty">Este resultado es de una versión anterior de la app y no trae el detalle
+      por acción, así que no se puede recalcular acá. Aprieta <b>"Volver a ejecutar"</b> para tener
+      el embudo por etapas con los filtros movibles.</p>`;
+  }
+
+  const {filas, sobreviven} = explCorrerEmbudo(acciones);
+  const {finales, repetidas} = explFiltros.dedup ? explDedup(sobreviven) : {finales:sobreviven, repetidas:[]};
+
+  // ---- Riel de pasos -----------------------------------------------------
+  // EL RESULTADO VA PRIMERO, no el paso 1. Esto es una primera alerta: se
+  // abre y lo que se ve es a qué acciones hay que mirar. Los pasos del
+  // método quedan a un toque de distancia para el que quiera auditar cómo
+  // se llegó ahí -- que es distinto de obligarlo a pasar por ellos.
+  const PASOS = [
+    {n:'Alerta', t:'Candidatas', c:finales.length},
+    {n:'Paso 1', t:'Sectores', c:sectores.length},
+    {n:'Paso 2', t:'El embudo', c:sobreviven.length},
+    {n:'Paso 3', t:'Filtros', c:`${explFiltros.weinstein?1:0}+${explFiltros.fuerza?1:0}`},
+    {n:'Extra', t:'A mano', c:(analisis.revisarAMano || []).length},
+  ];
+  const riel = `<div class="exp-riel">${PASOS.map((p,i) => `
+    <button type="button" class="exp-riel-btn ${i===explPaso?'active':''}" data-accion="exp-paso" data-i="${i}">
+      <div class="rb-n">${p.n}</div><div class="rb-t">${p.t}</div><div class="rb-c">${p.c}</div>
+    </button>`).join('')}</div>`;
+
+  // ---- Paso 2 · el embudo con barras ------------------------------------
+  const maxBarra = filas.length ? filas[0].entran : 1;
+  let embudoHTML = '', grupoActual = null;
+  filas.forEach((f, i) => {
+    const e = f.etapa;
+    if(e.grupo && e.grupo !== grupoActual){
+      grupoActual = e.grupo;
+      embudoHTML += `<div class="exp-grupo">${e.grupo}</div>`;
+    }
+    const pct = Math.max(f.quedan / Math.max(maxBarra,1) * 100, 1.5);
+    const abierto = !!explCaidosAbiertos[e.id];
+    embudoHTML += `
+      <div class="exp-paso">
+        <div class="exp-paso-izq">
+          <div class="exp-paso-tit">${e.tit}${f.apagada ? ' <span style="color:var(--ink-faint);font-weight:400;">(apagado)</span>' : ''}</div>
+          <div class="exp-paso-sub">${e.sub}</div>
+          <div class="exp-barra ${e.estricta?'estricta':''} ${f.apagada?'apagada':''}"><span style="width:${pct}%"></span></div>
+        </div>
+        <div class="exp-paso-der">
+          <div class="exp-paso-num">${f.quedan}</div>
+          ${f.caen.length
+            ? `<div class="exp-paso-caen" data-accion="exp-caidos" data-id="${e.id}">${abierto?'ocultar':'−'+f.caen.length}</div>`
+            : `<div class="exp-paso-caen vacio">${f.apagada?'—':'0'}</div>`}
+        </div>
+      </div>
+      ${abierto && f.caen.length ? `<div class="exp-caidos">${
+        f.caen.slice(0, 120).map(x => `<div class="exp-caido"><b data-accion="exp-abrir" data-ticker="${x.t}" style="cursor:pointer;">${x.t}</b><span class="ec-val">${e.val(x)}</span></div>`).join('')
+      }${f.caen.length > 120 ? `<div style="padding-top:6px;color:var(--ink-faint);">…y ${f.caen.length-120} más.</div>` : ''}</div>` : ''}`;
+  });
+
+  const controles = `
+    <div class="exp-ctrl"><span>Precio mínimo</span>
+      <input type="range" data-umbral="precio" min="0" max="100" step="1" value="${u.precio}"><b>${u.precio} USD</b></div>
+    <div class="exp-ctrl"><span>Volumen 90 d</span>
+      <input type="range" data-umbral="volM" min="0" max="20" step="0.25" value="${u.volM}"><b>${u.volM.toFixed(2).replace('.',',')} M</b></div>
+    <div class="exp-ctrl"><span>Capitalización</span>
+      <input type="range" data-umbral="capB" min="0" max="50" step="0.5" value="${u.capB}"><b>${u.capB.toFixed(1).replace('.',',')} B</b></div>
+    <div class="exp-ctrl"><span>Crecimiento</span>
+      <input type="range" data-umbral="crecimiento" min="-20" max="100" step="5" value="${u.crecimiento}"><b>${u.crecimiento} %</b></div>
+    <div class="exp-ctrl"><span>Score mínimo</span>
+      <input type="range" data-umbral="score" min="0" max="8" step="1" value="${u.score}"><b>${u.score} / 8</b></div>
+    <div style="display:flex; gap:8px; align-items:center; margin-top:4px;">
+      <button type="button" class="exp-reset" data-accion="exp-reset">Volver a los valores del método</button>
+      <span style="font-size:10.5px;color:var(--ink-faint);">Se guardan en este teléfono.</span>
+    </div>`;
+
+  // ---- Paso 3 · los dos filtros que TradingView no tiene ------------------
+  const nDiag = (alcance.diagnosticadas || []).length;
+  const nSinDiag = (alcance.sinDiagnosticar || []).length;
+  const filtrosHTML = `
+    <p class="expl-section-nota">Estos dos van <b>después</b> de los siete de TradingView, así que la lista de
+    la app siempre será más corta que la de tu screener. Apágalos para comparar 1 a 1.</p>
+    <label class="exp-toggle">
+      <input type="checkbox" data-filtro="weinstein" ${explFiltros.weinstein?'checked':''}>
+      <span class="exp-toggle-txt"><b>Fase 2 de Weinstein, con ≥ 4 confirmaciones</b>
+      Solo compra en la fase de avance. Es el filtro que más recorta.</span>
+    </label>
+    <label class="exp-toggle">
+      <input type="checkbox" data-filtro="fuerza" ${explFiltros.fuerza?'checked':''}>
+      <span class="exp-toggle-txt"><b>Score ≥ ${u.score} con fuerza relativa subiendo</b>
+      Que además le esté ganando al S&amp;P 500, no solo que suba.</span>
+    </label>
+    <label class="exp-toggle">
+      <input type="checkbox" data-filtro="dedup" ${explFiltros.dedup?'checked':''}>
+      <span class="exp-toggle-txt"><b>Una sola por industria</b>
+      Evita terminar con cinco versiones de la misma apuesta. Se queda la de mejor score.</span>
+    </label>
+    ${nSinDiag ? `<p class="exp-limite"><b>Ojo con el alcance.</b> La fase y la fuerza se calcularon para
+      ${nDiag} acciones — las más líquidas de las que pasaron la tendencia. Quedaron ${nSinDiag} sin
+      diagnosticar, así que si apagas estos filtros y aflojas los de arriba, esas ${nSinDiag} van a aparecer
+      como "no diagnosticada" en vez de pasar. Cada diagnóstico cuesta una serie de 5 años; por eso hay tope.</p>` : ''}`;
+
+  // ---- Tabla de sobrevivientes ------------------------------------------
+  const tabla = (lista, vacio) => lista.length ? `
+    <div class="exp-tabla-wrap"><table class="exp-tabla">
+      <thead><tr><th>Acción</th><th>Precio</th><th>Cap. B</th><th>Vol. M</th><th>BPA</th><th>Fase</th><th>Score</th></tr></thead>
+      <tbody>${lista.map(x => `<tr>
+        <td data-accion="exp-abrir" data-ticker="${x.t}">${x.t}</td>
+        <td>${typeof x.p === 'number' ? x.p : '—'}</td>
+        <td>${typeof x.cB === 'number' ? x.cB : '<span class="no">—</span>'}</td>
+        <td>${typeof x.v === 'number' ? x.v : '—'}</td>
+        <td>${explFmtCrec(x)}</td>
+        <td>${x.f == null ? '<span class="no">—</span>' : `<span class="${x.f===2?'ok':''}">${x.f}${typeof x.cf==='number'?`·${x.cf}`:''}</span>`}</td>
+        <td>${typeof x.sc === 'number' ? `<span class="${x.sc>=6?'ok':''}">${x.sc}</span>` : '<span class="no">—</span>'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>` : `<p class="expl-empty">${vacio}</p>`;
+
+  // ---- Finalistas como tarjetas ------------------------------------------
+  const tarjetaDe = x => explorarTarjetaHTML({
+    ticker:x.t, nombre:x.n, sector:x.se, industria:x['in'], precio:x.p, sma50:x.c50,
+    capB:x.cB, crecBpa:x.gB, crecVentas:x.gV, volM:x.v, fase:x.f, confirmaciones:x.cf,
+    score:x.sc, fuerzaRelativa:{disponible:x.fr!==null, pendientePositiva:x.fr===1},
+    tradingview:`https://www.tradingview.com/symbols/${x.t}/`,
+  }, 'finalista');
+
+  const mano = analisis.revisarAMano || [];
+
+  const filaFuerza = (x) => {
+    const m12 = (x.fuerza && typeof x.fuerza.m12 === 'number') ? x.fuerza.m12 : null;
+    const cls = m12 === null ? '' : (m12 >= 0 ? 'up' : 'down');
+    return `<div class="expl-fuerza-row"><span class="expl-fuerza-nombre">${x.nombre}</span><span class="expl-fuerza-val ${cls}">${m12 === null ? '—' : (m12>=0?'+':'') + m12.toFixed(1) + '%'}</span></div>`;
+  };
+
+  // El panel del resultado. Se define aparte porque va PRIMERO en el riel
+  // (ver la nota de PASOS), pero se arma con todo lo calculado más arriba.
+  const RESULTADO_HTML =     `<div class="expl-alert">
+       <div class="expl-alert-frase">${finales.length} candidata(s) sobre ${acciones.length} acciones revisadas${mano.length?`, más ${mano.length} para mirar a mano`:''}.</div>
+       <div class="expl-alert-meta">
+         <span>Cobertura: <b>${a.cobertura != null ? a.cobertura + '%' : '—'}</b></span>
+         <span>Generado: <b>${explorarFechaHTML(analisis)}</b></span>
+         ${embudo.seCortoPorTiempo ? '<span style="color:var(--copper);">Se cortó por tiempo</span>' : ''}
+       </div>
+       ${(a.sectoresFuertes && a.sectoresFuertes.length) ? `<div class="expl-tags">${a.sectoresFuertes.map(s=>`<span class="expl-tag">${s.replace(/</g,'&lt;')}</span>`).join('')}</div>` : ''}
+     </div>
+     ${finales.length ? finales.map(tarjetaDe).join('')
+       : embudoCortado
+         ? '<p class="expl-empty" style="color:var(--copper);">No se puede saber todavía: el embudo se cortó antes de llegar acá, por lo que dice el aviso de arriba.</p>'
+         : '<p class="expl-empty">Ninguna con estos umbrales. Puedes aflojarlos en el paso 2 o apagar los dos filtros del paso 3 y ver qué aparece.</p>'}
+     ${repetidas.length ? `<p class="expl-section-title">Descartadas por repetir industria (${repetidas.length})</p>
+       <div class="exp-caidos">${repetidas.map(x=>`<div class="exp-caido"><b>${x.t}</b><span class="ec-val">repite con ${x.repiteCon}</span></div>`).join('')}</div>` : ''}`;
+
+  // ---- Los cinco pasos, uno visible a la vez -----------------------------
+  // El orden de este array TIENE que calzar con el de PASOS (el riel).
+  const paneles = [
+    // 0 · el resultado (va primero: ver la nota del riel)
+    RESULTADO_HTML,
+    // 1 · sectores
+    `<p class="expl-section-title">Dónde está entrando la plata</p>
+     <p class="expl-section-nota">Cada sector e industria comparado con el S&amp;P 500 a 12 meses. Positivo = le está ganando al mercado.</p>
+     <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+       <div><div style="font-size:11px;color:var(--ink-faint);margin-bottom:4px;">Sectores</div>${sectores.map(filaFuerza).join('')}</div>
+       <div><div style="font-size:11px;color:var(--ink-faint);margin-bottom:4px;">Industrias</div>${industrias.map(filaFuerza).join('')}</div>
+     </div>`,
+    // 2 · embudo
+    `<p class="expl-section-title">El embudo — mueve los umbrales</p>
+     <p class="expl-section-nota">Se recalcula al instante sobre las ${acciones.length} acciones ya revisadas, sin volver a
+     consultar nada. Toca el número rojo de cada filtro para ver <b>quiénes se cayeron ahí</b>.</p>
+     ${controles}
+     ${embudoHTML}
+     <p class="expl-section-nota" style="margin-top:12px;">De <b>${maxBarra}</b> quedan <b>${sobreviven.length}</b>.</p>
+     ${tabla(sobreviven.slice(0,60), 'Ninguna pasa con estos umbrales. Aflójalos arriba y mira dónde se cae la mayoría.')}
+     ${sobreviven.length > 60 ? `<p class="expl-section-nota">Se muestran las 60 primeras de ${sobreviven.length}.</p>` : ''}
+     <p class="exp-limite" style="color:var(--ink-faint); border-color:var(--hairline); background:var(--bg-field);">
+       Los umbrales de <b>precio, volumen y tendencia</b> se pueden mover libremente: esos datos existen para las
+       ${acciones.length}. Los de <b>capitalización y crecimiento</b> solo se pidieron para las
+       ${(alcance.conFundamentales||[]).length} que pasaron la tendencia con los valores del método — si aflojas mucho
+       un filtro de arriba, las que entren van a aparecer sin esos datos. Ahí sí conviene volver a ejecutar.</p>`,
+    // 3 · los dos filtros extra
+    `<p class="expl-section-title">Los dos filtros que TradingView no tiene</p>
+     ${filtrosHTML}`,
+    // 4 · revisar a mano
+    `<p class="expl-section-title">Para revisar a mano (${mano.length})</p>
+     <p class="expl-section-nota">Técnicamente sanas pero les faltó un dato que Yahoo no entregó. Esconderlas sería
+     peor que mostrarlas con la advertencia: el dato que falta se ve en TradingView en dos segundos.</p>
+     ${mano.length ? mano.map(c => explorarTarjetaHTML(c, 'mano')).join('') : '<p class="expl-empty">Ninguna esta vez.</p>'}`,
+  ];
+
   return `
     ${avisoDatos}
-    <div class="expl-alert">
-      <div class="expl-alert-frase">${(a.frase || '').replace(/</g,'&lt;')}</div>
-      <div class="expl-alert-meta">
-        <span>Cobertura: <b>${a.cobertura != null ? a.cobertura + '%' : '—'}</b></span>
-        <span>Generado: <b>${explorarFechaHTML(analisis)}</b></span>
-        ${embudo.seCortoPorTiempo ? `<span style="color:var(--copper);">Se cortó por tiempo — vuelve a correrlo para sumar cobertura</span>` : ''}
-      </div>
-      ${(a.sectoresFuertes && a.sectoresFuertes.length) ? `<div class="expl-tags">${a.sectoresFuertes.map(s=>`<span class="expl-tag">${s.replace(/</g,'&lt;')}</span>`).join('')}</div>` : ''}
-    </div>
-
-    <p class="expl-section-title">Candidatas (${finalistas.length})</p>
-    <p class="expl-section-nota">Pasaron los siete filtros completos: precio, tendencia, capitalización, crecimiento, fase 2 con al menos 4 confirmaciones, y fuerza relativa subiendo con score ≥ 6. Una por industria — si dos calzaban, quedó la de mejor score.</p>
-    ${finalistas.length ? finalistas.map(c => explorarTarjetaHTML(c, 'finalista')).join('')
-      : embudoCortado
-        // Cuando el embudo se cortó, el texto de siempre ("0 es un resultado
-        // válido") sería mentira: acá el cero no lo produjo el filtro, lo
-        // produjo la falta de datos. Decir lo contrario justo debajo del
-        // aviso rojo es peor que no decir nada.
-        ? '<p class="expl-empty" style="color:var(--copper);">No se puede saber todavía. El embudo se cortó antes de llegar acá por lo que dice el aviso de arriba — este cero no lo decidió el filtro. Vuelve a ejecutar el análisis más tarde.</p>'
-        : '<p class="expl-empty">Ninguna esta vez. No es un error del filtro — es exigente a propósito, y "0 candidatas" es un resultado tan válido como cualquier otro.</p>'}
-
-    <p class="expl-section-title">Para revisar a mano (${mano.length})</p>
-    <p class="expl-section-nota">Técnicamente sanas — misma fase y fuerza que las candidatas — pero les faltó un dato (capitalización o crecimiento) que Yahoo no entregó. Esconderlas sería peor que mostrarlas con la advertencia: el dato que falta se ve en TradingView en dos segundos.</p>
-    ${mano.length ? mano.map(c => explorarTarjetaHTML(c, 'mano')).join('')
-      : '<p class="expl-empty">Ninguna esta vez.</p>'}
+    ${riel}
+    ${paneles[explPaso] || ''}
 
     <details class="expl-details">
-      <summary class="expl-section-title" style="cursor:pointer; display:inline-block;">Sectores e industrias (detalle)</summary>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:8px;">
-        <div><div style="font-size:11px;color:var(--ink-faint);margin-bottom:4px;">Sectores (12 meses vs. S&amp;P 500)</div>${sectores.map(filaFuerza).join('')}</div>
-        <div><div style="font-size:11px;color:var(--ink-faint);margin-bottom:4px;">Industrias (12 meses vs. S&amp;P 500)</div>${industrias.map(filaFuerza).join('')}</div>
-      </div>
-    </details>
-
-    <details class="expl-details">
-      <summary class="expl-section-title" style="cursor:pointer; display:inline-block;">Cómo llegó a este resultado (el embudo, paso a paso)</summary>
+      <summary class="expl-section-title" style="cursor:pointer; display:inline-block;">Datos de la corrida</summary>
       <div class="expl-embudo-pasos">
-        Universo: <b>${embudo.universoTotal ?? '—'}</b> · Revisadas: <b>${embudo.revisadas ?? '—'}</b> (${embudo.cobertura ?? '—'}%) · Ya en caché al empezar: <b>${embudo.veniaEnCache ?? '—'}</b><br>
-        ${(embudo.pasos || []).map(p => `${p.filtro}: <b>${p.quedan}</b>`).join(' → ')}
+        Universo: <b>${embudo.universoTotal ?? '—'}</b> · Revisadas: <b>${embudo.revisadas ?? '—'}</b> (${embudo.cobertura ?? '—'}%) · Ya en caché al empezar: <b>${embudo.veniaEnCache ?? '—'}</b>
         ${ff ? `<br><span style="color:var(--ink-faint);">Fundamentales: <b>${ff.conCapitalizacion}</b> de ${ff.pedidos} con capitalización
-          (${ff.porLote} por lote) · <b>${ff.conCrecimiento}</b> con crecimiento.</span>` : ''}
+          (${ff.porLote} por lote) · crecimiento: <b>${ff.conCrecimientoTTM ?? 0}</b> en TTM, <b>${ff.conCrecimientoTrimestral ?? 0}</b> en trimestral.</span>` : ''}
       </div>
       ${notas.length ? `<ul style="font-size:11px; color:var(--ink-faint); line-height:1.6; margin:8px 0 0; padding-left:16px;">${notas.map(n=>`<li>${n.replace(/</g,'&lt;')}</li>`).join('')}</ul>` : ''}
     </details>
@@ -5370,8 +5704,67 @@ function renderAmbienteExplorar(){
   const btn = document.getElementById('explBtnRun');
   if(btn) btn.addEventListener('click', explorarEjecutar);
 
-  viewEl.querySelectorAll('[data-accion="expl-abrir"]').forEach(el => {
-    el.addEventListener('click', () => openDetail(el.dataset.ticker));
+  // ---- Controles del embudo por etapas ----------------------------------
+  viewEl.querySelectorAll('[data-accion="exp-paso"]').forEach(b => {
+    b.addEventListener('click', () => { explPaso = parseInt(b.dataset.i, 10) || 0; renderAmbienteExplorar(); });
+  });
+
+  // Ver quiénes se cayeron en un filtro. Es lo que convierte el embudo en
+  // algo que se puede auditar en vez de una cascada de números.
+  viewEl.querySelectorAll('[data-accion="exp-caidos"]').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.id;
+      explCaidosAbiertos[id] = !explCaidosAbiertos[id];
+      renderAmbienteExplorar();
+    });
+  });
+
+  // Los sliders: se recalcula MIENTRAS arrastras (input), no al soltar. El
+  // recálculo es local sobre un array ya cargado, así que es instantáneo y
+  // ver la barra moverse es justo lo que hace entender dónde está el corte.
+  viewEl.querySelectorAll('[data-umbral]').forEach(inp => {
+    const aplicar = () => {
+      const v = parseFloat(inp.value);
+      if(!isFinite(v)) return;
+      explUmbrales[inp.dataset.umbral] = v;
+      guardarExplUmbrales();
+      // Se conserva el foco y la posición del pulgar redibujando solo si
+      // hace falta; como el render recrea el input, se reengancha después.
+      renderAmbienteExplorar();
+      const nuevo = document.querySelector(`[data-umbral="${inp.dataset.umbral}"]`);
+      if(nuevo) nuevo.focus();
+    };
+    inp.addEventListener('change', aplicar);
+    inp.addEventListener('input', aplicar);
+  });
+
+  const btnReset = viewEl.querySelector('[data-accion="exp-reset"]');
+  if(btnReset) btnReset.addEventListener('click', () => {
+    explUmbrales = Object.assign({}, EXPL_UMBRALES_DEF);
+    guardarExplUmbrales();
+    renderAmbienteExplorar();
+  });
+
+  viewEl.querySelectorAll('[data-filtro]').forEach(chk => {
+    chk.addEventListener('change', () => {
+      explFiltros[chk.dataset.filtro] = chk.checked;
+      guardarExplFiltros();
+      renderAmbienteExplorar();
+    });
+  });
+
+  viewEl.querySelectorAll('[data-accion="expl-abrir"], [data-accion="exp-abrir"]').forEach(el => {
+    el.addEventListener('click', () => {
+      const tk = el.dataset.ticker;
+      // Una candidata fuera de la grilla no tiene ficha que abrir todavía;
+      // decirlo es mejor que abrir un panel en blanco.
+      if(!explorarTienePrecio(tk)){
+        alert(`${tk} no está en tu grilla, así que la app todavía no le pide precio.\n\n`
+            + 'Mándala a "A seguir" con el botón "+ A seguir" y desde el próximo ciclo vas a poder abrir su ficha.');
+        return;
+      }
+      openDetail(tk);
+    });
   });
 
   viewEl.querySelectorAll('[data-accion="expl-agregar-seguir"]').forEach(b => {
