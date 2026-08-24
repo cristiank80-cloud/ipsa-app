@@ -5937,6 +5937,45 @@ function explFmtCrec(a){
   return `<span class="${n >= 0 ? 'ok' : 'no'}">${n}%</span> ${et}`;
 }
 
+// LA COMPROBACIÓN DEL CAMINO RÁPIDO
+// ==================================
+// El precio, las dos medias y el volumen ahora los entrega Yahoo ya
+// calculados, de a 40 acciones por petición, en vez de calcularlos acá desde
+// un historial de un año por acción (5.254 peticiones → ~131). Como el número
+// cambia de fuente, cada corrida toma una muestra y la compara contra el
+// método viejo. Esto muestra ese resultado: si algún día deja de calzar, se ve
+// acá y no hay que adivinar por qué el embudo empezó a dar distinto.
+function explComparacionHTML(c){
+  if(!c || !c.comparadas) return '';
+  const d = c.peorDifPct || {};
+  const pct = v => (typeof v === 'number') ? `${v.toString().replace('.',',')}%` : '—';
+  const filas = (c.detalle || []).map(f => `<tr>
+      <td>${(f.ticker||'').replace(/</g,'&lt;')}</td>
+      ${['sma50','sma200','volM','precio'].map(k => {
+        const x = f[k] || {};
+        const n = v => (typeof v === 'number') ? v.toLocaleString('es-CL',{maximumFractionDigits:2}) : '—';
+        return `<td>${n(x.lote)}<span style="color:var(--ink-faint);"> vs ${n(x.serie)}</span></td>`;
+      }).join('')}
+    </tr>`).join('');
+  return `<details style="margin-top:8px;">
+    <summary style="cursor:pointer; font-size:11px; color:${c.calza ? 'var(--verdigris)' : 'var(--copper)'};">
+      ${c.calza ? '✓' : '⚠'} Comprobación del método rápido: ${c.comparadas} acciones,
+      peor diferencia ${pct(Math.max(...['sma50','sma200','volM'].map(k=>d[k]).filter(v=>typeof v==='number'), 0))}
+      en medias y volumen${c.calza ? '' : ' — revisar'}
+    </summary>
+    <div style="font-size:10px; color:var(--ink-faint); margin:6px 0 0; line-height:1.5;">
+      ${(c.nota||'').replace(/</g,'&lt;')}
+    </div>
+    <div class="exp-tabla-wrap" style="margin-top:6px;"><table class="exp-tabla">
+      <thead><tr><th>Acción</th><th>SMA 50</th><th>SMA 200</th><th>Vol. M</th><th>Precio</th></tr></thead>
+      <tbody>${filas}</tbody>
+    </table></div>
+    <p style="font-size:10px; color:var(--ink-faint); margin:6px 0 0;">
+      En cada celda: el número del método rápido, y en gris el que daba el método antiguo.
+    </p>
+  </details>`;
+}
+
 function explorarResultadoHTML(analisis){
   const a = analisis.alerta || {};
   const sectores = analisis.sectores || [];
@@ -6264,7 +6303,10 @@ function explorarResultadoHTML(analisis){
         Universo: <b>${embudo.universoTotal ?? '—'}</b> · Revisadas: <b>${embudo.revisadas ?? '—'}</b> (${embudo.cobertura ?? '—'}%) · Ya en caché al empezar: <b>${embudo.veniaEnCache ?? '—'}</b>
         ${ff ? `<br><span style="color:var(--ink-faint);">Fundamentales: <b>${ff.conCapitalizacion}</b> de ${ff.pedidos} con capitalización
           (${ff.porLote} por lote) · crecimiento: <b>${ff.conCrecimientoTTM ?? 0}</b> en TTM, <b>${ff.conCrecimientoTrimestral ?? 0}</b> en trimestral.</span>` : ''}
+        ${typeof embudo.metricasPorLote === 'number' ? `<br><span style="color:var(--ink-faint);">Precio y medias: <b>${embudo.metricasPorLote}</b> por lote${
+          embudo.diagLote && embudo.diagLote.peticiones ? ` (${embudo.diagLote.peticiones} peticiones)` : ''} · <b>${embudo.metricasPorSerie ?? 0}</b> por historial completo.</span>` : ''}
       </div>
+      ${explComparacionHTML(embudo.comparacionLote)}
       ${notas.length ? `<ul style="font-size:11px; color:var(--ink-faint); line-height:1.6; margin:8px 0 0; padding-left:16px;">${notas.map(n=>`<li>${n.replace(/</g,'&lt;')}</li>`).join('')}</ul>` : ''}
     </details>
   `;
