@@ -6181,7 +6181,20 @@ function explorarResultadoHTML(analisis){
          <span>Cobertura: <b>${a.cobertura != null ? a.cobertura + '%' : '—'}</b></span>
          <span>Generado: <b>${explorarFechaHTML(analisis)}</b></span>
          ${embudo.seCortoPorTiempo ? '<span style="color:var(--copper);">Se cortó por tiempo</span>' : ''}
-         ${typeof embudo.nucleoTotal === 'number' ? `<span title="El núcleo es el S&amp;P 500 + Nasdaq-100 + tu grilla. Si quedó entero, un número bajo de candidatas es un resultado de verdad; si quedó a medias, no significa nada.">Núcleo: <b style="color:${embudo.nucleoCompleto ? 'var(--verdigris)' : 'var(--copper)'};">${embudo.nucleoRevisado}/${embudo.nucleoTotal}</b></span>` : ''}
+         ${typeof embudo.nucleoTotal === 'number' ? (() => {
+           // Dos motivos distintos para que falte un símbolo del núcleo, y el
+           // color solo debe reaccionar al primero: los que se saltaron POR
+           // TIEMPO (volver a ejecutar los recupera) mandan el indicador a
+           // cobre; los que no tienen datos en Yahoo (papel retirado) no,
+           // porque ninguna corrida los va a recuperar y dejarlo en cobre para
+           // siempre haría que dejaras de mirarlo.
+           const sinDatos = embudo.nucleoSinDatos || [];
+           const tit = embudo.nucleoCompleto
+             ? 'El núcleo (S&P 500 + Nasdaq-100 + tu grilla) se revisó entero, así que este resultado es de verdad: un número bajo de candidatas significa que no había.'
+                 + (sinDatos.length ? ` Los ${sinDatos.length} que faltan (${sinDatos.slice(0,12).join(', ')}) no se saltaron: Yahoo no tiene historial usable de ellos, y volver a ejecutar no los recupera.` : '')
+             : `Se cortó por tiempo antes de terminar el núcleo: faltaron ${embudo.nucleoSaltadoPorTiempo} por revisar. Las candidatas salen solo de la parte que alcanzó, así que este número no significa nada todavía — vuelve a ejecutar.`;
+           return `<span title="${tit.replace(/"/g,'&quot;')}">Núcleo: <b style="color:${embudo.nucleoCompleto ? 'var(--verdigris)' : 'var(--copper)'};">${embudo.nucleoRevisado}/${embudo.nucleoTotal}</b>${(embudo.nucleoCompleto && sinDatos.length) ? ` <span style="color:var(--ink-faint);">(${sinDatos.length} sin datos en Yahoo)</span>` : ''}</span>`;
+         })() : ''}
          ${embudo.rotacionMercado ? `<span title="El resto del mercado (fuera del núcleo) se cubre de a poco, corrida tras corrida: hoy le tocó desde este punto de esa lista, y mañana empieza en otro. No queda guardado en ningún lado -- se calcula solo con la fecha de hoy, así que no depende de que el servidor siga prendido entre corridas. Con el paso de hoy, una vuelta completa toma ~${embudo.rotacionMercado.periodoDias} días.">Resto del mercado hoy: <b>desde el ${embudo.rotacionMercado.offsetHoy}/${embudo.rotacionMercado.totalResto}</b> · vuelta en ~${embudo.rotacionMercado.periodoDias}d</span>` : ''}
        </div>
        ${(a.sectoresFuertes && a.sectoresFuertes.length) ? `<div class="expl-tags">${a.sectoresFuertes.map(s=>`<span class="expl-tag">${s.replace(/</g,'&lt;')}</span>`).join('')}</div>` : ''}
