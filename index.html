@@ -237,7 +237,14 @@
   .expl-card-nombre{font-size:10.5px; color:var(--ink-faint);}
   .expl-card-score{margin-left:auto; font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:20px; background:var(--verdigris-soft); color:var(--verdigris);}
   .expl-card-meta{font-size:11px; color:var(--ink-dim); margin-top:6px; line-height:1.6;}
-  .expl-card-falta{font-size:10.5px; color:var(--copper); margin-top:4px;}
+  .expl-card-falta{font-size:10.5px; color:var(--copper); margin-top:6px; line-height:1.6;
+                   padding:7px 9px; background:rgba(179,74,50,0.05);
+                   border-left:2px solid var(--copper); border-radius:0 6px 6px 0;}
+  .expl-card-falta .fal-tit{display:block; font-weight:700; margin-bottom:3px;}
+  .expl-falta-chip{display:inline-block; font-size:10px; font-weight:700; color:var(--copper);
+                   border:1px solid var(--copper); border-radius:5px; padding:1px 6px; margin:2px 4px 2px 0;
+                   font-family:'IBM Plex Mono',monospace;}
+  .expl-falta-donde{display:block; margin-top:4px; color:var(--ink-faint);}
   .expl-card-btns{display:flex; gap:6px; flex-wrap:wrap; margin-top:9px;}
   .expl-card-btns a, .expl-card-btns button{
     font-size:10.5px; padding:4px 9px; border-radius:6px; border:1px solid var(--hairline);
@@ -303,6 +310,46 @@
   .exp-caido{display:flex; justify-content:space-between; gap:10px; padding:2px 0; border-bottom:1px solid var(--hairline);}
   .exp-caido:last-child{border-bottom:none;}
   .exp-caido .ec-val{font-family:'IBM Plex Mono',monospace; color:var(--copper); white-space:nowrap;}
+  .exp-caido.pasa .ec-val{color:var(--verdigris);}
+
+  /* Los dos lados de una etapa del embudo: quiénes pasan y quiénes no.
+     Antes al desplegar una etapa solo se veían las caídas -- la mitad de la
+     historia. Ver las dos columnas juntas es lo que deja entender si un
+     filtro está cortando bien o está matando a todas. */
+  .exp-lados{display:grid; grid-template-columns:1fr 1fr; gap:9px; margin:-4px 0 10px;}
+  @media (max-width:560px){ .exp-lados{grid-template-columns:1fr;} }
+  .exp-lado{background:var(--bg-field); border-radius:8px; padding:9px 11px;
+            font-size:11px; color:var(--ink-dim); line-height:1.7;}
+  .exp-lado-tit{font-size:9.5px; letter-spacing:.07em; text-transform:uppercase;
+                font-weight:700; margin-bottom:4px;}
+  .exp-lado.lado-pasan .exp-lado-tit{color:var(--verdigris);}
+  .exp-lado.lado-caen .exp-lado-tit{color:var(--copper);}
+  .exp-lado b{font-family:'IBM Plex Mono',monospace; color:var(--ink);}
+  .exp-lado-lista{max-height:220px; overflow-y:auto;}
+  .exp-vermas{margin-top:6px; background:none; border:1px solid var(--hairline); border-radius:6px;
+              color:var(--ink-dim); font-size:10.5px; padding:4px 9px; cursor:pointer; font-weight:600;}
+  .exp-vermas:hover{border-color:var(--gold); color:var(--gold);}
+  .exp-lado-vacio{color:var(--ink-faint); font-style:italic;}
+
+  /* Sectores e industrias desplegables (paso 1) */
+  .expl-fuerza-row.clic{cursor:pointer; padding-left:5px; padding-right:5px;
+                        margin-left:-5px; margin-right:-5px; border-radius:6px;}
+  .expl-fuerza-row.clic:hover{background:var(--bg-field);}
+  .expl-fuerza-row.abierta{background:var(--bg-field);}
+  .expl-fuerza-cnt{font-family:'IBM Plex Mono',monospace; font-size:9.5px;
+                   color:var(--ink-faint); margin-left:6px; white-space:nowrap;}
+  .expl-fuerza-cnt .fc-ok{color:var(--verdigris);}
+  .expl-fuerza-cnt .fc-no{color:var(--copper);}
+  .exp-grupo-det{background:var(--bg-field); border-radius:8px; padding:10px 12px; margin:12px 0 4px;
+                 border-left:2px solid var(--gold);}
+  .exp-grupo-cab{font-size:12.5px; font-weight:700; color:var(--ink); margin-bottom:6px;}
+  .exp-grupo-cab span{display:block; font-size:10px; font-weight:400; color:var(--ink-faint);
+                      text-transform:none; letter-spacing:0;}
+  .exp-grupo-nota{font-size:10px; color:var(--ink-faint); line-height:1.5; margin-bottom:7px;}
+  /* Dentro de un grupo, el motivo de caída ("capitalización · sin dato") es
+     más largo que un número: se deja envolver en vez de desbordar. */
+  .exp-grupo-det .ec-val{white-space:normal; text-align:right;}
+  .exp-grupo-det .exp-lados{margin:0;}
 
   /* Controles de umbral */
   .exp-ctrl{display:flex; align-items:center; gap:9px; font-size:11.5px; color:var(--ink-dim); flex-wrap:wrap; margin-bottom:9px;}
@@ -5517,6 +5564,41 @@ function explorarFechaHTML(analisis){
   } catch(e){ return ''; }
 }
 
+// QUÉ DATO LE FALTÓ, Y DÓNDE SE MIRA
+// ===================================
+// El backend ya manda `faltan` con el nombre del dato que Yahoo no entregó
+// ("capitalización", "crecimiento del BPA", "crecimiento de ingresos"). Antes
+// se imprimía como una línea suelta de 10 px, así que en la práctica había que
+// buscarla. Ahora cada dato faltante sale como etiqueta y, al lado, el nombre
+// EXACTO del campo en TradingView y el umbral que tendría que cumplir -- que es
+// lo único que hace falta para resolverlo a mano en dos segundos, que es
+// justamente el motivo por el que estas acciones no se esconden.
+const EXPL_FALTA_INFO = {
+  'capitalización':          {tv:'Cap. de mercado',                umbral:u => `≥ ${u.capB.toFixed(1).replace('.',',')} B USD`},
+  'crecimiento del BPA':     {tv:'Crecimiento BPA dil., TTM YoY',  umbral:u => `≥ ${u.crecimiento} %`},
+  'crecimiento de ingresos': {tv:'Crecimiento ingresos, TTM YoY',  umbral:u => `≥ ${u.crecimiento} %`},
+};
+
+function explFaltaHTML(c){
+  const esc = s => String(s == null ? '' : s).replace(/</g,'&lt;');
+  const faltan = c.faltan || [];
+  const chips = faltan.map(f => `<span class="expl-falta-chip">${esc(f)}</span>`).join('');
+  // El "dónde mirarlo" solo se arma para los datos que conocemos. Si algún día
+  // el backend agrega un campo nuevo, la etiqueta igual aparece y esta línea
+  // simplemente no lo menciona -- preferible a inventarle un nombre de campo
+  // de TradingView que no existe.
+  const donde = faltan
+    .map(f => EXPL_FALTA_INFO[f] ? `<b>${esc(EXPL_FALTA_INFO[f].tv)}</b> ${esc(EXPL_FALTA_INFO[f].umbral(explUmbrales))}` : null)
+    .filter(Boolean);
+  return `<div class="expl-card-falta">
+    <span class="fal-tit">Yahoo no entregó ${faltan.length === 1 ? 'este dato' : 'estos datos'}:</span>
+    ${chips}
+    ${donde.length ? `<span class="expl-falta-donde">En TradingView: ${donde.join(' · ')}.</span>` : ''}
+    <span class="expl-falta-donde">Todo lo demás (fase, confirmaciones, score y fuerza relativa) sí se pudo
+    verificar y lo pasó — por eso está acá y no descartada.</span>
+  </div>`;
+}
+
 // Una tarjeta por candidata -- finalista o "para revisar a mano". Mismo
 // componente para las dos: la única diferencia real es la advertencia de
 // qué dato faltó, y el borde dorado tenue que marca "esta no pasó sola, hay
@@ -5545,9 +5627,7 @@ function explorarTarjetaHTML(c, tipo){
       Precio: <b>US$${typeof c.precio === 'number' ? c.precio.toLocaleString('es-CL') : '—'}</b>
       ${typeof c.capB === 'number' ? ` · Cap.: US$${c.capB.toFixed(1)} B` : ''}
     </div>
-    ${tipo === 'mano' && c.faltan && c.faltan.length
-      ? `<div class="expl-card-falta">Le falta: ${c.faltan.join(', ')} — por eso no es finalista directa; se marca para revisar a mano.</div>`
-      : ''}
+    ${tipo === 'mano' && c.faltan && c.faltan.length ? explFaltaHTML(c) : ''}
     <div class="expl-card-btns">
       <a href="${c.tradingview}" target="_blank" rel="noopener">Abrir en TradingView ↗</a>
       ${tienePrecio ? `<button type="button" data-accion="expl-abrir" data-ticker="${c.ticker}">Ver ficha</button>` : ''}
@@ -5573,7 +5653,72 @@ const EXPL_UMBRALES_DEF = {precio:10, volM:2, capB:2, crecimiento:25, score:6};
 let explUmbrales = cargarExplUmbrales();
 let explFiltros = cargarExplFiltros();   // qué etapas están encendidas
 let explPaso = 0;                        // 0 = la alerta (el resultado), ver PASOS
-let explCaidosAbiertos = {};             // qué listas de "se cayeron" están desplegadas
+let explCaidosAbiertos = {};             // qué etapas del embudo están desplegadas
+let explVerTodo = {};                    // '<etapa>|pasan' / '<etapa>|caen' -> mostrar la lista completa
+let explGrupoAbierto = null;             // 'sector|Tecnología' | 'industria|Semiconductores' | null
+
+// ---- DE QUÉ SECTOR/INDUSTRIA ES CADA ACCIÓN ----
+// El paso 1 mide la fuerza de 11 sectores y 12 industrias usando ETF (XLK,
+// SMH, ...). Las acciones, en cambio, traen el sector y la industria que les
+// pone YAHOO, que están en inglés y con otra taxonomía. Para poder tocar un
+// sector y ver sus empresas hay que cruzar las dos cosas.
+//
+// SECTORES: el cruce es 1 a 1 y no tiene ambigüedad -- los 11 SPDR sectoriales
+// existen justamente porque replican los 11 sectores del estándar que Yahoo
+// también usa.
+const EXPL_SECTOR_YAHOO = {
+  'Tecnología':           ['Technology'],
+  'Salud':                ['Healthcare'],
+  'Financiero':           ['Financial Services'],
+  'Consumo discrecional': ['Consumer Cyclical'],
+  'Consumo básico':       ['Consumer Defensive'],
+  'Energía':              ['Energy'],
+  'Industrial':           ['Industrials'],
+  'Materiales':           ['Basic Materials'],
+  'Utilities':            ['Utilities'],
+  'Inmobiliario':         ['Real Estate'],
+  'Comunicaciones':       ['Communication Services'],
+};
+
+// INDUSTRIAS: acá NO hay cruce limpio y es importante no fingir que sí. Los
+// ETF de industria son TEMÁTICOS (alguien decide qué entra en "ciberseguridad")
+// mientras que Yahoo clasifica cada empresa en una industria de una lista
+// cerrada de ~145. Por eso cada entrada dice de qué tipo es su cruce:
+//   exacta = la industria de Yahoo es literalmente ese tema.
+//   amplia = el tema junta varias industrias de Yahoo; la lista de acá es
+//            razonable pero no es la cartera del ETF.
+//   sinCruce = Yahoo no tiene nada equivalente. Se dice, no se inventa.
+//            (Ciberseguridad: esas empresas viven en "Software—Infrastructure",
+//            mezcladas con todo el resto del software de infraestructura.)
+const EXPL_INDUSTRIA_YAHOO = {
+  'Semiconductores':        {cruce:'exacta', ind:['Semiconductors', 'Semiconductor Equipment & Materials']},
+  'Software':               {cruce:'exacta', ind:['Software—Infrastructure', 'Software—Application']},
+  'Biotecnología':          {cruce:'exacta', ind:['Biotechnology']},
+  'Aeroespacial y defensa': {cruce:'exacta', ind:['Aerospace & Defense']},
+  'Banca regional':         {cruce:'exacta', ind:['Banks—Regional']},
+  'Petróleo y gas E&P':     {cruce:'exacta', ind:['Oil & Gas E&P']},
+  'Nuclear / uranio':       {cruce:'exacta', ind:['Uranium']},
+  'Oro y mineras':          {cruce:'amplia', ind:['Gold', 'Silver', 'Other Precious Metals & Mining']},
+  'Retail':                 {cruce:'amplia', ind:['Specialty Retail', 'Internet Retail', 'Apparel Retail',
+                                                  'Discount Stores', 'Department Stores', 'Home Improvement Retail',
+                                                  'Luxury Goods', 'Footwear & Accessories', 'Auto & Truck Dealerships']},
+  'Transporte':             {cruce:'amplia', ind:['Railroads', 'Trucking', 'Integrated Freight & Logistics',
+                                                  'Airlines', 'Marine Shipping']},
+  'Infraestructura':        {cruce:'amplia', ind:['Engineering & Construction', 'Building Products & Equipment',
+                                                  'Building Materials']},
+  'Ciberseguridad':         {cruce:'sinCruce', ind:[]},
+};
+
+// Yahoo escribe algunas industrias con raya larga ("Software—Infrastructure")
+// y a veces con guion y espacios. Se normaliza para que el cruce no dependa de
+// ese detalle tipográfico.
+function explNorm(s){
+  return String(s == null ? '' : s).toLowerCase()
+    .replace(/[‐-―]/g, '-')     // rayas y guiones largos -> guion
+    .replace(/\s*-\s*/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 function cargarExplUmbrales(){
   try {
@@ -5602,48 +5747,68 @@ function explEtapas(){
   const u = explUmbrales;
   const num = v => (typeof v === 'number' && isFinite(v));
   return [
-    {grupo:'Calidad', id:'precio', tit:`Precio ≥ ${u.precio} USD`, sub:'descarta chatarra',
+    {grupo:'Calidad', id:'precio', corto:'precio', tit:`Precio ≥ ${u.precio} USD`, sub:'descarta chatarra',
      pasa:a => num(a.p) && a.p >= u.precio, val:a => num(a.p) ? `US$${a.p}` : 'sin precio'},
-    {grupo:null, id:'volM', tit:`Volumen 90 d ≥ ${u.volM.toFixed(1).replace('.',',')} M`, sub:'entras y sales sin mover el precio',
+    {grupo:null, id:'volM', corto:'volumen', tit:`Volumen 90 d ≥ ${u.volM.toFixed(1).replace('.',',')} M`, sub:'entras y sales sin mover el precio',
      pasa:a => num(a.v) && a.v >= u.volM, val:a => num(a.v) ? `${a.v} M` : 'sin volumen'},
-    {grupo:'Tendencia', id:'sma50', tit:'Precio > SMA 50', sub:'el precio lidera', estricta:true,
+    {grupo:'Tendencia', id:'sma50', corto:'bajo SMA 50', tit:'Precio > SMA 50', sub:'el precio lidera', estricta:true,
      pasa:a => num(a.c50) && a.p > a.c50, val:a => num(a.c50) ? `SMA50 ${a.c50}` : 'sin SMA 50'},
-    {grupo:null, id:'cruce', tit:'SMA 50 > SMA 200', sub:'la tendencia de fondo es alcista', estricta:true,
+    {grupo:null, id:'cruce', corto:'SMA 50 < 200', tit:'SMA 50 > SMA 200', sub:'la tendencia de fondo es alcista', estricta:true,
      pasa:a => num(a.c50) && num(a.c200) && a.c50 > a.c200, val:a => (num(a.c50)&&num(a.c200)) ? `${a.c50} vs ${a.c200}` : 'sin SMA 200'},
-    {grupo:'Tamaño y crecimiento', id:'capB', tit:`Capitalización ≥ ${u.capB.toFixed(1).replace('.',',')} B`, sub:'empresas de tamaño real', estricta:true,
+    {grupo:'Tamaño y crecimiento', id:'capB', corto:'capitalización', tit:`Capitalización ≥ ${u.capB.toFixed(1).replace('.',',')} B`, sub:'empresas de tamaño real', estricta:true,
      pasa:a => num(a.cB) && a.cB >= u.capB, val:a => num(a.cB) ? `${a.cB} B` : 'sin dato'},
-    {grupo:null, id:'crecBpa', tit:`Crecimiento BPA ≥ ${u.crecimiento} %`, sub:'gana más que hace un año', estricta:true,
+    {grupo:null, id:'crecBpa', corto:'crec. BPA', tit:`Crecimiento BPA ≥ ${u.crecimiento} %`, sub:'gana más que hace un año', estricta:true,
      pasa:a => num(a.gB) && a.gB >= u.crecimiento, val:a => num(a.gB) ? `${a.gB}%` : 'sin dato'},
-    {grupo:null, id:'crecVentas', tit:`Crecimiento ingresos ≥ ${u.crecimiento} %`, sub:'y además vende más', estricta:true,
+    {grupo:null, id:'crecVentas', corto:'crec. ingresos', tit:`Crecimiento ingresos ≥ ${u.crecimiento} %`, sub:'y además vende más', estricta:true,
      pasa:a => num(a.gV) && a.gV >= u.crecimiento, val:a => num(a.gV) ? `${a.gV}%` : 'sin dato'},
-    {grupo:'Momento (los dos que TradingView no tiene)', id:'weinstein', tit:'Fase 2 con ≥ 4 confirmaciones', sub:'Weinstein, velas semanales',
+    {grupo:'Momento (los dos que TradingView no tiene)', id:'weinstein', corto:'fase', tit:'Fase 2 con ≥ 4 confirmaciones', sub:'Weinstein, velas semanales',
      estricta:true, opcional:true, activo:explFiltros.weinstein,
      pasa:a => a.f === 2 && num(a.cf) && a.cf >= 4,
      val:a => a.dg ? (a.f == null ? 'sin fase' : `fase ${a.f}${num(a.cf)?` · ${a.cf}/5`:''}`) : 'no diagnosticada'},
-    {grupo:null, id:'fuerza', tit:`Score ≥ ${u.score} y fuerza relativa subiendo`, sub:'le gana al S&P 500',
+    {grupo:null, id:'fuerza', corto:'score/fuerza', tit:`Score ≥ ${u.score} y fuerza relativa subiendo`, sub:'le gana al S&P 500',
      estricta:true, opcional:true, activo:explFiltros.fuerza,
      pasa:a => num(a.sc) && a.sc >= u.score && a.fr === 1,
      val:a => a.dg ? `score ${num(a.sc)?a.sc:'—'} · fuerza ${a.fr===1?'sube':a.fr===0?'baja':'sin dato'}` : 'no diagnosticada'},
   ];
 }
 
-// Devuelve {filas:[{etapa, entran, quedan, caen:[...]}], sobreviven:[...]}
+// Devuelve {filas:[{etapa, entran, quedan, pasan:[...], caen:[...]}], sobreviven:[...]}
+// `pasan` se guarda además de `caen` porque el despliegue de cada etapa ahora
+// muestra los dos lados, no solo las que se cayeron.
 function explCorrerEmbudo(acciones){
   const filas = [];
   let vivos = acciones.slice();
   explEtapas().forEach(e => {
     const activa = e.opcional ? e.activo : true;
     if(!activa){
-      filas.push({etapa:e, entran:vivos.length, quedan:vivos.length, caen:[], apagada:true});
+      filas.push({etapa:e, entran:vivos.length, quedan:vivos.length,
+                  pasan:vivos.slice(), caen:[], apagada:true});
       return;
     }
     const entran = vivos.length;
     const pasan = [], caen = [];
     vivos.forEach(a => (e.pasa(a) ? pasan : caen).push(a));
     vivos = pasan;
-    filas.push({etapa:e, entran, quedan:vivos.length, caen, apagada:false});
+    filas.push({etapa:e, entran, quedan:vivos.length, pasan:pasan.slice(), caen, apagada:false});
   });
   return {filas, sobreviven:vivos};
+}
+
+// DÓNDE TERMINÓ CADA ACCIÓN. Una acción se cae en UNA sola etapa (al caer sale
+// de `vivos` y ya no se evalúa en las siguientes), así que este mapa es
+// inequívoco: o llegó al final, o dice exactamente en qué filtro murió y con
+// qué valor. Es lo que permite que al abrir un sector se vea el motivo de cada
+// una sin recalcular nada.
+function explDestinos(filas, sobreviven){
+  const dest = {};
+  filas.forEach(f => {
+    if(f.apagada) return;
+    f.caen.forEach(a => {
+      if(!dest[a.t]) dest[a.t] = {paso:false, etapa:f.etapa, val:f.etapa.val(a)};
+    });
+  });
+  sobreviven.forEach(a => { dest[a.t] = {paso:true}; });
+  return dest;
 }
 
 // Una por industria, como el paso 5 del método.
@@ -5655,6 +5820,30 @@ function explDedup(lista){
     else { vistas[ind] = a.t; finales.push(a); }
   });
   return {finales, repetidas};
+}
+
+// Una de las dos columnas (las que pasan / las que quedan fuera).
+// `inicial` es cuántas se ven sin pedir más: 30 en las que pasan, 5 en las que
+// se caen. El tope de las que pasan no es capricho -- en la primera etapa
+// pasan casi todas las del universo, y pintar esa lista entera de golpe deja
+// la pantalla imposible de recorrer. El botón dice cuántas faltan, así que el
+// número nunca queda escondido.
+function explLadoHTML(titulo, clase, lista, valFn, clave, inicial){
+  const todo = !!explVerTodo[clave];
+  const visibles = todo ? lista : lista.slice(0, inicial);
+  const restan = lista.length - visibles.length;
+  const cl = encodeURIComponent(clave);
+  const filas = visibles.map(x => `<div class="exp-caido ${clase === 'lado-pasan' ? 'pasa' : ''}">
+      <b data-accion="exp-abrir" data-ticker="${x.t}" style="cursor:pointer;">${x.t}</b>
+      <span class="ec-val">${valFn(x)}</span>
+    </div>`).join('');
+  return `<div class="exp-lado ${clase}">
+    <div class="exp-lado-tit">${titulo} (${lista.length})</div>
+    ${lista.length ? `<div class="exp-lado-lista">${filas}</div>`
+                   : '<div class="exp-lado-vacio">ninguna</div>'}
+    ${restan > 0 ? `<button type="button" class="exp-vermas" data-accion="exp-vermas" data-clave="${cl}">ver las ${restan} que faltan</button>` : ''}
+    ${todo && lista.length > inicial ? `<button type="button" class="exp-vermas" data-accion="exp-vermas" data-clave="${cl}">ver menos</button>` : ''}
+  </div>`;
 }
 
 function explFmtCrec(a){
@@ -5740,14 +5929,15 @@ function explorarResultadoHTML(analisis){
         </div>
         <div class="exp-paso-der">
           <div class="exp-paso-num">${f.quedan}</div>
-          ${f.caen.length
-            ? `<div class="exp-paso-caen" data-accion="exp-caidos" data-id="${e.id}">${abierto?'ocultar':'−'+f.caen.length}</div>`
+          ${(f.caen.length || f.pasan.length)
+            ? `<div class="exp-paso-caen" data-accion="exp-caidos" data-id="${e.id}">${abierto ? 'ocultar' : (f.caen.length ? '−' + f.caen.length : 'ver')}</div>`
             : `<div class="exp-paso-caen vacio">${f.apagada?'—':'0'}</div>`}
         </div>
       </div>
-      ${abierto && f.caen.length ? `<div class="exp-caidos">${
-        f.caen.slice(0, 120).map(x => `<div class="exp-caido"><b data-accion="exp-abrir" data-ticker="${x.t}" style="cursor:pointer;">${x.t}</b><span class="ec-val">${e.val(x)}</span></div>`).join('')
-      }${f.caen.length > 120 ? `<div style="padding-top:6px;color:var(--ink-faint);">…y ${f.caen.length-120} más.</div>` : ''}</div>` : ''}`;
+      ${abierto ? `<div class="exp-lados">
+        ${explLadoHTML('Pasan', 'lado-pasan', f.pasan, e.val, `et:${e.id}|pasan`, 30)}
+        ${explLadoHTML('Quedan fuera', 'lado-caen', f.caen, e.val, `et:${e.id}|caen`, 5)}
+      </div>` : ''}`;
   });
 
   const controles = `
@@ -5817,10 +6007,86 @@ function explorarResultadoHTML(analisis){
 
   const mano = analisis.revisarAMano || [];
 
-  const filaFuerza = (x) => {
+  // ---- Paso 1 · sectores e industrias que se abren ------------------------
+  // Cada fila de fuerza pasa a ser un botón: al tocarlo se ve QUÉ empresas de
+  // ese sector están pasando el embudo y cuáles quedaron en el camino, con el
+  // filtro exacto donde se cayó cada una.
+  const dest = explDestinos(filas, sobreviven);
+  const conGrupo = acciones.filter(a => a.se || a['in']).length;
+
+  const explMiembros = (tipo, nombre) => {
+    if(tipo === 'sector'){
+      const objetivo = new Set((EXPL_SECTOR_YAHOO[nombre] || []).map(explNorm));
+      return {cruce: objetivo.size ? 'exacta' : 'sinCruce',
+              lista: objetivo.size ? acciones.filter(a => objetivo.has(explNorm(a.se))) : []};
+    }
+    const cfg = EXPL_INDUSTRIA_YAHOO[nombre] || {cruce:'sinCruce', ind:[]};
+    const objetivo = new Set((cfg.ind || []).map(explNorm));
+    return {cruce: cfg.cruce,
+            lista: objetivo.size ? acciones.filter(a => objetivo.has(explNorm(a['in']))) : []};
+  };
+
+  const NOTA_CRUCE = {
+    exacta: null,
+    amplia: 'Cruce amplio: este ETF es temático y Yahoo clasifica por industria, así que la lista '
+          + 'junta las industrias de Yahoo que le corresponden. Sirve para mirar el grupo, pero no '
+          + 'es la cartera exacta del ETF.',
+    sinCruce: 'Yahoo no tiene una industria equivalente a este tema — esas empresas quedan repartidas '
+            + 'dentro de otras industrias, así que listarlas acá sería inventar. La fuerza del ETF '
+            + 'que se ve a la izquierda sí es real y medida.',
+  };
+
+  const valPasa = a => (typeof a.sc === 'number') ? `score ${a.sc}`
+                     : (typeof a.p === 'number' ? `US$${a.p}` : '—');
+  const valCae = a => {
+    const d = dest[a.t];
+    if(!d || !d.etapa) return '—';
+    return `${d.etapa.corto} · ${d.val}`;
+  };
+
+  const filaFuerza = (x, tipo) => {
     const m12 = (x.fuerza && typeof x.fuerza.m12 === 'number') ? x.fuerza.m12 : null;
     const cls = m12 === null ? '' : (m12 >= 0 ? 'up' : 'down');
-    return `<div class="expl-fuerza-row"><span class="expl-fuerza-nombre">${x.nombre}</span><span class="expl-fuerza-val ${cls}">${m12 === null ? '—' : (m12>=0?'+':'') + m12.toFixed(1) + '%'}</span></div>`;
+    const clave = `${tipo}|${x.nombre}`;
+    const abierto = explGrupoAbierto === clave;
+    const {cruce, lista} = explMiembros(tipo, x.nombre);
+    const pasan = lista.filter(a => dest[a.t] && dest[a.t].paso);
+    const caen  = lista.filter(a => dest[a.t] && !dest[a.t].paso);
+    const cnt = lista.length
+      ? `<span class="expl-fuerza-cnt"><span class="fc-ok">${pasan.length}</span>/${lista.length}</span>`
+      : '';
+    // La fila es SOLO la fila. El detalle se dibuja aparte, debajo de las dos
+    // columnas y a todo el ancho: metido acá adentro quedaba encerrado en una
+    // columna de ~180 px en el teléfono, y los motivos de caída
+    // ("bajo SMA 50 · SMA50 40") se partían en tres líneas.
+    return `<div class="expl-fuerza-row clic ${abierto?'abierta':''}"
+        data-accion="exp-grupo" data-clave="${encodeURIComponent(clave)}">
+        <span class="expl-fuerza-nombre">${x.nombre.replace(/</g,'&lt;')}${cnt}</span>
+        <span class="expl-fuerza-val ${cls}">${m12 === null ? '—' : (m12>=0?'+':'') + m12.toFixed(1) + '%'}</span>
+      </div>`;
+  };
+
+  const explGrupoDetalleHTML = (clave) => {
+    const corte = clave.indexOf('|');
+    if(corte < 0) return '';
+    const tipo = clave.slice(0, corte), nombre = clave.slice(corte + 1);
+    const {cruce, lista} = explMiembros(tipo, nombre);
+    const pasan = lista.filter(a => dest[a.t] && dest[a.t].paso);
+    const caen  = lista.filter(a => dest[a.t] && !dest[a.t].paso);
+    const nota = NOTA_CRUCE[cruce];
+    return `<div class="exp-grupo-det">
+      <div class="exp-grupo-cab">${nombre.replace(/</g,'&lt;')}
+        <span>${tipo === 'sector' ? 'sector' : 'industria'}${lista.length ? ` · ${pasan.length} de ${lista.length} pasan el embudo` : ''}</span>
+      </div>
+      ${nota ? `<div class="exp-grupo-nota">${nota}</div>` : ''}
+      ${lista.length ? `<div class="exp-lados">
+          ${explLadoHTML('Pasan el embudo', 'lado-pasan', pasan, valPasa, `gr:${clave}|pasan`, 30)}
+          ${explLadoHTML('Quedaron en el camino', 'lado-caen', caen, valCae, `gr:${clave}|caen`, 5)}
+        </div>`
+        : `<div class="exp-lado-vacio" style="font-size:11px;">${
+            cruce === 'sinCruce' ? 'Sin lista, por lo que dice la nota de arriba.'
+            : 'Ninguna de las acciones con sector e industria conocidos quedó en este grupo.'}</div>`}
+    </div>`;
   };
 
   // El panel del resultado. Se define aparte porque va PRIMERO en el riel
@@ -5848,15 +6114,26 @@ function explorarResultadoHTML(analisis){
     RESULTADO_HTML,
     // 1 · sectores
     `<p class="expl-section-title">Dónde está entrando la plata</p>
-     <p class="expl-section-nota">Cada sector e industria comparado con el S&amp;P 500 a 12 meses. Positivo = le está ganando al mercado.</p>
+     <p class="expl-section-nota">Cada sector e industria comparado con el S&amp;P 500 a 12 meses. Positivo = le está
+     ganando al mercado. <b>Toca cualquiera</b> para ver qué empresas de ese grupo están pasando el embudo y cuáles
+     quedaron en el camino — con el filtro exacto donde se cayó cada una. El número chico al lado del nombre es
+     <span style="color:var(--verdigris);">las que pasan</span> sobre el total del grupo.</p>
      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-       <div><div style="font-size:11px;color:var(--ink-faint);margin-bottom:4px;">Sectores</div>${sectores.map(filaFuerza).join('')}</div>
-       <div><div style="font-size:11px;color:var(--ink-faint);margin-bottom:4px;">Industrias</div>${industrias.map(filaFuerza).join('')}</div>
-     </div>`,
+       <div><div style="font-size:11px;color:var(--ink-faint);margin-bottom:4px;">Sectores</div>${sectores.map(x => filaFuerza(x, 'sector')).join('')}</div>
+       <div><div style="font-size:11px;color:var(--ink-faint);margin-bottom:4px;">Industrias</div>${industrias.map(x => filaFuerza(x, 'industria')).join('')}</div>
+     </div>
+     ${explGrupoAbierto ? explGrupoDetalleHTML(explGrupoAbierto) : ''}
+     <p class="exp-limite" style="color:var(--ink-faint); border-color:var(--hairline); background:var(--bg-field);">
+       <b>Hasta dónde llegan estas listas.</b> El sector y la industria de cada acción los entrega Yahoo junto con la
+       capitalización, y eso solo se pidió para las ${(alcance.conFundamentales||[]).length} que pasaron precio, volumen
+       y tendencia. Por eso acá aparecen ${conGrupo} de las ${acciones.length} revisadas: las que se cayeron en los
+       primeros tres filtros nunca llegaron a tener sector conocido. Las cuentas del embudo (paso 2) sí son sobre
+       las ${acciones.length}.</p>`,
     // 2 · embudo
     `<p class="expl-section-title">El embudo — mueve los umbrales</p>
      <p class="expl-section-nota">Se recalcula al instante sobre las ${acciones.length} acciones ya revisadas, sin volver a
-     consultar nada. Toca el número rojo de cada filtro para ver <b>quiénes se cayeron ahí</b>.</p>
+     consultar nada. Toca el número chico de cada filtro para ver <b>las dos listas</b>: las que pasan y las que
+     quedan fuera ahí, con el valor que las dejó a cada lado.</p>
      ${controles}
      ${embudoHTML}
      <p class="expl-section-nota" style="margin-top:12px;">De <b>${maxBarra}</b> quedan <b>${sobreviven.length}</b>.</p>
@@ -5969,6 +6246,27 @@ function renderAmbienteExplorar(){
     el.addEventListener('click', () => {
       const id = el.dataset.id;
       explCaidosAbiertos[id] = !explCaidosAbiertos[id];
+      renderAmbienteExplorar();
+    });
+  });
+
+  // "Ver las N que faltan" / "ver menos", en cualquiera de las dos columnas.
+  viewEl.querySelectorAll('[data-accion="exp-vermas"]').forEach(el => {
+    el.addEventListener('click', () => {
+      const clave = decodeURIComponent(el.dataset.clave || '');
+      if(!clave) return;
+      explVerTodo[clave] = !explVerTodo[clave];
+      renderAmbienteExplorar();
+    });
+  });
+
+  // Abrir un sector o una industria del paso 1. Se mantiene UNO abierto a la
+  // vez: con 23 grupos, dejarlos todos desplegados convierte el paso en una
+  // lista de varias pantallas y se pierde justo lo que se venía a comparar.
+  viewEl.querySelectorAll('[data-accion="exp-grupo"]').forEach(el => {
+    el.addEventListener('click', () => {
+      const clave = decodeURIComponent(el.dataset.clave || '');
+      explGrupoAbierto = (explGrupoAbierto === clave) ? null : clave;
       renderAmbienteExplorar();
     });
   });
