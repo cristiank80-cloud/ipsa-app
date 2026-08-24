@@ -1807,6 +1807,14 @@ const stocksUSA = [
   {ticker:'PAYS',   name:"Paysign",                                    dec:2, currency:'USD'},
   {ticker:'WT',     name:"WisdomTree",                                 dec:2, currency:'USD'},
 
+  // --- Cripto (agosto 2026, a pedido de Cristian) --- Yahoo la entrega por
+  // el mismo endpoint que cualquier acción (suffix=""), así que no necesita
+  // trato especial acá. Sí lo necesita en Explorar (ver SIN_FUNDAMENTALES
+  // en backend/main.py: no tiene capitalización ni crecimiento de empresa)
+  // y en el enlace de TradingView (ver tvSimbolo(), más abajo: BTC-USD no
+  // sigue la convención de guion→punto de las clases de acción).
+  {ticker:'BTC-USD', name:"Bitcoin",                                   dec:2, currency:'USD'},
+
   // ---------------------------------------------------------------------
   // NASDAQ-100 (agosto 2026)
   // ---------------------------------------------------------------------
@@ -5600,7 +5608,17 @@ function tvEsIOS(){
 // TradingView escribe las clases de acción con PUNTO (BRK.B). Esta app las
 // guarda con guion, que es como las pide Yahoo (ver SP500 en main.py). Sin esta
 // vuelta, el enlace de BRK-B y BF-B llevaba a una página que no existe.
-function tvSimbolo(ticker){ return String(ticker || '').replace(/-/g, '.'); }
+//
+// Cripto es OTRO caso, no el mismo: Yahoo escribe el par con guion
+// (BTC-USD) pero TradingView no usa ni guion ni punto para estos pares --
+// es "BTCUSD" pegado. Aplicarle el reemplazo de arriba daria "BTC.USD",
+// que tampoco existe. Por eso los pares de cripto conocidos van aparte.
+const TV_CRIPTO = new Set(['BTC-USD']);
+function tvSimbolo(ticker){
+  const t = String(ticker || '');
+  if(TV_CRIPTO.has(t)) return t.replace(/-/g, '');
+  return t.replace(/-/g, '.');
+}
 
 function tvEnlace(ticker){
   const web = `https://www.tradingview.com/symbols/${encodeURIComponent(tvSimbolo(ticker))}/`;
@@ -5684,6 +5702,7 @@ function explorarTarjetaHTML(c, tipo){
       ${fase}${conf ? ' · ' + conf : ''} · ${frTxt}<br>
       Precio: <b>US$${typeof c.precio === 'number' ? c.precio.toLocaleString('es-CL') : '—'}</b>
       ${typeof c.capB === 'number' ? ` · Cap.: US$${c.capB.toFixed(1)} B` : ''}
+      ${c.sinFundamentales ? ' · <span style="color:var(--ink-dim);">sin datos de empresa (cripto) — pasó solo con precio/tendencia/fase/fuerza</span>' : ''}
     </div>
     ${tipo === 'mano' && c.faltan && c.faltan.length ? explFaltaHTML(c) : ''}
     <div class="expl-card-btns">
@@ -5813,12 +5832,18 @@ function explEtapas(){
      pasa:a => num(a.c50) && a.p > a.c50, val:a => num(a.c50) ? `SMA50 ${a.c50}` : 'sin SMA 50'},
     {grupo:null, id:'cruce', corto:'SMA 50 < 200', tit:'SMA 50 > SMA 200', sub:'la tendencia de fondo es alcista', estricta:true,
      pasa:a => num(a.c50) && num(a.c200) && a.c50 > a.c200, val:a => (num(a.c50)&&num(a.c200)) ? `${a.c50} vs ${a.c200}` : 'sin SMA 200'},
+    // a.sf = 1 para activos SIN_FUNDAMENTALES (Bitcoin, ver main.py): no
+    // tienen capitalización ni crecimiento de empresa porque no son una
+    // empresa, así que estos tres filtros los dejan pasar directo en vez
+    // de exigirles un dato que nunca va a existir. Sin este bypass, mover
+    // cualquiera de estos tres sliders botaría a BTC del embudo recalculado
+    // en el teléfono aunque el servidor lo haya dejado pasar.
     {grupo:'Tamaño y crecimiento', id:'capB', corto:'capitalización', tit:`Capitalización ≥ ${u.capB.toFixed(1).replace('.',',')} B`, sub:'empresas de tamaño real', estricta:true,
-     pasa:a => num(a.cB) && a.cB >= u.capB, val:a => num(a.cB) ? `${a.cB} B` : 'sin dato'},
+     pasa:a => a.sf || (num(a.cB) && a.cB >= u.capB), val:a => a.sf ? 'no aplica (cripto)' : (num(a.cB) ? `${a.cB} B` : 'sin dato')},
     {grupo:null, id:'crecBpa', corto:'crec. BPA', tit:`Crecimiento BPA ≥ ${u.crecimiento} %`, sub:'gana más que hace un año', estricta:true,
-     pasa:a => num(a.gB) && a.gB >= u.crecimiento, val:a => num(a.gB) ? `${a.gB}%` : 'sin dato'},
+     pasa:a => a.sf || (num(a.gB) && a.gB >= u.crecimiento), val:a => a.sf ? 'no aplica (cripto)' : (num(a.gB) ? `${a.gB}%` : 'sin dato')},
     {grupo:null, id:'crecVentas', corto:'crec. ingresos', tit:`Crecimiento ingresos ≥ ${u.crecimiento} %`, sub:'y además vende más', estricta:true,
-     pasa:a => num(a.gV) && a.gV >= u.crecimiento, val:a => num(a.gV) ? `${a.gV}%` : 'sin dato'},
+     pasa:a => a.sf || (num(a.gV) && a.gV >= u.crecimiento), val:a => a.sf ? 'no aplica (cripto)' : (num(a.gV) ? `${a.gV}%` : 'sin dato')},
     {grupo:'Momento (los dos que TradingView no tiene)', id:'weinstein', corto:'fase', tit:'Fase 2 con ≥ 4 confirmaciones', sub:'Weinstein, velas semanales',
      estricta:true, opcional:true, activo:explFiltros.weinstein,
      pasa:a => a.f === 2 && num(a.cf) && a.cf >= 4,
@@ -6061,6 +6086,7 @@ function explorarResultadoHTML(analisis){
     capB:x.cB, crecBpa:x.gB, crecVentas:x.gV, volM:x.v, fase:x.f, confirmaciones:x.cf,
     score:x.sc, fuerzaRelativa:{disponible:x.fr!==null, pendientePositiva:x.fr===1},
     tradingview:`https://www.tradingview.com/symbols/${x.t}/`,
+    sinFundamentales: x.sf === 1,
   }, 'finalista');
 
   const mano = analisis.revisarAMano || [];
@@ -6156,6 +6182,7 @@ function explorarResultadoHTML(analisis){
          <span>Generado: <b>${explorarFechaHTML(analisis)}</b></span>
          ${embudo.seCortoPorTiempo ? '<span style="color:var(--copper);">Se cortó por tiempo</span>' : ''}
          ${typeof embudo.nucleoTotal === 'number' ? `<span title="El núcleo es el S&amp;P 500 + Nasdaq-100 + tu grilla. Si quedó entero, un número bajo de candidatas es un resultado de verdad; si quedó a medias, no significa nada.">Núcleo: <b style="color:${embudo.nucleoCompleto ? 'var(--verdigris)' : 'var(--copper)'};">${embudo.nucleoRevisado}/${embudo.nucleoTotal}</b></span>` : ''}
+         ${embudo.rotacionMercado ? `<span title="El resto del mercado (fuera del núcleo) se cubre de a poco, corrida tras corrida: hoy le tocó desde este punto de esa lista, y mañana empieza en otro. No queda guardado en ningún lado -- se calcula solo con la fecha de hoy, así que no depende de que el servidor siga prendido entre corridas. Con el paso de hoy, una vuelta completa toma ~${embudo.rotacionMercado.periodoDias} días.">Resto del mercado hoy: <b>desde el ${embudo.rotacionMercado.offsetHoy}/${embudo.rotacionMercado.totalResto}</b> · vuelta en ~${embudo.rotacionMercado.periodoDias}d</span>` : ''}
        </div>
        ${(a.sectoresFuertes && a.sectoresFuertes.length) ? `<div class="expl-tags">${a.sectoresFuertes.map(s=>`<span class="expl-tag">${s.replace(/</g,'&lt;')}</span>`).join('')}</div>` : ''}
      </div>
