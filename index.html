@@ -5564,6 +5564,64 @@ function explorarFechaHTML(analisis){
   } catch(e){ return ''; }
 }
 
+// ---- ABRIR EN LA APP DE TRADINGVIEW, NO EN EL NAVEGADOR ----------------
+// En el teléfono, "Abrir en TradingView" abría una pestaña del navegador aunque
+// la app estuviera instalada. El análisis de verdad se hace en la app, así que
+// caer en la web es un paso perdido cada vez.
+//
+// NO existe un esquema `tradingview://` documentado para símbolos, así que NO se
+// inventa uno: si el que uno se imagina no existe, el enlace muere en silencio y
+// queda peor que antes. Se usa, en cambio, el mecanismo oficial de cada sistema:
+//
+//   ANDROID -- una URL `intent://`. Nombra el paquete de la app de forma
+//     explícita y lleva `browser_fallback_url`: si la app está, la abre; si no
+//     está, Chrome se va solo a la web. No hay caso en que quede en la nada.
+//     El paquete es el mismo que aparece en la ficha de Google Play.
+//
+//   iOS -- Universal Links. Ahí no hay nada que construir: la propia URL
+//     https de TradingView abre la app si está instalada. Lo único que lo
+//     impedía era `target="_blank"`, porque iOS entrega el enlace a la app solo
+//     en una navegación normal, no al abrir una pestaña nueva. Por eso en iOS
+//     el enlace deja de llevarlo. Si la app no estuviera, se ve la web igual y
+//     se vuelve con el gesto de atrás.
+//
+//   ESCRITORIO -- se queda como estaba, en pestaña nueva: acá no hay app a la
+//     que saltar y perder la del monitor sería un retroceso.
+const TV_PAQUETE_ANDROID = 'com.tradingview.tradingviewapp';
+
+function tvEsAndroid(){ return /Android/i.test(navigator.userAgent || ''); }
+function tvEsIOS(){
+  const ua = navigator.userAgent || '';
+  // iPadOS 13+ se hace pasar por Macintosh; se distingue porque tiene táctil.
+  return /iPad|iPhone|iPod/.test(ua)
+      || (/Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1);
+}
+
+// TradingView escribe las clases de acción con PUNTO (BRK.B). Esta app las
+// guarda con guion, que es como las pide Yahoo (ver SP500 en main.py). Sin esta
+// vuelta, el enlace de BRK-B y BF-B llevaba a una página que no existe.
+function tvSimbolo(ticker){ return String(ticker || '').replace(/-/g, '.'); }
+
+function tvEnlace(ticker){
+  const web = `https://www.tradingview.com/symbols/${encodeURIComponent(tvSimbolo(ticker))}/`;
+  if(tvEsAndroid()){
+    return {
+      href: `intent://${web.replace(/^https:\/\//, '')}#Intent;scheme=https;`
+          + `package=${TV_PAQUETE_ANDROID};`
+          + `S.browser_fallback_url=${encodeURIComponent(web)};end`,
+      pestanaNueva: false,
+    };
+  }
+  if(tvEsIOS()) return {href: web, pestanaNueva: false};
+  return {href: web, pestanaNueva: true};
+}
+
+function tvAnclaHTML(ticker, texto){
+  const l = tvEnlace(ticker);
+  return `<a href="${l.href}" rel="noopener"${l.pestanaNueva ? ' target="_blank"' : ''}
+    data-tv="${ticker}">${texto}</a>`;
+}
+
 // QUÉ DATO LE FALTÓ, Y DÓNDE SE MIRA
 // ===================================
 // El backend ya manda `faltan` con el nombre del dato que Yahoo no entregó
@@ -5629,7 +5687,7 @@ function explorarTarjetaHTML(c, tipo){
     </div>
     ${tipo === 'mano' && c.faltan && c.faltan.length ? explFaltaHTML(c) : ''}
     <div class="expl-card-btns">
-      <a href="${c.tradingview}" target="_blank" rel="noopener">Abrir en TradingView ↗</a>
+      ${tvAnclaHTML(c.ticker, 'Abrir en TradingView ↗')}
       ${tienePrecio ? `<button type="button" data-accion="expl-abrir" data-ticker="${c.ticker}">Ver ficha</button>` : ''}
       ${yaTiene ? '<span class="expl-ya" style="border:none;">Ya la tienes</span>'
         : yaEnEspera ? '<span class="expl-ya">✓ en "A seguir"</span>'
@@ -6097,6 +6155,7 @@ function explorarResultadoHTML(analisis){
          <span>Cobertura: <b>${a.cobertura != null ? a.cobertura + '%' : '—'}</b></span>
          <span>Generado: <b>${explorarFechaHTML(analisis)}</b></span>
          ${embudo.seCortoPorTiempo ? '<span style="color:var(--copper);">Se cortó por tiempo</span>' : ''}
+         ${typeof embudo.nucleoTotal === 'number' ? `<span title="El núcleo es el S&amp;P 500 + Nasdaq-100 + tu grilla. Si quedó entero, un número bajo de candidatas es un resultado de verdad; si quedó a medias, no significa nada.">Núcleo: <b style="color:${embudo.nucleoCompleto ? 'var(--verdigris)' : 'var(--copper)'};">${embudo.nucleoRevisado}/${embudo.nucleoTotal}</b></span>` : ''}
        </div>
        ${(a.sectoresFuertes && a.sectoresFuertes.length) ? `<div class="expl-tags">${a.sectoresFuertes.map(s=>`<span class="expl-tag">${s.replace(/</g,'&lt;')}</span>`).join('')}</div>` : ''}
      </div>
