@@ -434,11 +434,13 @@
   .siz-v-no .siz-veredicto, .siz-v-revisa{color:var(--copper);}
   .siz-v-falta .siz-veredicto{color:var(--gold);}
   .siz-vacio{margin-top:10px; font-size:11.5px; color:var(--ink-faint); padding:8px 0;}
-  /* Cinco ambientes. `flex:1 1 auto` + `min-width:0` deja que las pestañas
-     se repartan el ancho disponible en vez de desbordarse, y el
-     overflow-x:auto es la red de seguridad para pantallas absurdamente
-     angostas -- pero con las etiquetas cortas de abajo no debería activarse
-     nunca en un celular normal. */
+  /* Seis ambientes (con "Cripto" ya no caben repartiéndose el ancho sin
+     apretarse). En vez de encoger letra/padding para que quepan todas,
+     cada pestaña conserva su ancho natural (`flex:0 0 auto` también en
+     el media query de abajo) y la fila se desliza horizontal --
+     overflow-x:auto ya estaba puesto como red de seguridad y ahora es el
+     mecanismo real. cambiarAmbiente() hace scrollIntoView de la pestaña
+     activa para que nunca quede fuera de vista al cambiar de ambiente. */
   .env-selector{
     display:flex; gap:4px; background:var(--bg-field); border-radius:9px; padding:3px;
     overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none;
@@ -461,16 +463,17 @@
     .env-largo{display:none;}
     .env-corto{display:inline;}
     .env-btn{
-      padding:12px 6px; font-size:13px; flex:1 1 auto; text-align:center;
+      padding:12px 14px; font-size:13px; flex:0 0 auto; text-align:center;
       min-height:44px; display:flex; align-items:center; justify-content:center;
+      scroll-snap-align:start;
     }
-    .env-selector{gap:3px; padding:3px;}
+    .env-selector{gap:3px; padding:3px; scroll-snap-type:x proximity;}
   }
   /* El corte baja a 360 px (antes 400): a 390 px —el ancho más común de
      celular— las etiquetas cortas caben perfectamente a 13 px, y bajarlas a
      12 px ahí era encoger sin necesidad. Bajo 360 px sí hace falta. */
   @media(max-width:360px){
-    .env-btn{padding:12px 3px; font-size:12px; letter-spacing:-0.01em;}
+    .env-btn{padding:12px 10px; font-size:12px; letter-spacing:-0.01em;}
     .env-selector{gap:2px; padding:2px;}
   }
   @media(max-width:600px){
@@ -2230,7 +2233,12 @@ function cambiarAmbiente(nuevo){
 
   // Botones del selector
   document.querySelectorAll('.env-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.amb === nuevo);
+    const esActivo = b.dataset.amb === nuevo;
+    b.classList.toggle('active', esActivo);
+    // Con 6 pestañas la fila se desliza horizontal en celular (ver CSS de
+    // .env-selector); sin esto, tocar "Cripto" desde "A seguir" podía
+    // dejar la pestaña recién activada fuera de la parte visible.
+    if(esActivo) b.scrollIntoView({inline:'nearest', block:'nearest'});
   });
 
   const esChile = nuevo === 'chile';
