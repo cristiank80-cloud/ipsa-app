@@ -915,6 +915,7 @@
       <button type="button" class="env-btn" data-amb="explorar"><span class="env-largo">Explorar</span><span class="env-corto">Explorar</span></button>
       <button type="button" class="env-btn" data-amb="chile"><span class="env-largo">Chile · CLP</span><span class="env-corto">Chile</span></button>
       <button type="button" class="env-btn" data-amb="usa"><span class="env-largo">EE.UU. · USD</span><span class="env-corto">EE.UU.</span></button>
+      <button type="button" class="env-btn" data-amb="cripto"><span class="env-largo">Cripto · CLP</span><span class="env-corto">Cripto</span></button>
       <button type="button" class="env-btn" data-amb="seguir"><span class="env-largo">A seguir</span><span class="env-corto">A seguir</span></button>
       <button type="button" class="env-btn" data-amb="cartera"><span class="env-largo">Mi Cartera</span><span class="env-corto">Cartera</span></button>
     </div>
@@ -1594,11 +1595,17 @@ const HISTORY_LEN = 40;
 // locale en-US, 2 decimales por defecto y antepone "US$". Sin esto, una
 // acción a US$150,25 con dec:0 (heredado de un ticker chileno) se hubiera
 // mostrado "150" -- ver sección 4.1 de la especificación v3.
+//
+// EL FORMATO ES SIEMPRE CHILENO, TAMBIÉN EN DÓLARES (27-ago-2026). Miles con
+// punto y decimales con coma: "US$1.234,56". Antes esta rama usaba locale
+// en-US y salía "US$1,234.56", así que la misma app escribía el mismo número
+// de dos maneras según la pestaña. Lo que cambia por moneda es el SÍMBOLO y
+// los decimales por defecto, no la puntuación.
 function fmt(v, dec, currency){
   if(v === null || v === undefined || isNaN(v)) return '···';
   if(currency === 'USD'){
     const d = (dec === undefined || dec === null) ? 2 : dec;
-    return 'US$' + v.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+    return 'US$' + v.toLocaleString('es-CL', {minimumFractionDigits:d, maximumFractionDigits:d});
   }
   return v.toLocaleString('es-CL', {minimumFractionDigits:dec, maximumFractionDigits:dec});
 }
@@ -1611,22 +1618,66 @@ function fmtEje(v, dec, currency){
   if(v === null || v === undefined || isNaN(v)) return '···';
   if(currency === 'USD'){
     const d = (dec === undefined || dec === null) ? 2 : dec;
-    return v.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+    return v.toLocaleString('es-CL', {minimumFractionDigits:d, maximumFractionDigits:d});
   }
   return v.toLocaleString('es-CL', {minimumFractionDigits:dec, maximumFractionDigits:dec});
 }
 function fmtPct(v){ const s = v>=0 ? '+' : ''; return s + (v*100).toLocaleString('es-CL',{minimumFractionDigits:1,maximumFractionDigits:1}) + '%'; }
 function fmtCLP0(v){ return Math.round(v).toLocaleString('es-CL'); }
+
+// ---- UN SOLO FORMATO DE NÚMERO PARA TODA LA APP ------------------------
+// Miles con punto, decimales con coma: 1.234,56. Es el formato chileno, y
+// es el único que se usa acá -- también para los dólares. Antes los montos
+// en USD salían en formato de EE.UU. ("US$1,234.56") porque es el que usa
+// esa moneda en su país, y quedaba una app que escribía el mismo número de
+// dos maneras según la pestaña en la que estuvieras.
+//
+// POR QUÉ ESTA FUNCIÓN Y NO toFixed()
+// ===================================
+// `toFixed()` SIEMPRE devuelve punto decimal y NUNCA pone separador de
+// miles: "1234.5". Sirve para coordenadas de SVG y para el `value` de un
+// <input type="number"> -- los dos exigen punto y sin separadores, y por eso
+// ahí se dejó tal cual a propósito. Para cualquier número que LEA una
+// persona, se usa esto.
+function fmtNum(v, dec){
+  if(v === null || v === undefined || isNaN(v)) return '···';
+  const opciones = (dec === null || dec === undefined)
+    ? {}
+    : {minimumFractionDigits: dec, maximumFractionDigits: dec};
+  return Number(v).toLocaleString('es-CL', opciones);
+}
 // Cantidad de títulos: en Chile siempre es un número entero (no se compran
 // fracciones de acción), pero en EE.UU. muchas apps de inversión compran
 // "por monto" (ej. US$10 en Nvidia) y entregan cantidades fraccionadas como
 // 0.07438882 -- redondear eso a entero mostraría "0 títulos" para una
 // compra real. Se muestra con hasta 6 decimales (sin ceros de más) solo
 // para USD; CLP se comporta exactamente igual que antes (fmtCLP0).
-function fmtCantidad(v, currency){
+// ---- QUÉ TICKERS SON CRIPTO ----
+// Va ACÁ ARRIBA, y no junto a `stocksCripto` (bastante más abajo, donde
+// tendría sentido por orden), por el mismo motivo por el que PLAT_IDS vive
+// junto a la caja: fmtCantidad() de aquí abajo lo necesita, y un `const`
+// usado antes de su declaración queda en zona muerta temporal y revienta la
+// app entera al cargar, sin renderizar nada. Ya pasó una vez con las
+// plataformas; esta lista se declara antes de su primer uso a propósito.
+//
+// Es la lista de tickers, no la de instrumentos: `stocksCripto` (más abajo)
+// le agrega nombre y decimales, y un assert comprueba que las dos digan lo
+// mismo. Agregar una moneda es escribirla en los dos lados.
+const CRIPTO_TICKERS = ['BTC-USD'];
+function esTickerCripto(t){ return CRIPTO_TICKERS.indexOf(t) !== -1; }
+
+function fmtCantidad(v, currency, ticker){
   if(v === null || v === undefined || isNaN(v)) return '···';
+  // Cripto: 8 decimales, que es la unidad real de bitcoin (un satoshi).
+  // NO se puede decidir por la moneda como en los otros dos casos: las
+  // cripto se muestran en pesos, y la regla de CLP es redondear a entero
+  // -- 0,00664084 BTC se vería como "0 títulos". Por eso este caso va
+  // primero y mira el ticker, no la moneda.
+  if(ticker && esTickerCripto(ticker)){
+    return v.toLocaleString('es-CL', {minimumFractionDigits:0, maximumFractionDigits:8});
+  }
   if(currency === 'USD'){
-    return v.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:6});
+    return v.toLocaleString('es-CL', {minimumFractionDigits:0, maximumFractionDigits:6});
   }
   return Math.round(v).toLocaleString('es-CL');
 }
@@ -1636,7 +1687,7 @@ function fmtCantidad(v, currency){
 function fmtMoneda2(v, currency){
   if(v === null || v === undefined || isNaN(v)) return '···';
   if(currency === 'USD'){
-    return 'US$' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    return 'US$' + v.toLocaleString('es-CL', {minimumFractionDigits:2, maximumFractionDigits:2});
   }
   return '$' + Math.round(v).toLocaleString('es-CL');
 }
@@ -1820,13 +1871,16 @@ const stocksUSA = [
   {ticker:'PAYS',   name:"Paysign",                                    dec:2, currency:'USD'},
   {ticker:'WT',     name:"WisdomTree",                                 dec:2, currency:'USD'},
 
-  // --- Cripto (agosto 2026, a pedido de Cristian) --- Yahoo la entrega por
-  // el mismo endpoint que cualquier acción (suffix=""), así que no necesita
-  // trato especial acá. Sí lo necesita en Explorar (ver SIN_FUNDAMENTALES
-  // en backend/main.py: no tiene capitalización ni crecimiento de empresa)
-  // y en el enlace de TradingView (ver tvSimbolo(), más abajo: BTC-USD no
-  // sigue la convención de guion→punto de las clases de acción).
-  {ticker:'BTC-USD', name:"Bitcoin",                                   dec:2, currency:'USD'},
+  // --- Cripto: YA NO VIVE ACÁ ---
+  // BTC-USD estaba en esta lista hasta el 27-ago-2026 y se movió a
+  // `stocksCripto` (más abajo), que es el ambiente 3. El motivo está
+  // explicado allá: Cristian compra en Buda.com EN PESOS, y mientras la
+  // cripto estuvo en esta lista su costo quedó guardado como si fuera
+  // dólares -- la tarjeta marcaba -99,9%.
+  //
+  // OJO: en el BACKEND sigue estando en TICKERS_USA, y tiene que seguir.
+  // De ahí sale su precio, por /quotes-usa, igual que antes. Lo que cambió
+  // es solo de qué lado del frontend se dibuja.
 
   // ---------------------------------------------------------------------
   // NASDAQ-100 (agosto 2026)
@@ -1941,6 +1995,53 @@ const stateUSA = stocksUSA.map(s => ({
   dayHigh: null, dayLow: null, volume: null, montoTransado: null, ret3m: null, ret1y: null,
   rand: seedRand(s.ticker),
 }));
+
+// ---- Ambiente 3 · CRIPTO · CLP (27-ago-2026) ----------------------------
+// POR QUÉ EXISTE ESTE AMBIENTE
+// ============================
+// Bitcoin cotiza en dólares, pero Cristian lo compra en Buda.com EN PESOS.
+// En esta app la moneda de un movimiento la decide el ticker
+// (monedaDeTicker → s.currency), así que mientras BTC vivió en `stocksUSA`
+// con currency 'USD', el precio de Buda que él escribía (73.007.965 pesos)
+// se guardaba como si fueran dólares. Resultado: costo promedio
+// "US$74.809.338", -99,9% en la tarjeta, y un stop en dólares comparándose
+// contra un costo en pesos -- o sea, alertas que no significaban nada.
+//
+// LA REGLA DE ESTE AMBIENTE
+// =========================
+// La PLATA va en pesos: costo, porcentaje, caja, stop y objetivo. Es lo que
+// puso y lo que va a sacar.
+// El ANÁLISIS TÉCNICO se calcula sobre la serie en dólares, que es el
+// mercado real de bitcoin, y después se convierte. Ver aplicarQuoteCripto().
+//
+// AGREGAR OTRA MONEDA
+// ===================
+// Dos líneas: el ticker en CRIPTO_TICKERS (mucho más arriba, junto a
+// fmtCantidad) y el objeto acá. Y una tercera afuera: el mismo ticker en
+// TICKERS_USA de backend/main.py, que es de donde sale el precio -- sin eso
+// la tarjeta aparece y se queda en "Calculando…" para siempre. Yahoo usa
+// PAR-USD para las cripto (ETH-USD, SOL-USD), igual que BTC-USD.
+//
+// `dec: 0` porque el precio se muestra en pesos y son millones; los
+// decimales de la CANTIDAD son otra cosa y los pone fmtCantidad (8).
+const stocksCripto = [
+  {ticker:'BTC-USD', name:"Bitcoin",                                   dec:0, currency:'CLP', esCripto:true},
+];
+// Que las dos listas no se separen en silencio. Si esto salta, alguien
+// agregó una moneda en un lado y no en el otro.
+if(stocksCripto.length !== CRIPTO_TICKERS.length ||
+   stocksCripto.some(s => !esTickerCripto(s.ticker))){
+  console.error('CRIPTO_TICKERS y stocksCripto no calzan:',
+                CRIPTO_TICKERS, stocksCripto.map(s => s.ticker));
+}
+const stateCripto = stocksCripto.map(s => ({
+  ...s,
+  avg: null, price: null, history: [], inAlert: false,
+  dayHigh: null, dayLow: null, volume: null, montoTransado: null, ret3m: null, ret1y: null,
+  priceUsd: null,     // el precio original de Yahoo, para poder mostrarlo de referencia
+  tcAplicado: null,   // con qué dólar se convirtió lo de arriba
+  rand: seedRand(s.ticker),
+}));
 // ---- WATCHLIST PERSONAL (candidatas de Explorar fuera de la grilla) ----
 // El agujero que tapa: Explorar barre 536 acciones pero la grilla que recibe
 // precio son 172. Cuando encontraba una candidata fuera de esas 172, no había
@@ -2013,7 +2114,8 @@ async function sincronizarWatchlist(){
 }
 
 function estaEnGrilla(ticker){
-  return state.some(s => s.ticker === ticker) || stateUSA.some(s => s.ticker === ticker);
+  return state.some(s => s.ticker === ticker) || stateUSA.some(s => s.ticker === ticker)
+      || stateCripto.some(s => s.ticker === ticker);
 }
 function estaEnWatchlist(ticker){
   return watchlist.some(w => w.ticker === ticker);
@@ -2077,12 +2179,13 @@ function nuevoStockFicha(ticker, nombre, currency){
   };
 }
 
-function todosLosStocks(){ return state.concat(stateUSA, stateWatch, stateFicha); }
+function todosLosStocks(){ return state.concat(stateUSA, stateCripto, stateWatch, stateFicha); }
 function stocksDelAmbiente(amb){
   // OJO: stateWatch NO entra acá para 'usa'. Esta función alimenta la grilla
   // de tarjetas, y las de watchlist no tienen tarjeta (ver el comentario de
   // arriba). Sí entran en 'seguir', que es una lista y no una grilla.
   if(amb === 'usa') return stateUSA;
+  if(amb === 'cripto') return stateCripto;
   if(amb === 'seguir') return todosLosStocks(); // el buscador de "A seguir" cubre ambos mercados (sección 6.3 de la spec v3)
   return state;
 }
@@ -2098,7 +2201,7 @@ function cargarAmbienteActivo(){
     // cerrar la app parada en Mi Cartera la hacía volver a Chile sola, sin
     // avisar. Se corrige de paso porque cambiarAmbiente() de más abajo sí
     // aceptaba "cartera" desde siempre: las dos listas deben coincidir.
-    return (v === 'usa' || v === 'seguir' || v === 'cartera' || v === 'explorar') ? v : 'chile';
+    return (v === 'usa' || v === 'cripto' || v === 'seguir' || v === 'cartera' || v === 'explorar') ? v : 'chile';
   } catch(e){ return 'chile'; }
 }
 function guardarAmbienteActivo(a){
@@ -2109,6 +2212,8 @@ let ambienteActivo = cargarAmbienteActivo();
 // Textos del disclaimer superior, uno por ambiente (sección 2.1/2.3 de la
 // spec v3: cada ambiente tiene su propia fuente de datos y hay que decirlo).
 const DISCLAIMER_CHILE = '<b>Datos reales de Yahoo Finance, con rezago.</b> Yahoo no publica de cuántos minutos es el rezago, así que cada precio muestra su antigüedad real: fíjate en la hora junto a cada acción y en el semáforo de estado. <b>El IPSA (y la UF/UTM) vienen directo de Diario Financiero</b>, no de Yahoo — el "Consultado" que ves junto al IPSA es el momento en que este servidor revisó esa página, no la hora exacta en que la bolsa fijó ese valor. <b>Yahoo no entrega puntas de compra/venta de la Bolsa de Santiago</b> — ese dato aparece como no disponible, nunca inventado. Toca cualquier tarjeta para ver el detalle.';
+const DISCLAIMER_CRIPTO = '<b>Precios en pesos, convertidos.</b> Bitcoin cotiza en dólares: el precio que ves acá es el de Yahoo Finance multiplicado por el dólar observado de arriba, que viene de Diario Financiero. <b>No es el precio exacto de Buda.com</b>, que tiene su propio spread — tu porcentaje puede no calzar al peso con lo que muestra su app. <b>Tu costo, tu porcentaje y tus objetivos sí están en pesos de verdad</b>, que es lo que pusiste y lo que vas a sacar. La media y las variaciones se calculan sobre la serie en dólares (el mercado real de bitcoin) y se convierten con el mismo dólar de hoy, así que la comparación "precio contra media" es exacta aunque los dos números estén convertidos. Si el dólar no está fresco, el precio no se actualiza en vez de mostrarte una conversión vieja sin decirlo.';
+
 const DISCLAIMER_USA = '<b>Datos reales de Yahoo Finance, con rezago.</b> Los ETF de este ambiente cotizan en USD y el tipo de cambio (USD/CLP) que ves arriba viene de Diario Financiero, igual que el UF/UTM. <b>El S&P 500 (^GSPC) viene de Yahoo Finance</b>, no de Diario Financiero. Toca cualquier tarjeta para ver el detalle.';
 
 // ---- cambiarAmbiente(nuevo): conmutador central de los 3 ambientes ----
@@ -2119,7 +2224,7 @@ const DISCLAIMER_USA = '<b>Datos reales de Yahoo Finance, con rezago.</b> Los ET
 // bloque. El ambiente "seguir" (consolidado) se construye en el bloque 7;
 // por ahora solo conmuta la vista, #viewSeguir puede llegar vacío.
 function cambiarAmbiente(nuevo){
-  if(nuevo !== 'chile' && nuevo !== 'usa' && nuevo !== 'seguir' && nuevo !== 'cartera' && nuevo !== 'explorar') return;
+  if(nuevo !== 'chile' && nuevo !== 'usa' && nuevo !== 'cripto' && nuevo !== 'seguir' && nuevo !== 'cartera' && nuevo !== 'explorar') return;
   ambienteActivo = nuevo;
   guardarAmbienteActivo(nuevo);
 
@@ -2130,6 +2235,7 @@ function cambiarAmbiente(nuevo){
 
   const esChile = nuevo === 'chile';
   const esUsa = nuevo === 'usa';
+  const esCripto = nuevo === 'cripto';
   const esSeguir = nuevo === 'seguir';
   const esCartera = nuevo === 'cartera';
   const esExplorar = nuevo === 'explorar';
@@ -2152,7 +2258,9 @@ function cambiarAmbiente(nuevo){
   if(ufUtmBlock) ufUtmBlock.style.display = esVistaConsolidada ? 'none' : '';
   if(statusChile) statusChile.style.display = esChile ? '' : 'none';
   if(statusUsa) statusUsa.style.display = esUsa ? '' : 'none';
-  if(topDisclaimer) topDisclaimer.innerHTML = esUsa ? DISCLAIMER_USA : DISCLAIMER_CHILE;
+  if(topDisclaimer) topDisclaimer.innerHTML = esCripto
+    ? (avisoObjetivosCriptoHTML() + DISCLAIMER_CRIPTO)
+    : (esUsa ? DISCLAIMER_USA : DISCLAIMER_CHILE);
 
   // Paneles principales vs. vista consolidada
   const analysisPanelWrap = document.getElementById('analysisPanelWrap');
@@ -2165,7 +2273,10 @@ function cambiarAmbiente(nuevo){
   const viewExplorar = document.getElementById('viewExplorar');
 
   if(topDisclaimer) topDisclaimer.style.display = esVistaConsolidada ? 'none' : '';
-  if(analysisPanelWrap) analysisPanelWrap.style.display = esVistaConsolidada ? 'none' : '';
+  // El panel de señales queda FUERA de Cripto: sus filas se arman con los
+  // datos de /signals del lote de EE.UU., en dólares. Mostrarlos dentro de
+  // una vista en pesos sería repetir el error que este ambiente arregla.
+  if(analysisPanelWrap) analysisPanelWrap.style.display = (esVistaConsolidada || esCripto) ? 'none' : '';
   if(movsPanelWrap) movsPanelWrap.style.display = esVistaConsolidada ? 'none' : '';
   // El buscador SÍ queda visible en los cuatro ambientes (sección 6.3 de la
   // spec v3): en "A seguir" y "Mi Cartera" busca en ambos mercados con
@@ -2345,7 +2456,7 @@ todosLosStocks().forEach(s => {
       <div class="price-block">
         <div class="price mono" data-el="price">···</div>
         <div class="delta mono" data-el="delta"></div>
-        ${s.currency === 'USD' ? '<div class="price-clp-eq mono" data-el="priceClp"></div>' : ''}
+        ${(s.currency === 'USD' || s.esCripto) ? '<div class="price-clp-eq mono" data-el="priceClp"></div>' : ''}
       </div>
     </div>
     <div class="card-stats" data-el="cardStats">
@@ -2780,7 +2891,7 @@ function addAlert(ticker, direccion, ev){
   const etiqueta = esVenta ? 'sobre su promedio' : 'bajo su promedio';
   const dist = (ev && typeof ev.distanciaPromedio === 'number') ? ev.distanciaPromedio : null;
   const distTxt = dist !== null
-    ? `${Math.abs(dist).toFixed(1)}% ${esVenta ? 'sobre' : 'bajo'} su promedio`
+    ? `${fmtNum(Math.abs(dist), 1)}% ${esVenta ? 'sobre' : 'bajo'} su promedio`
     : '';
   const li = document.createElement('li');
   li.className = 'feed-item feed-item--' + (esVenta ? 'venta' : 'compra');
@@ -3277,7 +3388,7 @@ function renderDiagnosticoFuerza(ticker){
       <tr><td style="color:${tickColor(d.fuerzaRelativa.pendientePositiva)};">${tickIcono(d.fuerzaRelativa.pendientePositiva)} Pendiente positiva (~1 mes)</td><td></td></tr>
       <tr><td style="color:${tickColor(d.fuerzaRelativa.lider)};">${tickIcono(d.fuerzaRelativa.lider)} Líder (máximo de ~3 meses)</td><td></td></tr>
       ` : ''}
-      <tr><td>Distancia a la EMA21 (solo si está sobreextendida)${d.sobreextendida ? ' ⚠' : ''}</td><td>${d.distanciaEMA21Pct != null ? d.distanciaEMA21Pct.toFixed(1) + '%' : '—'}</td></tr>
+      <tr><td>Distancia a la EMA21 (solo si está sobreextendida)${d.sobreextendida ? ' ⚠' : ''}</td><td>${d.distanciaEMA21Pct != null ? fmtNum(d.distanciaEMA21Pct, 1) + '%' : '—'}</td></tr>
       <tr><td>Escalón 1 (SMA50) — vende mitad</td><td class="mono">${fmt(d.stops.sma50, 2)}${d.stops.perdioSMA50 ? ' ⚠ perdida' : ''}</td></tr>
       <tr><td>Escalón 2 (SMA150) — vende todo</td><td class="mono">${fmt(d.stops.sma150, 2)}${d.stops.perdioSMA150 ? ' ⚠ perdida' : ''}</td></tr>
     </table>
@@ -3777,7 +3888,7 @@ async function cargarHistorialPeriodo(ticker, period, dec){
     const primero = points[0], ultimo = points[points.length-1];
     const variacion = (ultimo.close/primero.close - 1) * 100;
     const signo = variacion >= 0 ? '+' : '';
-    statusEl.textContent = `${primero.date} → ${ultimo.date} · ${points.length} datos reales · ${signo}${variacion.toFixed(1)}%`;
+    statusEl.textContent = `${primero.date} → ${ultimo.date} · ${fmtNum(points.length, 0)} datos reales · ${signo}${fmtNum(variacion, 1)}%`;
   } catch(e){
     console.warn('Error cargando /history:', e);
     const statusEl = document.getElementById('historyStatus');
@@ -3837,7 +3948,7 @@ function wirePeriodSelector(s){
           const primero = filtrados[0], ultimo = filtrados[filtrados.length-1];
           const variacion = (ultimo.close/primero.close - 1) * 100;
           const signo = variacion >= 0 ? '+' : '';
-          statusEl.textContent = `${primero.date} → ${ultimo.date} · ${filtrados.length} datos reales · ${signo}${variacion.toFixed(1)}%`;
+          statusEl.textContent = `${primero.date} → ${ultimo.date} · ${fmtNum(filtrados.length, 0)} datos reales · ${signo}${fmtNum(variacion, 1)}%`;
         } catch(e){
           console.warn('Error cargando 8A:', e);
           const statusEl = document.getElementById('historyStatus');
@@ -3882,7 +3993,7 @@ function wirePeriodSelector(s){
         const primero = filtrados[0], ultimo = filtrados[filtrados.length-1];
         const variacion = (ultimo.close/primero.close - 1) * 100;
         const signo = variacion >= 0 ? '+' : '';
-        statusEl.textContent = `${primero.date} → ${ultimo.date} · ${filtrados.length} datos reales · ${signo}${variacion.toFixed(1)}%`;
+        statusEl.textContent = `${primero.date} → ${ultimo.date} · ${fmtNum(filtrados.length, 0)} datos reales · ${signo}${fmtNum(variacion, 1)}%`;
       } catch(e){
         console.warn('Error cargando rango personalizado:', e);
         const statusEl = document.getElementById('historyStatus');
@@ -3907,7 +4018,7 @@ function wirePeriodSelector(s){
     const variacion = (ultimo.close/primero.close - 1) * 100;
     const signo = variacion >= 0 ? '+' : '';
     const statusEl = document.getElementById('historyStatus');
-    if(statusEl) statusEl.textContent = `${primero.date} → ${ultimo.date} · ${points.length} datos reales · ${signo}${variacion.toFixed(1)}%`;
+    if(statusEl) statusEl.textContent = `${primero.date} → ${ultimo.date} · ${fmtNum(points.length, 0)} datos reales · ${signo}${fmtNum(variacion, 1)}%`;
   }
 }
 
@@ -3995,11 +4106,22 @@ function renderCard(s){
   // y los precios de las POSICIONES PROPIAS (ver renderMovsDetailPanel).
   priceEl.textContent = fmt(s.price, s.dec, s.currency);
   if(priceClpEl){
-    // Equivalente en CLP al tipo de cambio vigente -- si no hay tipo de
-    // cambio fresco, se avisa en vez de mostrar una conversión vieja sin decirlo.
-    priceClpEl.textContent = usdclpEsValido()
-      ? '≈ ' + fmt(s.price * usdclpValue, 0, 'CLP')
-      : 'CLP: tipo de cambio no disponible';
+    if(s.esCripto){
+      // Acá la conversión va al revés que en EE.UU.: el precio grande de la
+      // tarjeta YA está en pesos, y lo de referencia es el dólar original de
+      // Yahoo. Se muestra para poder cruzarlo con TradingView o con
+      // cualquier otra fuente sin deshacer la conversión a mano, y se dice
+      // con qué dólar se hizo -- si no calza con Buda, ahí está el motivo.
+      priceClpEl.textContent = (typeof s.priceUsd === 'number')
+        ? '≈ ' + fmt(s.priceUsd, 2, 'USD') + ' · dólar ' + fmt(s.tcAplicado, 0, 'CLP')
+        : 'Esperando un dólar fresco para convertir';
+    } else {
+      // Equivalente en CLP al tipo de cambio vigente -- si no hay tipo de
+      // cambio fresco, se avisa en vez de mostrar una conversión vieja sin decirlo.
+      priceClpEl.textContent = usdclpEsValido()
+        ? '≈ ' + fmt(s.price * usdclpValue, 0, 'CLP')
+        : 'CLP: tipo de cambio no disponible';
+    }
   }
   const deltaVal = (s.price/s.avg)-1;
   deltaEl.textContent = fmtPct(deltaVal);
@@ -4335,11 +4457,11 @@ const TITULOS_TENDENCIA = {
 function textoExtension(z){
   if(typeof z !== 'number') return {txt:'···', sub:'', color:'var(--ink-faint)'};
   const a = Math.abs(z);
-  if(a < 1)   return {txt:z.toFixed(1)+'σ', sub:'en línea', color:'var(--ink-faint)'};
-  if(z <= -2) return {txt:z.toFixed(1)+'σ', sub:'muy bajo', color:'var(--verdigris)'};
-  if(z <= -1) return {txt:z.toFixed(1)+'σ', sub:'bajo', color:'var(--verdigris)'};
-  if(z >= 2)  return {txt:'+'+z.toFixed(1)+'σ', sub:'muy extendido', color:'var(--copper)'};
-  return {txt:'+'+z.toFixed(1)+'σ', sub:'extendido', color:'var(--copper)'};
+  if(a < 1)   return {txt:fmtNum(z, 1)+'σ', sub:'en línea', color:'var(--ink-faint)'};
+  if(z <= -2) return {txt:fmtNum(z, 1)+'σ', sub:'muy bajo', color:'var(--verdigris)'};
+  if(z <= -1) return {txt:fmtNum(z, 1)+'σ', sub:'bajo', color:'var(--verdigris)'};
+  if(z >= 2)  return {txt:'+'+fmtNum(z, 1)+'σ', sub:'muy extendido', color:'var(--copper)'};
+  return {txt:'+'+fmtNum(z, 1)+'σ', sub:'extendido', color:'var(--copper)'};
 }
 
 // Llena la franja de los 3 ejes + rentabilidad + rango 5 años de una tarjeta
@@ -4390,7 +4512,7 @@ function actualizarStatsCard(card, s){
                          : tendencia === 'evento' ? 'var(--gold)' : 'var(--ink-faint)';
     if(tendSub){
       tendSub.textContent = (typeof ev.pendientePct === 'number')
-        ? (ev.pendientePct >= 0 ? '+' : '') + ev.pendientePct.toFixed(2) + '%/día'
+        ? (ev.pendientePct >= 0 ? '+' : '') + fmtNum(ev.pendientePct, 2) + '%/día'
         : tendencia;
     }
     tendVal.parentElement.title = TITULOS_TENDENCIA[tendencia] || '';
@@ -4404,7 +4526,7 @@ function actualizarStatsCard(card, s){
       if(evtSub) evtSub.textContent = 'al reporte';
       evtVal.parentElement.title = `Reporta el ${ev.fechaReporte}. Un reporte mueve el precio mucho más que cualquier señal técnica: esta lectura no es accionable hasta después.`;
     } else if(typeof ev.gapPct === 'number' && typeof ev.gapDiasAtras === 'number' && ev.gapDiasAtras <= 15){
-      evtVal.textContent = (ev.gapPct >= 0 ? '+' : '') + (ev.gapPct * 100).toFixed(0) + '%';
+      evtVal.textContent = (ev.gapPct >= 0 ? '+' : '') + fmtNum(ev.gapPct * 100, 0) + '%';
       evtVal.style.color = 'var(--gold)';
       if(evtSub) evtSub.textContent = 'hace ' + ev.gapDiasAtras + 'd';
       evtVal.parentElement.title = 'Salto puntual reciente (reporte o noticia). El movimiento viene de ese día, no de una tendencia.';
@@ -4424,7 +4546,7 @@ function actualizarStatsCard(card, s){
       if(typeof ev.rsi14 === 'number'){
         rsiRow.style.display = '';
         const rsiVal = card.querySelector('[data-el="csRsiVal"]');
-        rsiVal.textContent = ev.rsi14.toFixed(1)
+        rsiVal.textContent = fmtNum(ev.rsi14, 1)
           + (ev.rsi14 <= 30 ? ' · sobreventa' : ev.rsi14 >= 70 ? ' · sobrecompra' : '');
         rsiVal.style.color = ev.rsi14 <= 30 ? 'var(--verdigris)'
                             : ev.rsi14 >= 70 ? 'var(--copper)' : 'var(--ink-dim)';
@@ -4528,7 +4650,7 @@ function renderAnalysis(){
     let rsiTxt = (typeof ev.rsi14 === 'number')
       ? `RSI ${ev.rsi14}${ev.rsi14<30?' · sobrevendida':ev.rsi14>70?' · sobrecomprada':''}`
       : 'RSI: sin dato';
-    if(typeof ev.zscore === 'number'){ rsiTxt += ` · z ${ev.zscore>=0?'+':''}${ev.zscore.toFixed(1)}σ`; }
+    if(typeof ev.zscore === 'number'){ rsiTxt += ` · z ${ev.zscore>=0?'+':''}${fmtNum(ev.zscore, 1)}σ`; }
     const flagTxt = flagged
       ? `<div class="ai-flag">⚠ ${ev.banderas[0].split('—')[0].trim()}</div>`
       : '';
@@ -4611,7 +4733,7 @@ function renderAnalysis(){
     const color = deltaVal >= 0 ? 'var(--verdigris)' : 'var(--copper)';
     let rsiTxt = rsi === null ? 'RSI: sin dato' :
       `RSI ${rsi}${rsi<30?' · sobrevendida':rsi>70?' · sobrecomprada':''}`;
-    if(z !== null){ rsiTxt += ` · z ${z>=0?'+':''}${z.toFixed(1)}σ`; }
+    if(z !== null){ rsiTxt += ` · z ${z>=0?'+':''}${fmtNum(z, 1)}σ`; }
     return `
       <div class="analysis-item" data-ticker="${s.ticker}">
         <div class="ai-left">
@@ -4684,17 +4806,67 @@ function tickerDesdeInputMov(valorInput){
 function monedaDeTicker(ticker){
   const s = todosLosStocks().find(x => x.ticker === ticker);
   if(s) return s.currency || 'CLP';
-  return ambienteActivo === 'usa' ? 'USD' : 'CLP';
+  return monedaDelAmbiente(ambienteActivo);
 }
 
 // Movimientos SIN campo `currency` (respaldos de antes del bloque 5, o
 // registrados antes de que existiera esta versión) se tratan como CLP --
 // es lo que eran hasta ahora, y un respaldo viejo debe seguir siendo
 // legible en vez de perder movimientos silenciosamente.
-function monedaDeMov(m){ return m.currency || 'CLP'; }
+function monedaDeMov(m){
+  // CRIPTO: la moneda la decide el INSTRUMENTO, no la etiqueta guardada.
+  // Los movimientos de bitcoin registrados ANTES del ambiente Cripto quedaron
+  // con currency 'USD', porque en esa época BTC vivía en la grilla de EE.UU.
+  // Pero el precio que se escribió en ellos era el de Buda.com, en pesos: la
+  // etiqueta estaba mala, el número no. Reclasificarlos acá los deja donde
+  // corresponden sin tocar el dato guardado y sin pedirte que los reescribas.
+  //
+  // Es deliberadamente ESTRECHO -- solo cripto. El resto de los movimientos
+  // sigue leyendo su `currency` tal cual, así que ningún respaldo viejo de
+  // Chile o EE.UU. cambia de lugar por este bloque.
+  if(esTickerCripto(m.ticker)) return 'CLP';
+  return m.currency || 'CLP';
+}
+
+// ---- ÁMBITO: la pregunta que la MONEDA ya no contesta -------------------
+// Hasta el 27-ago-2026 alcanzaba con la moneda: CLP era Chile y USD era
+// EE.UU. Con el ambiente Cripto dejó de alcanzar, porque bitcoin se compra
+// en pesos igual que COPEC. Si los movimientos se siguieran filtrando por
+// moneda, la lista de Chile mostraría las compras de bitcoin y el resumen
+// de la cartera chilena las sumaría adentro.
+//
+// El ámbito NO se guarda en el movimiento: se deduce del ticker cada vez.
+// Así los movimientos que ya están registrados -- y los respaldos viejos --
+// se reclasifican solos, sin migración y sin inventarle un campo a un dato
+// que el usuario grabó antes de que este concepto existiera.
+//
+// El único caso sin respuesta es un ticker escrito a mano que la app no
+// conoce (el formulario lo permite). Ahí se cae a la moneda, que es lo que
+// se hacía antes: es una suposición, pero es la misma de siempre y no
+// cambia el comportamiento de nada que ya funcionara.
+function ambitoDeTicker(ticker){
+  if(esTickerCripto(ticker)) return 'cripto';
+  if(stocksUSA.some(s => s.ticker === ticker)) return 'usa';
+  if(stocks.some(s => s.ticker === ticker)) return 'chile';
+  if(stateWatch.some(s => s.ticker === ticker)) return 'usa';
+  return null;
+}
+function ambitoDeMov(m){
+  return ambitoDeTicker(m.ticker) || (monedaDeMov(m) === 'USD' ? 'usa' : 'chile');
+}
+// De ambiente a ámbito y a moneda. Las vistas consolidadas ('seguir',
+// 'cartera', 'explorar') caen a Chile/CLP, que es lo que hacían antes de
+// que existiera esto -- ahí los paneles por ambiente están ocultos igual.
+function ambitoDelAmbiente(amb){
+  if(amb === 'usa') return 'usa';
+  if(amb === 'cripto') return 'cripto';
+  return 'chile';
+}
+function monedaDelAmbiente(amb){ return amb === 'usa' ? 'USD' : 'CLP'; }
+
 function movimientosDelAmbiente(amb){
-  const moneda = amb === 'usa' ? 'USD' : 'CLP';
-  return movimientos.filter(m => monedaDeMov(m) === moneda);
+  const objetivo = ambitoDelAmbiente(amb);
+  return movimientos.filter(m => ambitoDeMov(m) === objetivo);
 }
 
 // Aviso de movimientos sin plataforma. Aparece solo si los hay, ofrece
@@ -4760,7 +4932,7 @@ function renderMovimientos(){
   countEl.textContent = movsAmbiente.length;
 
   if(movsAmbiente.length === 0){
-    const moneda = ambienteActivo === 'usa' ? 'USD' : 'CLP';
+    const moneda = monedaDelAmbiente(ambienteActivo);
     listEl.innerHTML = `<p class="analysis-empty">Sin movimientos registrados todavía en ${moneda}.</p>`;
     renderResumenPortafolio();
     return;
@@ -4787,7 +4959,7 @@ function renderMovimientos(){
       <div class="mov-item">
         <span class="mi-tipo ${ultimo.tipo}">${ultimo.tipo}</span>
         <span class="mono">${ultimo.ticker}</span>
-        <span>${fmtCantidad(ultimo.cantidad, monedaDeMov(ultimo))} tít.</span>
+        <span>${fmtCantidad(ultimo.cantidad, monedaDeMov(ultimo), ultimo.ticker)} tít.</span>
         <span class="mono">${fmtMoneda2(ultimo.precio, monedaDeMov(ultimo))}</span>
         ${chipPlat(platDeMov(ultimo))}
         <span style="color:var(--ink-faint);">${ultimo.fecha}</span>
@@ -4815,12 +4987,12 @@ function renderMovimientos(){
       const signo = m.tipo === 'compra' ? 1 : -1;
       posiciones[m.ticker] = (posiciones[m.ticker] || 0) + signo * m.cantidad;
     });
-    const monedaResumen = ambienteActivo === 'usa' ? 'USD' : 'CLP';
+    const monedaResumen = monedaDelAmbiente(ambienteActivo);
     const resumen = Object.entries(posiciones)
       // Umbral chico en vez de "!== 0": sumar/restar floats (0.1+0.2, etc.)
       // puede dejar restos como 0.000000000000003 en vez de un 0 exacto.
       .filter(([,cant]) => Math.abs(cant) > 0.0000001)
-      .map(([t,cant]) => `${t}: ${cant>0?'+':''}${fmtCantidad(cant, monedaResumen)}`)
+      .map(([t,cant]) => `${t}: ${cant>0?'+':''}${fmtCantidad(cant, monedaResumen, t)}`)
       .join(' · ');
     if(resumen){
       listEl.insertAdjacentHTML('beforeend', `<p class="movs-summary">Posición neta registrada — ${resumen}</p>`);
@@ -4876,7 +5048,13 @@ function inicializarFormularioMovimientos(){
 // Atajo desde el detalle de una acción: precarga el formulario de arriba
 function registrarDesdeDetalle(ticker, precio){
   const s = todosLosStocks().find(x => x.ticker === ticker);
-  if(s && s.currency === 'USD' && ambienteActivo !== 'usa') cambiarAmbiente('usa');
+  // Saltar al ambiente donde vive el ticker. Antes esto solo miraba
+  // `currency === 'USD'`, que alcanzaba con dos ambientes; con Cripto ya no,
+  // porque bitcoin es CLP igual que las chilenas. El formulario de
+  // movimientos vive dentro del ambiente, así que si no se cambia acá, el
+  // "registrar" abre un formulario que está oculto.
+  const ambitoDestino = s ? ambitoDeTicker(s.ticker) : null;
+  if(ambitoDestino && ambienteActivo !== ambitoDestino) cambiarAmbiente(ambitoDestino);
   document.getElementById('movTicker').value = s ? `${s.ticker} — ${s.name}` : ticker;
   document.getElementById('movPrecio').value = precio;
   closeDetail();
@@ -4891,10 +5069,18 @@ function registrarDesdeDetalle(ticker, precio){
 // ticker, así una cartera nunca mezcla posiciones de las dos monedas (ver
 // sección 4.1 de la spec v3: mezclar CLP y USD sin convertir "produce un
 // número sin significado"). Por defecto usa el ambiente activo.
-function calcularPortafolio(moneda){
-  moneda = moneda || (ambienteActivo === 'usa' ? 'USD' : 'CLP');
+//
+// `ambito` OPCIONAL ('chile'|'usa'|'cripto', 27-ago-2026). Sin él se
+// comporta exactamente como antes, y por eso los llamados del patrimonio
+// consolidado no lo pasan: ahí bitcoin SÍ tiene que sumar dentro de los
+// pesos, porque es parte del patrimonio en pesos. Lo pasan los paneles POR
+// AMBIENTE, donde mezclar COPEC con bitcoin sería juntar dos carteras
+// distintas solo porque comparten moneda.
+function calcularPortafolio(moneda, ambito){
+  moneda = moneda || (monedaDelAmbiente(ambienteActivo));
   const porTicker = {};
-  movimientos.filter(m => monedaDeMov(m) === moneda).forEach(m => {
+  movimientos.filter(m => monedaDeMov(m) === moneda
+                       && (!ambito || ambitoDeMov(m) === ambito)).forEach(m => {
     if(!porTicker[m.ticker]) porTicker[m.ticker] = {compras:[], ventas:[]};
     porTicker[m.ticker][m.tipo === 'compra' ? 'compras' : 'ventas'].push(m);
   });
@@ -5202,7 +5388,7 @@ function estadoDeAccion(ticker){
       clase: 'tienes', etiqueta: 'La tienes',
       detalle: `${pos.netoQ} ${pos.netoQ === 1 ? 'título' : 'títulos'}`
         + (costo !== null ? ` a ${fmtMoneda2(costo, moneda)} promedio` : '')
-        + (gan !== null ? ` · ${gan >= 0 ? '+' : ''}${gan.toFixed(1)}%` : ''),
+        + (gan !== null ? ` · ${gan >= 0 ? '+' : ''}${fmtNum(gan, 1)}%` : ''),
       pendiente, urgencia,
     };
   }
@@ -5220,7 +5406,7 @@ function estadoDeAccion(ticker){
       pendiente = `Caducó hace ${Math.abs(restantes)} días sin cumplirse. Renuévala o sácala de la lista.`;
       urgencia = 'media';
     } else if(typeof reg.precio === 'number' && precio !== null){
-      const dist = ((precio / reg.precio - 1) * 100).toFixed(1);
+      const dist = fmtNum((precio / reg.precio - 1) * 100, 1);
       pendiente = `Nada pendiente: esperar. Está a ${dist}% de tu precio de entrada (${fmtMoneda2(reg.precio, moneda)})`
         + (restantes !== null ? `, quedan ${restantes} días.` : '.');
     } else {
@@ -5392,7 +5578,7 @@ function sizingAumentar(nAcciones, costoInvertido, stop, precioHoy, cfg, glob){
   };
 }
 
-function pct1Siz(v){ return (v*100).toFixed(1) + '%'; }
+function pct1Siz(v){ return fmtNum(v*100, 1) + '%'; }
 function filaSiz(pares){
   return pares.map(([k,v]) => `<div class="siz-fila"><span>${k}</span><span class="mono">${v}</span></div>`).join('');
 }
@@ -5604,7 +5790,7 @@ function registrarMovimientoCaja(moneda, tipo, monto, nota, plat){
 }
 
 function renderCaja(){
-  const moneda = ambienteActivo === 'usa' ? 'USD' : 'CLP';
+  const moneda = monedaDelAmbiente(ambienteActivo);
   const labelEl = document.getElementById('cajaLabel');
   const saldoEl = document.getElementById('cajaSaldo');
   const avisoEl = document.getElementById('cajaAviso');
@@ -5634,7 +5820,7 @@ function inicializarFormularioCaja(){
       alert('Ingresa un monto mayor a cero.');
       return;
     }
-    const moneda = ambienteActivo === 'usa' ? 'USD' : 'CLP';
+    const moneda = monedaDelAmbiente(ambienteActivo);
     const platEl = document.getElementById('cajaPlat');
     const plat = (platEl && esPlatValida(platEl.value)) ? platEl.value : PLAT_IDS[0];
     registrarMovimientoCaja(moneda, tipo, monto, nota, plat);
@@ -5829,7 +6015,7 @@ function tvAnclaHTML(ticker, texto){
 // lo único que hace falta para resolverlo a mano en dos segundos, que es
 // justamente el motivo por el que estas acciones no se esconden.
 const EXPL_FALTA_INFO = {
-  'capitalización':          {tv:'Cap. de mercado',                umbral:u => `≥ ${u.capB.toFixed(1).replace('.',',')} B USD`},
+  'capitalización':          {tv:'Cap. de mercado',                umbral:u => `≥ ${fmtNum(u.capB, 1)} B USD`},
   'crecimiento del BPA':     {tv:'Crecimiento BPA dil., TTM YoY',  umbral:u => `≥ ${u.crecimiento} %`},
   'crecimiento de ingresos': {tv:'Crecimiento ingresos, TTM YoY',  umbral:u => `≥ ${u.crecimiento} %`},
 };
@@ -5880,7 +6066,7 @@ function explorarTarjetaHTML(c, tipo){
     <div class="expl-card-meta">
       ${fase}${conf ? ' · ' + conf : ''} · ${frTxt}<br>
       Precio: <b>US$${typeof c.precio === 'number' ? c.precio.toLocaleString('es-CL') : '—'}</b>
-      ${typeof c.capB === 'number' ? ` · Cap.: US$${c.capB.toFixed(1)} B` : ''}
+      ${typeof c.capB === 'number' ? ` · Cap.: US$${fmtNum(c.capB, 1)} B` : ''}
       ${c.sinFundamentales ? ' · <span style="color:var(--ink-dim);">sin datos de empresa (cripto) — pasó solo con precio/tendencia/fase/fuerza</span>' : ''}
     </div>
     ${tipo === 'mano' && c.faltan && c.faltan.length ? explFaltaHTML(c) : ''}
@@ -6009,7 +6195,7 @@ function explEtapas(){
   return [
     {grupo:'Calidad', id:'precio', corto:'precio', tit:`Precio ≥ ${u.precio} USD`, sub:'descarta chatarra',
      pasa:a => num(a.p) && a.p >= u.precio, val:a => num(a.p) ? `US$${a.p}` : 'sin precio'},
-    {grupo:null, id:'volM', corto:'volumen', tit:`Volumen 90 d ≥ ${u.volM.toFixed(1).replace('.',',')} M`, sub:'entras y sales sin mover el precio',
+    {grupo:null, id:'volM', corto:'volumen', tit:`Volumen 90 d ≥ ${fmtNum(u.volM, 1)} M`, sub:'entras y sales sin mover el precio',
      pasa:a => num(a.v) && a.v >= u.volM, val:a => num(a.v) ? `${a.v} M` : 'sin volumen'},
     {grupo:'Tendencia', id:'sma50', corto:'bajo SMA 50', tit:'Precio > SMA 50', sub:'el precio lidera', estricta:true,
      pasa:a => num(a.c50) && a.p > a.c50, val:a => num(a.c50) ? `SMA50 ${a.c50}` : 'sin SMA 50'},
@@ -6021,7 +6207,7 @@ function explEtapas(){
     // de exigirles un dato que nunca va a existir. Sin este bypass, mover
     // cualquiera de estos tres sliders botaría a BTC del embudo recalculado
     // en el teléfono aunque el servidor lo haya dejado pasar.
-    {grupo:'Tamaño y crecimiento', id:'capB', corto:'capitalización', tit:`Capitalización ≥ ${u.capB.toFixed(1).replace('.',',')} B`, sub:'empresas de tamaño real', estricta:true,
+    {grupo:'Tamaño y crecimiento', id:'capB', corto:'capitalización', tit:`Capitalización ≥ ${fmtNum(u.capB, 1)} B`, sub:'empresas de tamaño real', estricta:true,
      pasa:a => a.sf || (num(a.cB) && a.cB >= u.capB), val:a => a.sf ? 'no aplica (cripto)' : (num(a.cB) ? `${a.cB} B` : 'sin dato')},
     {grupo:null, id:'crecBpa', corto:'crec. BPA', tit:`Crecimiento BPA ≥ ${u.crecimiento} %`, sub:'gana más que hace un año', estricta:true,
      pasa:a => a.sf || (num(a.gB) && a.gB >= u.crecimiento), val:a => a.sf ? 'no aplica (cripto)' : (num(a.gB) ? `${a.gB}%` : 'sin dato')},
@@ -6249,9 +6435,9 @@ function explorarResultadoHTML(analisis){
     <div class="exp-ctrl"><span>Precio mínimo</span>
       <input type="range" data-umbral="precio" min="0" max="100" step="1" value="${u.precio}"><b>${u.precio} USD</b></div>
     <div class="exp-ctrl"><span>Volumen 90 d</span>
-      <input type="range" data-umbral="volM" min="0" max="20" step="0.25" value="${u.volM}"><b>${u.volM.toFixed(2).replace('.',',')} M</b></div>
+      <input type="range" data-umbral="volM" min="0" max="20" step="0.25" value="${u.volM}"><b>${fmtNum(u.volM, 2)} M</b></div>
     <div class="exp-ctrl"><span>Capitalización</span>
-      <input type="range" data-umbral="capB" min="0" max="50" step="0.5" value="${u.capB}"><b>${u.capB.toFixed(1).replace('.',',')} B</b></div>
+      <input type="range" data-umbral="capB" min="0" max="50" step="0.5" value="${u.capB}"><b>${fmtNum(u.capB, 1)} B</b></div>
     <div class="exp-ctrl"><span>Crecimiento</span>
       <input type="range" data-umbral="crecimiento" min="-20" max="100" step="5" value="${u.crecimiento}"><b>${u.crecimiento} %</b></div>
     <div class="exp-ctrl"><span>Score mínimo</span>
@@ -6368,7 +6554,7 @@ function explorarResultadoHTML(analisis){
     return `<div class="expl-fuerza-row clic ${abierto?'abierta':''}"
         data-accion="exp-grupo" data-clave="${encodeURIComponent(clave)}">
         <span class="expl-fuerza-nombre">${x.nombre.replace(/</g,'&lt;')}${cnt}</span>
-        <span class="expl-fuerza-val ${cls}">${m12 === null ? '—' : (m12>=0?'+':'') + m12.toFixed(1) + '%'}</span>
+        <span class="expl-fuerza-val ${cls}">${m12 === null ? '—' : (m12>=0?'+':'') + fmtNum(m12, 1) + '%'}</span>
       </div>`;
   };
 
@@ -6794,7 +6980,7 @@ function esperaHTML(){
 
     const precioHoy = (s && typeof s.price === 'number') ? s.price : null;
     const distancia = (precioHoy !== null && typeof reg.precio === 'number' && reg.precio > 0)
-      ? `${((precioHoy / reg.precio - 1) * 100).toFixed(1)}%` : null;
+      ? `${fmtNum((precioHoy / reg.precio - 1) * 100, 1)}%` : null;
 
     const enWatch = estaEnWatchlist(tk);
     return `<div class="esp-row ${clase}" data-esp="${tk}">
@@ -6983,7 +7169,7 @@ function renderAmbienteSeguir(){
     return `
       <div class="asig-row">
         <span>${etiqueta}</span>
-        <span><b class="${fuera?'asig-fuera':''}">${real.toFixed(1)}%</b> / objetivo ${objetivo}%${fuera ? ' <span class="asig-fuera">⚠ fuera de banda (±'+asignacion.banda+'pp)</span>' : ''}</span>
+        <span><b class="${fuera?'asig-fuera':''}">${fmtNum(real, 1)}%</b> / objetivo ${objetivo}%${fuera ? ' <span class="asig-fuera">⚠ fuera de banda (±'+asignacion.banda+'pp)</span>' : ''}</span>
       </div>
       <div class="asig-bar-wrap">
         <div class="asig-bar-real" style="width:${Math.min(100,Math.max(0,real))}%; background:${fuera?'var(--copper)':'var(--gold)'};"></div>
@@ -7017,16 +7203,16 @@ function renderAmbienteSeguir(){
 
   if(rentaVariablePct !== null){
     if(rentaVariablePct < asignacion.rentaVariable - asignacion.banda){
-      compraRows.push({texto:`Renta variable ${rentaVariablePct.toFixed(1)}% bajo tu objetivo de ${asignacion.rentaVariable}%`, regla:'Asignación objetivo · Día 23'});
+      compraRows.push({texto:`Renta variable ${fmtNum(rentaVariablePct, 1)}% bajo tu objetivo de ${asignacion.rentaVariable}%`, regla:'Asignación objetivo · Día 23'});
     } else if(rentaVariablePct > asignacion.rentaVariable + asignacion.banda){
-      ventaRows.push({texto:`Renta variable ${rentaVariablePct.toFixed(1)}% sobre tu objetivo de ${asignacion.rentaVariable}%`, regla:'Asignación objetivo (rebalanceo) · Día 23'});
+      ventaRows.push({texto:`Renta variable ${fmtNum(rentaVariablePct, 1)}% sobre tu objetivo de ${asignacion.rentaVariable}%`, regla:'Asignación objetivo (rebalanceo) · Día 23'});
     }
   }
   if(chilePct !== null){
     if(chilePct < asignacion.chile - asignacion.banda){
-      compraRows.push({texto:`Chile ${chilePct.toFixed(1)}% bajo tu objetivo de ${asignacion.chile}% (dentro de renta variable)`, regla:'Asignación objetivo · Día 23'});
+      compraRows.push({texto:`Chile ${fmtNum(chilePct, 1)}% bajo tu objetivo de ${asignacion.chile}% (dentro de renta variable)`, regla:'Asignación objetivo · Día 23'});
     } else if(chilePct > asignacion.chile + asignacion.banda){
-      ventaRows.push({texto:`Chile ${chilePct.toFixed(1)}% sobre tu objetivo de ${asignacion.chile}% (dentro de renta variable)`, regla:'Asignación objetivo (rebalanceo) · Día 23'});
+      ventaRows.push({texto:`Chile ${fmtNum(chilePct, 1)}% sobre tu objetivo de ${asignacion.chile}% (dentro de renta variable)`, regla:'Asignación objetivo (rebalanceo) · Día 23'});
     }
   }
   if(asignacion.umbralCajaClp !== null && cajaClp > asignacion.umbralCajaClp){
@@ -7045,7 +7231,7 @@ function renderAmbienteSeguir(){
       if(valorClpEq === null) return;
       const pct = valorClpEq / patrimonioTotalClp * 100;
       if(pct > asignacion.maxPorPosicion){
-        ventaRows.push({ticker:p.ticker, texto:`${p.ticker} es ${pct.toFixed(1)}% de tu patrimonio (máximo configurado: ${asignacion.maxPorPosicion}%)`, regla:'Máximo por posición · Días 14 y 23'});
+        ventaRows.push({ticker:p.ticker, texto:`${p.ticker} es ${fmtNum(pct, 1)}% de tu patrimonio (máximo configurado: ${asignacion.maxPorPosicion}%)`, regla:'Máximo por posición · Días 14 y 23'});
       }
     });
   }
@@ -7257,6 +7443,59 @@ const alertasPrecio = cargarAlertasPrecio(); // {TICKER: {sube: num|null, baja: 
 const _alertasSinCopiaLocalAlAbrir = claveNuncaEscrita('ipsa_alertas_precio');
 let _alertasAvisoHecho = false;
 
+// ---- Migración única: los precios objetivo de cripto quedaron en dólares ---
+// EL PROBLEMA CONCRETO QUE EVITA
+// ==============================
+// Antes del ambiente Cripto, la tarjeta de bitcoin estaba en dólares y sus
+// objetivos se escribieron en dólares ("vender si sube a 125.000"). Ahora esa
+// misma tarjeta está en pesos, donde bitcoin vale unos 76 MILLONES. Ese
+// objetivo de venta se cumpliría en el mismo instante en que abras la app --
+// y no sería solo un número raro en pantalla: el servidor evalúa los
+// objetivos por su cuenta y manda push y correo. Sería un aviso falso de
+// "llegó a tu precio de venta" apenas despliegues esto.
+//
+// POR QUÉ SE BORRAN EN VEZ DE CONVERTIRSE
+// ========================================
+// 125.000 dólares no es "125.000 por el dólar de hoy". Es un precio que
+// Cristian eligió mirando otra escala, y multiplicarlo sería inventarle una
+// decisión que no tomó. Se borran, se avisa, y los vuelve a poner en pesos
+// -- que es como los va a escribir en Buda igual.
+//
+// Corre UNA sola vez (el flag queda en localStorage) y va DESPUÉS de las dos
+// constantes de arriba a propósito: usa sincronizarAlertasPrecio(), que las
+// lee, y llamarlo antes de que existan daría un error de zona muerta.
+let _objetivosCriptoBorrados = [];
+(function migrarObjetivosCripto(){
+  const FLAG = 'ipsa_migracion_cripto_objetivos';
+  try {
+    if(localStorage.getItem(FLAG) === '1') return;
+    CRIPTO_TICKERS.forEach(t => {
+      const o = alertasPrecio[t];
+      const tiene = o && ((o.sube !== null && o.sube !== undefined)
+                       || (o.baja !== null && o.baja !== undefined));
+      if(tiene){ _objetivosCriptoBorrados.push(t); delete alertasPrecio[t]; }
+    });
+    localStorage.setItem(FLAG, '1');
+    if(_objetivosCriptoBorrados.length){
+      guardarAlertasPrecio();
+      console.warn('Precios objetivo de cripto borrados por cambio de moneda (estaban en dólares):',
+                   _objetivosCriptoBorrados.join(', '));
+      // El servidor guarda su propia copia y avisa aunque el teléfono esté
+      // cerrado: si no se le manda la lista nueva, seguiría disparando el
+      // objetivo viejo. Va diferido para que el resto del archivo termine de
+      // inicializarse antes (misma razón de zona muerta que arriba).
+      setTimeout(() => { try { sincronizarAlertasPrecio(true); } catch(e){} }, 0);
+    }
+  } catch(e){}
+})();
+function avisoObjetivosCriptoHTML(){
+  if(!_objetivosCriptoBorrados.length) return '';
+  return '<b>⚠ Se borraron tus precios objetivo de ' + _objetivosCriptoBorrados.join(', ')
+       + '.</b> Estaban escritos en dólares, de cuando esta tarjeta se mostraba en esa moneda; '
+       + 'en pesos se habrían cumplido de inmediato y te habría llegado un aviso falso de venta. '
+       + 'Vuelve a ponerlos abajo, en pesos. ';
+}
+
 // El servidor necesita su propia copia para poder avisar aunque el celular
 // este cerrado (igual motivo que la re-suscripcion push en cada apertura,
 // ver notas de OBJETIVOS_FILE en server.py: el disco de Render es efimero).
@@ -7391,7 +7630,7 @@ function renderAmbienteCartera(){
            El stop sube o se queda, nunca baja.`}</div>`;
     }
     const riesgo = (precio !== null && precio > 0)
-      ? ` · arriesgas ${((precio - redondeado) / precio * 100).toFixed(1)}%` : '';
+      ? ` · arriesgas ${fmtNum((precio - redondeado) / precio * 100, 1)}%` : '';
     return `<div class="cartera-sug">
       <button type="button" class="stop-sug" data-accion="usar-sma" data-ticker="${s.ticker}"
               data-valor="${redondeado}"
@@ -7413,7 +7652,7 @@ function renderAmbienteCartera(){
       const pct = objetivo ? (monto / objetivo * 100) : null;
       const signo = monto >= 0 ? '+' : '';
       return `Hoy: ${fmtMoneda2(precioActual, currency)} (${signo}${fmtMoneda2(monto, currency)}`
-           + `${pct !== null ? ', ' + signo + pct.toFixed(1) + '%' : ''} respecto del objetivo)`;
+           + `${pct !== null ? ', ' + signo + fmtNum(pct, 1) + '%' : ''} respecto del objetivo)`;
     }
 
     // Relación entre el precio de hoy y TU precio de compra: es la
@@ -7433,11 +7672,11 @@ function renderAmbienteCartera(){
           <span class="cartera-name" data-accion="abrir" data-ticker="${s.ticker}">${s.name}</span>
           <span class="cartera-price-wrap" data-accion="abrir" data-ticker="${s.ticker}">
             <span class="cartera-price mono">${precioActual !== null ? fmtMoneda2(precioActual, currency) : ''}</span>
-            ${pctVsCompra !== null ? `<span class="cartera-price-pct mono" style="color:${pctVsCompra >= 0 ? 'var(--verdigris)' : 'var(--copper)'};" title="Precio de hoy respecto de tu precio de compra (${fmtMoneda2(pos.costoPromedio, currency)})">${pctVsCompra >= 0 ? '+' : ''}${pctVsCompra.toFixed(1)}%</span>` : ''}
+            ${pctVsCompra !== null ? `<span class="cartera-price-pct mono" style="color:${pctVsCompra >= 0 ? 'var(--verdigris)' : 'var(--copper)'};" title="Precio de hoy respecto de tu precio de compra (${fmtMoneda2(pos.costoPromedio, currency)})">${pctVsCompra >= 0 ? '+' : ''}${fmtNum(pctVsCompra, 1)}%</span>` : ''}
           </span>
         </div>
         <div class="cartera-pos">${held
-          ? `Tienes ${fmtCantidad(pos.netoQ, currency)} título(s) · compra ${fmtMoneda2(pos.costoPromedio, currency)}`
+          ? `Tienes ${fmtCantidad(pos.netoQ, currency, s.ticker)} título(s) · compra ${fmtMoneda2(pos.costoPromedio, currency)}`
           : 'Sin posición registrada (se calcula sola desde "Mis movimientos")'}</div>
         <div class="cartera-alertas">
           <label class="cartera-campo sube" title="${distancia(obj.sube) || 'Avisar si sube a (venta)'}">
@@ -7457,23 +7696,31 @@ function renderAmbienteCartera(){
 
   const chileItems = ordenar(state.map(s => ({s, pos: portClp[s.ticker]})).filter(x => visible(x.s, x.pos)));
   const usaItems = ordenar(stateUSA.map(s => ({s, pos: portUsd[s.ticker]})).filter(x => visible(x.s, x.pos)));
+  // Cripto sale de portClp (se compra en pesos), pero recorre stateCripto y
+  // no `state`, así que no se mezcla con las chilenas en ninguna dirección.
+  const criptoItems = ordenar(stateCripto.map(s => ({s, pos: portClp[s.ticker]})).filter(x => visible(x.s, x.pos)));
 
   const chileHTML = chileItems.length
     ? chileItems.map(x => filaCartera(x.s, x.pos, 'CLP')).join('')
     : `<p class="cartera-empty">${filtroNorm ? 'Nada calzó con la búsqueda en Chile.' : 'Sin favoritas ni posiciones en Chile todavía. Marca una estrella o activa "Mostrar todas".'}</p>`;
+  const criptoHTML = criptoItems.length
+    ? criptoItems.map(x => filaCartera(x.s, x.pos, 'CLP')).join('')
+    : `<p class="cartera-empty">${filtroNorm ? 'Nada calzó con la búsqueda en Cripto.' : 'Sin posiciones en cripto todavía.'}</p>`;
   const usaHTML = usaItems.length
     ? usaItems.map(x => filaCartera(x.s, x.pos, 'USD')).join('')
     : `<p class="cartera-empty">${filtroNorm ? 'Nada calzó con la búsqueda en EE.UU.' : 'Sin favoritas ni posiciones en EE.UU. todavía. Marca una estrella o activa "Mostrar todas".'}</p>`;
 
   viewEl.innerHTML = `
     <p class="section-title" style="margin-top:0;">Mi Cartera</p>
-    <p style="font-size:12px; color:var(--ink-dim); margin:-6px 0 14px;">Favoritos y precios objetivo para Chile y EE.UU. — al cruzar un objetivo llega correo y push con el monto y el porcentaje de diferencia. La cantidad y el precio de compra se calculan solos desde "Mis movimientos".</p>
+    <p style="font-size:12px; color:var(--ink-dim); margin:-6px 0 14px;">Favoritos y precios objetivo para Chile, EE.UU. y Cripto — al cruzar un objetivo llega correo y push con el monto y el porcentaje de diferencia. La cantidad y el precio de compra se calculan solos desde "Mis movimientos".</p>
     <input type="text" id="carteraBuscador" class="cartera-buscador" placeholder="Buscar por ticker o nombre (Chile o EE.UU.)…" value="${carteraFiltro.replace(/"/g,'&quot;')}">
     <label class="cartera-toggle"><input type="checkbox" id="carteraMostrarTodas" ${carteraMostrarTodas ? 'checked' : ''}> Mostrar todas las acciones, no solo favoritas o con posición</label>
     <p class="cartera-group-title">Chile · CLP</p>
     ${chileHTML}
     <p class="cartera-group-title">EE.UU. · USD</p>
     ${usaHTML}
+    <p class="cartera-group-title">Cripto · CLP</p>
+    ${criptoHTML}
   `;
 
   const buscadorEl = document.getElementById('carteraBuscador');
@@ -7533,8 +7780,8 @@ function renderAmbienteCartera(){
 }
 
 function renderResumenPortafolio(){
-  const moneda = ambienteActivo === 'usa' ? 'USD' : 'CLP';
-  const portafolio = calcularPortafolio(moneda);
+  const moneda = monedaDelAmbiente(ambienteActivo);
+  const portafolio = calcularPortafolio(moneda, ambitoDelAmbiente(ambienteActivo));
   const oculto = estaOculto();
 
   let valorCartera = 0, hayValorCompleto = true;
@@ -7591,8 +7838,16 @@ function renderResumenPortafolio(){
 // no estar disponible (ver renderAmbienteSeguir/usdclpEsValido) y ese cálculo
 // YA existe ahí para quien lo necesite. Este es el más simple de los dos,
 // a propósito -- se dice explícito en la nota para no confundir los dos números.
+// Los movimientos que le tocan al panel de cartera del ambiente activo: la
+// moneda de siempre MÁS el ámbito. Sin lo segundo, el resumen de Chile
+// sumaría las compras de bitcoin, que también están en pesos.
+function movimientosDeCartera(moneda){
+  const ambito = ambitoDelAmbiente(ambienteActivo);
+  return movimientos.filter(m => monedaDeMov(m) === moneda && ambitoDeMov(m) === ambito);
+}
+
 function calcularConcentracion(moneda){
-  const portafolio = calcularPortafolio(moneda);
+  const portafolio = calcularPortafolio(moneda, ambitoDelAmbiente(ambienteActivo));
   const todas = Object.values(portafolio).filter(p => p.netoQ > 0);
   const abiertasConPrecio = todas.filter(p => p.valorActual !== null);
   const total = abiertasConPrecio.reduce((acc, p) => acc + p.valorActual, 0);
@@ -7608,7 +7863,7 @@ function renderConcentracionCartera(){
   if(!box) return;
   if(ambienteActivo === 'seguir'){ box.style.display = 'none'; return; }
 
-  const moneda = ambienteActivo === 'usa' ? 'USD' : 'CLP';
+  const moneda = monedaDelAmbiente(ambienteActivo);
   const listaEl = document.getElementById('msbConcentracionLista');
   const notaEl = document.getElementById('msbConcentracionNota');
 
@@ -7636,7 +7891,7 @@ function renderConcentracionCartera(){
   listaEl.innerHTML = top.map(f => {
     const excede = f.pct > umbral;
     return `<div style="display:flex; justify-content:space-between; gap:10px; ${excede ? 'color:var(--copper); font-weight:600;' : ''}">`
-         + `<span>${f.ticker}${excede ? ' ⚠' : ''}</span><span>${f.pct.toFixed(1)}%</span></div>`;
+         + `<span>${f.ticker}${excede ? ' ⚠' : ''}</span><span>${fmtNum(f.pct, 1)}%</span></div>`;
   }).join('');
 
   const excedidas = c.filas.filter(f => f.pct > umbral);
@@ -7655,7 +7910,7 @@ const _benchmarkCache = {}; // "CLP"/"USD" -> {ts, puntos}
 const BENCHMARK_CACHE_MS = 20 * 60 * 1000; // 20 min, mismo orden que STATS_CACHE_TTL del backend
 
 function primeraFechaMovimientos(moneda){
-  const propios = movimientos.filter(m => monedaDeMov(m) === moneda);
+  const propios = movimientosDeCartera(moneda);
   if(!propios.length) return null;
   return propios.reduce((min, m) => (m.fecha < min ? m.fecha : min), propios[0].fecha);
 }
@@ -7724,7 +7979,7 @@ function calcularXIRR(flujos){
 // hoy) -- el mismo truco que usa cualquier calculadora de TIR de cartera
 // personal para no tener que esperar a que se liquide la posición.
 function flujosXIRR(moneda){
-  const propios = movimientos.filter(m => monedaDeMov(m) === moneda);
+  const propios = movimientosDeCartera(moneda);
   if(!propios.length) return null;
 
   const flujos = propios.map(m => ({
@@ -7732,7 +7987,7 @@ function flujosXIRR(moneda){
     monto: (m.tipo === 'compra' ? -1 : 1) * m.cantidad * m.precio,
   }));
 
-  const portafolio = calcularPortafolio(moneda);
+  const portafolio = calcularPortafolio(moneda, ambitoDelAmbiente(ambienteActivo));
   let valorHoy = 0, completo = true;
   Object.values(portafolio).forEach(p => {
     if(p.netoQ > 0){
@@ -7750,7 +8005,7 @@ function flujosXIRR(moneda){
 }
 
 function retornoSimpleCartera(moneda){
-  const portafolio = calcularPortafolio(moneda);
+  const portafolio = calcularPortafolio(moneda, ambitoDelAmbiente(ambienteActivo));
   let totalInvertido = 0, totalUtilidad = 0, completo = true;
   Object.values(portafolio).forEach(p => {
     totalInvertido += p.totalCompradoCosto;
@@ -7845,7 +8100,7 @@ function notaAntiguedadIndice(ts, deFallback){
 }
 
 function fmtPctCartera(v){
-  return (v >= 0 ? '+' : '') + (v * 100).toFixed(1) + '%';
+  return (v >= 0 ? '+' : '') + fmtNum(v * 100, 1) + '%';
 }
 
 // ---- Registro local del IPSA día a día ----
@@ -8006,8 +8261,8 @@ function renderBenchmarkChile(fechaInicio, retorno){
   let nota = `Desde tu primer movimiento en CLP (${fechaInicio}), con el IPSA en `
            + `${fmtCLP0(ipsaBaseState.valor)} ese día contra ${fmtCLP0(indexValue)} hoy. `;
   nota += diferenciaPP >= 0
-    ? `Le ganas ${Math.abs(diferenciaPP).toFixed(1)} puntos al índice.`
-    : `Vas ${Math.abs(diferenciaPP).toFixed(1)} puntos detrás del índice.`;
+    ? `Le ganas ${fmtNum(Math.abs(diferenciaPP), 1)} puntos al índice.`
+    : `Vas ${fmtNum(Math.abs(diferenciaPP), 1)} puntos detrás del índice.`;
   nota += notaMetodoCartera(retorno);
   if(!retorno.completo) nota += ' Cifra parcial: falta el precio real de alguna posición abierta.';
   nota += ' El valor base del IPSA lo ingresaste tú.';
@@ -8045,7 +8300,7 @@ async function actualizarBenchmarkCartera(){
   if(!box) return;
   if(ambienteActivo === 'seguir'){ box.style.display = 'none'; return; }
 
-  const moneda = ambienteActivo === 'usa' ? 'USD' : 'CLP';
+  const moneda = monedaDelAmbiente(ambienteActivo);
   const nombreIndice = moneda === 'USD' ? 'S&P 500' : 'IPSA';
 
   const fechaInicio = primeraFechaMovimientos(moneda);
@@ -8132,8 +8387,8 @@ async function actualizarBenchmarkCartera(){
     const fechaTxt = (base.date || '').slice(0, 10);
     let nota = `Desde ${aproximado ? 'la fecha más antigua disponible' : 'tu primer movimiento'} en ${moneda} (${fechaTxt}). `;
     nota += diferenciaPP >= 0
-      ? `Le ganas ${Math.abs(diferenciaPP).toFixed(1)} puntos al índice.`
-      : `Vas ${Math.abs(diferenciaPP).toFixed(1)} puntos detrás del índice.`;
+      ? `Le ganas ${fmtNum(Math.abs(diferenciaPP), 1)} puntos al índice.`
+      : `Vas ${fmtNum(Math.abs(diferenciaPP), 1)} puntos detrás del índice.`;
     nota += notaMetodoCartera(retorno);
     if(!retorno.completo) nota += ' Cifra parcial: falta el precio real de alguna posición abierta.';
     nota += notaAntiguedadIndice(ts, deFallback);
@@ -8279,11 +8534,11 @@ async function actualizarBenchmarkConsolidado(){
     valorEl.textContent = `Patrimonio ${fmtPctCartera(retornoCarteraConsolidado)} · Benchmark ${fmtPctCartera(retornoBenchmark)}`;
     valorEl.className = 'msb-val mono ' + (diferenciaPP >= 0 ? 'up' : 'down');
 
-    let nota = `Benchmark = ${(pesoIpsaPct*100).toFixed(0)}% IPSA (${fmtPctCartera(retornoIpsaPct)}) + `
-             + `${(pesoSpPct*100).toFixed(0)}% S&P 500 (${fmtPctCartera(retornoSpPct)}), cada uno desde tu fecha de inicio en esa moneda. `;
+    let nota = `Benchmark = ${fmtNum(pesoIpsaPct*100, 0)}% IPSA (${fmtPctCartera(retornoIpsaPct)}) + `
+             + `${fmtNum(pesoSpPct*100, 0)}% S&P 500 (${fmtPctCartera(retornoSpPct)}), cada uno desde tu fecha de inicio en esa moneda. `;
     nota += diferenciaPP >= 0
-      ? `Le ganas ${Math.abs(diferenciaPP).toFixed(1)} puntos al benchmark.`
-      : `Vas ${Math.abs(diferenciaPP).toFixed(1)} puntos detrás del benchmark.`;
+      ? `Le ganas ${fmtNum(Math.abs(diferenciaPP), 1)} puntos al benchmark.`
+      : `Vas ${fmtNum(Math.abs(diferenciaPP), 1)} puntos detrás del benchmark.`;
     nota += notaAntiguedadIndice(spTs, spFallback);
     nota += ' Tu patrimonio se pondera por cuánto vale HOY cada pata (Chile/EE.UU.); no es una TIR única '
           + 'sobre flujos mezclados en dos monedas (pediría el tipo de cambio histórico de cada movimiento, '
@@ -8423,8 +8678,8 @@ function setTesis(ticker, texto){
 }
 
 function renderMovsDetailPanel(){
-  const moneda = ambienteActivo === 'usa' ? 'USD' : 'CLP';
-  const portafolio = calcularPortafolio(moneda);
+  const moneda = monedaDelAmbiente(ambienteActivo);
+  const portafolio = calcularPortafolio(moneda, ambitoDelAmbiente(ambienteActivo));
   const oculto = estaOculto();
   // Posiciones abiertas primero (orden alfabético entre ellas), las ya
   // vendidas por completo (netoQ === 0, "cerrada") al final del listado.
@@ -8470,7 +8725,7 @@ function renderMovsDetailPanel(){
     const filasCompra = p.compras.map(m => `
       <tr data-id="${m.id}">
         <td>${m.fecha}</td>
-        <td class="mov-cant">${fmtCantidad(m.cantidad, moneda)}</td>
+        <td class="mov-cant">${fmtCantidad(m.cantidad, moneda, m.ticker)}</td>
         <td class="mov-prec">${fmt(m.precio, p.dec, moneda)}</td>
         <td>${$$(m.cantidad*m.precio)}</td>
         <td class="mov-acciones"><button type="button" class="mov-edit-btn" data-id="${m.id}" title="Editar cantidad o precio">✎</button></td>
@@ -8479,7 +8734,7 @@ function renderMovsDetailPanel(){
     const filasVenta = p.ventas.map(m => `
       <tr data-id="${m.id}">
         <td>${m.fecha}</td>
-        <td class="mov-cant">${fmtCantidad(m.cantidad, moneda)}</td>
+        <td class="mov-cant">${fmtCantidad(m.cantidad, moneda, m.ticker)}</td>
         <td class="mov-prec">${fmt(m.precio, p.dec, moneda)}</td>
         <td>${$$(m.cantidad*m.precio)}</td>
         <td class="mov-acciones"><button type="button" class="mov-edit-btn" data-id="${m.id}" title="Editar cantidad o precio">✎</button></td>
@@ -8489,7 +8744,7 @@ function renderMovsDetailPanel(){
       <div class="portfolio-ticker-block">
         <div class="ptb-head">
           <span class="ptb-ticker">${p.ticker}</span>
-          <span class="ptb-qty">${p.nombre} · posición actual: ${p.netoQ > 0 ? fmtCantidad(p.netoQ, p.moneda)+' títulos' : 'cerrada'}</span>
+          <span class="ptb-qty">${p.nombre} · posición actual: ${p.netoQ > 0 ? fmtCantidad(p.netoQ, p.moneda, p.ticker)+' títulos' : 'cerrada'}</span>
         </div>
 
         ${p.netoQ > 0 ? `
@@ -8497,7 +8752,7 @@ function renderMovsDetailPanel(){
           <thead><tr><th>Costo prom.</th><th>Cantidad</th><th>Costo total</th><th>Precio actual</th><th>Valor actual</th></tr></thead>
           <tbody><tr>
             <td>${fmt(p.costoPromedio, p.dec, moneda)}</td>
-            <td>${fmtCantidad(p.netoQ, moneda)}</td>
+            <td>${fmtCantidad(p.netoQ, moneda, p.ticker)}</td>
             <td>${oculto?'••••':$$(p.costoDeLoQueQueda)}</td>
             <td>${p.precioActual !== null ? fmt(p.precioActual, p.dec, moneda) : 'cargando…'}</td>
             <td>${p.valorActual !== null ? (oculto?'••••':$$(p.valorActual)) : 'cargando…'}</td>
@@ -8686,7 +8941,7 @@ function revisarRespaldoAutomatico(){
 }
 
 function resumenRespaldoParaConfirmar(actual, nuevo){
-  const line = (etq, o) => `${etq}: ${o.movimientos?.length ?? 0} movimientos · caja CLP ${fmtCLP0(o.caja?.CLP||0)} / USD ${(o.caja?.USD||0).toFixed(2)} · ${Object.keys(o.tesis||{}).length} tesis · ${(o.favoritos||[]).length} favoritas`;
+  const line = (etq, o) => `${etq}: ${o.movimientos?.length ?? 0} movimientos · caja CLP ${fmtCLP0(o.caja?.CLP||0)} / USD ${fmtNum(o.caja?.USD||0, 2)} · ${Object.keys(o.tesis||{}).length} tesis · ${(o.favoritos||[]).length} favoritas`;
   return 'Restaurar este respaldo REEMPLAZA todo lo guardado en este dispositivo (no se mezcla).\n\n'
     + 'Lo que tienes ahora se PERDERÁ:\n' + line('Actual', actual)
     + '\n\nLo que traerá el archivo:\n' + line('Archivo', nuevo)
@@ -9095,6 +9350,47 @@ async function fetchRealQuotesUsa(){
       pushHistory(s.history, s.price);
     }
 
+    // ---- La misma cotización, pero en pesos (ambiente Cripto) ----------
+    // POR QUÉ SE CONVIERTE TODO CON EL MISMO NÚMERO
+    // =============================================
+    // El precio, la media y las bandas se multiplican por el MISMO dólar de
+    // hoy. Eso es una conversión aproximada de cada valor por separado -- la
+    // media de 50 días "de verdad" en pesos tendría que usar el dólar de
+    // cada uno de esos 50 días, y no lo tenemos. Pero lo que la app hace con
+    // esos números es COMPARARLOS entre sí ("¿el precio está sobre la
+    // media?", "¿tocó el stop?"), y multiplicar los dos lados por la misma
+    // constante no cambia ninguna comparación. Así que la señal es exacta
+    // aunque los dos números estén aproximados.
+    //
+    // LO QUE NO SE MULTIPLICA
+    // =======================
+    // El volumen son unidades, no plata. ret3m/ret1y ya son porcentajes.
+    // El RSI es un índice de 0 a 100 y el z-score son desviaciones estándar.
+    // Multiplicar cualquiera de esos por el dólar daría un número sin
+    // significado -- es justo el error que este ambiente vino a arreglar.
+    function aplicarQuoteCripto(s, q, tc){
+      const enClp = v => (typeof v === 'number') ? v * tc : null;
+      s.priceUsd = q.price;          // el original, para mostrarlo de referencia
+      s.tcAplicado = tc;
+      s.price = q.price * tc;
+      if(typeof q.avg === 'number' && q.avg > 0){ s.avg = q.avg * tc; }
+      s.dayHigh = enClp(q.dayHigh);
+      s.dayLow = enClp(q.dayLow);
+      s.volume = (typeof q.volume === 'number') ? q.volume : null;   // unidades
+      s.montoTransado = enClp(q.montoTransado);
+      s.ret3m = (typeof q.ret3m === 'number') ? q.ret3m : null;      // ya es %
+      s.ret1y = (typeof q.ret1y === 'number') ? q.ret1y : null;      // ya es %
+      s.bid = null; s.ask = null; s.bidSize = null; s.askSize = null;
+      s.rsi14 = (typeof q.rsi14 === 'number') ? q.rsi14 : null;      // índice 0-100
+      s.sma20 = enClp(q.sma20);
+      s.sma50 = enClp(q.sma50);
+      s.sma200 = enClp(q.sma200);
+      s.zscore = (typeof q.zscore === 'number') ? q.zscore : null;   // desviaciones
+      s.staleSeconds = (typeof q.staleSeconds === 'number') ? q.staleSeconds : null;
+      s.marketTime = q.marketTime || null;
+      pushHistory(s.history, s.price);
+    }
+
     let recibidos = 0;
     stateUSA.forEach(s => {
       const q = quotes[s.ticker];
@@ -9109,6 +9405,19 @@ async function fetchRealQuotesUsa(){
     stateWatch.forEach(s => {
       const q = quotes[s.ticker];
       if(q && typeof q.price === 'number') aplicarQuote(s, q);
+    });
+
+    // Cripto: mismo lote de precios (BTC-USD sigue viniendo en TICKERS_USA
+    // del backend), pero pasado a pesos. Si el dólar NO está fresco no se
+    // toca nada: se queda el último precio real que hubo, igual que hace el
+    // resto de la app, en vez de mostrar una conversión vieja sin decirlo.
+    // Tampoco suman al contador "N/M" de la píldora, que es sobre la grilla
+    // de EE.UU. y cambiaría de denominador solo.
+    const tcCriptoOk = usdclpEsValido();
+    stateCripto.forEach(s => {
+      const q = quotes[s.ticker];
+      if(q && typeof q.price === 'number' && tcCriptoOk) aplicarQuoteCripto(s, q, usdclpValue);
+      renderCard(s);
     });
 
     indexDisponibleUsa = (body.indexDisponible === true);
@@ -9126,6 +9435,12 @@ async function fetchRealQuotesUsa(){
       ultimaActualizacionRealUsa = new Date();
       if(ambienteActivo === 'usa'){
         setStatusPill('real', `Datos reales (${recibidos}/${stateUSA.length})`);
+      }
+      if(ambienteActivo === 'cripto'){
+        const conPrecio = stateCripto.filter(s => s.price !== null).length;
+        setStatusPill(conPrecio ? 'real' : 'error', conPrecio
+          ? `Datos reales (${conPrecio}/${stateCripto.length}) · convertidos a pesos`
+          : 'Esperando un dólar fresco para convertir');
       }
       renderAnalysis();
       renderResumenPortafolio();
@@ -9348,7 +9663,8 @@ if(claveNuncaEscrita('ipsa_watchlist') && watchlist.length === 0){
   const params = new URLSearchParams(location.search);
   const ticker = (params.get('ticker') || '').toUpperCase();
   if(ticker && todosLosStocks().some(s => s.ticker === ticker)){
-    if(stateUSA.some(s => s.ticker === ticker)) cambiarAmbiente('usa');
+    const ambEnlace = ambitoDeTicker(ticker);
+    if(ambEnlace === 'usa' || ambEnlace === 'cripto') cambiarAmbiente(ambEnlace);
     openDetail(ticker);
   }
 })();
