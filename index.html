@@ -1037,6 +1037,7 @@
       <button id="btnExportarMovs" class="mov-btn" style="background:none; color:var(--ink-dim); border-color:var(--hairline);" title="Descarga un archivo con movimientos, caja, asignación/tesis, favoritos y W-8BEN de los dos ambientes">⬇️ Respaldar todo</button>
       <button id="btnImportarMovs" class="mov-btn" style="background:none; color:var(--ink-dim); border-color:var(--hairline);" title="Reemplaza TODOS los datos guardados en este dispositivo con el contenido del archivo">⬆️ Restaurar todo</button>
       <input type="file" id="inputImportarMovs" accept="application/json" style="display:none;">
+      <button id="btnSync" class="mov-btn" style="background:none; color:var(--ink-dim); border-color:var(--hairline);" title="Sincroniza tu cartera con tu otro dispositivo (cifrada, en un repo privado de GitHub). Doble clic para reconfigurar.">⇄ Sincronizar</button>
     </div>
     <div class="movs-form">
       <div style="position:relative; flex:1; min-width:140px;">
@@ -1140,6 +1141,7 @@
       </div>
 
       <p class="movs-summary" id="ultimoRespaldoInfo" style="margin-top:8px;"></p>
+      <p class="movs-summary" id="syncEstadoInfo" style="margin-top:4px;"></p>
       <button id="btnVerDetalleMovs" class="movs-detail-link">Ver posición actual e historial completo ›</button>
     </div>
   </div>
@@ -1917,6 +1919,19 @@ const stateUSA = stocksUSA.map(s => ({
 // existía para evitar. Se pueden buscar, abrir en el detalle y mandar a
 // "esperando entrada" -- nada más.
 const WATCHLIST_MAX = 15;   // igual que WATCHLIST_MAX en server.py
+
+// ---- Dispositivo estrenado: no pisar al servidor con el vacío ----
+// El servidor guarda UNA sola copia de la watchlist y de los precios
+// objetivo, y cada envío la REEMPLAZA entera (ver server.py). Con un solo
+// dispositivo eso está bien. Con dos (teléfono + computador) no: abrir la
+// app por primera vez en el segundo, con localStorage en blanco, mandaría
+// una lista vacía y borraría la del primero sin avisar.
+// La diferencia entre "vacía porque nunca la usé aquí" y "vacía porque la
+// borré" está en si la clave EXISTE: guardar*() la escribe (aunque quede
+// vacía) apenas tocas algo en este dispositivo.
+function claveNuncaEscrita(clave){
+  try { return localStorage.getItem(clave) === null; } catch(e){ return false; }
+}
 
 function cargarWatchlist(){
   try {
@@ -7193,12 +7208,34 @@ function guardarAlertasPrecio(){
 }
 const alertasPrecio = cargarAlertasPrecio(); // {TICKER: {sube: num|null, baja: num|null}}
 
+// ¿Este dispositivo llegó SIN precios objetivo propios? Se mide al abrir,
+// antes de que cualquier edición escriba la clave. Si es que sí, la primera
+// vez que guardes un objetivo aquí estarías reemplazando en el servidor la
+// lista completa del otro dispositivo -- ver el aviso en
+// sincronizarAlertasPrecio(). Desaparece cuando exista la sincronización.
+const _alertasSinCopiaLocalAlAbrir = claveNuncaEscrita('ipsa_alertas_precio');
+let _alertasAvisoHecho = false;
+
 // El servidor necesita su propia copia para poder avisar aunque el celular
 // este cerrado (igual motivo que la re-suscripcion push en cada apertura,
 // ver notas de OBJETIVOS_FILE en server.py: el disco de Render es efimero).
 // Se manda la copia COMPLETA cada vez -- el frontend es la fuente de verdad.
 let _syncAlertasTimeout = null;
 function sincronizarAlertasPrecio(inmediato){
+  // Dispositivo estrenado: avisar UNA vez antes de reemplazar la lista del
+  // servidor. Si cancela no se manda nada (el objetivo queda solo en esta
+  // pantalla y no dispara avisos) y se vuelve a preguntar en la próxima
+  // edición -- por eso el flag se marca solo cuando acepta.
+  if(_alertasSinCopiaLocalAlAbrir && !_alertasAvisoHecho){
+    const ok = confirm(
+      'Este dispositivo no tenía precios objetivo guardados.\n\n'
+      + 'El servidor guarda UNA sola lista, así que al guardar este objetivo '
+      + 'la lista pasa a ser la de ESTE dispositivo: los objetivos que tengas '
+      + 'puestos en el otro dejan de vigilarse y no te llegarán sus avisos.\n\n'
+      + '¿Guardar igual?');
+    if(!ok) return;
+    _alertasAvisoHecho = true;
+  }
   if(_syncAlertasTimeout){ clearTimeout(_syncAlertasTimeout); _syncAlertasTimeout = null; }
   const enviar = () => {
     const objetivos = {};
@@ -8501,7 +8538,7 @@ function renderMovsDetailPanel(){
 // fuera de la grilla SIN precio y sin alerta -- la condicion existiria pero
 // nunca podria cumplirse. Un respaldo v4 se restaura igual: la watchlist
 // queda vacia, que es el estado correcto para un dato que no existia.
-const RESPALDO_VERSION = 6;
+const RESPALDO_VERSION = 7;
 
 function construirRespaldoUnificado(){
   return {
@@ -8523,6 +8560,10 @@ function construirRespaldoUnificado(){
     // lo único que no se puede volver a conseguir de ninguna fuente si se
     // pierde -- por eso viaja en el respaldo (ver registrarIpsaDelDia).
     ipsaSerieLocal: ipsaSerieLocal,
+    // Los precios objetivo (v7). Hasta la v6 NO viajaban en el respaldo:
+    // se podía restaurar en un teléfono nuevo y quedar sin ninguna alerta
+    // puesta, en silencio -- justo lo que este respaldo existe para evitar.
+    alertasPrecio,
   };
 }
 
@@ -8611,12 +8652,177 @@ function resumenRespaldoParaConfirmar(actual, nuevo){
     + '\n\n¿Confirmas reemplazar todo con el contenido del archivo? Esta acción no se puede deshacer.';
 }
 
+// Aplica un respaldo completo a este dispositivo. Vive aparte de
+// importarMovimientos() porque ahora tiene DOS usuarios: restaurar un archivo
+// a mano, y la sincronización con el otro dispositivo (ver sincronizacion.js
+// más abajo). En los dos casos reemplaza el estado local -- la única
+// excepción, que ya existía, es ipsaSerieLocal, que se fusiona.
+// `opciones.silencioso` evita el alert() final cuando lo llama la
+// sincronización, que muestra su propio aviso en pantalla.
+function aplicarRespaldo(nuevo, opciones){
+  opciones = opciones || {};
+  movimientos = Array.isArray(nuevo.movimientos)
+    ? nuevo.movimientos.filter(m => m && m.ticker && m.tipo && m.cantidad && m.precio && m.fecha)
+    : [];
+  saveMovimientos(movimientos);
+
+  caja = (nuevo.caja && typeof nuevo.caja === 'object')
+    ? {
+        CLP: typeof nuevo.caja.CLP === 'number' ? nuevo.caja.CLP : 0,
+        USD: typeof nuevo.caja.USD === 'number' ? nuevo.caja.USD : 0,
+        historial: Array.isArray(nuevo.caja.historial) ? nuevo.caja.historial : [],
+        actualizado: nuevo.caja.actualizado || null,
+        // Un respaldo v3 no trae `plat`: queda en cero y todo el saldo
+        // aparece como "sin asignar", que es la verdad.
+        plat: normalizarCajaPlat(nuevo.caja.plat),
+      }
+    : { CLP: 0, USD: 0, historial: [], actualizado: null, plat: normalizarCajaPlat(null) };
+  guardarCaja();
+
+  // Recorre PLAT_IDS: un respaldo anterior a Buda.com trae solo A y B, y
+  // la C queda con su nombre por defecto en vez de perderse. Antes esto
+  // tenía A y B escritos a mano y restaurar habría borrado el nombre de
+  // cualquier plataforma agregada después.
+  plataformas = (function(){
+    const src = (nuevo.plataformas && typeof nuevo.plataformas === 'object')
+                ? nuevo.plataformas : {};
+    const out = {};
+    PLAT_IDS.forEach(id => {
+      const v = (typeof src[id] === 'string') ? src[id].trim() : '';
+      out[id] = v || PLAT_DEFAULT[id];
+    });
+    return out;
+  })();
+  guardarPlataformas();
+  refrescarSelectoresPlat();
+
+  // "Esperando entrada". Esta línea FALTABA acá: la restauración de
+  // `espera` había quedado por error dentro del manejador que renombra
+  // plataformas (ver el comentario largo allá arriba), así que un
+  // respaldo v4 se restauraba perdiendo la lista completa. Ahora está
+  // donde corresponde.
+  espera = (nuevo.espera && typeof nuevo.espera === 'object' && !Array.isArray(nuevo.espera))
+    ? nuevo.espera : {};
+  guardarEspera();
+
+  // Watchlist personal (v5). Un respaldo anterior no la trae y queda
+  // vacía. Se le avisa al servidor de inmediato: si no, las acciones de
+  // "esperando entrada" que están fuera de la grilla quedarían sin
+  // precio hasta la próxima vez que se tocara algo.
+  watchlist = Array.isArray(nuevo.watchlist)
+    ? nuevo.watchlist.filter(w => w && typeof w.ticker === 'string').slice(0, WATCHLIST_MAX)
+    : [];
+  guardarWatchlist();
+  stateWatch = watchlist.map(w => nuevoStockWatch(w.ticker, w.name));
+  sincronizarWatchlist();
+
+  const asigDefault = { rentaVariable:65, liquidez:35, chile:35, global:65, banda:5, maxPorPosicion:7, umbralCajaClp:null, umbralCajaUsd:null };
+  asignacion = (nuevo.asignacion && typeof nuevo.asignacion === 'object') ? Object.assign({}, asigDefault, nuevo.asignacion) : asigDefault;
+  guardarAsignacion();
+
+  // Sizing de posiciones (v6). Un respaldo anterior no lo trae -- queda
+  // en los valores por defecto de la planilla, nunca en blanco a medias.
+  sizing = (nuevo.sizing && typeof nuevo.sizing === 'object') ? Object.assign({}, DEFAULT_SIZING, nuevo.sizing) : Object.assign({}, DEFAULT_SIZING);
+  guardarSizing();
+
+  tesis = (nuevo.tesis && typeof nuevo.tesis === 'object') ? nuevo.tesis : {};
+  guardarTesis();
+
+  favoritos.clear();
+  (Array.isArray(nuevo.favoritos) ? nuevo.favoritos : []).forEach(t => favoritos.add(t));
+  saveFavorites();
+
+  w8benState = (nuevo.w8ben && typeof nuevo.w8ben === 'object') ? nuevo.w8ben : { fecha: null };
+  guardarW8ben(w8benState);
+
+  // Respaldos hechos ANTES de que existiera este campo no lo traen: en
+  // ese caso queda vacío y la app vuelve a pedir el valor, en vez de
+  // fallar al restaurar.
+  ipsaBaseState = (nuevo.ipsaBase && typeof nuevo.ipsaBase === 'object')
+    ? nuevo.ipsaBase : { fecha: null, valor: null };
+  guardarIpsaBase(ipsaBaseState);
+
+  // El registro diario del IPSA se FUSIONA en vez de reemplazarse. Es la
+  // única excepción a la regla "restaurar reemplaza": son observaciones
+  // de un índice público, no datos personales del usuario -- si el
+  // respaldo trae días que este teléfono no tiene y viceversa, quedarse
+  // solo con un lado sería perder historia sin ninguna ganancia.
+  if(nuevo.ipsaSerieLocal && typeof nuevo.ipsaSerieLocal === 'object'
+     && !Array.isArray(nuevo.ipsaSerieLocal)){
+    Object.keys(nuevo.ipsaSerieLocal).forEach(f => {
+      const v = nuevo.ipsaSerieLocal[f];
+      if(typeof v === 'number' && isFinite(v) && ipsaSerieLocal[f] === undefined){
+        ipsaSerieLocal[f] = v;
+      }
+    });
+    guardarIpsaSerieLocal(ipsaSerieLocal);
+    ultimoIndiceCargado = null; // el gráfico se rearma con lo restaurado
+  }
+
+  // Precios objetivo (v7). Un respaldo anterior no los trae y quedan
+  // vacíos. `alertasPrecio` es const: se muta, no se reasigna. Se le
+  // avisa al servidor de inmediato (igual que la watchlist) porque si
+  // no, los objetivos existirían solo en pantalla y no dispararían
+  // ningún aviso. El aviso de "dispositivo estrenado" se da por hecho:
+  // restaurar un respaldo ES decidir a propósito qué manda aquí.
+  Object.keys(alertasPrecio).forEach(k => delete alertasPrecio[k]);
+  if(nuevo.alertasPrecio && typeof nuevo.alertasPrecio === 'object'
+     && !Array.isArray(nuevo.alertasPrecio)){
+    Object.entries(nuevo.alertasPrecio).forEach(([tk, obj]) => {
+      if(obj && typeof obj === 'object') alertasPrecio[tk] = obj;
+    });
+  }
+  guardarAlertasPrecio();
+  _alertasAvisoHecho = true;
+  sincronizarAlertasPrecio(true);
+
+  // Re-render de todo lo que depende de estos datos
+  todosLosStocks().forEach(s => {
+    const favBtn = cardEls[s.ticker] && cardEls[s.ticker].querySelector('[data-el="fav"]');
+    if(!favBtn) return;
+    const esFav = favoritos.has(s.ticker);
+    favBtn.textContent = esFav ? '★' : '☆';
+    favBtn.classList.toggle('active', esFav);
+    cardEls[s.ticker].classList.toggle('is-favorite', esFav);
+  });
+  renderGridOrder();
+  renderMovimientos();
+  renderResumenPortafolio();
+  renderCaja();
+  renderUltimoRespaldo();
+  if(typeof renderRecordatorioAporte === 'function') renderRecordatorioAporte();
+  if(ambienteActivo === 'seguir' && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir();
+
+  if(!opciones.silencioso){
+    alert('Respaldo restaurado — se reemplazó todo lo guardado en este dispositivo.');
+  }
+}
+
 function importarMovimientos(file){
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
       const datos = JSON.parse(e.target.result);
       if(!datos || typeof datos !== 'object') throw new Error('El archivo no tiene el formato esperado.');
+
+      // Un respaldo CIFRADO -- el que llega por correo los sábados, o una
+      // copia bajada del repo privado -- no se puede aplicar tal cual: hay
+      // que descifrarlo primero. Se reconoce por su campo `formato`. Si este
+      // dispositivo ya tiene configurada la sincronización se usa esa misma
+      // contraseña; si no, se pide (caso típico: teléfono nuevo, restaurando
+      // desde el correo).
+      if(datos.formato === 'ipsa-cifrado-1'){
+        const pass = syncCfg().pass
+          || prompt('Este respaldo está cifrado.\n\nEscribe la contraseña de cifrado que usaste al configurar la sincronización:');
+        if(!pass) return;
+        descifrarEstado(datos, pass)
+          .then(plano => {
+            if(!confirm(resumenRespaldoParaConfirmar(construirRespaldoUnificado(), plano))) return;
+            aplicarRespaldo(plano);
+          })
+          .catch(() => alert('No se pudo descifrar el respaldo: la contraseña no coincide con la que lo cifró.'));
+        return;
+      }
 
       // Compatibilidad con el respaldo viejo (solo un array de movimientos,
       // sin caja/asignación/tesis/favoritos/w8ben ni versión).
@@ -8627,122 +8833,7 @@ function importarMovimientos(file){
       const actual = construirRespaldoUnificado();
       if(!confirm(resumenRespaldoParaConfirmar(actual, nuevo))) return;
 
-      movimientos = Array.isArray(nuevo.movimientos)
-        ? nuevo.movimientos.filter(m => m && m.ticker && m.tipo && m.cantidad && m.precio && m.fecha)
-        : [];
-      saveMovimientos(movimientos);
-
-      caja = (nuevo.caja && typeof nuevo.caja === 'object')
-        ? {
-            CLP: typeof nuevo.caja.CLP === 'number' ? nuevo.caja.CLP : 0,
-            USD: typeof nuevo.caja.USD === 'number' ? nuevo.caja.USD : 0,
-            historial: Array.isArray(nuevo.caja.historial) ? nuevo.caja.historial : [],
-            actualizado: nuevo.caja.actualizado || null,
-            // Un respaldo v3 no trae `plat`: queda en cero y todo el saldo
-            // aparece como "sin asignar", que es la verdad.
-            plat: normalizarCajaPlat(nuevo.caja.plat),
-          }
-        : { CLP: 0, USD: 0, historial: [], actualizado: null, plat: normalizarCajaPlat(null) };
-      guardarCaja();
-
-      // Recorre PLAT_IDS: un respaldo anterior a Buda.com trae solo A y B, y
-      // la C queda con su nombre por defecto en vez de perderse. Antes esto
-      // tenía A y B escritos a mano y restaurar habría borrado el nombre de
-      // cualquier plataforma agregada después.
-      plataformas = (function(){
-        const src = (nuevo.plataformas && typeof nuevo.plataformas === 'object')
-                    ? nuevo.plataformas : {};
-        const out = {};
-        PLAT_IDS.forEach(id => {
-          const v = (typeof src[id] === 'string') ? src[id].trim() : '';
-          out[id] = v || PLAT_DEFAULT[id];
-        });
-        return out;
-      })();
-      guardarPlataformas();
-      refrescarSelectoresPlat();
-
-      // "Esperando entrada". Esta línea FALTABA acá: la restauración de
-      // `espera` había quedado por error dentro del manejador que renombra
-      // plataformas (ver el comentario largo allá arriba), así que un
-      // respaldo v4 se restauraba perdiendo la lista completa. Ahora está
-      // donde corresponde.
-      espera = (nuevo.espera && typeof nuevo.espera === 'object' && !Array.isArray(nuevo.espera))
-        ? nuevo.espera : {};
-      guardarEspera();
-
-      // Watchlist personal (v5). Un respaldo anterior no la trae y queda
-      // vacía. Se le avisa al servidor de inmediato: si no, las acciones de
-      // "esperando entrada" que están fuera de la grilla quedarían sin
-      // precio hasta la próxima vez que se tocara algo.
-      watchlist = Array.isArray(nuevo.watchlist)
-        ? nuevo.watchlist.filter(w => w && typeof w.ticker === 'string').slice(0, WATCHLIST_MAX)
-        : [];
-      guardarWatchlist();
-      stateWatch = watchlist.map(w => nuevoStockWatch(w.ticker, w.name));
-      sincronizarWatchlist();
-
-      const asigDefault = { rentaVariable:65, liquidez:35, chile:35, global:65, banda:5, maxPorPosicion:7, umbralCajaClp:null, umbralCajaUsd:null };
-      asignacion = (nuevo.asignacion && typeof nuevo.asignacion === 'object') ? Object.assign({}, asigDefault, nuevo.asignacion) : asigDefault;
-      guardarAsignacion();
-
-      // Sizing de posiciones (v6). Un respaldo anterior no lo trae -- queda
-      // en los valores por defecto de la planilla, nunca en blanco a medias.
-      sizing = (nuevo.sizing && typeof nuevo.sizing === 'object') ? Object.assign({}, DEFAULT_SIZING, nuevo.sizing) : Object.assign({}, DEFAULT_SIZING);
-      guardarSizing();
-
-      tesis = (nuevo.tesis && typeof nuevo.tesis === 'object') ? nuevo.tesis : {};
-      guardarTesis();
-
-      favoritos.clear();
-      (Array.isArray(nuevo.favoritos) ? nuevo.favoritos : []).forEach(t => favoritos.add(t));
-      saveFavorites();
-
-      w8benState = (nuevo.w8ben && typeof nuevo.w8ben === 'object') ? nuevo.w8ben : { fecha: null };
-      guardarW8ben(w8benState);
-
-      // Respaldos hechos ANTES de que existiera este campo no lo traen: en
-      // ese caso queda vacío y la app vuelve a pedir el valor, en vez de
-      // fallar al restaurar.
-      ipsaBaseState = (nuevo.ipsaBase && typeof nuevo.ipsaBase === 'object')
-        ? nuevo.ipsaBase : { fecha: null, valor: null };
-      guardarIpsaBase(ipsaBaseState);
-
-      // El registro diario del IPSA se FUSIONA en vez de reemplazarse. Es la
-      // única excepción a la regla "restaurar reemplaza": son observaciones
-      // de un índice público, no datos personales del usuario -- si el
-      // respaldo trae días que este teléfono no tiene y viceversa, quedarse
-      // solo con un lado sería perder historia sin ninguna ganancia.
-      if(nuevo.ipsaSerieLocal && typeof nuevo.ipsaSerieLocal === 'object'
-         && !Array.isArray(nuevo.ipsaSerieLocal)){
-        Object.keys(nuevo.ipsaSerieLocal).forEach(f => {
-          const v = nuevo.ipsaSerieLocal[f];
-          if(typeof v === 'number' && isFinite(v) && ipsaSerieLocal[f] === undefined){
-            ipsaSerieLocal[f] = v;
-          }
-        });
-        guardarIpsaSerieLocal(ipsaSerieLocal);
-        ultimoIndiceCargado = null; // el gráfico se rearma con lo restaurado
-      }
-
-      // Re-render de todo lo que depende de estos datos
-      todosLosStocks().forEach(s => {
-        const favBtn = cardEls[s.ticker] && cardEls[s.ticker].querySelector('[data-el="fav"]');
-        if(!favBtn) return;
-        const esFav = favoritos.has(s.ticker);
-        favBtn.textContent = esFav ? '★' : '☆';
-        favBtn.classList.toggle('active', esFav);
-        cardEls[s.ticker].classList.toggle('is-favorite', esFav);
-      });
-      renderGridOrder();
-      renderMovimientos();
-      renderResumenPortafolio();
-      renderCaja();
-      renderUltimoRespaldo();
-      if(typeof renderRecordatorioAporte === 'function') renderRecordatorioAporte();
-      if(ambienteActivo === 'seguir' && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir();
-
-      alert('Respaldo restaurado — se reemplazó todo lo guardado en este dispositivo.');
+      aplicarRespaldo(nuevo);
     } catch(err){
       alert('No se pudo leer el archivo de respaldo: ' + err.message);
     }
@@ -9178,11 +9269,21 @@ setInterval(fetchSignals, 60000);
 // la watchlist vacía. Reenviarla al abrir es lo que hace que se repueble
 // sola, sin que Cristian tenga que acordarse de nada.
 //
-// Se manda SIEMPRE, incluso vacía: si la sacaste toda desde otro
-// dispositivo, esto es lo que hace que el servidor deje de pedir esos
-// precios. Mandarla no cuesta nada -- el servidor compara con lo que ya
-// tenía y solo fuerza un refresco de precios si la lista cambió de verdad.
-sincronizarWatchlist();
+// Se manda incluso vacía: si la sacaste toda EN ESTE dispositivo, esto es
+// lo que hace que el servidor deje de pedir esos precios. Mandarla no
+// cuesta nada -- el servidor compara con lo que ya tenía y solo fuerza un
+// refresco de precios si la lista cambió de verdad.
+//
+// La ÚNICA excepción es un dispositivo estrenado (ver claveNuncaEscrita):
+// ahí la lista vacía no significa "la borré", significa "todavía no la
+// tengo", y mandarla borraría la del otro dispositivo. Apenas agregues o
+// saques algo aquí, la clave queda escrita y esto vuelve a mandarse solo.
+if(claveNuncaEscrita('ipsa_watchlist') && watchlist.length === 0){
+  console.info('Watchlist: dispositivo nuevo sin watchlist propia todavía — '
+    + 'no se manda la lista vacía para no borrar la que el servidor ya tiene.');
+} else {
+  sincronizarWatchlist();
+}
 
 // ---- Recordatorio de aporte mensual: listener + primer render ----
 (function inicializarRecordatorioAporte(){
@@ -9606,6 +9707,390 @@ document.getElementById('notifyBtn').addEventListener('click', async () => {
   btn.disabled = false;
   btn.textContent = textoOriginal;
 });
+
+
+// ============================================================================
+//  SINCRONIZACIÓN ENTRE DISPOSITIVOS  (teléfono ⇄ computador)
+// ============================================================================
+// Toda la cartera vive en localStorage, que es POR NAVEGADOR: el teléfono y el
+// computador no se enteran uno del otro. Esto le da un lugar común donde
+// guardarla: un archivo `estado.json` en un repo PRIVADO de GitHub.
+//
+// Por qué GitHub y no el backend: el disco de Render es efímero y además el
+// servicio queda suspendido los fines de semana (ver monitor.yml), así que no
+// sirve como fuente de verdad. La API de GitHub acepta CORS desde cualquier
+// origen, así que la app habla directo con ella -- sincroniza aunque Render
+// esté durmiendo, es gratis, y cada guardado queda versionado (o sea, además
+// hay historial de respaldos, no solo el último).
+//
+// Por qué CIFRADO: ahí adentro va la cartera completa -- movimientos, caja,
+// plataformas, tesis. De eso se deduce el patrimonio invertido. Se cifra en
+// este navegador ANTES de subir (AES-GCM con clave derivada de una
+// contraseña por PBKDF2), así que GitHub guarda un bloque ilegible. Ni con el
+// token en la mano se puede leer sin la contraseña.
+//
+// El token y la contraseña quedan en el localStorage de ESTE navegador: la
+// misma exposición que ya tiene la cartera. Si se pierde un equipo, se revoca
+// el token en GitHub y se cambia la contraseña.
+
+const SYNC_ARCHIVO = 'estado.json';
+const SYNC_ITERACIONES = 600000;   // PBKDF2, según la recomendación actual de OWASP
+const SYNC_CADA_MS = 20000;        // cada cuánto se revisa si hay que subir
+
+function syncCfg(){
+  try {
+    return {
+      repo:  localStorage.getItem('ipsa_sync_repo')  || '',
+      token: localStorage.getItem('ipsa_sync_token') || '',
+      pass:  localStorage.getItem('ipsa_sync_pass')  || '',
+    };
+  } catch(e){ return {repo:'', token:'', pass:''}; }
+}
+function syncActivo(){
+  const c = syncCfg();
+  return !!(c.repo && c.token && c.pass);
+}
+function nombreDispositivo(){
+  const ua = navigator.userAgent || '';
+  if(/Android/i.test(ua))              return 'Android';
+  if(/iPhone|iPad|iPod/i.test(ua))     return 'iPhone';
+  if(/Windows/i.test(ua))              return 'Windows';
+  if(/Mac OS X/i.test(ua))             return 'Mac';
+  return 'otro dispositivo';
+}
+
+// ---- Cifrado ----
+// crypto.subtle solo existe en contexto seguro (HTTPS). GitHub Pages lo es;
+// si alguna vez se abre el archivo por file:// esto no va a estar y la
+// sincronización se apaga sola con un aviso claro, en vez de fallar raro.
+function _syncBytes(b64){
+  const bin = atob(b64);
+  const u = new Uint8Array(bin.length);
+  for(let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return u;
+}
+function _syncB64(buf){
+  let out = '';
+  new Uint8Array(buf).forEach(b => { out += String.fromCharCode(b); });
+  return btoa(out);
+}
+// Derivar la clave a 600.000 vueltas cuesta ~1 s, y haría lento cada
+// guardado si se repitiera cada vez. Se cachea EN MEMORIA (nunca en disco)
+// por contraseña+sal: con eso hay a lo más dos derivaciones por sesión --
+// una para lo que escribe este dispositivo y otra para leer lo que escribió
+// el otro. Al cerrar la app el caché desaparece.
+const _syncClavesCache = new Map();
+async function _syncClave(pass, sal, salB64){
+  const llave = pass + '|' + salB64;
+  if(_syncClavesCache.has(llave)) return _syncClavesCache.get(llave);
+  const base = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+  const clave = await crypto.subtle.deriveKey(
+    {name:'PBKDF2', salt: sal, iterations: SYNC_ITERACIONES, hash:'SHA-256'},
+    base, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
+  _syncClavesCache.set(llave, clave);
+  return clave;
+}
+
+// La sal de ESTE dispositivo se genera una vez y se reutiliza en todos sus
+// guardados: así el caché de arriba sirve. Lo que NO se puede repetir jamás
+// en AES-GCM es el IV, y ese sí se sortea en cada cifrado. (La sal existe
+// para que nadie precalcule un diccionario contra contraseñas comunes; no
+// necesita cambiar en cada escritura del mismo usuario.)
+function _syncSalPropia(){
+  let b64 = _syncLeer('ipsa_sync_sal');
+  if(!b64){
+    b64 = _syncB64(crypto.getRandomValues(new Uint8Array(16)));
+    _syncEscribir('ipsa_sync_sal', b64);
+  }
+  return b64;
+}
+
+async function cifrarEstado(obj, pass){
+  const salB64 = _syncSalPropia();
+  const sal = _syncBytes(salB64);
+  const iv  = crypto.getRandomValues(new Uint8Array(12));
+  const clave = await _syncClave(pass, sal, salB64);
+  const datos = await crypto.subtle.encrypt({name:'AES-GCM', iv},
+                  clave, new TextEncoder().encode(JSON.stringify(obj)));
+  return {formato:'ipsa-cifrado-1', sal:salB64, iv:_syncB64(iv), datos:_syncB64(datos)};
+}
+async function descifrarEstado(sobre, pass){
+  if(!sobre || sobre.formato !== 'ipsa-cifrado-1') throw new Error('formato desconocido');
+  const clave = await _syncClave(pass, _syncBytes(sobre.sal), sobre.sal);
+  const plano = await crypto.subtle.decrypt({name:'AES-GCM', iv:_syncBytes(sobre.iv)},
+                  clave, _syncBytes(sobre.datos));
+  return JSON.parse(new TextDecoder().decode(plano));
+}
+
+// ---- Repo privado (GitHub Contents API) ----
+async function _ghFetch(metodo, cuerpo){
+  const c = syncCfg();
+  const opciones = {
+    method: metodo,
+    headers: {
+      'Authorization': 'Bearer ' + c.token,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+    },
+  };
+  if(cuerpo) opciones.body = JSON.stringify(cuerpo);
+  return fetch('https://api.github.com/repos/' + c.repo + '/contents/' + SYNC_ARCHIVO, opciones);
+}
+function _ghError(r){
+  if(r.status === 401) return new Error('el token de GitHub no es válido o fue revocado');
+  if(r.status === 403) return new Error('el token no tiene permiso sobre ese repo');
+  if(r.status === 404) return new Error('no se encontró el repo (¿está bien escrito usuario/repo?)');
+  return new Error('GitHub respondió ' + r.status);
+}
+async function _ghBajar(){
+  const r = await _ghFetch('GET');
+  if(r.status === 404){
+    // Puede ser "el repo no existe" o "el repo existe pero todavía no tiene
+    // estado.json". Solo lo segundo es normal, y se distingue así:
+    const c = syncCfg();
+    const rr = await fetch('https://api.github.com/repos/' + c.repo, {
+      headers: {'Authorization':'Bearer ' + c.token, 'Accept':'application/vnd.github+json'}});
+    if(rr.ok) return {sobre:null, sha:null};   // repo vacío: primera vez
+    throw _ghError(rr);
+  }
+  if(!r.ok) throw _ghError(r);
+  const j = await r.json();
+  const texto = new TextDecoder().decode(_syncBytes((j.content || '').replace(/\s/g, '')));
+  return {sobre: JSON.parse(texto), sha: j.sha};
+}
+async function _ghSubir(sobre, sha, mensaje){
+  const cuerpo = {message: mensaje, content: btoa(JSON.stringify(sobre))};
+  if(sha) cuerpo.sha = sha;
+  const r = await _ghFetch('PUT', cuerpo);
+  // 409/422 = alguien escribió entremedio y el sha que teníamos quedó viejo.
+  if(r.status === 409 || r.status === 422) return {desactualizado:true};
+  if(!r.ok) throw _ghError(r);
+  const j = await r.json();
+  return {sha: j.content && j.content.sha};
+}
+
+// ---- Motor ----
+// `huella` es el estado local reducido a texto, SIN el campo `exportado`
+// (que cambia en cada llamada y haría ver un cambio donde no lo hay).
+// Comparar la huella actual con la de la última sincronización es lo que
+// distingue "aquí no se tocó nada" de "aquí hay cambios sin subir".
+function huellaEstado(){
+  const o = construirRespaldoUnificado();
+  delete o.exportado;
+  return JSON.stringify(o);
+}
+function _syncLeer(k){ try { return localStorage.getItem(k) || ''; } catch(e){ return ''; } }
+function _syncEscribir(k, v){ try { localStorage.setItem(k, v); } catch(e){} }
+
+// ¿Este dispositivo está en blanco? Se mide por lo que el usuario habría
+// tenido que escribir a mano: movimientos, tesis, favoritos, watchlist o
+// plata en caja. Los valores por defecto (asignación, sizing) no cuentan --
+// están ahí desde la instalación, nadie los puso.
+function _syncEstadoVacio(){
+  try {
+    const sinCaja = !(caja && ((caja.CLP || 0) !== 0 || (caja.USD || 0) !== 0));
+    return (!movimientos || movimientos.length === 0)
+        && Object.keys(tesis || {}).length === 0
+        && favoritos.size === 0
+        && (!watchlist || watchlist.length === 0)
+        && Object.keys(alertasPrecio || {}).length === 0
+        && sinCaja;
+  } catch(e){ return false; }
+}
+
+let _syncOcupado = false;
+let _syncUltimoError = '';
+let _syncUltimaVez = _syncLeer('ipsa_sync_ultima');
+
+function renderSyncEstado(){
+  const el = document.getElementById('syncEstadoInfo');
+  if(!el) return;
+  if(!syncActivo()){
+    el.textContent = 'Sincronización entre dispositivos: sin configurar.';
+    return;
+  }
+  if(_syncUltimoError){ el.textContent = 'Sincronización: ' + _syncUltimoError; return; }
+  if(_syncOcupado){ el.textContent = 'Sincronizando…'; return; }
+  if(!_syncUltimaVez){ el.textContent = 'Sincronización activa — todavía sin sincronizar.'; return; }
+  const min = Math.round((Date.now() - new Date(_syncUltimaVez).getTime()) / 60000);
+  el.textContent = 'Sincronizado ' + (min < 1 ? 'recién' : 'hace ' + min + ' min')
+    + ' · repo ' + syncCfg().repo;
+}
+function _syncMarcarOk(huella, actualizado){
+  _syncUltimoError = '';
+  _syncUltimaVez = new Date().toISOString();
+  _syncEscribir('ipsa_sync_ultima', _syncUltimaVez);
+  _syncEscribir('ipsa_sync_huella', huella);
+  if(actualizado) _syncEscribir('ipsa_sync_visto', actualizado);
+  renderSyncEstado();
+}
+
+// Sube el estado local. `sha` se pide de nuevo si el que teníamos quedó viejo.
+async function _syncSubir(motivo, shaConocido){
+  const c = syncCfg();
+  const estado = construirRespaldoUnificado();
+  estado.actualizado = new Date().toISOString();
+  estado.dispositivo = nombreDispositivo();
+  const huella = huellaEstado();
+  const sobre = await cifrarEstado(estado, c.pass);
+  // El sha del archivo que se está reemplazando. Quien llama ya lo leyó
+  // (sincronizarEstado baja el estado antes de decidir), así que se pasa en
+  // vez de pedirlo de nuevo: una consulta a GitHub menos por sincronización.
+  let sha = (shaConocido !== undefined) ? shaConocido : (await _ghBajar().catch(() => ({sha:null}))).sha;
+  let res = await _ghSubir(sobre, sha, motivo + ' (' + estado.dispositivo + ')');
+  if(res.desactualizado){
+    const otra = await _ghBajar();
+    res = await _ghSubir(sobre, otra.sha, motivo + ' (' + estado.dispositivo + ', reintento)');
+  }
+  _syncMarcarOk(huella, estado.actualizado);
+}
+
+// Trae lo del otro dispositivo y lo aplica. Devuelve true si adoptó algo.
+async function _syncAdoptar(remoto){
+  aplicarRespaldo(remoto, {silencioso:true});
+  _syncMarcarOk(huellaEstado(), remoto.actualizado || '');
+  return true;
+}
+
+// El corazón: decide qué hacer comparando tres cosas -- si aquí hay cambios
+// sin subir, si allá hay algo más nuevo de lo último que vimos, y si las dos
+// cosas pasaron a la vez (conflicto de verdad).
+async function sincronizarEstado(motivo){
+  if(!syncActivo() || _syncOcupado) return;
+  if(!(window.crypto && crypto.subtle)){
+    _syncUltimoError = 'no disponible en este contexto (hace falta HTTPS).';
+    renderSyncEstado();
+    return;
+  }
+  _syncOcupado = true; renderSyncEstado();
+  try {
+    const c = syncCfg();
+    const {sobre, sha} = await _ghBajar();
+
+    // Primera vez: el repo está vacío, este dispositivo siembra el estado.
+    if(!sobre){ await _syncSubir('primer estado', null); return; }
+
+    const remoto = await descifrarEstado(sobre, c.pass).catch(() => {
+      throw new Error('la contraseña de cifrado no coincide con la del otro dispositivo');
+    });
+
+    // Un dispositivo recién estrenado (el computador, la primera vez) tiene
+    // el estado en blanco. Sin esto entraría al caso "conflicto" -- se editó
+    // en los dos lados -- que acá es falso y solo confunde: no hay nada que
+    // proteger, lo correcto es traer lo del otro y listo.
+    //
+    // Efecto secundario, y es a propósito: vaciar un dispositivo a mano
+    // tampoco se propaga solo. Borrar todo por accidente en un equipo no
+    // puede arrastrar al otro.
+    const hayCambiosAca  = !_syncEstadoVacio()
+                           && huellaEstado() !== _syncLeer('ipsa_sync_huella');
+    const hayNovedadAlla = (remoto.actualizado || '') !== _syncLeer('ipsa_sync_visto');
+
+    if(!hayCambiosAca && !hayNovedadAlla){ _syncMarcarOk(huellaEstado(), remoto.actualizado); return; }
+    if(!hayCambiosAca &&  hayNovedadAlla){ await _syncAdoptar(remoto); return; }
+    if( hayCambiosAca && !hayNovedadAlla){ await _syncSubir(motivo || 'cambios', sha); return; }
+
+    // Conflicto real: se editó en los dos lados desde la última vez que
+    // estuvieron iguales. Antes de tocar NADA se descarga un respaldo de lo
+    // que hay aquí, así que la opción que elija no puede perder datos.
+    exportarMovimientos();
+    const suyo = remoto.dispositivo || 'el otro dispositivo';
+    const cuando = remoto.actualizado ? new Date(remoto.actualizado).toLocaleString('es-CL') : 'fecha desconocida';
+    const traer = confirm(
+      'Se editó en los dos dispositivos desde la última sincronización.\n\n'
+      + 'Acabo de descargar un archivo con lo que hay en ESTE dispositivo, así que '
+      + 'elijas lo que elijas no se pierde nada.\n\n'
+      + 'Aceptar: traer la versión de ' + suyo + ' (' + cuando + ') y reemplazar esto.\n'
+      + 'Cancelar: mantener lo de este dispositivo y mandarlo al otro.');
+    if(traer) await _syncAdoptar(remoto);
+    else      await _syncSubir('resuelto a favor de este dispositivo', sha);
+  } catch(err){
+    _syncUltimoError = (err && err.message) ? err.message : 'falló';
+    console.warn('[sync]', err);
+  } finally {
+    _syncOcupado = false;
+    renderSyncEstado();
+  }
+}
+
+// Revisión periódica: si el estado local cambió respecto de la última
+// sincronización, sube. No baja acá -- bajar se hace al abrir y al volver a
+// la app, para no pisar lo que estás escribiendo en este momento.
+async function _syncRevisarCambios(){
+  if(!syncActivo() || _syncOcupado) return;
+  if(huellaEstado() === _syncLeer('ipsa_sync_huella')) return;
+  await sincronizarEstado('cambios');
+}
+
+// ---- Configuración (una vez por dispositivo) ----
+function configurarSync(){
+  const c = syncCfg();
+  const repo = prompt(
+    'Repo PRIVADO de GitHub donde se guarda tu cartera cifrada, en formato usuario/repo.\n\n'
+    + 'Ejemplo: cristiank80-cloud/ipsa-estado\n\n'
+    + '(Dejarlo vacío desactiva la sincronización en este dispositivo.)', c.repo);
+  if(repo === null) return;
+  if(!repo.trim()){
+    ['ipsa_sync_repo','ipsa_sync_token','ipsa_sync_pass','ipsa_sync_huella','ipsa_sync_visto','ipsa_sync_ultima']
+      .forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
+    _syncUltimaVez = ''; _syncUltimoError = '';
+    renderSyncEstado();
+    alert('Sincronización desactivada en este dispositivo. Tus datos locales quedan intactos.');
+    return;
+  }
+  const token = prompt(
+    'Token de GitHub (fine-grained) con permiso "Contents: Read and write" SOLO sobre ese repo.\n\n'
+    + 'Queda guardado únicamente en este navegador. Si pierdes el equipo, revócalo en GitHub.', c.token);
+  if(token === null) return;
+  const pass = prompt(
+    'Contraseña de cifrado.\n\n'
+    + 'Con ella se cifra tu cartera ANTES de subirla: sin ella nadie puede leerla, '
+    + 'ni siquiera con el token en la mano.\n\n'
+    + 'TIENE que ser la misma en todos tus dispositivos. Si la pierdes, lo guardado '
+    + 'es irrecuperable: anótala en un lugar seguro.', c.pass);
+  if(pass === null) return;
+  if(!token.trim() || !pass.trim()){ alert('Falta el token o la contraseña: la sincronización queda sin activar.'); return; }
+
+  _syncEscribir('ipsa_sync_repo', repo.trim());
+  _syncEscribir('ipsa_sync_token', token.trim());
+  _syncEscribir('ipsa_sync_pass', pass);
+  // Se borra la memoria de sincronizaciones anteriores: con un repo o una
+  // contraseña nuevos, lo que sabíamos ya no aplica.
+  ['ipsa_sync_huella','ipsa_sync_visto'].forEach(k => { try { localStorage.removeItem(k); } catch(e){} });
+  _syncUltimoError = '';
+  renderSyncEstado();
+  sincronizarEstado('configuración inicial');
+}
+
+// ---- Arranque ----
+(function inicializarSync(){
+  const btn = document.getElementById('btnSync');
+  if(btn){
+    btn.addEventListener('click', () => {
+      if(!syncActivo()) { configurarSync(); return; }
+      // Con la sincronización ya andando, un toque sincroniza ahora mismo;
+      // mantenerlo apretado no existe en móvil, así que la reconfiguración
+      // vive en el mismo botón cuando se toca con la app sin configurar.
+      sincronizarEstado('a mano');
+    });
+    btn.addEventListener('dblclick', configurarSync);
+  }
+  renderSyncEstado();
+  if(syncActivo()) sincronizarEstado('al abrir');
+  setInterval(_syncRevisarCambios, SYNC_CADA_MS);
+  // Al volver a la app (cambiar de pestaña, desbloquear el teléfono) se
+  // vuelve a mirar el otro dispositivo, con un mínimo de un minuto entre
+  // consultas para no gastar la cuota de la API en nada.
+  let _syncUltimaMirada = 0;
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState !== 'visible' || !syncActivo()) return;
+    if(Date.now() - _syncUltimaMirada < 60000) return;
+    _syncUltimaMirada = Date.now();
+    sincronizarEstado('al volver');
+  });
+})();
+
 </script>
 </body>
 </html>
