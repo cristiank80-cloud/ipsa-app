@@ -133,6 +133,13 @@
   .cartera-campo.sube span{color:var(--verdigris);}
   .cartera-campo.baja span{color:var(--copper);}
   .cartera-campo input{width:100%; min-width:0; padding:4px 5px; border:1px solid var(--hairline); border-radius:5px; background:var(--bg-field); font-size:12px; box-sizing:border-box;}
+  /* El riesgo real (contra el stop YA guardado, no el sugerido) va abajo
+     de "Vta si baja" -- por eso ese campo se envuelve aparte, en columna,
+     en vez de compartir la fila horizontal de .cartera-campo. */
+  .cartera-campo-baja-wrap{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
+  .cartera-campo-baja-wrap .cartera-campo.baja{flex:none; width:100%;}
+  .cartera-riesgo{font-size:10px; color:var(--ink-faint); padding-left:2px;}
+  .cartera-riesgo--alto{color:var(--copper); font-weight:600;}
   /* Sugerencia de stop en la media 50 (regla 4 del metodo). Aparece SOLO
      cuando la media esta por encima del stop guardado: el stop sube o se
      queda, nunca baja, asi que una media que cayo no tiene nada que
@@ -151,6 +158,10 @@
                color:var(--ink-dim); line-height:1.55;}
   .plat-migrar b{color:var(--ink);}
   .plat-migrar .pm-btns{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .atajo-stop{border:1px solid rgba(201,166,107,0.4); background:rgba(201,166,107,0.06);
+              border-radius:8px; padding:10px 12px; margin-bottom:10px;}
+  .atajo-stop-titulo{font-size:12px; color:var(--ink-dim); margin:0; line-height:1.5;}
+  .atajo-stop-titulo .mono{color:var(--ink); font-weight:700;}
   .plat-block{background:var(--bg-panel); border:1px solid var(--hairline); border-radius:12px;
               padding:14px; margin-bottom:12px;}
   .plat-nombres{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
@@ -703,6 +714,7 @@
   }
   .mov-item .mi-tipo.compra{color:var(--verdigris); background:var(--verdigris-soft);}
   .mov-item .mi-tipo.venta{color:var(--copper); background:var(--copper-soft);}
+  .mov-item .mi-tipo.dividendo{color:var(--gold); background:rgba(144,111,55,0.16);}
   .mov-item .mi-del{
     background:none; border:none; color:var(--ink-faint); cursor:pointer; font-size:14px; padding:2px 6px;
   }
@@ -736,6 +748,9 @@
   .ptb-head{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;}
   .ptb-head .ptb-ticker{font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:14px;}
   .ptb-head .ptb-qty{font-size:12px; color:var(--ink-dim);}
+  .ptb-qty-wrap{display:flex; align-items:baseline; gap:10px;}
+  .ptb-toggle{background:none; border:none; color:var(--gold); font-size:11.5px; font-weight:600; cursor:pointer; padding:2px 0; white-space:nowrap;}
+  .ptb-toggle:hover{text-decoration:underline;}
   .ptb-table{width:100%; border-collapse:collapse; font-size:11.5px; margin-bottom:8px;}
   .ptb-table th{text-align:right; color:var(--ink-faint); font-weight:500; font-size:10px; text-transform:uppercase; padding:4px 6px;}
   .ptb-table th:first-child, .ptb-table td:first-child{text-align:left;}
@@ -764,6 +779,9 @@
     max-width:640px; width:100%; padding:22px 22px 18px; margin-top:10px;
   }
   .detail-top{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;}
+  .detail-shortcuts{display:flex; gap:8px; margin:-6px 0 14px; flex-wrap:wrap;}
+  .detail-shortcut-btn{background:none; border:1px solid var(--hairline); border-radius:6px; color:var(--ink-dim); font-size:11.5px; padding:5px 10px; cursor:pointer;}
+  .detail-shortcut-btn:hover{color:var(--gold); border-color:var(--gold);}
   .detail-name{font-size:19px; font-weight:700;}
   .detail-sub{font-size:13px; color:var(--ink-dim); margin-top:2px;}
   .close-btn{
@@ -1052,12 +1070,30 @@
       <select id="movTipo" class="mov-input">
         <option value="compra">Compra</option>
         <option value="venta">Venta</option>
+        <option value="dividendo">Dividendo</option>
       </select>
       <input type="number" id="movCantidad" class="mov-input" placeholder="Cantidad" min="0.00000001" step="any">
       <input type="number" id="movPrecio" class="mov-input" placeholder="Precio" min="0" step="0.01">
+      <input type="number" id="movComision" class="mov-input" placeholder="Comisión (opc.)" min="0" step="0.01">
       <input type="date" id="movFecha" class="mov-input">
       <select id="movPlat" class="mov-input" title="En qué plataforma se hizo esta operación"></select>
       <button id="movGuardar" class="mov-btn">Registrar</button>
+    </div>
+    <!-- Atajo: después de registrar una COMPRA, antes había que ir a "Mi
+         Cartera" a mano para poner el stop/objetivo -- fricción real en el
+         mismo momento en que más importa (recién compraste, es cuando más
+         fresco tienes a qué precio saldrías). Este cuadro aparece solo ahí,
+         precargado con el ticker, y guarda por el mismo camino que "Mi
+         Cartera" (alertasPrecio + sincronizarAlertasPrecio). Ver
+         mostrarAtajoStop() en inicializarFormularioMovimientos(). -->
+    <div id="atajoStopBox" class="atajo-stop" style="display:none;">
+      <p class="atajo-stop-titulo">¿A qué precio vendes <span id="atajoStopTicker" class="mono"></span>? Ponlo ahora, sin ir a Mi Cartera.</p>
+      <div class="movs-form" style="margin-top:6px;">
+        <input type="number" step="any" min="0" id="atajoStopSube" class="mov-input" placeholder="Vta si sube">
+        <input type="number" step="any" min="0" id="atajoStopBaja" class="mov-input" placeholder="Vta si baja">
+        <button type="button" id="atajoStopGuardar" class="mov-btn">Guardar</button>
+        <button type="button" id="atajoStopCerrar" class="mov-btn" style="background:none; color:var(--ink-dim); border-color:var(--hairline);">Ahora no</button>
+      </div>
     </div>
     <div id="platMigrar" class="plat-migrar" style="display:none;"></div>
     <div id="movsList" class="movs-list"><p class="analysis-empty">Sin movimientos registrados todavía.</p></div>
@@ -2286,6 +2322,14 @@ function cambiarAmbiente(nuevo){
   // una vista en pesos sería repetir el error que este ambiente arregla.
   if(analysisPanelWrap) analysisPanelWrap.style.display = (esVistaConsolidada || esCripto) ? 'none' : '';
   if(movsPanelWrap) movsPanelWrap.style.display = esVistaConsolidada ? 'none' : '';
+  // Cripto no lleva caja propia: Cristian financia sus compras de BTC
+  // directo desde el banco, no desde una caja que la app le lleve la
+  // cuenta -- mostrar el bloque acá (y peor, dejar que las compras la
+  // toquen) mezclaba su plata de bitcoin con la caja en pesos de Chile,
+  // porque las dos comparten moneda CLP. Ver aplicarMovimientoACaja() y
+  // editarMovimiento() más abajo para la otra mitad de este arreglo.
+  const cajaBox = document.getElementById('cajaBox');
+  if(cajaBox) cajaBox.style.display = esCripto ? 'none' : '';
   // El buscador SÍ queda visible en los cuatro ambientes (sección 6.3 de la
   // spec v3): en "A seguir" y "Mi Cartera" busca en ambos mercados con
   // encabezado por grupo (ver buscadorTop.agrupar) y abre el detalle sin
@@ -3046,6 +3090,32 @@ async function abrirFichaSuelta(ticker, nombre){
   }
 }
 
+// Atajos "A seguir" / "Mi Cartera" en el detalle de una acción -- a pedido:
+// antes había que cerrar el detalle y navegar a mano para poner el stop o
+// mirar el plan. "Mi Cartera" además precarga el buscador con ESTE ticker,
+// asi el atajo deja abierta justo la fila que se vino a ver, no la lista
+// entera. "A seguir" solo cambia de ambiente: no es una lista de tickers,
+// asi que no hay nada que filtrar ahí.
+function detailShortcutsHTML(){
+  return `<div class="detail-shortcuts">
+    <button type="button" class="detail-shortcut-btn" id="btnDetailSeguir">👁 Ir a "A seguir"</button>
+    <button type="button" class="detail-shortcut-btn" id="btnDetailCartera">💼 Ir a "Mi Cartera"</button>
+  </div>`;
+}
+function inicializarDetailShortcuts(ticker){
+  const btnSeguir = document.getElementById('btnDetailSeguir');
+  if(btnSeguir) btnSeguir.addEventListener('click', () => {
+    closeDetail();
+    cambiarAmbiente('seguir');
+  });
+  const btnCartera = document.getElementById('btnDetailCartera');
+  if(btnCartera) btnCartera.addEventListener('click', () => {
+    closeDetail();
+    carteraFiltro = ticker;
+    cambiarAmbiente('cartera');
+  });
+}
+
 function openDetail(ticker){
   openTicker = ticker;
   renderDetail(ticker);
@@ -3091,6 +3161,7 @@ function renderDetail(ticker){
           <button class="close-btn" id="closeBtn">✕</button>
         </div>
       </div>
+      ${detailShortcutsHTML()}
       ${lineaEstadoHTML(s.ticker)}
       <p style="padding:36px 0; text-align:center; color:var(--ink-faint);">Cargando datos reales de Yahoo Finance…</p>
     `;
@@ -3100,6 +3171,7 @@ function renderDetail(ticker){
     // responde era perder justo el dato que no necesita a Yahoo.
     document.getElementById('closeBtn').addEventListener('click', closeDetail);
     inicializarFavBtnDetalle(s.ticker);
+    inicializarDetailShortcuts(s.ticker);
     return;
   }
 
@@ -3181,6 +3253,7 @@ function renderDetail(ticker){
       </div>
     </div>
 
+    ${detailShortcutsHTML()}
     ${lineaEstadoHTML(s.ticker)}
 
     <div class="value-row">
@@ -3310,6 +3383,7 @@ function renderDetail(ticker){
   document.getElementById('btnRegistrarMov').addEventListener('click', () => registrarDesdeDetalle(s.ticker, s.price));
   wireSizing(s.ticker);
   inicializarFavBtnDetalle(s.ticker);
+  inicializarDetailShortcuts(s.ticker);
   buildSpark(document.getElementById('detailSvg'), s.history, s.avg, threshold, s.dec, 160, 600, true, moneda, document.getElementById('detailAxisLabels'));
   updateDetailClock();
   wirePeriodSelector(s);
@@ -4954,6 +5028,8 @@ function renderMovimientos(){
   // se deja visible porque por sí sola no revela montos ni posiciones.
   const ultimo = ordenados[0];
 
+  // Dividendo no tiene cantidad ni precio -- ver renderMovsDetailPanel() para
+  // el mismo criterio en el detalle completo.
   const filaMov = oculto
     ? `
       <div class="mov-item mov-item--oculto">
@@ -4962,6 +5038,17 @@ function renderMovimientos(){
         <span style="filter:blur(3px);">••• tít.</span>
         <span class="mono" style="filter:blur(3px);">$•••</span>
         <span style="color:var(--ink-faint);">${ultimo.fecha}</span>
+      </div>`
+    : ultimo.tipo === 'dividendo'
+    ? `
+      <div class="mov-item">
+        <span class="mi-tipo dividendo">dividendo</span>
+        <span class="mono">${ultimo.ticker}</span>
+        <span>—</span>
+        <span class="mono">${fmtMoneda2(ultimo.monto, monedaDeMov(ultimo))}</span>
+        ${chipPlat(platDeMov(ultimo))}
+        <span style="color:var(--ink-faint);">${ultimo.fecha}</span>
+        <button class="mi-del" data-id="${ultimo.id}" title="Eliminar">✕</button>
       </div>`
     : `
       <div class="mov-item">
@@ -4992,6 +5079,7 @@ function renderMovimientos(){
   if(!oculto){
     const posiciones = {};
     movsAmbiente.forEach(m => {
+      if(m.tipo === 'dividendo') return; // no tiene cantidad -- no es una posición, es plata que entró
       const signo = m.tipo === 'compra' ? 1 : -1;
       posiciones[m.ticker] = (posiciones[m.ticker] || 0) + signo * m.cantidad;
     });
@@ -5009,34 +5097,129 @@ function renderMovimientos(){
   renderResumenPortafolio();
 }
 
+// Dividendo no tiene cantidad ni comisión -- es un monto que entró, punto.
+// En vez de agregar un séptimo campo al formulario, reutiliza el input de
+// "Precio" como "Monto recibido" (mismo lugar, otro rótulo) y esconde
+// Cantidad/Comisión mientras ese tipo esté elegido -- ver el listener de
+// 'change' más abajo, único lugar que decide qué se ve.
+// Ver el comentario junto al HTML de #atajoStopBox: aparece SOLO después
+// de registrar una compra, precargado con ese ticker, para poner el stop
+// o el objetivo de venta sin salir de este formulario ni ir a "Mi Cartera".
+function mostrarAtajoStop(ticker){
+  const box = document.getElementById('atajoStopBox');
+  if(!box) return;
+  const elTicker = document.getElementById('atajoStopTicker');
+  if(elTicker) elTicker.textContent = ticker;
+  const elSube = document.getElementById('atajoStopSube');
+  const elBaja = document.getElementById('atajoStopBaja');
+  if(elSube) elSube.value = '';
+  if(elBaja) elBaja.value = '';
+  const obj = alertasPrecio[ticker];
+  if(obj){
+    if(elSube && obj.sube !== null && obj.sube !== undefined) elSube.value = obj.sube;
+    if(elBaja && obj.baja !== null && obj.baja !== undefined) elBaja.value = obj.baja;
+  }
+  box.dataset.ticker = ticker;
+  box.style.display = '';
+}
+function ocultarAtajoStop(){
+  const box = document.getElementById('atajoStopBox');
+  if(box) box.style.display = 'none';
+}
+function inicializarAtajoStop(){
+  const btnCerrar = document.getElementById('atajoStopCerrar');
+  if(btnCerrar) btnCerrar.addEventListener('click', ocultarAtajoStop);
+  const btnGuardar = document.getElementById('atajoStopGuardar');
+  if(btnGuardar) btnGuardar.addEventListener('click', () => {
+    const box = document.getElementById('atajoStopBox');
+    const ticker = box && box.dataset.ticker;
+    if(!ticker) return;
+    const subeRaw = document.getElementById('atajoStopSube').value;
+    const bajaRaw = document.getElementById('atajoStopBaja').value;
+    if(subeRaw === '' && bajaRaw === ''){ ocultarAtajoStop(); return; }
+    // Mismo camino de guardado que los campos de "Mi Cartera" (ver
+    // filaCartera / el listener de '.cartera-campo input') -- así el stop
+    // puesto acá y el puesto allá son indistinguibles para el resto de la app.
+    if(!alertasPrecio[ticker]) alertasPrecio[ticker] = {sube: null, baja: null};
+    if(subeRaw !== ''){ const v = parseFloat(subeRaw); alertasPrecio[ticker].sube = isNaN(v) ? null : v; }
+    if(bajaRaw !== ''){ const v = parseFloat(bajaRaw); alertasPrecio[ticker].baja = isNaN(v) ? null : v; }
+    guardarAlertasPrecio();
+    sincronizarAlertasPrecio();
+    ocultarAtajoStop();
+    if(ambienteActivo === 'cartera' && typeof renderAmbienteCartera === 'function') renderAmbienteCartera();
+  });
+}
+
+function actualizarFormularioSegunTipo(){
+  const tipo = document.getElementById('movTipo').value;
+  const esDividendo = tipo === 'dividendo';
+  const elCant = document.getElementById('movCantidad');
+  const elComision = document.getElementById('movComision');
+  const elPrecio = document.getElementById('movPrecio');
+  if(elCant) elCant.style.display = esDividendo ? 'none' : '';
+  if(elComision) elComision.style.display = esDividendo ? 'none' : '';
+  if(elPrecio) elPrecio.placeholder = esDividendo ? 'Monto recibido' : 'Precio';
+}
+
 function inicializarFormularioMovimientos(){
   poblarSelectorTickers();
   document.getElementById('movFecha').value = new Date().toLocaleDateString('en-CA', {timeZone:'America/Santiago'});
+  document.getElementById('movTipo').addEventListener('change', actualizarFormularioSegunTipo);
+  actualizarFormularioSegunTipo();
+  inicializarAtajoStop();
 
   document.getElementById('movGuardar').addEventListener('click', () => {
     const ticker = tickerDesdeInputMov(document.getElementById('movTicker').value);
     const tipo = document.getElementById('movTipo').value;
-    // parseFloat (no parseInt): acciones de EE.UU. compradas "por monto" dan
-    // cantidades fraccionadas (ej. 0.07438882 Nvidia) -- con parseInt esas
-    // compras se truncaban a 0 y el formulario las rechazaba como si el
-    // campo estuviera vacío.
-    const cantidad = parseFloat(document.getElementById('movCantidad').value);
-    const precio = parseFloat(document.getElementById('movPrecio').value);
     const fecha = document.getElementById('movFecha').value;
 
     if(!ticker){
       alert('Escribe o elige una acción válida de la lista (por ticker o nombre).');
       return;
     }
+
+    const currency = monedaDeTicker(ticker);
+    const platEl = document.getElementById('movPlat');
+    const plat = (platEl && esPlatValida(platEl.value)) ? platEl.value : PLAT_IDS[0];
+
+    // Dividendo: un monto recibido por ese ticker, sin cantidad ni precio
+    // ni comisión -- ver aplicarQuoteCripto()... no, ver aplicarMovimientoACaja()
+    // y calcularPortafolio(), que lo tratan aparte de compras/ventas.
+    if(tipo === 'dividendo'){
+      const monto = parseFloat(document.getElementById('movPrecio').value);
+      if(!monto || monto <= 0 || !fecha){
+        alert('Completa el monto recibido y la fecha antes de registrar el dividendo.');
+        return;
+      }
+      const mov = { id: Date.now(), ticker, tipo, monto, fecha, currency, plat };
+      movimientos.push(mov);
+      saveMovimientos(movimientos);
+      aplicarMovimientoACaja(mov);
+      renderMovimientos();
+      if(typeof renderRecordatorioAporte === 'function') renderRecordatorioAporte();
+      document.getElementById('movPrecio').value = '';
+      return;
+    }
+
+    // parseFloat (no parseInt): acciones de EE.UU. compradas "por monto" dan
+    // cantidades fraccionadas (ej. 0.07438882 Nvidia) -- con parseInt esas
+    // compras se truncaban a 0 y el formulario las rechazaba como si el
+    // campo estuviera vacío.
+    const cantidad = parseFloat(document.getElementById('movCantidad').value);
+    const precio = parseFloat(document.getElementById('movPrecio').value);
+    // Comisión: opcional, en blanco = 0. Es lo que de verdad se descuenta
+    // (compra) o resta (venta) de la caja además del monto de la operación,
+    // y lo que ajusta el costo real / lo realmente recibido -- ver
+    // aplicarMovimientoACaja() y calcularPortafolio().
+    const comisionRaw = document.getElementById('movComision').value;
+    const comision = comisionRaw !== '' ? Math.abs(parseFloat(comisionRaw)) || 0 : 0;
+
     if(!cantidad || cantidad <= 0 || !precio || precio <= 0 || !fecha){
       alert('Completa cantidad, precio y fecha antes de registrar el movimiento.');
       return;
     }
 
-    const currency = monedaDeTicker(ticker);
-    const platEl = document.getElementById('movPlat');
-    const plat = (platEl && esPlatValida(platEl.value)) ? platEl.value : PLAT_IDS[0];
-    const mov = { id: Date.now(), ticker, tipo, cantidad, precio, fecha, currency, plat };
+    const mov = { id: Date.now(), ticker, tipo, cantidad, precio, fecha, currency, plat, comision };
     movimientos.push(mov);
     saveMovimientos(movimientos);
     // Caja por moneda (sección 3.1): compra descuenta, venta suma,
@@ -5044,9 +5227,12 @@ function inicializarFormularioMovimientos(){
     aplicarMovimientoACaja(mov);
     renderMovimientos();
     if(typeof renderRecordatorioAporte === 'function') renderRecordatorioAporte();
+    // Atajo: recién comprada es cuando más sentido tiene poner el stop.
+    if(tipo === 'compra') mostrarAtajoStop(ticker);
 
     document.getElementById('movCantidad').value = '';
     document.getElementById('movPrecio').value = '';
+    document.getElementById('movComision').value = '';
   });
 
   refrescarSelectoresPlat();
@@ -5089,21 +5275,34 @@ function calcularPortafolio(moneda, ambito){
   const porTicker = {};
   movimientos.filter(m => monedaDeMov(m) === moneda
                        && (!ambito || ambitoDeMov(m) === ambito)).forEach(m => {
-    if(!porTicker[m.ticker]) porTicker[m.ticker] = {compras:[], ventas:[]};
-    porTicker[m.ticker][m.tipo === 'compra' ? 'compras' : 'ventas'].push(m);
+    if(!porTicker[m.ticker]) porTicker[m.ticker] = {compras:[], ventas:[], dividendos:[]};
+    // Dividendo va a su propia bolsa: no tiene cantidad ni precio, así que
+    // no puede entrar a compras/ventas sin volver NaN el costo promedio y
+    // el neto de títulos.
+    const bolsa = m.tipo === 'dividendo' ? 'dividendos' : (m.tipo === 'compra' ? 'compras' : 'ventas');
+    porTicker[m.ticker][bolsa].push(m);
   });
 
   const resultado = {};
-  Object.entries(porTicker).forEach(([ticker, {compras, ventas}]) => {
+  Object.entries(porTicker).forEach(([ticker, {compras, ventas, dividendos}]) => {
+    // La comisión de una compra se suma al costo (pagaste eso de más por
+    // quedarte con los títulos); la de una venta se resta de lo recibido
+    // (te quedó eso de menos en el bolsillo). Así el costo promedio y la
+    // utilidad realizada reflejan lo que de verdad entró/salió de la caja,
+    // no solo cantidad×precio.
     const totalCompradoQ = compras.reduce((a,m)=>a+m.cantidad,0);
-    const totalCompradoCosto = compras.reduce((a,m)=>a+m.cantidad*m.precio,0);
+    const totalCompradoCosto = compras.reduce((a,m)=>a+m.cantidad*m.precio+(m.comision||0),0);
     const costoPromedio = totalCompradoQ > 0 ? totalCompradoCosto/totalCompradoQ : 0;
     const totalVendidoQ = ventas.reduce((a,m)=>a+m.cantidad,0);
-    const totalVendidoIngreso = ventas.reduce((a,m)=>a+m.cantidad*m.precio,0);
+    const totalVendidoIngreso = ventas.reduce((a,m)=>a+m.cantidad*m.precio-(m.comision||0),0);
     const netoQ = totalCompradoQ - totalVendidoQ;
     // Costo promedio ponderado (no es FIFO estricto, es un metodo estandar y simple)
     const costoDeLoVendido = costoPromedio * totalVendidoQ;
     const utilidadRealizada = totalVendidoIngreso - costoDeLoVendido;
+    // Dividendos recibidos: aparte de la utilidad realizada/no realizada a
+    // propósito -- son plata que ya entró a la caja, no una ganancia de
+    // precio. Se muestran solos en la tarjeta de la posición.
+    const totalDividendos = dividendos.reduce((a,m)=>a+m.monto,0);
 
     const s = todosLosStocks().find(x => x.ticker === ticker);
     const precioActual = (s && s.price !== null) ? s.price : null; // NUNCA inventado
@@ -5113,7 +5312,8 @@ function calcularPortafolio(moneda, ambito){
 
     resultado[ticker] = {
       ticker, nombre: s ? s.name : ticker, dec: s ? s.dec : (moneda==='USD'?2:0), moneda,
-      compras, ventas, totalCompradoQ, totalCompradoCosto, costoPromedio,
+      compras, ventas, dividendos, totalDividendos,
+      totalCompradoQ, totalCompradoCosto, costoPromedio,
       totalVendidoQ, totalVendidoIngreso, netoQ, utilidadRealizada,
       precioActual, costoDeLoQueQueda, valorActual, utilidadNoRealizada,
     };
@@ -5276,6 +5476,52 @@ function refrescarSelectoresPlat(){
 }
 function movimientosSinPlat(){ return movimientos.filter(m => !platDeMov(m)); }
 
+// ---- Migración de una vez: deshacer el efecto en la caja de las compras
+// y ventas de bitcoin registradas ANTES de que existiera el ambiente
+// Cripto. En esa época BTC vivía en la grilla de EE.UU. y cada movimiento
+// (aplicarMovimientoACaja) restaba/sumaba de la caja compartida como si
+// fuera cualquier acción -- plata que en la realidad nunca pasó por ahí,
+// porque Cristian transfiere directo a Buda.com desde el banco. Desde el
+// arreglo de agosto-2026, aplicarMovimientoACaja() y editarMovimiento() ya
+// no tocan la caja para cripto (ver más arriba); esto solo limpia lo que
+// quedó mal calculado ANTES de ese arreglo. Corre una sola vez por
+// dispositivo -- mismo patrón que migrarObjetivosCripto() más abajo.
+(function migrarCajaCripto(){
+  const FLAG = 'ipsa_migracion_caja_cripto';
+  try {
+    if(localStorage.getItem(FLAG) === '1') return;
+    const revertidos = [];
+    caja.historial = (caja.historial || []).filter(h => {
+      if(h.tipo !== 'auto-compra' && h.tipo !== 'auto-venta') return true;
+      const mov = movimientos.find(m => m.id === h.id);
+      // Si el movimiento original todavía existe, se pregunta por su
+      // ticker (lo correcto). Si ya no existe (se borró después), se cae
+      // a buscar el ticker cripto dentro de la nota guardada en su momento.
+      const esCriptoHist = mov ? esTickerCripto(mov.ticker)
+        : CRIPTO_TICKERS.some(t => (h.nota || '').includes(' ' + t + ' '));
+      if(!esCriptoHist) return true;
+      caja[h.moneda] = (caja[h.moneda] || 0) - h.monto;
+      if(h.plat) caja.plat[h.plat][h.moneda] = (caja.plat[h.plat][h.moneda] || 0) - h.monto;
+      revertidos.push(h);
+      return false; // sale del historial: ya no representa un movimiento de caja real
+    });
+    localStorage.setItem(FLAG, '1');
+    if(revertidos.length){
+      guardarCaja();
+      const detalle = revertidos.map(h =>
+        `· ${h.fecha}: ${h.nota} (${h.monto > 0 ? '+' : ''}${h.monto.toFixed(2)} ${h.moneda})`).join('\n');
+      console.warn('[migración caja cripto] revertidos ' + revertidos.length + ' movimiento(s):\n' + detalle);
+      setTimeout(() => {
+        alert('Corregí la caja: ' + revertidos.length + ' movimiento(s) de bitcoin de ANTES del ambiente '
+          + 'Cripto le estaban restando o sumando plata a una caja en dólares o pesos que en la realidad '
+          + 'nunca tocaron (compraste bitcoin directo desde el banco, no desde esa caja).\n\n'
+          + 'Deshice ese efecto -- revisa "Dónde está tu plata" en Mi Cartera para confirmar que ahora '
+          + 'calza mejor con lo que ves en cada corredora.\n\nDetalle:\n' + detalle);
+      }, 800);
+    }
+  } catch(e){}
+})();
+
 // =========================================================================
 // ESPERANDO ENTRADA  (bloque nuevo, agosto 2026)
 // =========================================================================
@@ -5356,6 +5602,11 @@ function tienePosicion(ticker){
 // importa es tu stop -- que además sea candidata de Explorar es ruido en ese
 // momento. La app tiene que contestar UNA pregunta, no listar cuatro.
 const MARGEN_STOP = 0.98;
+// Máximo de riesgo por posición que Cristian se puso: si el stop guardado
+// implica perder más de esto (en %) contra el precio de hoy, se marca en
+// rojo -- ver riesgoActualPct en filaCartera(), dentro de renderAmbienteCartera().
+// No bloquea el campo, solo avisa (mismo criterio que el resto de la app).
+const RIESGO_MAX_PCT = 8;
 
 function estadoDeAccion(ticker){
   const s = todosLosStocks().find(x => x.ticker === ticker);
@@ -5724,19 +5975,45 @@ function wireSizing(ticker){
 // aparte. No bloquea saldo negativo (puede haber comprado con plata que
 // no pasó por acá, p.ej. antes de usar esta app) -- solo lo avisa.
 function aplicarMovimientoACaja(mov){
+  // Cripto no pasa por acá -- ver el comentario en cambiarAmbiente() sobre
+  // por qué Cripto no tiene caja propia. Sin este corte, una compra de
+  // BTC-USD (moneda CLP, igual que Chile) restaba de la MISMA caja CLP
+  // que las acciones chilenas: plata que en la realidad nunca pasó por
+  // ahí, porque Cristian transfiere directo a Buda.com.
+  if(esTickerCripto(mov.ticker)) return;
   const moneda = monedaDeMov(mov);
+  const plat = platDeMov(mov);
+
+  // Dividendo: un ingreso puro, no tiene cantidad ni precio que multiplicar.
+  if(mov.tipo === 'dividendo'){
+    const monto = mov.monto;
+    caja[moneda] = (caja[moneda] || 0) + monto;
+    if(plat) caja.plat[plat][moneda] = (caja.plat[plat][moneda] || 0) + monto;
+    caja.historial.push({
+      id: mov.id, fecha: mov.fecha, moneda, plat,
+      tipo: 'auto-dividendo', monto, nota: `Dividendo de ${mov.ticker}`,
+    });
+    guardarCaja();
+    return;
+  }
+
   const signo = mov.tipo === 'compra' ? -1 : 1;
-  const monto = signo * mov.cantidad * mov.precio;
+  // La comisión SIEMPRE resta caja, compre o venda: en una compra se suma
+  // a lo que sale, en una venta se descuenta de lo que entra. `signo * bruto
+  // - comision` da las dos cosas con una sola cuenta.
+  const bruto = mov.cantidad * mov.precio;
+  const comision = mov.comision || 0;
+  const monto = signo * bruto - comision;
   caja[moneda] = (caja[moneda] || 0) + monto;
   // El desglose por plataforma sigue al total SOLO si el movimiento dice en
   // que plataforma fue. Si no lo dice, el monto queda en "sin asignar" --
   // el total sigue cuadrando, y la parte que falta se ve.
-  const plat = platDeMov(mov);
   if(plat) caja.plat[plat][moneda] = (caja.plat[plat][moneda] || 0) + monto;
   caja.historial.push({
     id: mov.id, fecha: mov.fecha, moneda, plat,
     tipo: mov.tipo === 'compra' ? 'auto-compra' : 'auto-venta',
-    monto, nota: `${mov.tipo === 'compra' ? 'Compra' : 'Venta'} de ${mov.cantidad} ${mov.ticker} @ ${mov.precio}`,
+    monto, nota: `${mov.tipo === 'compra' ? 'Compra' : 'Venta'} de ${mov.cantidad} ${mov.ticker} @ ${mov.precio}`
+      + (comision ? ` (comisión ${comision})` : ''),
   });
   guardarCaja();
 }
@@ -5758,7 +6035,9 @@ function aplicarMovimientoACaja(mov){
 function editarMovimiento(id, nuevaCantidad, nuevoPrecio){
   const mov = movimientos.find(m => m.id === id);
   if(!mov) return false;
+  if(mov.tipo === 'dividendo') return false; // no tiene cantidad/precio -- esta función no le aplica
 
+  const esCripto = esTickerCripto(mov.ticker); // cripto no toca la caja, ver aplicarMovimientoACaja()
   const moneda = monedaDeMov(mov);
   const signo = mov.tipo === 'compra' ? -1 : 1;
   const montoViejo = signo * mov.cantidad * mov.precio;
@@ -5769,7 +6048,7 @@ function editarMovimiento(id, nuevaCantidad, nuevoPrecio){
 
   const montoNuevo = signo * mov.cantidad * mov.precio;
   const delta = montoNuevo - montoViejo;
-  if(delta !== 0){
+  if(!esCripto && delta !== 0){
     caja[moneda] = (caja[moneda] || 0) + delta;
     const platEd = platDeMov(mov);
     if(platEd) caja.plat[platEd][moneda] = (caja.plat[platEd][moneda] || 0) + delta;
@@ -7272,8 +7551,6 @@ function renderAmbienteSeguir(){
   viewEl.innerHTML = `
     <p class="section-title" style="margin-top:0;">Patrimonio</p>
     ${patrimonioHTML}
-    <p class="section-title">Dónde está tu plata</p>
-    ${platformasHTML(portClp, portUsd, oculto, cambioOk)}
     <p class="section-title">Esperando entrada — qué miro y qué espero que pase</p>
     ${esperaHTML()}
     ${asignacionHTML}
@@ -7556,6 +7833,7 @@ function toggleFavoritoTicker(ticker){
 let carteraFiltro = '';
 let carteraMostrarTodas = false;
 let carteraBuscadorTuvoFoco = false;
+let carteraListadoVisible = true;
 
 function renderAmbienteCartera(){
   const viewEl = document.getElementById('viewCartera');
@@ -7563,6 +7841,11 @@ function renderAmbienteCartera(){
 
   const portClp = calcularPortafolio('CLP');
   const portUsd = calcularPortafolio('USD');
+  // "Dónde está tu plata" (bloque por plataforma) vivía en "A seguir";
+  // se movió acá porque es la misma pregunta que el resto de esta pantalla
+  // -- "¿qué tengo y dónde" -- y no una regla ni una señal.
+  const oculto = estaOculto();
+  const cambioOk = usdclpEsValido();
   const filtroNorm = carteraFiltro.trim().toLowerCase();
 
   function coincide(s){
@@ -7637,8 +7920,9 @@ function renderAmbienteCartera(){
         : `Media 50 en ${fmtMoneda2(ma, currency)} — queda bajo tu stop, así que se mantiene.
            El stop sube o se queda, nunca baja.`}</div>`;
     }
-    const riesgo = (precio !== null && precio > 0)
-      ? ` · arriesgas ${fmtNum((precio - redondeado) / precio * 100, 1)}%` : '';
+    const riesgoSugeridoPct = (precio !== null && precio > 0) ? (precio - redondeado) / precio * 100 : null;
+    const riesgo = riesgoSugeridoPct !== null
+      ? ` · arriesgas ${fmtNum(riesgoSugeridoPct, 1)}%${riesgoSugeridoPct > RIESGO_MAX_PCT ? ` ⚠ supera ${RIESGO_MAX_PCT}%` : ''}` : '';
     return `<div class="cartera-sug">
       <button type="button" class="stop-sug" data-accion="usar-sma" data-ticker="${s.ticker}"
               data-valor="${redondeado}"
@@ -7672,6 +7956,22 @@ function renderAmbienteCartera(){
       : null;
 
     const esFav = favoritos.has(s.ticker);
+
+    // Riesgo real de la posición: cuánto perderías, en %, si el precio cae
+    // hasta el stop que ya tienes puesto ("Vta si baja") -- no el sugerido
+    // por la media 50 (eso es sugerenciaStopHTML, aparte), sino el que de
+    // verdad está guardado hoy. RIESGO_MAX_PCT es el máximo que Cristian se
+    // puso por posición; sobre eso se marca en rojo, pero no se bloquea el
+    // campo -- el mismo criterio que el resto de la app con los avisos.
+    const bajaNum = (obj.baja !== null && obj.baja !== undefined && obj.baja !== '') ? Number(obj.baja) : null;
+    const riesgoActualPct = (held && precioActual !== null && precioActual > 0 && bajaNum !== null && bajaNum > 0)
+      ? (precioActual - bajaNum) / precioActual * 100
+      : null;
+    const riesgoExcedido = riesgoActualPct !== null && riesgoActualPct > RIESGO_MAX_PCT;
+    const riesgoHTML = riesgoActualPct === null ? '' : (riesgoActualPct >= 0
+      ? `<span class="cartera-riesgo${riesgoExcedido ? ' cartera-riesgo--alto' : ''}">arriesgas ${fmtNum(riesgoActualPct, 1)}%${riesgoExcedido ? ` ⚠ supera tu máximo de ${RIESGO_MAX_PCT}%` : ''}</span>`
+      : `<span class="cartera-riesgo">tu stop ya quedó sobre el precio de hoy</span>`);
+
     return `
       <div class="cartera-row ${esFav ? 'is-favorite' : ''}" data-ticker="${s.ticker}">
         <div class="cartera-row-head">
@@ -7692,11 +7992,14 @@ function renderAmbienteCartera(){
             <input type="number" step="any" min="0" inputmode="decimal" class="mono" data-ticker="${s.ticker}" data-campo="sube"
                    value="${(obj.sube !== null && obj.sube !== undefined) ? obj.sube : ''}" placeholder="—">
           </label>
-          <label class="cartera-campo baja" title="${distancia(obj.baja) || 'Avisar si baja a'}">
-            <span>Vta si baja</span>
-            <input type="number" step="any" min="0" inputmode="decimal" class="mono" data-ticker="${s.ticker}" data-campo="baja"
-                   value="${(obj.baja !== null && obj.baja !== undefined) ? obj.baja : ''}" placeholder="—">
-          </label>
+          <div class="cartera-campo-baja-wrap">
+            <label class="cartera-campo baja" title="${distancia(obj.baja) || 'Avisar si baja a'}">
+              <span>Vta si baja</span>
+              <input type="number" step="any" min="0" inputmode="decimal" class="mono" data-ticker="${s.ticker}" data-campo="baja"
+                     value="${(obj.baja !== null && obj.baja !== undefined) ? obj.baja : ''}" placeholder="—">
+            </label>
+            ${riesgoHTML}
+          </div>
         </div>
         ${sugerenciaStopHTML(s, pos, obj, currency)}
       </div>`;
@@ -7721,14 +8024,20 @@ function renderAmbienteCartera(){
   viewEl.innerHTML = `
     <p class="section-title" style="margin-top:0;">Mi Cartera</p>
     <p style="font-size:12px; color:var(--ink-dim); margin:-6px 0 14px;">Favoritos y precios objetivo para Chile, EE.UU. y Cripto — al cruzar un objetivo llega correo y push con el monto y el porcentaje de diferencia. La cantidad y el precio de compra se calculan solos desde "Mis movimientos".</p>
+    <p class="section-title">Dónde está tu plata</p>
+    ${platformasHTML(portClp, portUsd, oculto, cambioOk)}
+    <p class="section-title">Favoritas y posiciones</p>
     <input type="text" id="carteraBuscador" class="cartera-buscador" placeholder="Buscar por ticker o nombre (Chile o EE.UU.)…" value="${carteraFiltro.replace(/"/g,'&quot;')}">
     <label class="cartera-toggle"><input type="checkbox" id="carteraMostrarTodas" ${carteraMostrarTodas ? 'checked' : ''}> Mostrar todas las acciones, no solo favoritas o con posición</label>
-    <p class="cartera-group-title">Chile · CLP</p>
-    ${chileHTML}
-    <p class="cartera-group-title">EE.UU. · USD</p>
-    ${usaHTML}
-    <p class="cartera-group-title">Cripto · CLP</p>
-    ${criptoHTML}
+    <button type="button" id="btnCarteraListado" class="mov-btn" style="background:none; color:var(--ink-dim); border-color:var(--hairline); margin:8px 0;">${carteraListadoVisible ? 'Ocultar listado ▾' : 'Mostrar listado ▸'}</button>
+    <div id="carteraListadoWrap"${carteraListadoVisible ? '' : ' style="display:none;"'}>
+      <p class="cartera-group-title">Chile · CLP</p>
+      ${chileHTML}
+      <p class="cartera-group-title">EE.UU. · USD</p>
+      ${usaHTML}
+      <p class="cartera-group-title">Cripto · CLP</p>
+      ${criptoHTML}
+    </div>
   `;
 
   const buscadorEl = document.getElementById('carteraBuscador');
@@ -7745,6 +8054,10 @@ function renderAmbienteCartera(){
   const mostrarTodasEl = document.getElementById('carteraMostrarTodas');
   if(mostrarTodasEl){
     mostrarTodasEl.addEventListener('change', () => { carteraMostrarTodas = mostrarTodasEl.checked; renderAmbienteCartera(); });
+  }
+  const btnListadoEl = document.getElementById('btnCarteraListado');
+  if(btnListadoEl){
+    btnListadoEl.addEventListener('click', () => { carteraListadoVisible = !carteraListadoVisible; renderAmbienteCartera(); });
   }
 
   viewEl.querySelectorAll('[data-accion="fav"]').forEach(btn => {
@@ -7987,7 +8300,12 @@ function calcularXIRR(flujos){
 // hoy) -- el mismo truco que usa cualquier calculadora de TIR de cartera
 // personal para no tener que esperar a que se liquide la posición.
 function flujosXIRR(moneda){
-  const propios = movimientosDeCartera(moneda);
+  // Los dividendos no entran como flujo externo acá: ya quedan reflejados
+  // en la caja (ver aplicarMovimientoACaja), y esta TIR mide el rendimiento
+  // de LA POSICIÓN -- lo mismo que compras y ventas, que tampoco cuentan
+  // caja. Meterlos aquí además rompería la cuenta: no tienen cantidad ni
+  // precio que multiplicar.
+  const propios = movimientosDeCartera(moneda).filter(m => m.tipo !== 'dividendo');
   if(!propios.length) return null;
 
   const flujos = propios.map(m => ({
@@ -8599,6 +8917,15 @@ function iniciarEdicionMovimiento(tr, id){
 // botón de una fila no sobreviviría al siguiente redibujado. Mismo patrón
 // que inicializarToggleAnalisis() más arriba.
 movsDetailPanel.addEventListener('click', (e) => {
+  const btnToggle = e.target.closest('.ptb-toggle');
+  if(btnToggle){
+    const t = btnToggle.dataset.ticker;
+    if(_posCerradasDesplegadas.has(t)) _posCerradasDesplegadas.delete(t);
+    else _posCerradasDesplegadas.add(t);
+    renderMovsDetailPanel();
+    return;
+  }
+
   const btnEditar = e.target.closest('.mov-edit-btn');
   if(btnEditar){
     const tr = btnEditar.closest('tr[data-id]');
@@ -8685,6 +9012,14 @@ function setTesis(ticker, texto){
   guardarTesis();
 }
 
+// Posiciones cerradas (netoQ === 0) que Cristian desplegó a mano en esta
+// sesión -- por defecto quedan ocultas (solo el encabezado), porque una
+// cartera con años de historial junta cada vez más posiciones vendidas
+// por completo y no aportan nada mirarlas de nuevo cada vez. Vive en
+// memoria (no en localStorage): cada apertura del panel vuelve a arrancar
+// todo colapsado, que es el estado que se quiere ver por defecto.
+let _posCerradasDesplegadas = new Set();
+
 function renderMovsDetailPanel(){
   const moneda = monedaDelAmbiente(ambienteActivo);
   const portafolio = calcularPortafolio(moneda, ambitoDelAmbiente(ambienteActivo));
@@ -8736,6 +9071,7 @@ function renderMovsDetailPanel(){
         <td class="mov-cant">${fmtCantidad(m.cantidad, moneda, m.ticker)}</td>
         <td class="mov-prec">${fmt(m.precio, p.dec, moneda)}</td>
         <td>${$$(m.cantidad*m.precio)}</td>
+        <td>${chipPlat(platDeMov(m))}</td>
         <td class="mov-acciones"><button type="button" class="mov-edit-btn" data-id="${m.id}" title="Editar cantidad o precio">✎</button></td>
       </tr>`).join('');
 
@@ -8745,16 +9081,38 @@ function renderMovsDetailPanel(){
         <td class="mov-cant">${fmtCantidad(m.cantidad, moneda, m.ticker)}</td>
         <td class="mov-prec">${fmt(m.precio, p.dec, moneda)}</td>
         <td>${$$(m.cantidad*m.precio)}</td>
+        <td>${chipPlat(platDeMov(m))}</td>
         <td class="mov-acciones"><button type="button" class="mov-edit-btn" data-id="${m.id}" title="Editar cantidad o precio">✎</button></td>
       </tr>`).join('');
+
+    // Dividendos: sin cantidad/precio que editar (por eso no llevan botón
+    // ✎, a diferencia de Compras/Ventas) y sin columna PxQ -- el monto ES
+    // la columna.
+    const filasDividendo = p.dividendos.map(m => `
+      <tr data-id="${m.id}">
+        <td>${m.fecha}</td>
+        <td>${$$(m.monto)}</td>
+        <td>${chipPlat(platDeMov(m))}</td>
+      </tr>`).join('');
+
+    // Cerrada = vendida por completo (netoQ === 0). Esas quedan colapsadas
+    // por defecto -- ver _posCerradasDesplegadas más arriba -- así que todo
+    // lo que va debajo del encabezado se envuelve en .ptb-body para poder
+    // ocultarlo entero de una vez con un solo display:none.
+    const cerrada = !(p.netoQ > 0);
+    const desplegada = !cerrada || _posCerradasDesplegadas.has(p.ticker);
 
     return `
       <div class="portfolio-ticker-block">
         <div class="ptb-head">
           <span class="ptb-ticker">${p.ticker}</span>
-          <span class="ptb-qty">${p.nombre} · posición actual: ${p.netoQ > 0 ? fmtCantidad(p.netoQ, p.moneda, p.ticker)+' títulos' : 'cerrada'}</span>
+          <span class="ptb-qty-wrap">
+            <span class="ptb-qty">${p.nombre} · posición actual: ${p.netoQ > 0 ? fmtCantidad(p.netoQ, p.moneda, p.ticker)+' títulos' : 'cerrada'}</span>
+            ${cerrada ? `<button type="button" class="ptb-toggle" data-ticker="${p.ticker}">${desplegada ? 'Ocultar ▾' : 'Ver detalle ▸'}</button>` : ''}
+          </span>
         </div>
 
+        <div class="ptb-body"${desplegada ? '' : ' style="display:none;"'}>
         ${p.netoQ > 0 ? `
         <table class="ptb-table">
           <thead><tr><th>Costo prom.</th><th>Cantidad</th><th>Costo total</th><th>Precio actual</th><th>Valor actual</th></tr></thead>
@@ -8770,15 +9128,22 @@ function renderMovsDetailPanel(){
         ${p.compras.length ? `
         <p style="font-size:11px; color:var(--ink-faint); margin:8px 0 4px;">Compras</p>
         <table class="ptb-table">
-          <thead><tr><th>Fecha</th><th>Q</th><th>P</th><th>PxQ</th><th></th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Q</th><th>P</th><th>PxQ</th><th>Dónde</th><th></th></tr></thead>
           <tbody>${filasCompra}</tbody>
         </table>` : ''}
 
         ${p.ventas.length ? `
         <p style="font-size:11px; color:var(--ink-faint); margin:8px 0 4px;">Ventas</p>
         <table class="ptb-table">
-          <thead><tr><th>Fecha</th><th>Q</th><th>P</th><th>PxQ</th><th></th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Q</th><th>P</th><th>PxQ</th><th>Dónde</th><th></th></tr></thead>
           <tbody>${filasVenta}</tbody>
+        </table>` : ''}
+
+        ${p.dividendos.length ? `
+        <p style="font-size:11px; color:var(--ink-faint); margin:8px 0 4px;">Dividendos</p>
+        <table class="ptb-table">
+          <thead><tr><th>Fecha</th><th>Monto</th><th>Dónde</th></tr></thead>
+          <tbody>${filasDividendo}</tbody>
         </table>` : ''}
 
         <div class="ptb-totals">
@@ -8786,10 +9151,12 @@ function renderMovsDetailPanel(){
           <span>Total vendido: <b>${oculto?'••••':$$(p.totalVendidoIngreso)}</b></span>
           <span>Utilidad realizada: <b style="color:${p.utilidadRealizada>=0?'var(--verdigris)':'var(--copper)'}">${fmtMoneda(p.utilidadRealizada, oculto, moneda)}</b></span>
           ${p.netoQ>0 ? `<span>Utilidad no realizada: <b style="color:${p.utilidadNoRealizada>=0?'var(--verdigris)':'var(--copper)'}">${fmtMoneda(p.utilidadNoRealizada, oculto, moneda)}</b></span>` : ''}
+          ${p.totalDividendos > 0 ? `<span>Dividendos recibidos: <b style="color:var(--gold);">${oculto?'••••':$$(p.totalDividendos)}</b></span>` : ''}
         </div>
 
         <div class="asig-box">
           <textarea class="asig-tesis" data-ticker="${p.ticker}" placeholder="Tesis de inversión (por qué tienes esta posición)…">${tesis[p.ticker] || ''}</textarea>
+        </div>
         </div>
       </div>
     `;
