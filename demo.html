@@ -160,6 +160,9 @@
      los otros tres y de "sin asignar" (copper) a simple vista. */
   .plat-chip.plat-D{background:rgba(124,77,160,0.16); color:#8B5FBF;}
   .plat-chip.plat-none{background:rgba(179,74,50,0.12); color:var(--copper);}
+  /* Cuando ya no falta asignar nada y el bloque queda solo como
+     herramienta de revisión, pierde el rojo de alerta. */
+  .plat-migrar--ok{border-color:var(--hairline) !important; background:var(--bg-field) !important;}
   .plat-migrar{border:1px solid rgba(179,74,50,0.4); background:rgba(179,74,50,0.05);
                border-radius:8px; padding:10px 12px; margin-bottom:10px; font-size:11.5px;
                color:var(--ink-dim); line-height:1.55;}
@@ -5572,9 +5575,13 @@ function movimientosDelAmbiente(amb){
 // movimiento vigente se corrigen desde el chip "Dónde" de ese movimiento
 // (ver reasignarPlataformaMovimiento) -- no acá, para no tener dos lugares
 // editando el mismo dato y que se desincronicen entre sí.
-function cajaHistorialSinPlat(){
+function cajaHistorialSinPlat(soloSinAsignar){
   return (caja.historial || []).filter(h => {
-    if(esPlatValida(h.plat)) return false;
+    // Por defecto (soloSinAsignar) solo las que faltan por asignar, que es
+    // lo que el aviso rojo cuenta. Con soloSinAsignar=false devuelve
+    // TAMBIÉN las ya asignadas, para poder corregir una que quedó en la
+    // plataforma equivocada -- mandarla mal no puede ser irreversible.
+    if(soloSinAsignar !== false && esPlatValida(h.plat)) return false;
     const esAuto = h.tipo === 'auto-compra' || h.tipo === 'auto-venta' || h.tipo === 'auto-dividendo';
     if(!esAuto) return true; // ingreso o retiro manual
     return !movimientos.some(m => m.id === h.id); // auto- pero el movimiento ya no existe
@@ -5606,20 +5613,25 @@ function renderAvisoPlataforma(){
   const sinCajaUsd = cajaSinAsignar('USD');
   const hayCaja = Math.abs(sinCajaClp) > 0.005 || Math.abs(sinCajaUsd) > 0.005;
 
-  if(sinPlat.length === 0 && !hayCaja){ el.style.display = 'none'; return; }
+  const hayPendiente = sinPlat.length > 0 || hayCaja;
+  // TODAS las entradas de caja que no vienen de un movimiento vigente
+  // (aportes/retiros manuales y huérfanas), estén asignadas o no. Antes acá
+  // solo salían las SIN asignar, así que mandar una a la plataforma
+  // equivocada era irreversible -- y ese es justo el caso que deja una
+  // caja fantasma en una plataforma donde no tienes cuenta.
+  const entradasCaja = cajaHistorialSinPlat(false);
+
+  if(!hayPendiente && entradasCaja.length === 0){ el.style.display = 'none'; return; }
   el.style.display = '';
+  // El marco rojo es para lo que falta; si ya está todo asignado y esto
+  // queda solo como herramienta de revisión, va en tono neutro.
+  el.classList.toggle('plat-migrar--ok', !hayPendiente);
 
   const partesCaja = [];
   if(Math.abs(sinCajaClp) > 0.005) partesCaja.push(fmtMoneda2(sinCajaClp, 'CLP'));
   if(Math.abs(sinCajaUsd) > 0.005) partesCaja.push(fmtMoneda2(sinCajaUsd, 'USD'));
 
-  // El total "sin repartir" (arriba) es un agregado -- no se puede tocar
-  // directo. Esto es lo que lo compone entrada por entrada, para poder
-  // encontrar CADA una y decirle dónde está (en vez de solo poder mandar
-  // TODO a una plataforma con los botones de abajo).
-  const entradasCaja = cajaHistorialSinPlat();
-
-  el.innerHTML = `
+  const bloquePendiente = !hayPendiente ? '' : `
     <b>Falta decir dónde está esta plata.</b>
     ${sinPlat.length ? `Hay <b>${sinPlat.length}</b> movimiento(s) sin plataforma` : ''}
     ${sinPlat.length && partesCaja.length ? ' y ' : ''}
@@ -5633,10 +5645,17 @@ function renderAvisoPlataforma(){
     <div style="margin-top:6px; font-size:10.5px; color:var(--ink-faint);">
       Si están repartidos entre varias, asigna todo a una y corrige después los que no
       correspondan desde "Ver posición actual e historial completo".
-    </div>
-    ${entradasCaja.length ? `
-    <details style="margin-top:8px;">
-      <summary style="cursor:pointer; font-size:11px; color:var(--ink-dim);">Ver el detalle de esta caja sin repartir (${entradasCaja.length})</summary>
+    </div>`;
+
+  const sinAsignarN = entradasCaja.filter(h => !esPlatValida(h.plat)).length;
+
+  el.innerHTML = bloquePendiente + (entradasCaja.length ? `
+    <details style="margin-top:${hayPendiente ? '8px' : '0'};">
+      <summary style="cursor:pointer; font-size:11px; color:var(--ink-dim);">Dónde está cada movimiento de caja (${entradasCaja.length}${sinAsignarN ? ` · ${sinAsignarN} sin asignar` : ''})</summary>
+      <p style="font-size:10.5px; color:var(--ink-faint); margin:6px 0 0; line-height:1.5;">
+        Aportes, retiros y entradas sueltas. Toca el chip de "Dónde" para corregir cualquiera,
+        esté asignada o no. Cambiar esto no altera el saldo total de la caja: solo dice en qué
+        plataforma está.</p>
       <table class="ptb-table" style="margin-top:6px; width:100%;">
         <thead><tr><th>Fecha</th><th>Monto</th><th style="text-align:left;">Nota</th><th>Dónde</th></tr></thead>
         <tbody>${entradasCaja.map(h => `
@@ -5644,10 +5663,10 @@ function renderAvisoPlataforma(){
             <td>${h.fecha}</td>
             <td>${fmtMoneda2(h.monto, h.moneda)}</td>
             <td style="text-align:left; color:var(--ink-faint); font-size:10.5px;">${h.nota || ''}</td>
-            <td><button type="button" class="caja-plat-edit" data-hist-id="${h.id}" title="Cambiar dónde está">${chipPlat(null)}</button></td>
+            <td><button type="button" class="caja-plat-edit" data-hist-id="${h.id}" title="Cambiar dónde está">${chipPlat(esPlatValida(h.plat) ? h.plat : null)}</button></td>
           </tr>`).join('')}</tbody>
       </table>
-    </details>` : ''}`;
+    </details>` : '');
 
   el.querySelectorAll('[data-accion="migrar-plat"]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -5657,6 +5676,17 @@ function renderAvisoPlataforma(){
                 + `Esto no cambia ningún monto: solo dice dónde están. Se puede corregir uno por uno después.`)) return;
       movimientos.forEach(m => { if(!platDeMov(m)) m.plat = destino; });
       saveMovimientos(movimientos);
+      // Marcar TAMBIÉN cada entrada de caja sin asignar, no solo volcar el
+      // sobrante agregado. Antes esto sumaba el total que faltaba a la
+      // plataforma destino pero dejaba las entradas con plat=null: seguían
+      // saliendo como "sin asignar", y reasignar una después sumaba su monto
+      // de nuevo -- la misma plata contada dos veces, repartida mal entre
+      // plataformas aunque el total global siguiera bien.
+      (caja.historial || []).forEach(h => {
+        if(!esPlatValida(h.plat)) moverEfectoCajaPlat(h, destino);
+      });
+      // Lo que quede de descuadre después de eso es plata que nunca pasó por
+      // el historial (respaldos viejos): esa sí se vuelca como bulto.
       ['CLP','USD'].forEach(mon => {
         const falta = cajaSinAsignar(mon);
         if(Math.abs(falta) > 0.005) caja.plat[destino][mon] = (caja.plat[destino][mon] || 0) + falta;
@@ -7938,16 +7968,33 @@ let asignacionPanelAbierto = true; // se ajusta con el clic del usuario, no se r
 // una pregunta operativa -- para transferir, para saber con que puedes
 // comprar hoy sin mover plata entre corredoras.
 function platformasHTML(portClp, portUsd, oculto, cambioOk){
-  // Valor en acciones por plataforma. Un movimiento sin plataforma no se
-  // reparte: engorda la fila "sin asignar".
-  const acciones = {};
-  PLAT_IDS.concat('null').forEach(k => { acciones[k] = {CLP:0, USD:0}; });
+  // TRES ÁMBITOS, NO DOS MONEDAS (agosto 2026, corregido a pedido).
+  // Antes esto recorría calcularPortafolio('CLP') y ('USD') SIN filtrar por
+  // ámbito, y como bitcoin se compra en pesos igual que COPEC, la cripto
+  // caía dentro de "Acciones Chile" -- la misma confusión moneda-vs-ámbito
+  // que ya se había arreglado en los movimientos y en la caja, pero que
+  // acá seguía viva. Por eso Buda.com (donde solo hay bitcoin) aparecía
+  // vacía: su plata estaba sumada en la línea de Chile de otra tarjeta.
+  const AMBITOS = [
+    {clave: 'chile',  etiqueta: 'Acciones Chile',   moneda: 'CLP', port: calcularPortafolio('CLP', 'chile')},
+    {clave: 'usa',    etiqueta: 'Acciones EE.UU.',  moneda: 'USD', port: calcularPortafolio('USD', 'usa')},
+    {clave: 'cripto', etiqueta: 'Cripto',           moneda: 'CLP', port: calcularPortafolio('CLP', 'cripto')},
+  ];
+
+  const CLAVES = PLAT_IDS.concat('null');
+  const acciones = {};   // valor conocido, por plataforma y por ámbito
+  const sinPrecio = {};  // posiciones que EXISTEN pero hoy no tienen precio
+  CLAVES.forEach(k => {
+    acciones[k] = {};
+    sinPrecio[k] = [];
+    AMBITOS.forEach(a => { acciones[k][a.clave] = 0; });
+  });
   let hayPrecioIncompleto = false;
 
-  [['CLP', portClp], ['USD', portUsd]].forEach(([moneda, port]) => {
-    Object.values(port).forEach(pos => {
+  AMBITOS.forEach(a => {
+    Object.values(a.port).forEach(pos => {
       if(pos.netoQ <= 0) return;
-      if(pos.valorActual === null){ hayPrecioIncompleto = true; return; }
+
       // El valor de una posicion se reparte entre plataformas segun de
       // donde vino cada titulo comprado, en proporcion a la cantidad neta.
       // Es una aproximacion honesta: si compraste 10 en Racional y 5 en
@@ -7955,35 +8002,45 @@ function platformasHTML(portClp, portUsd, oculto, cambioOk){
       // exacto sin llevar lotes por plataforma, y eso es mucho aparato
       // para lo que resuelve.
       const compradoPorPlat = {};
-      PLAT_IDS.concat('null').forEach(k => { compradoPorPlat[k] = 0; });
+      CLAVES.forEach(k => { compradoPorPlat[k] = 0; });
       let compradoTotal = 0;
       pos.compras.forEach(m => {
         const k = platDeMov(m) || 'null';
         compradoPorPlat[k] += m.cantidad; compradoTotal += m.cantidad;
       });
-      if(compradoTotal <= 0){ acciones['null'][moneda] += pos.valorActual; return; }
-      PLAT_IDS.concat('null').forEach(k => {
-        acciones[k][moneda] += pos.valorActual * (compradoPorPlat[k] / compradoTotal);
-      });
+      const reparto = compradoTotal > 0
+        ? CLAVES.map(k => [k, compradoPorPlat[k] / compradoTotal]).filter(([, f]) => f > 0)
+        : [['null', 1]];
+
+      // SIN PRECIO ≠ SIN NADA. Antes, una posición sin precio se descartaba
+      // en silencio y la tarjeta terminaba diciendo "Sin nada registrado
+      // todavía" aunque tuvieras títulos ahí. Ahora se anota igual, con el
+      // ticker, y la tarjeta lo dice: los títulos existen, lo que falta es
+      // cuánto valen hoy.
+      if(pos.valorActual === null){
+        hayPrecioIncompleto = true;
+        reparto.forEach(([k]) => { sinPrecio[k].push(pos.ticker); });
+        return;
+      }
+      reparto.forEach(([k, f]) => { acciones[k][a.clave] += pos.valorActual * f; });
     });
   });
 
   const enClp = (v, moneda) => moneda === 'CLP' ? v : (cambioOk ? v * usdclpValue : null);
+  const cajaDe = (k, mon) => k === 'null' ? cajaSinAsignar(mon) : (caja.plat[k][mon] || 0);
   const totalDe = (k) => {
-    const partes = [
-      enClp(acciones[k].CLP, 'CLP'), enClp(acciones[k].USD, 'USD'),
-      enClp(k === 'null' ? cajaSinAsignar('CLP') : (caja.plat[k].CLP || 0), 'CLP'),
-      enClp(k === 'null' ? cajaSinAsignar('USD') : (caja.plat[k].USD || 0), 'USD'),
-    ];
+    const partes = AMBITOS.map(a => enClp(acciones[k][a.clave], a.moneda))
+      .concat([enClp(cajaDe(k, 'CLP'), 'CLP'), enClp(cajaDe(k, 'USD'), 'USD')]);
     return partes.some(x => x === null) ? null : partes.reduce((a,b) => a+b, 0);
   };
 
   const tarjeta = (k) => {
     const esSin = k === 'null';
     const total = totalDe(k);
-    const cajaClp = esSin ? cajaSinAsignar('CLP') : (caja.plat[k].CLP || 0);
-    const cajaUsd = esSin ? cajaSinAsignar('USD') : (caja.plat[k].USD || 0);
-    const nada = Math.abs(acciones[k].CLP) < 0.005 && Math.abs(acciones[k].USD) < 0.005
+    const cajaClp = cajaDe(k, 'CLP');
+    const cajaUsd = cajaDe(k, 'USD');
+    const hayValor = AMBITOS.some(a => Math.abs(acciones[k][a.clave]) > 0.005);
+    const nada = !hayValor && !sinPrecio[k].length
               && Math.abs(cajaClp) < 0.005 && Math.abs(cajaUsd) < 0.005;
     if(esSin && nada) return '';
     return `<div class="plat-card" ${esSin ? 'style="border-color:var(--copper);"' : ''}>
@@ -7991,10 +8048,11 @@ function platformasHTML(portClp, portUsd, oculto, cambioOk){
       <div class="plat-card-total mono ${esSin ? 'plat-sin' : ''}">${
         total !== null ? fmtMoneda(total, oculto, 'CLP') : 'Falta tipo de cambio'}</div>
       <div class="plat-kv">
-        ${Math.abs(acciones[k].CLP) > 0.005 ? `<span>Acciones Chile</span><b>${fmtMoneda(acciones[k].CLP, oculto, 'CLP')}</b>` : ''}
-        ${Math.abs(acciones[k].USD) > 0.005 ? `<span>Acciones EE.UU.</span><b>${fmtMoneda(acciones[k].USD, oculto, 'USD')}</b>` : ''}
+        ${AMBITOS.map(a => Math.abs(acciones[k][a.clave]) > 0.005
+            ? `<span>${a.etiqueta}</span><b>${fmtMoneda(acciones[k][a.clave], oculto, a.moneda)}</b>` : '').join('')}
         ${Math.abs(cajaClp) > 0.005 ? `<span>Caja CLP</span><b>${fmtMoneda(cajaClp, oculto, 'CLP')}</b>` : ''}
         ${Math.abs(cajaUsd) > 0.005 ? `<span>Caja USD</span><b>${fmtMoneda(cajaUsd, oculto, 'USD')}</b>` : ''}
+        ${sinPrecio[k].length ? `<span style="color:var(--copper);">Tienes ${sinPrecio[k].join(', ')}</span><b style="color:var(--copper);">sin precio hoy</b>` : ''}
         ${nada ? `<span style="color:var(--ink-faint);">Sin nada registrado todavía</span><b></b>` : ''}
       </div>
       ${esSin ? `<div style="font-size:10.5px; color:var(--copper); margin-top:8px; line-height:1.5;">
