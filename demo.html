@@ -470,15 +470,18 @@
      overflow-x:auto ya estaba puesto como red de seguridad y ahora es el
      mecanismo real. cambiarAmbiente() hace scrollIntoView de la pestaña
      activa para que nunca quede fuera de vista al cambiar de ambiente. */
+  /* Dos filas fijas en vez de una fila con scroll: cada botón se reparte el
+     ancho de SU fila, así que todas las pestañas se ven siempre, en
+     cualquier ancho de pantalla. */
   .env-selector{
-    display:flex; gap:4px; background:var(--bg-field); border-radius:9px; padding:3px;
-    overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none;
+    display:flex; flex-direction:column; gap:4px;
+    background:var(--bg-field); border-radius:9px; padding:3px;
   }
-  .env-selector::-webkit-scrollbar{display:none;}
+  .env-fila{display:flex; gap:4px;}
   .env-btn{
     background:none; border:none; color:var(--ink-dim); font-size:12.5px; font-weight:600;
     padding:7px 12px; border-radius:6px; cursor:pointer; letter-spacing:.01em; white-space:nowrap;
-    flex:0 0 auto;
+    flex:1 1 0; min-width:0;
   }
   .env-btn:hover{color:var(--ink);}
   .env-btn.active{background:var(--bg-panel); color:var(--gold); box-shadow:0 1px 2px rgba(0,0,0,0.06);}
@@ -492,18 +495,19 @@
     .env-largo{display:none;}
     .env-corto{display:inline;}
     .env-btn{
-      padding:12px 14px; font-size:13px; flex:0 0 auto; text-align:center;
+      padding:12px 6px; font-size:13px; text-align:center;
       min-height:44px; display:flex; align-items:center; justify-content:center;
-      scroll-snap-align:start;
     }
-    .env-selector{gap:3px; padding:3px; scroll-snap-type:x proximity;}
+    .env-selector{gap:3px; padding:3px;}
+    .env-fila{gap:3px;}
   }
   /* El corte baja a 360 px (antes 400): a 390 px —el ancho más común de
      celular— las etiquetas cortas caben perfectamente a 13 px, y bajarlas a
      12 px ahí era encoger sin necesidad. Bajo 360 px sí hace falta. */
   @media(max-width:360px){
-    .env-btn{padding:12px 10px; font-size:12px; letter-spacing:-0.01em;}
+    .env-btn{padding:12px 4px; font-size:12px; letter-spacing:-0.01em;}
     .env-selector{gap:2px; padding:2px;}
+    .env-fila{gap:2px;}
   }
   @media(max-width:600px){
     .topbar{padding:14px 16px;}
@@ -853,6 +857,51 @@
   .axis-labels{position:absolute; top:0; left:2px; bottom:0; width:60px; pointer-events:none;}
   .axis-labels span{position:absolute; right:0; transform:translateY(-50%); font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-faint); white-space:nowrap; background:var(--bg-panel); padding-left:4px;}
 
+  /* ---- Ambiente Riesgo (ver renderAmbienteRiesgo) ---- */
+  .riesgo-cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; margin-bottom:14px;}
+  .riesgo-card{background:var(--bg-panel); border:1px solid var(--hairline); border-radius:8px; padding:12px 14px;}
+  .rc-k{display:block; font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-faint); margin-bottom:6px;}
+  .rc-v{display:block; font-size:20px; font-weight:600; color:var(--ink); line-height:1.15;}
+  .rc-v.rc-alto{color:var(--copper);}
+  .rc-v.rc-ok{color:var(--verdigris);}
+  .rc-s{display:block; font-size:11px; color:var(--ink-faint); margin-top:4px; line-height:1.4;}
+  .riesgo-aviso{
+    border-left:3px solid var(--copper); background:rgba(179,74,50,0.07);
+    padding:10px 13px; border-radius:0 6px 6px 0; margin-bottom:8px;
+    font-size:12px; line-height:1.55; color:var(--ink-dim);
+  }
+  .riesgo-aviso b{color:var(--copper);}
+  .riesgo-aviso--suave{border-left-color:var(--gold); background:rgba(144,111,55,0.07);}
+  .riesgo-aviso--suave b{color:var(--gold);}
+  .riesgo-tabla-wrap{overflow-x:auto; margin-bottom:6px;}
+  .riesgo-tabla{width:100%; border-collapse:collapse; font-size:12px; min-width:480px;}
+  .riesgo-tabla th{
+    font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--ink-faint);
+    text-align:right; padding:7px 8px; border-bottom:1px solid var(--hairline); font-weight:600; white-space:nowrap;
+  }
+  .riesgo-tabla th:first-child{text-align:left;}
+  .riesgo-tabla td{
+    padding:7px 8px; border-bottom:1px solid var(--hairline); text-align:right;
+    font-family:'IBM Plex Mono',monospace; color:var(--ink-dim); white-space:nowrap;
+  }
+  .riesgo-tabla td:first-child{text-align:left; color:var(--ink); font-family:inherit;}
+  .riesgo-tabla tbody tr:hover{background:var(--bg-field);}
+  .riesgo-tabla td.riesgo-alto{color:var(--copper); font-weight:600;}
+  .riesgo-tabla tfoot td{border-top:1px solid var(--hairline); border-bottom:none; color:var(--ink);}
+  .riesgo-barras{margin-bottom:6px;}
+  .rb-row{display:grid; grid-template-columns:minmax(90px,150px) 1fr 56px; align-items:center; gap:10px; padding:5px 0;}
+  .rb-lbl{font-size:12px; color:var(--ink-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .rb-track{height:8px; background:var(--bg-field); border-radius:2px; overflow:hidden;}
+  .rb-fill{display:block; height:100%; background:var(--gold); border-radius:2px;}
+  .rb-pct{font-size:11.5px; color:var(--ink-dim); text-align:right;}
+  .rb-over .rb-lbl, .rb-over .rb-pct{color:var(--copper); font-weight:600;}
+  .rb-over .rb-fill{background:var(--copper);}
+  .riesgo-nota{font-size:10.5px; color:var(--ink-faint); line-height:1.55; margin:6px 0 10px;}
+  .riesgo-nota--alerta{color:var(--copper);}
+  @media(max-width:520px){
+    .rb-row{grid-template-columns:minmax(78px,110px) 1fr 48px; gap:8px;}
+    .rc-v{font-size:18px;}
+  }
   .section-title{
     font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--gold); margin:0 0 8px;
     border-bottom:1px solid var(--hairline); padding-bottom:6px;
@@ -978,12 +1027,23 @@
          texto es mejor que dejar la fila con scroll horizontal: una pestaña
          que hay que descubrir arrastrando es una pestaña que no existe. -->
     <div class="env-selector" id="envSelector">
-      <button type="button" class="env-btn" data-amb="explorar"><span class="env-largo">Explorar</span><span class="env-corto">Explorar</span></button>
-      <button type="button" class="env-btn" data-amb="chile"><span class="env-largo">Chile · CLP</span><span class="env-corto">Chile</span></button>
-      <button type="button" class="env-btn" data-amb="usa"><span class="env-largo">EE.UU. · USD</span><span class="env-corto">EE.UU.</span></button>
-      <button type="button" class="env-btn" data-amb="cripto"><span class="env-largo">Cripto · CLP</span><span class="env-corto">Cripto</span></button>
-      <button type="button" class="env-btn" data-amb="seguir"><span class="env-largo">A seguir</span><span class="env-corto">A seguir</span></button>
-      <button type="button" class="env-btn" data-amb="cartera"><span class="env-largo">Mi Cartera</span><span class="env-corto">Cartera</span></button>
+      <!-- DOS FILAS FIJAS (agosto 2026, a pedido). Antes era una sola fila
+           con desplazamiento horizontal y en el celular quedaban pestañas
+           escondidas fuera de pantalla -- justo lo que el comentario de más
+           arriba quería evitar. Ahora entran todas a la vez, agrupadas por
+           lo que son: arriba las vistas de análisis (miran TU cartera),
+           abajo los tres mercados (miran los precios). -->
+      <div class="env-fila">
+        <button type="button" class="env-btn" data-amb="explorar"><span class="env-largo">Explorar</span><span class="env-corto">Explorar</span></button>
+        <button type="button" class="env-btn" data-amb="cartera"><span class="env-largo">Mi Cartera</span><span class="env-corto">Cartera</span></button>
+        <button type="button" class="env-btn" data-amb="seguir"><span class="env-largo">A seguir</span><span class="env-corto">A seguir</span></button>
+        <button type="button" class="env-btn" data-amb="riesgo"><span class="env-largo">Riesgo</span><span class="env-corto">Riesgo</span></button>
+      </div>
+      <div class="env-fila">
+        <button type="button" class="env-btn" data-amb="usa"><span class="env-largo">EE.UU. · USD</span><span class="env-corto">EE.UU.</span></button>
+        <button type="button" class="env-btn" data-amb="chile"><span class="env-largo">Chile · CLP</span><span class="env-corto">Chile</span></button>
+        <button type="button" class="env-btn" data-amb="cripto"><span class="env-largo">Cripto · CLP</span><span class="env-corto">Cripto</span></button>
+      </div>
     </div>
 
     <div class="index-block" id="idxBlock">
@@ -1272,6 +1332,7 @@
   <!-- Ambiente 4 · Mi Cartera (favoritos + precios objetivo, imagen 2 del
        pedido). Se construye en el bloque 8; aquí solo el contenedor. -->
   <div class="ambiente-view" id="viewCartera" style="display:none;"></div>
+  <div class="ambiente-view" id="viewRiesgo" style="display:none;"></div>
 
   <!-- Ambiente 5 · Explorar (bloque 9): la primera alerta. Se construye
        más abajo; aquí solo el contenedor, igual que los otros tres. -->
@@ -2783,7 +2844,7 @@ const DISCLAIMER_USA = '<b>Datos reales de Yahoo Finance, con rezago.</b> Los ET
 // bloque. El ambiente "seguir" (consolidado) se construye en el bloque 7;
 // por ahora solo conmuta la vista, #viewSeguir puede llegar vacío.
 function cambiarAmbiente(nuevo){
-  if(nuevo !== 'chile' && nuevo !== 'usa' && nuevo !== 'cripto' && nuevo !== 'seguir' && nuevo !== 'cartera' && nuevo !== 'explorar') return;
+  if(nuevo !== 'chile' && nuevo !== 'usa' && nuevo !== 'cripto' && nuevo !== 'seguir' && nuevo !== 'cartera' && nuevo !== 'explorar' && nuevo !== 'riesgo') return;
   ambienteActivo = nuevo;
   guardarAmbienteActivo(nuevo);
 
@@ -2803,9 +2864,11 @@ function cambiarAmbiente(nuevo){
   const esSeguir = nuevo === 'seguir';
   const esCartera = nuevo === 'cartera';
   const esExplorar = nuevo === 'explorar';
-  // "Mi Cartera" y "Explorar" son vistas consolidadas como "A seguir" --
-  // ocultan la grilla de tarjetas y los paneles de análisis/movimientos.
-  const esVistaConsolidada = esSeguir || esCartera || esExplorar;
+  const esRiesgo = nuevo === 'riesgo';
+  // "Mi Cartera", "Explorar" y "Riesgo" son vistas consolidadas como
+  // "A seguir" -- ocultan la grilla de tarjetas y los paneles de
+  // análisis/movimientos.
+  const esVistaConsolidada = esSeguir || esCartera || esExplorar || esRiesgo;
 
   // Bloques de índice / estado de mercado / UF-UTM / disclaimer
   const idxBlock = document.getElementById('idxBlock');
@@ -2835,6 +2898,7 @@ function cambiarAmbiente(nuevo){
   const viewSeguir = document.getElementById('viewSeguir');
   const viewCartera = document.getElementById('viewCartera');
   const viewExplorar = document.getElementById('viewExplorar');
+  const viewRiesgo = document.getElementById('viewRiesgo');
 
   if(topDisclaimer) topDisclaimer.style.display = esVistaConsolidada ? 'none' : '';
   // El panel de señales queda FUERA de Cripto: sus filas se arman con los
@@ -2859,6 +2923,7 @@ function cambiarAmbiente(nuevo){
   if(viewSeguir) viewSeguir.style.display = esSeguir ? '' : 'none';
   if(viewCartera) viewCartera.style.display = esCartera ? '' : 'none';
   if(viewExplorar) viewExplorar.style.display = esExplorar ? '' : 'none';
+  if(viewRiesgo) viewRiesgo.style.display = esRiesgo ? '' : 'none';
 
   // Re-renderizar los componentes compartidos con el ambiente ya cambiado
   if(typeof renderGridOrder === 'function') renderGridOrder();
@@ -2878,6 +2943,7 @@ function cambiarAmbiente(nuevo){
   if(esSeguir && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir();
   if(esCartera && typeof renderAmbienteCartera === 'function') renderAmbienteCartera();
   if(esExplorar && typeof renderAmbienteExplorar === 'function') renderAmbienteExplorar();
+  if(esRiesgo && typeof renderAmbienteRiesgo === 'function') renderAmbienteRiesgo();
   // Al entrar a EE.UU. o al consolidado, refrescar sus precios de inmediato:
   // el refresco periódico de arriba está apagado mientras se mira Chile, así
   // que sin esto el usuario vería datos de hace rato al cambiarse.
@@ -8574,6 +8640,130 @@ function renderAmbienteSeguir(){
 
 }
 
+
+// =========================================================================
+// SECTOR E INDUSTRIA  (clasificación local, agosto 2026)
+// =========================================================================
+// Tabla escrita a mano acá adentro en vez de pedirla al backend, por una
+// razón concreta: el servicio duerme el fin de semana, y la composición de
+// la cartera es justo lo que uno mira con calma un sábado. Un dato que
+// depende de Render sería un dato que no está cuando se necesita.
+//
+// TAXONOMIA: GICS, revisión 2023 -- la que movió a Visa y Mastercard de
+// Tecnología a Financieras. Yahoo usa su propia versión y nombra algunas
+// industrias distinto; si algún día el backend entrega assetProfile, ese
+// dato debería MANDAR sobre esta tabla, no al revés.
+//
+// COBERTURA: la grilla completa de Chile, la cripto, y las acciones y ETF
+// de EE.UU. que Cristian sigue o ha tenido. El resto de las 199 de EE.UU.
+// cae en "Sin clasificar" a propósito: inventarle un sector a un ticker que
+// no revisé sería exactamente el tipo de dato falso que esta app evita. El
+// panel muestra cuánto peso quedó sin clasificar para que se note.
+//
+// LOS ETF NO SE MIRAN POR DENTRO. Un ETF sectorial se clasifica por su
+// sector (ITA -> Industriales, XLE -> Energía). VOO y ARKK quedan como
+// "Diversificado" porque mirar adentro exigiría bajar sus carteras
+// completas -- y ahí NVDA aparecería dos veces. Se dice en pantalla.
+const GICS = {
+  'BTC-USD':['Cripto','Bitcoin'],
+  'COPEC':['Energía','Combustibles y forestal'], 'ANTARCHILE':['Energía','Combustibles y forestal'],
+  'LIPIGAS':['Energía','Distribución de gas'], 'ENELCHILE':['Servicios básicos','Electricidad'],
+  'ENELAM':['Servicios básicos','Electricidad'], 'ENELGXCH':['Servicios básicos','Electricidad'],
+  'COLBUN':['Servicios básicos','Electricidad'], 'ECL':['Servicios básicos','Electricidad'],
+  'AGUAS-A':['Servicios básicos','Sanitarias'], 'IAM':['Servicios básicos','Sanitarias'],
+  'FALABELLA':['Consumo discrecional','Retail multitienda'], 'RIPLEY':['Consumo discrecional','Retail multitienda'],
+  'CENCOSUD':['Consumo básico','Supermercados'], 'SMU':['Consumo básico','Supermercados'],
+  'CCU':['Consumo básico','Bebidas'], 'ANDINA-B':['Consumo básico','Bebidas'],
+  'CONCHATORO':['Consumo básico','Bebidas'], 'WATTS':['Consumo básico','Alimentos'],
+  'CAMANCHACA':['Consumo básico','Alimentos'], 'BLUMAR':['Consumo básico','Alimentos'],
+  'CHILE':['Financieras','Bancos'], 'BCI':['Financieras','Bancos'],
+  'BSANTANDER':['Financieras','Bancos'], 'ITAUCL':['Financieras','Bancos'],
+  'HABITAT':['Financieras','AFP y previsión'], 'CUPRUM':['Financieras','AFP y previsión'],
+  'PROVIDA':['Financieras','AFP y previsión'], 'PLANVITAL':['Financieras','AFP y previsión'],
+  'ILC':['Financieras','Inversiones y seguros'], 'QUINENCO':['Financieras','Holding de inversiones'],
+  'ALMENDRAL':['Financieras','Holding de inversiones'], 'ORO-BLANCO':['Financieras','Holding de inversiones'],
+  'LTM':['Industriales','Aerolíneas'], 'VAPORES':['Industriales','Transporte marítimo'],
+  'SMSAAM':['Industriales','Servicios portuarios'], 'AAISA':['Industriales','Infraestructura aeroportuaria'],
+  'BESALCO':['Industriales','Construcción e ingeniería'], 'SALFACORP':['Industriales','Construcción e ingeniería'],
+  'SK':['Industriales','Holding industrial'], 'CRISTALES':['Materiales','Envases y vidrio'],
+  'CMPC':['Materiales','Papel y forestal'], 'SQM-B':['Materiales','Química y litio'],
+  'CAP':['Materiales','Minería y acero'], 'PUCOBRE':['Materiales','Minería'],
+  'SOCOVESA':['Inmobiliario','Desarrollo inmobiliario'], 'PARAUCO':['Inmobiliario','Centros comerciales'],
+  'MALLPLAZA':['Inmobiliario','Centros comerciales'], 'CENCOSHOPP':['Inmobiliario','Centros comerciales'],
+  'ENTEL':['Comunicaciones','Telecomunicaciones'], 'SONDA':['Tecnología','Servicios de TI'],
+  'ENJOY':['Consumo discrecional','Casinos y ocio'], 'INDISA':['Salud','Clínicas'],
+  'NVDA':['Tecnología','Semiconductores'], 'AVGO':['Tecnología','Semiconductores'],
+  'AMD':['Tecnología','Semiconductores'], 'INTC':['Tecnología','Semiconductores'],
+  'TSM':['Tecnología','Semiconductores'], 'MU':['Tecnología','Semiconductores'],
+  'QCOM':['Tecnología','Semiconductores'], 'TXN':['Tecnología','Semiconductores'],
+  'CSCO':['Tecnología','Equipos de comunicación'], 'AAPL':['Tecnología','Hardware'],
+  'MSFT':['Tecnología','Software'], 'ORCL':['Tecnología','Software'],
+  'CRM':['Tecnología','Software'], 'ADBE':['Tecnología','Software'],
+  'IBM':['Tecnología','Servicios de TI'], 'ACN':['Tecnología','Servicios de TI'],
+  'V':['Financieras','Procesamiento de pagos'], 'MA':['Financieras','Procesamiento de pagos'],
+  'PYPL':['Financieras','Procesamiento de pagos'], 'AXP':['Financieras','Procesamiento de pagos'],
+  'C':['Financieras','Bancos diversificados'], 'JPM':['Financieras','Bancos diversificados'],
+  'BAC':['Financieras','Bancos diversificados'], 'WFC':['Financieras','Bancos diversificados'],
+  'GS':['Financieras','Banca de inversión'], 'MS':['Financieras','Banca de inversión'],
+  'BUSE':['Financieras','Bancos regionales'], 'BRK-B':['Financieras','Holding diversificado'],
+  'LLY':['Salud','Farmacéuticas'], 'PFE':['Salud','Farmacéuticas'],
+  'MRK':['Salud','Farmacéuticas'], 'ABBV':['Salud','Farmacéuticas'],
+  'JNJ':['Salud','Farmacéuticas'], 'NVO':['Salud','Farmacéuticas'],
+  'UNH':['Salud','Seguros de salud'], 'TMO':['Salud','Equipos y análisis'],
+  'ABT':['Salud','Equipos médicos'], 'ISRG':['Salud','Equipos médicos'],
+  'KO':['Consumo básico','Bebidas'], 'PEP':['Consumo básico','Bebidas'],
+  'WMT':['Consumo básico','Retail de consumo básico'], 'COST':['Consumo básico','Retail de consumo básico'],
+  'PG':['Consumo básico','Cuidado personal'], 'CL':['Consumo básico','Cuidado personal'],
+  'MO':['Consumo básico','Tabaco'], 'PM':['Consumo básico','Tabaco'],
+  'MCD':['Consumo discrecional','Restaurantes'], 'SBUX':['Consumo discrecional','Restaurantes'],
+  'TSLA':['Consumo discrecional','Automóviles'], 'GM':['Consumo discrecional','Automóviles'],
+  'F':['Consumo discrecional','Automóviles'], 'AMZN':['Consumo discrecional','Retail en línea'],
+  'HD':['Consumo discrecional','Mejoramiento del hogar'], 'LOW':['Consumo discrecional','Mejoramiento del hogar'],
+  'NKE':['Consumo discrecional','Vestuario'], 'ABNB':['Consumo discrecional','Viajes y hotelería'],
+  'BKNG':['Consumo discrecional','Viajes y hotelería'], 'MAR':['Consumo discrecional','Viajes y hotelería'],
+  'GOOGL':['Comunicaciones','Publicidad e internet'], 'GOOG':['Comunicaciones','Publicidad e internet'],
+  'META':['Comunicaciones','Publicidad e internet'], 'NFLX':['Comunicaciones','Entretenimiento'],
+  'DIS':['Comunicaciones','Entretenimiento'], 'T':['Comunicaciones','Telecomunicaciones'],
+  'VZ':['Comunicaciones','Telecomunicaciones'], 'TMUS':['Comunicaciones','Telecomunicaciones'],
+  'RTX':['Industriales','Aeroespacial y defensa'], 'LMT':['Industriales','Aeroespacial y defensa'],
+  'NOC':['Industriales','Aeroespacial y defensa'], 'GD':['Industriales','Aeroespacial y defensa'],
+  'BA':['Industriales','Aeroespacial y defensa'], 'CAT':['Industriales','Maquinaria'],
+  'DE':['Industriales','Maquinaria'], 'HON':['Industriales','Conglomerado industrial'],
+  'GE':['Industriales','Conglomerado industrial'], 'UPS':['Industriales','Logística'],
+  'UNP':['Industriales','Ferrocarriles'], 'DAL':['Industriales','Aerolíneas'],
+  'UAL':['Industriales','Aerolíneas'], 'LUV':['Industriales','Aerolíneas'],
+  'XOM':['Energía','Petróleo y gas'], 'CVX':['Energía','Petróleo y gas'],
+  'COP':['Energía','Petróleo y gas'], 'SLB':['Energía','Servicios petroleros'],
+  'NEE':['Servicios básicos','Electricidad'], 'DUK':['Servicios básicos','Electricidad'],
+  'SO':['Servicios básicos','Electricidad'], 'LIN':['Materiales','Química industrial'],
+  'SHW':['Materiales','Química industrial'], 'FCX':['Materiales','Minería'],
+  'NEM':['Materiales','Minería'], 'NUE':['Materiales','Acero'],
+  'AMT':['Inmobiliario','REIT de infraestructura'], 'PLD':['Inmobiliario','REIT logístico'],
+  'SPG':['Inmobiliario','REIT de centros comerciales'], 'O':['Inmobiliario','REIT de renta'],
+  'VOO':['Diversificado','S&P 500 completo'], 'VTI':['Diversificado','Mercado total EE.UU.'],
+  'VT':['Diversificado','Mercado mundial'], 'VXUS':['Diversificado','Mercado internacional'],
+  'SPY':['Diversificado','S&P 500 completo'], 'IVV':['Diversificado','S&P 500 completo'],
+  'QQQ':['Diversificado','Nasdaq 100'], 'QQQM':['Diversificado','Nasdaq 100'],
+  'SCHD':['Diversificado','Dividendos EE.UU.'], 'VIG':['Diversificado','Dividendos EE.UU.'],
+  'ARKK':['Diversificado','Innovación disruptiva'], 'BND':['Renta fija','Bonos EE.UU.'],
+  'AGG':['Renta fija','Bonos EE.UU.'], 'TLT':['Renta fija','Bonos largos EE.UU.'],
+  'ITA':['Industriales','Aeroespacial y defensa'], 'XLE':['Energía','Petróleo y gas'],
+  'XLF':['Financieras','Sector financiero'], 'XLK':['Tecnología','Sector tecnológico'],
+  'XLV':['Salud','Sector salud'], 'XLI':['Industriales','Sector industrial'],
+  'XLY':['Consumo discrecional','Sector consumo discrecional'], 'XLP':['Consumo básico','Sector consumo básico'],
+  'XLU':['Servicios básicos','Sector utilities'], 'XLB':['Materiales','Sector materiales'],
+  'XLRE':['Inmobiliario','Sector inmobiliario'], 'XLC':['Comunicaciones','Sector comunicaciones'],
+  'SMH':['Tecnología','Semiconductores'], 'SOXX':['Tecnología','Semiconductores'],
+  'GLD':['Materiales','Oro'], 'SLV':['Materiales','Plata'],
+};
+const SIN_CLASIFICAR = 'Sin clasificar';
+// Los ETF que NO son de un sector puntual: se marcan para poder decir en
+// pantalla que su peso no está repartido por sector.
+const ETF_AMPLIOS = ['VOO','VTI','VT','VXUS','SPY','IVV','QQQ','QQQM','SCHD','VIG','ARKK','BND','AGG','TLT'];
+function sectorDe(t){ return (GICS[t] || [SIN_CLASIFICAR, SIN_CLASIFICAR])[0]; }
+function industriaDe(t){ return (GICS[t] || [SIN_CLASIFICAR, SIN_CLASIFICAR])[1]; }
+function esEtfAmplio(t){ return ETF_AMPLIOS.indexOf(t) !== -1; }
+
 // ---- Ambiente 4 · "Mi Cartera" (bloque 8) ----
 // Favoritos (ya existían, ver loadFavorites/saveFavorites arriba) y
 // precios objetivo por accion ("avisar si sube/baja a") -- lo nuevo. La
@@ -9024,6 +9214,288 @@ function renderAmbienteCartera(){
   // El innerHTML de arriba se acaba de reemplazar entero: hay que volver a
   // aplicar qué secciones están plegadas (Patrimonio / Dónde está tu plata).
   aplicarSeccionesPlegadas();
+}
+
+
+// =========================================================================
+// AMBIENTE 6 · "RIESGO"  (agosto 2026)
+// =========================================================================
+// La app medía muy bien lo que TIENES y lo que GANASTE, y en ningún lado lo
+// que puedes PERDER. Este bloque cierra ese hueco.
+//
+// TODO SE CALCULA EN EL TELEFONO. No pide un solo dato nuevo al backend:
+// usa los movimientos, los stops de alertasPrecio, el precio del día y la
+// tabla GICS de más arriba. Eso es a propósito -- el servicio duerme el fin
+// de semana, que es justo cuando uno mira la cartera con calma.
+//
+// SIN PRECIO NO SE INVENTA NADA. Una posición sin precio del día queda
+// fuera del cálculo y se dice cuántas quedaron fuera, igual que hace el
+// patrimonio consolidado.
+function calcularRiesgo(){
+  const cambioOk = typeof usdclpValue === 'number';
+  const aClp = (v, mon) => mon === 'USD' ? (cambioOk ? v * usdclpValue : null) : v;
+
+  const ports = [
+    {port: calcularPortafolio('CLP','chile'),  mon:'CLP'},
+    {port: calcularPortafolio('USD','usa'),    mon:'USD'},
+    {port: calcularPortafolio('CLP','cripto'), mon:'CLP'},
+  ];
+
+  const filas = [];
+  const sinPrecio = [];
+  ports.forEach(({port, mon}) => {
+    Object.values(port).forEach(p => {
+      if(p.netoQ <= 0) return;
+      if(p.valorActual === null || p.precioActual === null){ sinPrecio.push(p.ticker); return; }
+      const expClp = aClp(p.valorActual, mon);
+      if(expClp === null){ sinPrecio.push(p.ticker); return; }
+      const obj = alertasPrecio[p.ticker] || {};
+      const stop = (obj.baja !== null && obj.baja !== undefined && obj.baja !== '') ? Number(obj.baja) : null;
+      // Riesgo = lo que perderías desde el precio de HOY hasta tu stop.
+      // Si el stop ya quedó por encima del precio, la pérdida es 0 (no una
+      // ganancia): esa posición ya no aporta riesgo a la baja.
+      let riesgoPct = null, perdidaClp = 0;
+      if(stop !== null && stop > 0 && p.precioActual > 0){
+        riesgoPct = (p.precioActual - stop) / p.precioActual * 100;
+        perdidaClp = Math.max(0, aClp((p.precioActual - stop) * p.netoQ, mon) || 0);
+      }
+      filas.push({ticker:p.ticker, mon, expClp, stop, riesgoPct, perdidaClp,
+                  precio:p.precioActual, cantidad:p.netoQ,
+                  sector:sectorDe(p.ticker), industria:industriaDe(p.ticker),
+                  etfAmplio:esEtfAmplio(p.ticker)});
+    });
+  });
+
+  const expTotal = filas.reduce((a,f) => a + f.expClp, 0);
+  const perdidaTotal = filas.reduce((a,f) => a + f.perdidaClp, 0);
+
+  // Un stop tan lejos del precio que en la práctica no protege. El umbral
+  // se ata a RIESGO_MAX_PCT (tu tope por posición) x3: no es un número
+  // suelto, es "muy por fuera de lo que tú mismo te pusiste".
+  const UMBRAL_STOP_FALSO = RIESGO_MAX_PCT * 3;
+  const sinStop = filas.filter(f => f.stop === null);
+  const stopFalso = filas.filter(f => f.riesgoPct !== null && f.riesgoPct > UMBRAL_STOP_FALSO);
+
+  // Posiciones efectivas (inverso del índice de Herfindahl). Mide la
+  // diversificación REAL: 22 posiciones donde una pesa un cuarto no son 22.
+  const efectivas = (grupos) => {
+    const tot = Object.values(grupos).reduce((a,b) => a+b, 0);
+    if(tot <= 0) return null;
+    const hhi = Object.values(grupos).reduce((a,v) => a + Math.pow(v/tot, 2), 0);
+    return hhi > 0 ? 1/hhi : null;
+  };
+  const porTicker = {}, porSector = {}, porIndustria = {};
+  filas.forEach(f => {
+    porTicker[f.ticker] = (porTicker[f.ticker]||0) + f.expClp;
+    porSector[f.sector] = (porSector[f.sector]||0) + f.expClp;
+    porIndustria[f.industria] = (porIndustria[f.industria]||0) + f.expClp;
+  });
+
+  // Industrias con más de una posición: dos papeles distintos que se mueven
+  // por lo mismo. Es lo que la vista por acción no puede mostrar.
+  const dobles = {};
+  filas.forEach(f => {
+    if(f.industria === SIN_CLASIFICAR) return;
+    (dobles[f.industria] = dobles[f.industria] || []).push(f);
+  });
+  const paresMismoNegocio = Object.entries(dobles)
+    .filter(([, fs]) => fs.length > 1)
+    .map(([ind, fs]) => ({industria:ind, tickers:fs.map(x=>x.ticker).sort(),
+                          peso: fs.reduce((a,x)=>a+x.expClp,0)}))
+    .sort((a,b) => b.peso - a.peso);
+
+  const sinClasificar = filas.filter(f => f.sector === SIN_CLASIFICAR)
+                             .reduce((a,f) => a + f.expClp, 0);
+
+  return {cambioOk, filas, sinPrecio, expTotal, perdidaTotal, sinStop, stopFalso,
+          UMBRAL_STOP_FALSO, porTicker, porSector, porIndustria, paresMismoNegocio,
+          sinClasificar, efectivasTicker: efectivas(porTicker),
+          efectivasSector: efectivas(porSector), efectivasIndustria: efectivas(porIndustria)};
+}
+
+function renderAmbienteRiesgo(){
+  const viewEl = document.getElementById('viewRiesgo');
+  if(!viewEl) return;
+  const oculto = estaOculto();
+  const r = calcularRiesgo();
+  const pct = (v) => fmtNum(v, 1) + ' %';
+
+  if(!r.filas.length){
+    viewEl.innerHTML = `
+      <p class="section-title" style="margin-top:0;">Riesgo</p>
+      <p class="seguir-empty">Todavía no hay posiciones con precio para medir. Cuando el servicio
+      entregue precios, acá aparece cuánto puedes perder si tus stops se gatillan.</p>`;
+    return;
+  }
+
+  const pctExp = (v) => r.expTotal > 0 ? v / r.expTotal * 100 : 0;
+  const riesgoPctTotal = pctExp(r.perdidaTotal);
+
+  // ---- Tarjetas de arriba: el resumen antes del detalle ----
+  const mayor = Object.entries(r.porTicker).sort((a,b) => b[1]-a[1])[0];
+  const mayorPct = pctExp(mayor[1]);
+  const tope = asignacion.maxPorPosicion;
+  const resumen = `
+    <div class="riesgo-cards">
+      <div class="riesgo-card">
+        <span class="rc-k">En riesgo hoy</span>
+        <span class="rc-v mono ${riesgoPctTotal > 25 ? 'rc-alto' : ''}">${fmtMoneda(r.perdidaTotal, oculto, 'CLP')}</span>
+        <span class="rc-s">${pct(riesgoPctTotal)} de tu exposición</span>
+      </div>
+      <div class="riesgo-card">
+        <span class="rc-k">Mayor posición</span>
+        <span class="rc-v mono ${mayorPct > tope ? 'rc-alto' : ''}">${pct(mayorPct)}</span>
+        <span class="rc-s">${mayor[0]} · tu tope ${tope} %</span>
+      </div>
+      <div class="riesgo-card">
+        <span class="rc-k">Posiciones efectivas</span>
+        <span class="rc-v mono">${fmtNum(r.efectivasTicker, 1)}</span>
+        <span class="rc-s">de ${r.filas.length} reales</span>
+      </div>
+      <div class="riesgo-card">
+        <span class="rc-k">Stops que no protegen</span>
+        <span class="rc-v mono ${(r.stopFalso.length + r.sinStop.length) ? 'rc-alto' : 'rc-ok'}">${r.stopFalso.length + r.sinStop.length}</span>
+        <span class="rc-s">${(r.stopFalso.concat(r.sinStop).map(f=>f.ticker).join(', ')) || 'ninguno'}</span>
+      </div>
+    </div>`;
+
+  // ---- Avisos: lo que hay que hacer algo al respecto ----
+  const avisos = [];
+  r.stopFalso.forEach(f => {
+    avisos.push(`<div class="riesgo-aviso"><b>${f.ticker}: el stop está a ${pct(f.riesgoPct)} del precio.</b>
+      Sobre tu máximo de ${RIESGO_MAX_PCT} % por posición eso no es un stop, es no tener stop.
+      Aporta ${fmtMoneda(f.perdidaClp, oculto, 'CLP')} de los ${fmtMoneda(r.perdidaTotal, oculto, 'CLP')} en riesgo.</div>`);
+  });
+  if(r.sinStop.length){
+    avisos.push(`<div class="riesgo-aviso"><b>Sin "Vta si baja": ${r.sinStop.map(f=>f.ticker).join(', ')}.</b>
+      Estas posiciones no tienen piso definido, así que no entran en el cálculo de arriba —
+      su riesgo real es todo lo invertido.</div>`);
+  }
+  if(mayorPct > tope){
+    avisos.push(`<div class="riesgo-aviso"><b>${mayor[0]} es ${pct(mayorPct)} de tu cartera</b>, sobre
+      tu tope del ${tope} %. Para volver al límite tendrías que soltar
+      ${fmtMoneda(mayor[1] - r.expTotal * tope / 100, oculto, 'CLP')}.</div>`);
+  }
+  r.paresMismoNegocio.forEach(p => {
+    if(pctExp(p.peso) < 5) return;
+    avisos.push(`<div class="riesgo-aviso riesgo-aviso--suave"><b>${p.industria}: ${pct(pctExp(p.peso))} entre ${p.tickers.join(' y ')}.</b>
+      Por separado ninguna excede tu tope, pero se mueven por las mismas razones.</div>`);
+  });
+
+  // ---- Aporte al riesgo, ordenado ----
+  const porRiesgo = r.filas.slice().sort((a,b) => b.perdidaClp - a.perdidaClp);
+  const filasRiesgo = porRiesgo.map(f => {
+    const aporte = r.perdidaTotal > 0 ? f.perdidaClp / r.perdidaTotal * 100 : 0;
+    const alto = f.riesgoPct !== null && f.riesgoPct > RIESGO_MAX_PCT;
+    return `<tr>
+      <td><b>${f.ticker}</b></td>
+      <td>${fmtMoneda(f.expClp, oculto, 'CLP')}</td>
+      <td>${pct(pctExp(f.expClp))}</td>
+      <td class="${alto ? 'riesgo-alto' : ''}">${f.riesgoPct === null ? 'sin stop' : pct(f.riesgoPct)}</td>
+      <td>${fmtMoneda(f.perdidaClp, oculto, 'CLP')}</td>
+      <td>${pct(aporte)}</td>
+    </tr>`;
+  }).join('');
+
+  // ---- Composición por sector e industria ----
+  const barras = (grupos, titulo, extra) => {
+    const orden = Object.entries(grupos).sort((a,b) => b[1]-a[1]);
+    const max = orden.length ? orden[0][1] : 1;
+    return `
+      <p class="section-title">${titulo}</p>
+      ${extra || ''}
+      <div class="riesgo-barras">
+        ${orden.map(([k,v]) => {
+          const p = pctExp(v);
+          const over = p > tope;
+          return `<div class="rb-row${over ? ' rb-over' : ''}">
+            <span class="rb-lbl">${k}</span>
+            <span class="rb-track"><span class="rb-fill" style="width:${Math.max(1, v/max*100)}%;"></span></span>
+            <span class="rb-pct mono">${pct(p)}</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+  };
+
+  const notaSector = r.sinClasificar > 0.005
+    ? `<p class="riesgo-nota">Sin clasificar: ${fmtMoneda(r.sinClasificar, oculto, 'CLP')}
+       (${pct(pctExp(r.sinClasificar))}). Son tickers que no están en la tabla de sectores de la app;
+       prefiero decirlo a inventarles uno.</p>` : '';
+
+  const etfAmplios = r.filas.filter(f => f.etfAmplio);
+  const notaEtf = etfAmplios.length
+    ? `<p class="riesgo-nota">${etfAmplios.map(f=>f.ticker).join(', ')}
+       ${etfAmplios.length === 1 ? 'es un ETF diversificado' : 'son ETF diversificados'} y ${etfAmplios.length === 1 ? 'queda' : 'quedan'}
+       en su propia fila: no se mira qué hay adentro, así que si tienen NVDA, ese peso no aparece
+       sumado en Tecnología.</p>` : '';
+
+  const avisoPrecio = r.sinPrecio.length
+    ? `<p class="riesgo-nota riesgo-nota--alerta">No incluye ${r.sinPrecio.length} posición(es) sin precio hoy:
+       ${r.sinPrecio.join(', ')}. Los totales son un piso.</p>` : '';
+  const avisoCambio = !r.cambioOk
+    ? `<p class="riesgo-nota riesgo-nota--alerta">Falta el tipo de cambio, así que las posiciones en
+       dólares no se pudieron convertir y quedaron fuera.</p>` : '';
+
+  viewEl.innerHTML = `
+    <p class="section-title" style="margin-top:0;">Riesgo</p>
+    <p style="font-size:12px; color:var(--ink-dim); margin:-6px 0 14px;">Cuánto puedes perder si tus
+    stops se gatillan, y qué tan repartida está de verdad tu cartera. Todo se calcula acá en el
+    teléfono: funciona con el servicio dormido.</p>
+    ${avisoPrecio}${avisoCambio}
+    ${resumen}
+    ${avisos.join('')}
+
+    <p class="section-title">Quién aporta el riesgo</p>
+    <div class="riesgo-tabla-wrap">
+      <table class="riesgo-tabla">
+        <thead><tr><th>Acción</th><th>Expuesto</th><th>% cartera</th><th>Riesgo al stop</th><th>Perdería</th><th>% del riesgo</th></tr></thead>
+        <tbody>${filasRiesgo}</tbody>
+        <tfoot><tr>
+          <td><b>Total</b></td>
+          <td><b>${fmtMoneda(r.expTotal, oculto, 'CLP')}</b></td>
+          <td>100 %</td>
+          <td></td>
+          <td><b>${fmtMoneda(r.perdidaTotal, oculto, 'CLP')}</b></td>
+          <td><b>${pct(riesgoPctTotal)}</b></td>
+        </tr></tfoot>
+      </table>
+    </div>
+
+    ${barras(r.porSector, 'Por sector', notaSector + notaEtf)}
+    ${barras(r.porIndustria, 'Por industria', '')}
+
+    <p class="section-title">Diversificación real</p>
+    <div class="riesgo-cards">
+      <div class="riesgo-card">
+        <span class="rc-k">Posiciones</span>
+        <span class="rc-v mono">${fmtNum(r.efectivasTicker, 1)}</span>
+        <span class="rc-s">efectivas de ${Object.keys(r.porTicker).length}</span>
+      </div>
+      <div class="riesgo-card">
+        <span class="rc-k">Sectores</span>
+        <span class="rc-v mono">${fmtNum(r.efectivasSector, 1)}</span>
+        <span class="rc-s">efectivos de ${Object.keys(r.porSector).length}</span>
+      </div>
+      <div class="riesgo-card">
+        <span class="rc-k">Industrias</span>
+        <span class="rc-v mono">${fmtNum(r.efectivasIndustria, 1)}</span>
+        <span class="rc-s">efectivas de ${Object.keys(r.porIndustria).length}</span>
+      </div>
+    </div>
+    <p class="riesgo-nota">"Efectivas" no es un conteo: pondera por tamaño. Veinte posiciones donde
+    una pesa un cuarto no son veinte. Mientras más se acerque al número real, mejor repartida está.</p>
+
+    <p class="riesgo-nota" style="margin-top:18px;">Los sectores salen de una tabla guardada dentro de
+    la app (GICS, revisión 2023), no del servidor — por eso funciona sin conexión. Los ETF de sector
+    se cuentan en su sector; los diversificados van aparte.</p>
+  `;
+
+  viewEl.querySelectorAll('.riesgo-tabla tbody tr').forEach((tr, i) => {
+    const f = porRiesgo[i];
+    if(!f) return;
+    tr.style.cursor = 'pointer';
+    tr.addEventListener('click', () => openDetail(f.ticker));
+  });
 }
 
 function renderResumenPortafolio(){
