@@ -148,7 +148,7 @@
      cuando la media esta por encima del stop guardado: el stop sube o se
      queda, nunca baja, asi que una media que cayo no tiene nada que
      sugerir. No cambia el valor solo -- hay que tocar el boton. */
-  /* ---- Plataformas (Racional / Interactive Brokers) ---- */
+  /* ---- Plataformas (Racional / Interactive Brokers / Buda.com / BCH) ---- */
   .plat-chip{display:inline-block; font-size:9px; font-weight:600; border-radius:4px;
              padding:2px 6px; white-space:nowrap; letter-spacing:.02em; vertical-align:1px;}
   .plat-chip.plat-A{background:rgba(44,128,114,0.14); color:var(--verdigris);}
@@ -156,6 +156,9 @@
   /* Buda.com (la cripto). Azul, para que no se confunda de un vistazo con el
      verde de Racional ni el dorado de IBKR. */
   .plat-chip.plat-C{background:rgba(70,110,170,0.16); color:#4A6FA5;}
+  /* BCH (acciones chilenas, p.ej. COPEC). Morado, para diferenciarse de
+     los otros tres y de "sin asignar" (copper) a simple vista. */
+  .plat-chip.plat-D{background:rgba(124,77,160,0.16); color:#8B5FBF;}
   .plat-chip.plat-none{background:rgba(179,74,50,0.12); color:var(--copper);}
   .plat-migrar{border:1px solid rgba(179,74,50,0.4); background:rgba(179,74,50,0.05);
                border-radius:8px; padding:10px 12px; margin-bottom:10px; font-size:11.5px;
@@ -4995,14 +4998,14 @@ function renderAvisoPlataforma(){
     ${sinPlat.length ? `Hay <b>${sinPlat.length}</b> movimiento(s) sin plataforma` : ''}
     ${sinPlat.length && partesCaja.length ? ' y ' : ''}
     ${partesCaja.length ? `<b>${partesCaja.join(' + ')}</b> de caja sin repartir` : ''}.
-    Son de antes de que la app separara Racional de Interactive Brokers. No los asigno solo:
+    Son de antes de que la app empezara a separar plataformas. No los asigno solo:
     no tengo cómo saber dónde se hicieron.
     <div class="pm-btns">
       ${PLAT_IDS.map(id => `<button class="mov-btn" data-accion="migrar-plat" data-plat="${id}"
         title="Marca todo lo que está sin asignar como ${nombrePlat(id)}">Todo a ${nombrePlat(id)}</button>`).join('')}
     </div>
     <div style="margin-top:6px; font-size:10.5px; color:var(--ink-faint);">
-      Si están repartidos entre las dos, asigna todo a una y corrige después los que no
+      Si están repartidos entre varias, asigna todo a una y corrige después los que no
       correspondan desde "Ver posición actual e historial completo".
     </div>`;
 
@@ -5362,17 +5365,19 @@ function estaOculto(){
 // estas dos constantes se declaran después, ese `const` está en zona muerta
 // temporal y la app entera revienta al cargar, sin renderizar nada.
 //
-// TRES PLATAFORMAS DESDE AGO-2026. Buda.com se agregó junto con Bitcoin: es
+// CUATRO PLATAFORMAS DESDE AGO-2026. Buda.com se agregó junto con Bitcoin: es
 // donde vive la cripto, y mezclarla con la corredora de acciones haría que
 // "¿con qué puedo comprar hoy sin transferir?" volviera a no tener respuesta.
+// BCH se agregó después para las acciones chilenas (p.ej. COPEC), que se
+// compran en una corredora aparte de Racional/Interactive Brokers.
 //
 // El resto del código ya NO tiene 'A' y 'B' escritos a mano: todo recorre
 // PLAT_IDS. Antes estaban repetidos en once lugares, y agregar una tercera
 // habría sido encontrarlos todos sin olvidar ninguno -- justo el tipo de
 // cambio donde queda un caso suelto y aparece un saldo que no cuadra.
-// Agregar una cuarta ahora es una línea acá.
-const PLAT_IDS = ['A', 'B', 'C'];
-const PLAT_DEFAULT = { A: 'Racional', B: 'Interactive Brokers', C: 'Buda.com' };
+// Agregar una cuarta fue una línea acá.
+const PLAT_IDS = ['A', 'B', 'C', 'D'];
+const PLAT_DEFAULT = { A: 'Racional', B: 'Interactive Brokers', C: 'Buda.com', D: 'BCH' };
 
 // ---- Caja por moneda (bloque 5, sección 3.1 de la spec v3) ----
 // Un saldo de efectivo por moneda, ajustado automáticamente por cada
