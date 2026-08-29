@@ -424,6 +424,10 @@
   .patr-cols{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
   .patr-col-label{font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.02em;}
   .patr-col-val{font-size:16px; font-weight:600; margin-top:3px;}
+  /* Aviso de posiciones sin precio bajo el total consolidado: el número de
+     arriba es un piso, no el total real. Ver `sinPrecio` en
+     calcularPatrimonioConsolidado(). */
+  .patr-faltan{font-size:10.5px; color:var(--copper); margin-top:6px; line-height:1.5;}
   .patr-fx{font-size:11px; color:var(--ink-dim); margin-top:10px; text-align:right;}
   /* Tipo de cambio vencido (backend caído): se sigue mostrando el total con
      el último dólar conocido, pero marcado -- ver cambioViejo en
@@ -8199,12 +8203,34 @@ function calcularPatrimonioConsolidado(){
   const cambioEdadSeg = usdclpAntiguedadSeg();
 
   // ---- Patrimonio consolidado ----
+  // UNA POSICIÓN SIN PRECIO NO PUEDE BORRAR EL TOTAL ENTERO (agosto 2026,
+  // a pedido). Antes bastaba que a UNA sola acción le faltara el precio
+  // para que `totalCompleto` fuera false y el patrimonio completo quedara
+  // en "calculando…" -- con el backend dormido eso significaba no ver
+  // nada, teniendo casi todo. Ahora se suma lo que SÍ se conoce y se dice
+  // cuántas faltan, con sus nombres. El número que se muestra es entonces
+  // un PISO honesto ("tienes al menos esto"), no una estimación inventada.
+  //
+  // `totalCompleto` se conserva con su significado original -- todo con
+  // precio real y tipo de cambio -- porque las REGLAS del plan (asignación
+  // objetivo, máximo por posición) siguen exigiéndolo: mostrar un número
+  // parcial informa, pero disparar "compra más" con datos incompletos es
+  // hacer que el usuario opere sobre algo que no es.
   const portClp = calcularPortafolio('CLP');
   const portUsd = calcularPortafolio('USD');
+  const sinPrecio = [];
   let valorClp = 0, valorClpCompleto = true;
-  Object.values(portClp).forEach(p => { if(p.netoQ > 0){ if(p.valorActual===null) valorClpCompleto=false; else valorClp += p.valorActual; } });
+  Object.values(portClp).forEach(p => {
+    if(p.netoQ <= 0) return;
+    if(p.valorActual === null){ valorClpCompleto = false; sinPrecio.push(p.ticker); }
+    else valorClp += p.valorActual;
+  });
   let valorUsd = 0, valorUsdCompleto = true;
-  Object.values(portUsd).forEach(p => { if(p.netoQ > 0){ if(p.valorActual===null) valorUsdCompleto=false; else valorUsd += p.valorActual; } });
+  Object.values(portUsd).forEach(p => {
+    if(p.netoQ <= 0) return;
+    if(p.valorActual === null){ valorUsdCompleto = false; sinPrecio.push(p.ticker); }
+    else valorUsd += p.valorActual;
+  });
 
   const cajaClp = caja.CLP || 0;
   const cajaUsd = caja.USD || 0;
@@ -8212,19 +8238,30 @@ function calcularPatrimonioConsolidado(){
   const valorUsdEnClp = cambioOk ? valorUsd * usdclpValue : null;
   const cajaUsdEnClp = cambioOk ? cajaUsd * usdclpValue : null;
   const totalCompleto = valorClpCompleto && valorUsdCompleto && cambioOk;
-  const rentaVariableClp = totalCompleto ? (valorClp + valorUsdEnClp) : null;
+  // Se calculan con lo conocido en cuanto haya tipo de cambio; que estén
+  // completos o no lo dice `totalCompleto`, y la tarjeta lo rotula.
+  const rentaVariableClp = cambioOk ? (valorClp + valorUsdEnClp) : null;
   const cajaTotalClp = cambioOk ? (cajaClp + cajaUsdEnClp) : null;
-  const patrimonioTotalClp = (totalCompleto && cajaTotalClp !== null) ? (rentaVariableClp + cajaTotalClp) : null;
+  const patrimonioTotalClp = (rentaVariableClp !== null && cajaTotalClp !== null)
+    ? (rentaVariableClp + cajaTotalClp) : null;
 
-  return { oculto, cambioOk, cambioViejo, cambioEdadSeg, portClp, portUsd, valorClp, valorClpCompleto,
+  return { oculto, cambioOk, cambioViejo, cambioEdadSeg, sinPrecio, portClp, portUsd, valorClp, valorClpCompleto,
            valorUsd, valorUsdCompleto, cajaClp, cajaUsd, valorUsdEnClp, cajaUsdEnClp, totalCompleto,
            rentaVariableClp, cajaTotalClp, patrimonioTotalClp };
 }
 
 function patrimonioHTML(d){
-  const { oculto, cambioOk, cambioViejo, cambioEdadSeg, valorClp, valorClpCompleto, valorUsd, valorUsdCompleto,
-          cajaClp, cajaUsd, valorUsdEnClp, cajaUsdEnClp, totalCompleto, rentaVariableClp, cajaTotalClp,
-          patrimonioTotalClp } = d;
+  const { oculto, cambioOk, cambioViejo, cambioEdadSeg, sinPrecio, valorClp, valorClpCompleto,
+          valorUsd, valorUsdCompleto, cajaClp, cajaUsd, valorUsdEnClp, cajaUsdEnClp, totalCompleto,
+          rentaVariableClp, cajaTotalClp, patrimonioTotalClp } = d;
+
+  // Cuando faltan precios, el número que se muestra es un PISO: se antepone
+  // "≥" y se nombra lo que falta, en vez de esconder el total entero.
+  const faltan = (sinPrecio || []);
+  const pisoPrefijo = (completo) => (completo || oculto) ? '' : '≥ ';
+  const notaFaltan = faltan.length
+    ? `<div class="patr-faltan">No incluye ${faltan.length} posición(es) sin precio hoy: ${faltan.join(', ')}.</div>`
+    : '';
 
   // Antigüedad en palabras, para no obligar a interpretar segundos.
   function hace(seg){
@@ -8240,11 +8277,16 @@ function patrimonioHTML(d){
   return `
     <div class="patr-total">
       <div class="patr-total-label">Patrimonio consolidado (CLP eq.)</div>
-      <div class="patr-total-val mono">${patrimonioTotalClp !== null ? fmtMoneda(patrimonioTotalClp, oculto, 'CLP') : 'No disponible (falta tipo de cambio o algún precio real)'}</div>
+      <div class="patr-total-val mono">${patrimonioTotalClp !== null
+        ? pisoPrefijo(totalCompleto) + fmtMoneda(patrimonioTotalClp, oculto, 'CLP')
+        : 'No disponible (todavía no hay tipo de cambio guardado)'}</div>
+      ${notaFaltan}
       <div class="patr-sub">
         <div>
           <div class="patr-col-label">Total cartera</div>
-          <div class="patr-col-val mono">${fmtMoneda(totalCompleto ? rentaVariableClp : null, oculto, 'CLP')}</div>
+          <div class="patr-col-val mono">${rentaVariableClp !== null
+            ? pisoPrefijo(totalCompleto) + fmtMoneda(rentaVariableClp, oculto, 'CLP')
+            : fmtMoneda(null, oculto, 'CLP')}</div>
         </div>
         <div>
           <div class="patr-col-label">Total caja</div>
@@ -8258,7 +8300,7 @@ function patrimonioHTML(d){
       <div class="patr-cols">
         <div>
           <div class="patr-col-label">Cartera</div>
-          <div class="patr-col-val mono">${fmtMoneda(valorClpCompleto ? valorClp : null, oculto, 'CLP')}</div>
+          <div class="patr-col-val mono">${pisoPrefijo(valorClpCompleto) + fmtMoneda(valorClp, oculto, 'CLP')}</div>
         </div>
         <div>
           <div class="patr-col-label">Caja</div>
@@ -8272,8 +8314,8 @@ function patrimonioHTML(d){
       <div class="patr-cols">
         <div>
           <div class="patr-col-label">Cartera</div>
-          <div class="patr-col-val mono">${fmtMoneda(valorUsdCompleto ? valorUsd : null, oculto, 'USD')}</div>
-          ${(cambioOk && valorUsdCompleto) ? `<div class="cartera-dist">${fmtMoneda(valorUsdEnClp, oculto, 'CLP')} eq.</div>` : ''}
+          <div class="patr-col-val mono">${pisoPrefijo(valorUsdCompleto) + fmtMoneda(valorUsd, oculto, 'USD')}</div>
+          ${cambioOk ? `<div class="cartera-dist">${pisoPrefijo(valorUsdCompleto)}${fmtMoneda(valorUsdEnClp, oculto, 'CLP')} eq.</div>` : ''}
         </div>
         <div>
           <div class="patr-col-label">Caja</div>
@@ -8316,9 +8358,13 @@ function renderAmbienteSeguir(){
   const { oculto, cambioOk, portClp, portUsd, valorClp, cajaClp, cajaUsd, totalCompleto, rentaVariableClp, patrimonioTotalClp } = d;
 
   // ---- Asignación objetivo vs. real (sección 3.2 — Día 23) ----
-  const rentaVariablePct = (patrimonioTotalClp && patrimonioTotalClp > 0) ? (rentaVariableClp / patrimonioTotalClp * 100) : null;
+  // OJO: exige totalCompleto a propósito. patrimonioTotalClp ahora se calcula
+  // aunque falten precios (para poder MOSTRAR un piso en la tarjeta), pero un
+  // porcentaje sacado de un total incompleto haría que las reglas del plan
+  // gritaran "compra" o "vende" sobre una foto que no es la real.
+  const rentaVariablePct = (totalCompleto && patrimonioTotalClp && patrimonioTotalClp > 0) ? (rentaVariableClp / patrimonioTotalClp * 100) : null;
   const liquidezPct = rentaVariablePct !== null ? (100 - rentaVariablePct) : null;
-  const chilePct = (rentaVariableClp && rentaVariableClp > 0) ? (valorClp / rentaVariableClp * 100) : null;
+  const chilePct = (totalCompleto && rentaVariableClp && rentaVariableClp > 0) ? (valorClp / rentaVariableClp * 100) : null;
   const globalPct = chilePct !== null ? (100 - chilePct) : null;
 
   function filaBarra(etiqueta, real, objetivo){
@@ -8384,7 +8430,7 @@ function renderAmbienteSeguir(){
   if(diaActualSantiago() >= DIA_APORTE_MENSUAL && !yaAportoEsteMes() && !recordatorioDescartadoEsteMes()){
     compraRows.push({texto:`Sin aporte registrado este mes (día ${DIA_APORTE_MENSUAL} del plan ya pasó o está pasando)`, regla:'Aporte mensual · Días 3 y 25'});
   }
-  if(patrimonioTotalClp && patrimonioTotalClp > 0){
+  if(totalCompleto && patrimonioTotalClp && patrimonioTotalClp > 0){
     [...Object.values(portClp), ...Object.values(portUsd)].forEach(p => {
       if(p.netoQ <= 0 || p.valorActual === null) return;
       const valorClpEq = p.moneda === 'USD' ? (cambioOk ? p.valorActual * usdclpValue : null) : p.valorActual;
