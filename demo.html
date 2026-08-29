@@ -769,6 +769,19 @@
   .mov-edit-btn:hover{color:var(--gold);}
   .mov-save-btn:hover{color:var(--verdigris);}
   .mov-cancel-btn:hover{color:var(--copper);}
+  /* Editar el "Dónde" (plataforma) de un movimiento -- ver
+     iniciarEdicionPlatMovimiento() y reasignarPlataformaMovimiento(). El
+     chip queda clickeable tal cual (mismo look que chipPlat()), sin look
+     de botón encima. */
+  .mov-plat-edit{background:none; border:none; padding:0; cursor:pointer;}
+  .mov-plat-edit:hover .plat-chip{filter:brightness(1.2);}
+  .mov-plat-edit-wrap{display:inline-flex; align-items:center; gap:2px; white-space:nowrap;}
+  .mov-plat-edit-wrap select.mov-edit-plat{font-size:11px; padding:2px 4px;}
+  .mov-plat-save, .mov-plat-cancel{
+    background:none; border:none; color:var(--ink-faint); cursor:pointer; font-size:13px; padding:2px 4px;
+  }
+  .mov-plat-save:hover{color:var(--verdigris);}
+  .mov-plat-cancel:hover{color:var(--copper);}
   .ptb-totals{display:flex; flex-wrap:wrap; gap:14px; font-size:11.5px; color:var(--ink-dim); padding-top:6px; border-top:1px dashed var(--hairline);}
   .ptb-totals b{color:var(--ink);}
 
@@ -6530,6 +6543,39 @@ function editarMovimiento(id, nuevaCantidad, nuevoPrecio){
   return true;
 }
 
+// Cambiar el "dónde" (plataforma) de un movimiento YA registrado -- a
+// pedido, para no tener que borrar y reingresar solo para corregir la
+// plataforma. nuevoPlat: un id de PLAT_IDS, o null para "sin asignar".
+//
+// Ojo con la caja: aplicarMovimientoACaja() ya corrió para este movimiento
+// cuando se guardó (si no es cripto) y dejó una entrada en caja.historial
+// con la plataforma de ESE momento. Si acá solo cambiáramos mov.plat, la
+// columna "Acciones" de "Dónde está tu plata" mostraría la plataforma
+// nueva pero la columna "Caja" seguiría mostrando la vieja -- el mismo
+// tipo de descuadre que esta app evita en todos lados. Por eso se mueve
+// también el monto de esa entrada de caja.plat[vieja] a caja.plat[nueva].
+function reasignarPlataformaMovimiento(id, nuevoPlat){
+  const mov = movimientos.find(m => m.id === id);
+  if(!mov) return false;
+  nuevoPlat = esPlatValida(nuevoPlat) ? nuevoPlat : null;
+  const anterior = platDeMov(mov);
+  if(anterior === nuevoPlat) return true; // nada que cambiar
+
+  mov.plat = nuevoPlat;
+  saveMovimientos(movimientos);
+
+  // Cripto no lleva caja (ver aplicarMovimientoACaja) -- no hay nada que
+  // corregir ahí, y por eso simplemente no habrá entrada en el historial.
+  const hist = (caja.historial || []).find(h => h.id === id);
+  if(hist){
+    if(anterior) caja.plat[anterior][hist.moneda] = (caja.plat[anterior][hist.moneda] || 0) - hist.monto;
+    if(nuevoPlat) caja.plat[nuevoPlat][hist.moneda] = (caja.plat[nuevoPlat][hist.moneda] || 0) + hist.monto;
+    hist.plat = nuevoPlat;
+    guardarCaja();
+  }
+  return true;
+}
+
 // Ingreso/retiro manual (aportes, dividendos, retiros de efectivo).
 function registrarMovimientoCaja(moneda, tipo, monto, nota, plat){
   const signo = tipo === 'ingreso' ? 1 : -1;
@@ -9400,6 +9446,24 @@ function iniciarEdicionMovimiento(tr, id){
   if(inputCant) inputCant.focus();
 }
 
+// Editar solo la plataforma de un movimiento (compra, venta o dividendo):
+// separado de iniciarEdicionMovimiento() porque los dividendos no tienen
+// cantidad/precio que editar, pero sí necesitan poder corregir su "Dónde".
+function iniciarEdicionPlatMovimiento(td, id){
+  const mov = movimientos.find(m => m.id === id);
+  if(!mov) return;
+  const actual = platDeMov(mov);
+  const opciones = `<option value=""${actual === null ? ' selected' : ''}>Sin asignar</option>`
+    + PLAT_IDS.map(pid => `<option value="${pid}"${actual === pid ? ' selected' : ''}>${nombrePlat(pid)}</option>`).join('');
+  td.innerHTML = `<span class="mov-plat-edit-wrap">
+    <select class="mov-input mono mov-edit-plat" data-id="${id}">${opciones}</select>
+    <button type="button" class="mov-plat-save" data-id="${id}" title="Guardar">✓</button>
+    <button type="button" class="mov-plat-cancel" title="Cancelar">✕</button>
+  </span>`;
+  const sel = td.querySelector('.mov-edit-plat');
+  if(sel) sel.focus();
+}
+
 // Delegado UNA sola vez sobre movsDetailPanel -- su innerHTML se reemplaza
 // entero en cada renderMovsDetailPanel() (nueva fecha, nuevo movimiento,
 // cambio de ambiente, etc.), así que un listener puesto directo en un
@@ -9444,6 +9508,39 @@ movsDetailPanel.addEventListener('click', (e) => {
   const btnCancelar = e.target.closest('.mov-cancel-btn');
   if(btnCancelar){
     renderMovsDetailPanel(); // descarta la edición en curso, vuelve a dibujar desde lo ya guardado
+    return;
+  }
+
+  // "Dónde" editable por movimiento (compra, venta o dividendo) -- a
+  // pedido, para no tener que borrar y reingresar un movimiento viejo
+  // solo para corregirle la plataforma. Ver reasignarPlataformaMovimiento().
+  const btnPlatEdit = e.target.closest('.mov-plat-edit');
+  if(btnPlatEdit){
+    const td = btnPlatEdit.closest('td');
+    if(td) iniciarEdicionPlatMovimiento(td, Number(btnPlatEdit.dataset.id));
+    return;
+  }
+
+  const btnPlatSave = e.target.closest('.mov-plat-save');
+  if(btnPlatSave){
+    const td = btnPlatSave.closest('td');
+    const sel = td && td.querySelector('.mov-edit-plat');
+    if(!sel) return;
+    const id = Number(btnPlatSave.dataset.id);
+    reasignarPlataformaMovimiento(id, sel.value || null);
+    renderMovsDetailPanel(); // refleja el cambio en la tabla
+    if(typeof renderMovimientos === 'function') renderMovimientos(); // idem en el panel compacto
+    if(typeof renderCaja === 'function') renderCaja();
+    // "Dónde está tu plata" (Acciones + Caja por plataforma) vive en "Mi
+    // Cartera" -- si es lo que está abierto, se refresca también.
+    if(ambienteActivo === 'cartera' && typeof renderAmbienteCartera === 'function') renderAmbienteCartera();
+    return;
+  }
+
+  const btnPlatCancel = e.target.closest('.mov-plat-cancel');
+  if(btnPlatCancel){
+    renderMovsDetailPanel(); // descarta, vuelve a mostrar el chip tal como estaba
+    return;
   }
 });
 movsOverlay.addEventListener('click', e => { if(e.target === movsOverlay) closeMovsDetail(); });
@@ -9560,7 +9657,7 @@ function renderMovsDetailPanel(){
         <td class="mov-cant">${fmtCantidad(m.cantidad, moneda, m.ticker)}</td>
         <td class="mov-prec">${fmt(m.precio, p.dec, moneda)}</td>
         <td>${$$(m.cantidad*m.precio)}</td>
-        <td>${chipPlat(platDeMov(m))}</td>
+        <td><button type="button" class="mov-plat-edit" data-id="${m.id}" title="Cambiar dónde está">${chipPlat(platDeMov(m))}</button></td>
         <td class="mov-acciones"><button type="button" class="mov-edit-btn" data-id="${m.id}" title="Editar cantidad o precio">✎</button></td>
       </tr>`).join('');
 
@@ -9570,7 +9667,7 @@ function renderMovsDetailPanel(){
         <td class="mov-cant">${fmtCantidad(m.cantidad, moneda, m.ticker)}</td>
         <td class="mov-prec">${fmt(m.precio, p.dec, moneda)}</td>
         <td>${$$(m.cantidad*m.precio)}</td>
-        <td>${chipPlat(platDeMov(m))}</td>
+        <td><button type="button" class="mov-plat-edit" data-id="${m.id}" title="Cambiar dónde está">${chipPlat(platDeMov(m))}</button></td>
         <td class="mov-acciones"><button type="button" class="mov-edit-btn" data-id="${m.id}" title="Editar cantidad o precio">✎</button></td>
       </tr>`).join('');
 
@@ -9581,7 +9678,7 @@ function renderMovsDetailPanel(){
       <tr data-id="${m.id}">
         <td>${m.fecha}</td>
         <td>${$$(m.monto)}</td>
-        <td>${chipPlat(platDeMov(m))}</td>
+        <td><button type="button" class="mov-plat-edit" data-id="${m.id}" title="Cambiar dónde está">${chipPlat(platDeMov(m))}</button></td>
       </tr>`).join('');
 
     // Cerrada = vendida por completo (netoQ === 0). Esas quedan colapsadas
