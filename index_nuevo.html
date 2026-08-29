@@ -422,6 +422,10 @@
   .patr-col-label{font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.02em;}
   .patr-col-val{font-size:16px; font-weight:600; margin-top:3px;}
   .patr-fx{font-size:11px; color:var(--ink-dim); margin-top:10px; text-align:right;}
+  /* Tipo de cambio vencido (backend caído): se sigue mostrando el total con
+     el último dólar conocido, pero marcado -- ver cambioViejo en
+     calcularPatrimonioConsolidado(). */
+  .patr-fx--viejo{color:var(--copper);}
 
   /* Bloque 6: asignación objetivo vs. real, con banda de tolerancia. */
   .asig-box{margin-top:10px; padding-top:8px; border-top:1px dashed var(--hairline);}
@@ -623,6 +627,19 @@
     display:flex; align-items:center; justify-content:space-between;
   }
   .feed-count{font-family:'IBM Plex Mono',monospace; color:var(--copper); background:var(--copper-soft); padding:1px 7px; border-radius:10px; font-size:11px;}
+  /* Botón Ver/Ocultar por sección -- ver btnSeccionHTML() y
+     aplicarSeccionesPlegadas(). Mismo lenguaje visual que .ptb-toggle y
+     .cartera-listado-toggle: texto dorado discreto, sin caja de botón,
+     para que no compita con los botones de acción real (Registrar, etc.). */
+  .sec-toggle{
+    background:none; border:none; color:var(--gold); font-size:11px; font-weight:600;
+    cursor:pointer; padding:2px 0; white-space:nowrap; letter-spacing:0; text-transform:none;
+  }
+  .sec-toggle:hover{text-decoration:underline;}
+  /* Agrupa lo que va a la derecha del título (contador/refresco + el botón)
+     para que el space-between del .feed-title siga dejando el título a la
+     izquierda y todo lo demás junto a la derecha. */
+  .sec-head-right{display:flex; align-items:center; gap:10px;}
   .feed-list{list-style:none; margin:0; padding:0; overflow-y:auto; flex:1;}
   .feed-empty{color:var(--ink-faint); font-size:12.5px; padding:20px 0; text-align:center;}
   .feed-item{padding:10px 0; border-bottom:1px solid var(--hairline); animation:slidein .35s ease; cursor:pointer;}
@@ -833,6 +850,7 @@
     font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--gold); margin:0 0 8px;
     border-bottom:1px solid var(--hairline); padding-bottom:6px;
   }
+  .section-title--con-btn{display:flex; align-items:baseline; justify-content:space-between; gap:10px;}
   .detail-grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:18px;}
   @media(max-width:520px){ .detail-grid{grid-template-columns:1fr;} }
   .mini-table{width:100%; border-collapse:collapse; font-size:13.5px;}
@@ -1045,7 +1063,13 @@
        comprar es el embudo, quien decide CUANDO es el diagnostico de
        fase/fuerza. Ver "como-encaja-todo" en la carpeta del proyecto. -->
   <div class="analysis-panel" id="analysisPanelWrap">
-    <p class="feed-title">Distancia a su promedio <span class="analysis-refresh" id="analysisRefresh">···</span></p>
+    <p class="feed-title">Distancia a su promedio
+      <span class="sec-head-right">
+        <span class="analysis-refresh" id="analysisRefresh">···</span>
+        <button type="button" class="sec-toggle" data-sec="analisis" aria-expanded="true" title="Ocultar esta sección">Ocultar ▾</button>
+      </span>
+    </p>
+    <div data-sec-body="analisis">
     <p class="analysis-disclaimer">
       Esto NO es una señal de compra ni de venta, y no dice si una acción está barata o cara — solo mide <b>cuánto se separó de su propio promedio</b> (distancia al promedio de 90 días, RSI, tendencia SMA20/SMA50 y liquidez). Ojo con la trampa de este dato: una acción que va cayendo aparece "lejos bajo su promedio" durante toda la caída, y no deja de estarlo nunca. Para saber si vale la pena, mira su fase y su fuerza en el detalle. El precio viene de Yahoo Finance con rezago y yo no soy asesor financiero. Las marcadas con ⚠ están además en una tendencia bajista sostenida, y se muestran atenuadas a propósito.
     </p>
@@ -1071,10 +1095,17 @@
       Chile, no ampliarla. Queda solo el lado de arriba, que es el que sirve para decidir cuándo
       vender. En EE.UU. se ven las dos.
     </p>
+    </div>
   </div>
 
   <div class="movs-panel" id="movsPanelWrap">
-    <p class="feed-title">Mis movimientos <span class="feed-count" id="movsCount">0</span></p>
+    <p class="feed-title">Mis movimientos
+      <span class="sec-head-right">
+        <span class="feed-count" id="movsCount">0</span>
+        <button type="button" class="sec-toggle" data-sec="movimientos" aria-expanded="true" title="Ocultar esta sección">Ocultar ▾</button>
+      </span>
+    </p>
+    <div data-sec-body="movimientos">
     <div class="portfolio-actions">
       <button id="btnExportarMovs" class="mov-btn" style="background:none; color:var(--ink-dim); border-color:var(--hairline);" title="Descarga un archivo con movimientos, caja, asignación/tesis, favoritos y W-8BEN de los dos ambientes">⬇️ Respaldar todo</button>
       <button id="btnImportarMovs" class="mov-btn" style="background:none; color:var(--ink-dim); border-color:var(--hairline);" title="Reemplaza TODOS los datos guardados en este dispositivo con el contenido del archivo">⬆️ Restaurar todo</button>
@@ -1117,19 +1148,21 @@
     </div>
     <div id="platMigrar" class="plat-migrar" style="display:none;"></div>
     <div id="movsList" class="movs-list"><p class="analysis-empty">Sin movimientos registrados todavía.</p></div>
+    </div>
 
     <!-- Caja por moneda (bloque 5 de la spec v3, sección 3.1). Se ajusta sola
          con cada compra/venta y admite ingresos/retiros manuales (aportes,
          dividendos, retiros de efectivo) -- separada por CLP y USD. -->
     <div class="movs-summary-box" id="cajaBox" style="margin-bottom:10px;">
-      <div class="msb-row">
+      <div class="msb-row" style="align-items:flex-start;">
         <div class="msb-item">
           <div class="msb-label" id="cajaLabel">Caja (CLP)</div>
           <div class="msb-val mono" id="cajaSaldo">···</div>
         </div>
+        <button type="button" class="sec-toggle" data-sec="caja" aria-expanded="true" title="Ocultar el formulario de caja" style="margin-left:auto;">Ocultar ▾</button>
       </div>
       <p id="cajaAviso" class="analysis-empty" style="display:none; color:var(--copper); text-align:left; padding:0;"></p>
-      <div class="movs-form" style="margin-top:8px;">
+      <div class="movs-form" style="margin-top:8px;" data-sec-body="caja">
         <select id="cajaTipo" class="mov-input">
           <option value="ingreso">Ingreso (aporte, dividendo…)</option>
           <option value="retiro">Retiro</option>
@@ -2464,6 +2497,24 @@ function loadCache(){
     return raw ? JSON.parse(raw) : null;
   } catch(e){ return null; }
 }
+// EE.UU. y Cripto TAMBIÉN se guardan (agosto 2026). Antes solo se guardaba
+// Chile, así que al abrir la app con el backend apagado la cartera de
+// EE.UU. quedaba entera en null y el patrimonio consolidado no se podía
+// calcular ("calculando…" para siempre) aunque hubiera datos reales de
+// hace un rato. Se guarda el ÚLTIMO valor real conocido, tal cual, y al
+// restaurarlo se marca su antigüedad -- nunca se inventa un precio.
+//
+// Cripto se guarda ya convertido a pesos (que es como vive en memoria),
+// más priceUsd y tcAplicado, para no tener que rehacer la conversión con
+// un dólar distinto al que se usó en su momento.
+function camposCacheables(s){
+  return {
+    price: s.price, avg: s.avg, dayHigh: s.dayHigh, dayLow: s.dayLow,
+    volume: s.volume, montoTransado: s.montoTransado, ret3m: s.ret3m, ret1y: s.ret1y,
+    rsi14: s.rsi14 ?? null, sma20: s.sma20 ?? null, sma50: s.sma50 ?? null,
+    sma200: s.sma200 ?? null, zscore: s.zscore ?? null, marketTime: s.marketTime || null,
+  };
+}
 function saveCache(){
   try {
     const quotesOut = {};
@@ -2475,14 +2526,91 @@ function saveCache(){
         };
       }
     });
+    const quotesUsaOut = {};
+    [...stateUSA, ...stateWatch].forEach(s => {
+      if(s.price !== null) quotesUsaOut[s.ticker] = camposCacheables(s);
+    });
+    const quotesCriptoOut = {};
+    stateCripto.forEach(s => {
+      if(s.price !== null){
+        quotesCriptoOut[s.ticker] = Object.assign(camposCacheables(s), {
+          priceUsd: s.priceUsd ?? null, tcAplicado: s.tcAplicado ?? null,
+        });
+      }
+    });
     localStorage.setItem('ipsa_cache', JSON.stringify({
       quotes: quotesOut,
+      quotesUsa: quotesUsaOut,
+      quotesCripto: quotesCriptoOut,
       index: (indexValue !== null) ? {value: indexValue, previousClose: indexPrevClose, marketTime: indexMarketTime} : null,
       uf: ufValue, utm: utmValue, usdclp: usdclpValue,
       ts: Date.now(),
     }));
   } catch(e){ /* si falla, simplemente no persiste entre sesiones */ }
 }
+
+// =========================================================================
+// SECCIONES PLEGABLES  (agosto 2026, a pedido)
+// =========================================================================
+// Un botón "Ver/Ocultar" por sección grande, para no tener que bajar por
+// bloques que hoy no interesan. Es puramente visual: nada se deja de
+// calcular ni de actualizar por estar plegado -- solo no se dibuja en
+// pantalla, así que al desplegarlo el contenido ya está al día.
+//
+// SE GUARDA en localStorage a propósito. El objetivo es acortar el
+// desplazamiento, y eso solo sirve si la elección sobrevive a cerrar la
+// app: si cada recarga volviera a desplegar todo, habría que plegar lo
+// mismo cada vez.
+//
+// DEFAULT: TODO DESPLEGADO. Arrancar con secciones plegadas escondería
+// datos que el usuario nunca pidió esconder -- lo que se recuerda es lo
+// que él decidió ocultar, no una suposición de la app.
+//
+// Cómo se conecta: el encabezado lleva un <button class="sec-toggle"
+// data-sec="X"> y el bloque que se pliega lleva data-sec-body="X". Sirve
+// igual para HTML fijo (paneles de la portada) y para HTML que se vuelve a
+// dibujar entero (Mi Cartera) -- por eso el estado se aplica recorriendo
+// el DOM en aplicarSeccionesPlegadas() en vez de guardarse en la marca.
+function cargarSeccionesOcultas(){
+  try {
+    const raw = localStorage.getItem('ipsa_secciones_ocultas');
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch(e){ return new Set(); }
+}
+let seccionesOcultas = cargarSeccionesOcultas();
+function guardarSeccionesOcultas(){
+  try { localStorage.setItem('ipsa_secciones_ocultas', JSON.stringify([...seccionesOcultas])); } catch(e){}
+}
+function seccionOculta(id){ return seccionesOcultas.has(id); }
+// Botón listo para pegar en el encabezado de una sección.
+function btnSeccionHTML(id, etiqueta){
+  const oculta = seccionOculta(id);
+  return `<button type="button" class="sec-toggle" data-sec="${id}"`
+       + ` title="${oculta ? 'Mostrar' : 'Ocultar'} ${etiqueta || 'esta sección'}"`
+       + ` aria-expanded="${oculta ? 'false' : 'true'}">${oculta ? 'Ver ▸' : 'Ocultar ▾'}</button>`;
+}
+function aplicarSeccionesPlegadas(){
+  document.querySelectorAll('[data-sec-body]').forEach(el => {
+    el.style.display = seccionOculta(el.dataset.secBody) ? 'none' : '';
+  });
+  document.querySelectorAll('.sec-toggle').forEach(btn => {
+    const oculta = seccionOculta(btn.dataset.sec);
+    btn.textContent = oculta ? 'Ver ▸' : 'Ocultar ▾';
+    btn.setAttribute('aria-expanded', oculta ? 'false' : 'true');
+  });
+}
+// Delegado en document: los encabezados viven en HTML fijo (portada) y en
+// HTML que se redibuja entero (Mi Cartera). Un solo listener acá cubre los
+// dos casos sin tener que reengancharlo en cada render.
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.sec-toggle');
+  if(!btn) return;
+  const id = btn.dataset.sec;
+  if(seccionesOcultas.has(id)) seccionesOcultas.delete(id);
+  else seccionesOcultas.add(id);
+  guardarSeccionesOcultas();
+  aplicarSeccionesPlegadas();
+});
 
 // ---- Favoritos (persisten en este dispositivo/navegador) ----
 function loadFavorites(){
@@ -7535,7 +7663,22 @@ function calcularPatrimonioConsolidado(){
   // (que ahora muestra la tarjeta de Patrimonio) compartan el mismo
   // cálculo en vez de tener cada uno el suyo.
   const oculto = estaOculto();
-  const cambioOk = usdclpEsValido();
+  // TIPO DE CAMBIO VENCIDO ≠ TIPO DE CAMBIO AUSENTE (agosto 2026, a pedido).
+  // Antes esto era usdclpEsValido(), que a la hora de antigüedad pasa a
+  // false -- así que con el backend apagado el patrimonio entero decía "No
+  // disponible" aunque hubiera un dólar real guardado de hace un rato. Con
+  // el servicio caído lo que corresponde es seguir mostrando el ÚLTIMO
+  // valor conocido y decir que está viejo, no dejar de calcular: un número
+  // de hace unas horas informa; "No disponible" no informa nada.
+  //
+  // cambioOk  = hay un dólar usable (aunque esté vencido) -> se calcula.
+  // cambioViejo = ese dólar ya pasó su ventana de frescura -> se advierte.
+  // usdclpEsValido() se deja intacto: lo siguen usando la conversión de
+  // Cripto y la píldora de UF/UTM, donde "fresco o nada" sí es el criterio
+  // correcto (ahí se compara contra precios de hoy, no se suma un total).
+  const cambioOk = typeof usdclpValue === 'number';
+  const cambioViejo = cambioOk && !usdclpEsValido();
+  const cambioEdadSeg = usdclpAntiguedadSeg();
 
   // ---- Patrimonio consolidado ----
   const portClp = calcularPortafolio('CLP');
@@ -7555,14 +7698,23 @@ function calcularPatrimonioConsolidado(){
   const cajaTotalClp = cambioOk ? (cajaClp + cajaUsdEnClp) : null;
   const patrimonioTotalClp = (totalCompleto && cajaTotalClp !== null) ? (rentaVariableClp + cajaTotalClp) : null;
 
-  return { oculto, cambioOk, portClp, portUsd, valorClp, valorClpCompleto, valorUsd, valorUsdCompleto,
-           cajaClp, cajaUsd, valorUsdEnClp, cajaUsdEnClp, totalCompleto, rentaVariableClp, cajaTotalClp,
-           patrimonioTotalClp };
+  return { oculto, cambioOk, cambioViejo, cambioEdadSeg, portClp, portUsd, valorClp, valorClpCompleto,
+           valorUsd, valorUsdCompleto, cajaClp, cajaUsd, valorUsdEnClp, cajaUsdEnClp, totalCompleto,
+           rentaVariableClp, cajaTotalClp, patrimonioTotalClp };
 }
 
 function patrimonioHTML(d){
-  const { oculto, cambioOk, valorClp, valorClpCompleto, valorUsd, valorUsdCompleto, cajaClp, cajaUsd,
-          valorUsdEnClp, cajaUsdEnClp, totalCompleto, rentaVariableClp, cajaTotalClp, patrimonioTotalClp } = d;
+  const { oculto, cambioOk, cambioViejo, cambioEdadSeg, valorClp, valorClpCompleto, valorUsd, valorUsdCompleto,
+          cajaClp, cajaUsd, valorUsdEnClp, cajaUsdEnClp, totalCompleto, rentaVariableClp, cajaTotalClp,
+          patrimonioTotalClp } = d;
+
+  // Antigüedad en palabras, para no obligar a interpretar segundos.
+  function hace(seg){
+    if(typeof seg !== 'number') return 'hace rato';
+    if(seg < 3600) return `hace ${Math.max(1, Math.round(seg/60))} min`;
+    if(seg < 86400) return `hace ${Math.round(seg/3600)} h`;
+    return `hace ${Math.round(seg/86400)} día(s)`;
+  }
   // Rediseño imagen 1 del pedido: total consolidado, luego el mismo total
   // desglosado en Cartera vs. Caja (ambos en CLP), y despues cada país por
   // separado con su propia Cartera y Caja -- Chile ya en CLP, EE.UU. en USD
@@ -7611,10 +7763,12 @@ function patrimonioHTML(d){
           ${cambioOk ? `<div class="cartera-dist">${fmtMoneda(cajaUsdEnClp, oculto, 'CLP')} eq.</div>` : ''}
         </div>
       </div>
-      ${cambioOk ? `<div class="patr-fx">Tipo de cambio: ${fmtMoneda(usdclpValue, oculto, 'CLP')} / USD</div>` : ''}
+      ${cambioOk ? `<div class="patr-fx${cambioViejo ? ' patr-fx--viejo' : ''}">${cambioViejo ? '⚠︎ ' : ''}Tipo de cambio: ${fmtMoneda(usdclpValue, oculto, 'CLP')} / USD${cambioViejo ? ` · último conocido, ${hace(cambioEdadSeg)}` : ''}</div>` : ''}
     </div>
 
-    ${!cambioOk ? '<p class="seguir-empty">El tipo de cambio USD/CLP no está disponible o está vencido — la asignación y el patrimonio consolidado no se calculan hasta que vuelva.</p>' : ''}
+    ${!cambioOk
+      ? '<p class="seguir-empty">Todavía no hay ningún tipo de cambio USD/CLP guardado — la asignación y el patrimonio consolidado no se pueden calcular hasta que llegue el primero.</p>'
+      : (cambioViejo ? `<p class="seguir-empty">El servicio de precios no está respondiendo. Estos totales usan el último tipo de cambio conocido (${hace(cambioEdadSeg)}) y los últimos precios guardados: sirven para orientarse, pero no son de este minuto.</p>` : '')}
 
     <!-- Benchmark sintético: a pedido, en vez de comparar Chile contra el
          IPSA y EE.UU. contra el S&P por separado (ninguno de los dos es TU
@@ -8189,10 +8343,10 @@ function renderAmbienteCartera(){
   viewEl.innerHTML = `
     <p class="section-title" style="margin-top:0;">Mi Cartera</p>
     <p style="font-size:12px; color:var(--ink-dim); margin:-6px 0 14px;">Favoritos y precios objetivo para Chile, EE.UU. y Cripto — al cruzar un objetivo llega correo y push con el monto y el porcentaje de diferencia. La cantidad y el precio de compra se calculan solos desde "Mis movimientos".</p>
-    <p class="section-title">Patrimonio</p>
-    ${patrimonioHTML(d)}
-    <p class="section-title">Dónde está tu plata</p>
-    ${platformasHTML(portClp, portUsd, oculto, cambioOk)}
+    <p class="section-title section-title--con-btn">Patrimonio ${btnSeccionHTML('patrimonio', 'Patrimonio')}</p>
+    <div data-sec-body="patrimonio">${patrimonioHTML(d)}</div>
+    <p class="section-title section-title--con-btn">Dónde está tu plata ${btnSeccionHTML('plataformas', 'Dónde está tu plata')}</p>
+    <div data-sec-body="plataformas">${platformasHTML(portClp, portUsd, oculto, cambioOk)}</div>
     <p class="section-title">Favoritas y posiciones</p>
     <input type="text" id="carteraBuscador" class="cartera-buscador" placeholder="Buscar por ticker o nombre (Chile o EE.UU.)…" value="${carteraFiltro.replace(/"/g,'&quot;')}">
     <label class="cartera-toggle"><input type="checkbox" id="carteraMostrarTodas" ${carteraMostrarTodas ? 'checked' : ''}> Mostrar todas las acciones, no solo favoritas o con posición</label>
@@ -8302,6 +8456,10 @@ function renderAmbienteCartera(){
     });
   }
   if(typeof actualizarBenchmarkConsolidado === 'function') actualizarBenchmarkConsolidado();
+
+  // El innerHTML de arriba se acaba de reemplazar entero: hay que volver a
+  // aplicar qué secciones están plegadas (Patrimonio / Dónde está tu plata).
+  aplicarSeccionesPlegadas();
 }
 
 function renderResumenPortafolio(){
@@ -9825,6 +9983,45 @@ function hydrateFromCache(){
     }
     renderCard(s);
   });
+
+  // EE.UU., watchlist y Cripto: el mismo criterio que Chile arriba. Sin
+  // esto, abrir la app con el backend apagado dejaba toda la cartera de
+  // EE.UU. en null y el patrimonio consolidado se quedaba en "calculando…"
+  // aunque hubiera datos reales guardados de hace un rato.
+  function aplicarCacheado(s, q){
+    s.price = q.price;
+    s.avg = q.avg ?? null;
+    s.dayHigh = q.dayHigh ?? null;
+    s.dayLow = q.dayLow ?? null;
+    s.volume = q.volume ?? null;
+    s.montoTransado = q.montoTransado ?? null;
+    s.ret3m = q.ret3m ?? null;
+    s.ret1y = q.ret1y ?? null;
+    s.rsi14 = q.rsi14 ?? null;
+    s.sma20 = q.sma20 ?? null;
+    s.sma50 = q.sma50 ?? null;
+    s.sma200 = q.sma200 ?? null;
+    s.zscore = q.zscore ?? null;
+    s.marketTime = q.marketTime || null;
+    s.bid = null; s.ask = null; s.bidSize = null; s.askSize = null;
+    s.history = [s.price];
+  }
+  [...stateUSA, ...stateWatch].forEach(s => {
+    const q = cache.quotesUsa && cache.quotesUsa[s.ticker];
+    if(q && typeof q.price === 'number'){ aplicarCacheado(s, q); recibidos++; }
+    if(stateUSA.indexOf(s) !== -1) renderCard(s); // la watchlist no dibuja tarjeta
+  });
+  stateCripto.forEach(s => {
+    const q = cache.quotesCripto && cache.quotesCripto[s.ticker];
+    if(q && typeof q.price === 'number'){
+      aplicarCacheado(s, q); // ya viene en pesos, tal como se guardó
+      s.priceUsd = q.priceUsd ?? null;
+      s.tcAplicado = q.tcAplicado ?? null;
+      recibidos++;
+    }
+    renderCard(s);
+  });
+
   if(cache.index && typeof cache.index.value === 'number'){
     indexValue = cache.index.value;
     indexPrevClose = cache.index.previousClose;
@@ -10066,6 +10263,10 @@ async function fetchRealQuotesUsa(){
 
     if(recibidos > 0){
       ultimaActualizacionRealUsa = new Date();
+      // Guardar TAMBIÉN acá (no solo en /quotes de Chile): si no, la
+      // cartera de EE.UU. nunca llegaba a la caché y abrir la app con el
+      // backend apagado la dejaba entera sin precios. Ver saveCache().
+      saveCache();
       if(ambienteActivo === 'usa'){
         setStatusPill('real', `Datos reales (${recibidos}/${stateUSA.length})`);
       }
@@ -10206,6 +10407,10 @@ inicializarIpsaBase();
 renderCaja();
 inicializarPortafolio();
 hydrateFromCache();
+// Aplica lo que el usuario dejó plegado la última vez (ver
+// SECCIONES PLEGABLES). Va acá, después de que los paneles fijos ya están
+// en el DOM y ya se llenaron con datos.
+aplicarSeccionesPlegadas();
 updateClock();
 setInterval(updateClock, 1000);
 
