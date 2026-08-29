@@ -776,15 +776,15 @@
      iniciarEdicionPlatMovimiento() y reasignarPlataformaMovimiento(). El
      chip queda clickeable tal cual (mismo look que chipPlat()), sin look
      de botón encima. */
-  .mov-plat-edit{background:none; border:none; padding:0; cursor:pointer;}
-  .mov-plat-edit:hover .plat-chip{filter:brightness(1.2);}
+  .mov-plat-edit, .caja-plat-edit{background:none; border:none; padding:0; cursor:pointer;}
+  .mov-plat-edit:hover .plat-chip, .caja-plat-edit:hover .plat-chip{filter:brightness(1.2);}
   .mov-plat-edit-wrap{display:inline-flex; align-items:center; gap:2px; white-space:nowrap;}
-  .mov-plat-edit-wrap select.mov-edit-plat{font-size:11px; padding:2px 4px;}
-  .mov-plat-save, .mov-plat-cancel{
+  .mov-plat-edit-wrap select.mov-edit-plat, .mov-plat-edit-wrap select.caja-edit-plat{font-size:11px; padding:2px 4px;}
+  .mov-plat-save, .mov-plat-cancel, .caja-plat-save, .caja-plat-cancel{
     background:none; border:none; color:var(--ink-faint); cursor:pointer; font-size:13px; padding:2px 4px;
   }
-  .mov-plat-save:hover{color:var(--verdigris);}
-  .mov-plat-cancel:hover{color:var(--copper);}
+  .mov-plat-save:hover, .caja-plat-save:hover{color:var(--verdigris);}
+  .mov-plat-cancel:hover, .caja-plat-cancel:hover{color:var(--copper);}
   .ptb-totals{display:flex; flex-wrap:wrap; gap:14px; font-size:11.5px; color:var(--ink-dim); padding-top:6px; border-top:1px dashed var(--hairline);}
   .ptb-totals b{color:var(--ink);}
 
@@ -4978,6 +4978,38 @@ function movimientosDelAmbiente(amb){
 // asignarlos en bloque, y no hace NADA por su cuenta. Un movimiento viejo
 // no sabe donde se hizo, y adivinarlo (por moneda, por fecha, por lo que
 // sea) seria inventar un dato -- justo lo que esta app no hace.
+// Entradas de caja.historial sin plataforma que NO corresponden a un
+// movimiento vigente: ingresos/retiros manuales (registrarMovimientoCaja),
+// o huérfanas de un movimiento ya borrado. Las que SÍ vienen de un
+// movimiento vigente se corrigen desde el chip "Dónde" de ese movimiento
+// (ver reasignarPlataformaMovimiento) -- no acá, para no tener dos lugares
+// editando el mismo dato y que se desincronicen entre sí.
+function cajaHistorialSinPlat(){
+  return (caja.historial || []).filter(h => {
+    if(esPlatValida(h.plat)) return false;
+    const esAuto = h.tipo === 'auto-compra' || h.tipo === 'auto-venta' || h.tipo === 'auto-dividendo';
+    if(!esAuto) return true; // ingreso o retiro manual
+    return !movimientos.some(m => m.id === h.id); // auto- pero el movimiento ya no existe
+  });
+}
+
+// Igual que iniciarEdicionPlatMovimiento(), pero para una fila de
+// cajaHistorialSinPlat() en vez de un movimiento.
+function iniciarEdicionPlatCaja(td, histId){
+  const hist = (caja.historial || []).find(h => h.id === histId);
+  if(!hist) return;
+  const actual = esPlatValida(hist.plat) ? hist.plat : null;
+  const opciones = `<option value=""${actual === null ? ' selected' : ''}>Sin asignar</option>`
+    + PLAT_IDS.map(pid => `<option value="${pid}"${actual === pid ? ' selected' : ''}>${nombrePlat(pid)}</option>`).join('');
+  td.innerHTML = `<span class="mov-plat-edit-wrap">
+    <select class="mov-input mono caja-edit-plat" data-hist-id="${histId}">${opciones}</select>
+    <button type="button" class="caja-plat-save" data-hist-id="${histId}" title="Guardar">✓</button>
+    <button type="button" class="caja-plat-cancel" title="Cancelar">✕</button>
+  </span>`;
+  const sel = td.querySelector('.caja-edit-plat');
+  if(sel) sel.focus();
+}
+
 function renderAvisoPlataforma(){
   const el = document.getElementById('platMigrar');
   if(!el) return;
@@ -4993,6 +5025,12 @@ function renderAvisoPlataforma(){
   if(Math.abs(sinCajaClp) > 0.005) partesCaja.push(fmtMoneda2(sinCajaClp, 'CLP'));
   if(Math.abs(sinCajaUsd) > 0.005) partesCaja.push(fmtMoneda2(sinCajaUsd, 'USD'));
 
+  // El total "sin repartir" (arriba) es un agregado -- no se puede tocar
+  // directo. Esto es lo que lo compone entrada por entrada, para poder
+  // encontrar CADA una y decirle dónde está (en vez de solo poder mandar
+  // TODO a una plataforma con los botones de abajo).
+  const entradasCaja = cajaHistorialSinPlat();
+
   el.innerHTML = `
     <b>Falta decir dónde está esta plata.</b>
     ${sinPlat.length ? `Hay <b>${sinPlat.length}</b> movimiento(s) sin plataforma` : ''}
@@ -5007,7 +5045,21 @@ function renderAvisoPlataforma(){
     <div style="margin-top:6px; font-size:10.5px; color:var(--ink-faint);">
       Si están repartidos entre varias, asigna todo a una y corrige después los que no
       correspondan desde "Ver posición actual e historial completo".
-    </div>`;
+    </div>
+    ${entradasCaja.length ? `
+    <details style="margin-top:8px;">
+      <summary style="cursor:pointer; font-size:11px; color:var(--ink-dim);">Ver el detalle de esta caja sin repartir (${entradasCaja.length})</summary>
+      <table class="ptb-table" style="margin-top:6px; width:100%;">
+        <thead><tr><th>Fecha</th><th>Monto</th><th style="text-align:left;">Nota</th><th>Dónde</th></tr></thead>
+        <tbody>${entradasCaja.map(h => `
+          <tr>
+            <td>${h.fecha}</td>
+            <td>${fmtMoneda2(h.monto, h.moneda)}</td>
+            <td style="text-align:left; color:var(--ink-faint); font-size:10.5px;">${h.nota || ''}</td>
+            <td><button type="button" class="caja-plat-edit" data-hist-id="${h.id}" title="Cambiar dónde está">${chipPlat(null)}</button></td>
+          </tr>`).join('')}</tbody>
+      </table>
+    </details>` : ''}`;
 
   el.querySelectorAll('[data-accion="migrar-plat"]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -5029,6 +5081,42 @@ function renderAvisoPlataforma(){
     });
   });
 }
+
+// Delegado UNA sola vez sobre #platMigrar -- a diferencia de los botones
+// "Todo a X" de arriba (que se reenganchan solos porque viven dentro del
+// innerHTML que renderAvisoPlataforma() reemplaza entero en cada render),
+// el <select> de edición de cada fila aparece DESPUÉS, al hacer click en
+// el chip, sin pasar por un re-render de renderAvisoPlataforma() -- así
+// que un listener puesto directo sobre él no llegaría a existir todavía.
+// Mismo patrón que el de movsDetailPanel más abajo.
+(function inicializarEdicionPlatCaja(){
+  const cont = document.getElementById('platMigrar');
+  if(!cont) return;
+  cont.addEventListener('click', (e) => {
+    const btnEdit = e.target.closest('.caja-plat-edit');
+    if(btnEdit){
+      const td = btnEdit.closest('td');
+      if(td) iniciarEdicionPlatCaja(td, Number(btnEdit.dataset.histId));
+      return;
+    }
+    const btnSave = e.target.closest('.caja-plat-save');
+    if(btnSave){
+      const td = btnSave.closest('td');
+      const sel = td && td.querySelector('.caja-edit-plat');
+      if(!sel) return;
+      reasignarPlataformaCaja(Number(btnSave.dataset.histId), sel.value || null);
+      renderAvisoPlataforma(); // vuelve a calcular la lista (esta fila puede haber desaparecido)
+      if(typeof renderCaja === 'function') renderCaja();
+      if(ambienteActivo === 'cartera' && typeof renderAmbienteCartera === 'function') renderAmbienteCartera();
+      return;
+    }
+    const btnCancel = e.target.closest('.caja-plat-cancel');
+    if(btnCancel){
+      renderAvisoPlataforma();
+      return;
+    }
+  });
+})();
 
 function renderMovimientos(){
   renderAvisoPlataforma();
@@ -5090,9 +5178,23 @@ function renderMovimientos(){
   if(!oculto){
     listEl.querySelectorAll('.mi-del').forEach(btn => {
       btn.addEventListener('click', () => {
-        movimientos = movimientos.filter(m => m.id !== Number(btn.dataset.id));
+        const id = Number(btn.dataset.id);
+        // Deshace el efecto en caja ANTES de borrar el movimiento -- si no,
+        // quedaba un monto fantasma en caja[moneda] (y en caja.plat, si ya
+        // tenía plataforma) que no correspondía a nada, y que después no
+        // había forma de encontrar para corregir (ver cajaHistorialSinPlat(),
+        // que ahora sí las encuentra a las que ya quedaron sueltas por esto).
+        const hist = (caja.historial || []).find(h => h.id === id);
+        if(hist){
+          caja[hist.moneda] = (caja[hist.moneda] || 0) - hist.monto;
+          if(esPlatValida(hist.plat)) caja.plat[hist.plat][hist.moneda] = (caja.plat[hist.plat][hist.moneda] || 0) - hist.monto;
+          caja.historial = caja.historial.filter(h => h.id !== id);
+          guardarCaja();
+        }
+        movimientos = movimientos.filter(m => m.id !== id);
         saveMovimientos(movimientos);
         renderMovimientos();
+        if(typeof renderCaja === 'function') renderCaja();
       });
     });
   }
@@ -6099,12 +6201,26 @@ function editarMovimiento(id, nuevaCantidad, nuevoPrecio){
 // nueva pero la columna "Caja" seguiría mostrando la vieja -- el mismo
 // tipo de descuadre que esta app evita en todos lados. Por eso se mueve
 // también el monto de esa entrada de caja.plat[vieja] a caja.plat[nueva].
+// Mueve el efecto en caja.plat de UNA entrada de caja.historial de una
+// plataforma a otra (o hacia/desde "sin asignar"), sin tocar caja[moneda]
+// (el total no cambia, solo el reparto). Comun a reasignarPlataformaMovimiento()
+// (cuando la entrada viene de un movimiento) y reasignarPlataformaCaja()
+// (cuando es un ingreso/retiro manual, o quedó huérfana de un movimiento
+// borrado -- ver el botón "Eliminar" de renderMovimientos()).
+function moverEfectoCajaPlat(hist, nuevoPlat){
+  const anterior = esPlatValida(hist.plat) ? hist.plat : null;
+  if(anterior === nuevoPlat) return false;
+  if(anterior) caja.plat[anterior][hist.moneda] = (caja.plat[anterior][hist.moneda] || 0) - hist.monto;
+  if(nuevoPlat) caja.plat[nuevoPlat][hist.moneda] = (caja.plat[nuevoPlat][hist.moneda] || 0) + hist.monto;
+  hist.plat = nuevoPlat;
+  return true;
+}
+
 function reasignarPlataformaMovimiento(id, nuevoPlat){
   const mov = movimientos.find(m => m.id === id);
   if(!mov) return false;
   nuevoPlat = esPlatValida(nuevoPlat) ? nuevoPlat : null;
-  const anterior = platDeMov(mov);
-  if(anterior === nuevoPlat) return true; // nada que cambiar
+  if(platDeMov(mov) === nuevoPlat) return true; // nada que cambiar
 
   mov.plat = nuevoPlat;
   saveMovimientos(movimientos);
@@ -6112,12 +6228,21 @@ function reasignarPlataformaMovimiento(id, nuevoPlat){
   // Cripto no lleva caja (ver aplicarMovimientoACaja) -- no hay nada que
   // corregir ahí, y por eso simplemente no habrá entrada en el historial.
   const hist = (caja.historial || []).find(h => h.id === id);
-  if(hist){
-    if(anterior) caja.plat[anterior][hist.moneda] = (caja.plat[anterior][hist.moneda] || 0) - hist.monto;
-    if(nuevoPlat) caja.plat[nuevoPlat][hist.moneda] = (caja.plat[nuevoPlat][hist.moneda] || 0) + hist.monto;
-    hist.plat = nuevoPlat;
-    guardarCaja();
-  }
+  if(hist && moverEfectoCajaPlat(hist, nuevoPlat)) guardarCaja();
+  return true;
+}
+
+// Igual que reasignarPlataformaMovimiento(), pero para una entrada de
+// caja.historial que NO viene de un movimiento vigente -- un ingreso o
+// retiro manual (registrarMovimientoCaja), o la que quedó huérfana al
+// borrar un movimiento antes de que "Eliminar" también limpiara la caja.
+// Ver el listado dentro de renderAvisoPlataforma() ("Ver el detalle de
+// esta caja sin repartir").
+function reasignarPlataformaCaja(histId, nuevoPlat){
+  const hist = (caja.historial || []).find(h => h.id === histId);
+  if(!hist) return false;
+  nuevoPlat = esPlatValida(nuevoPlat) ? nuevoPlat : null;
+  if(moverEfectoCajaPlat(hist, nuevoPlat)) guardarCaja();
   return true;
 }
 
