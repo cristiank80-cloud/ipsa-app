@@ -155,6 +155,70 @@
   /* Cantidad al lado del chip de plataforma: solo aparece cuando la
      posicion esta repartida en mas de una corredora. */
   .cartera-plat-q{font-size:9.5px; color:var(--ink-faint);}
+
+  /* ---- Tabla "Mi cartera, de una" (septiembre 2026) --------------------
+     Las tarjetas de abajo son para EDITAR (stop, favorita, sugerencia de la
+     media 50); esta tabla es para LEER. Por eso no tiene ni un solo campo:
+     mezclar leer y escribir en una fila de 11,5 px en el telefono es como se
+     cambia un stop sin querer. Tocar una fila baja a su tarjeta.
+     El prefijo tc- evita chocar con .up/.down globales, que traen fondo de
+     pildora y aca se verian como manchas dentro de la tabla. */
+  .tc-tit{display:flex; flex-wrap:wrap; gap:0 16px; align-items:baseline;
+          font-size:11.5px; color:var(--ink-faint); margin:0 0 8px;}
+  .tc-tit b{font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--ink); font-weight:600;}
+  .tc-tit .alto b{color:var(--copper);}
+  .tc-orden{display:flex; gap:5px; flex-wrap:wrap; margin:0 0 8px; align-items:center;}
+  .tc-orden .tc-orden-k{font-size:10px; color:var(--ink-faint);}
+  .tc-orden button{font-size:10px; padding:3px 9px; border-radius:11px; border:1px solid var(--hairline);
+                   background:var(--bg-panel); color:var(--ink-dim); cursor:pointer;
+                   font-family:'IBM Plex Sans',sans-serif;}
+  .tc-orden button.on{background:var(--gold); border-color:var(--gold); color:#fff; font-weight:600;}
+  .tc-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;
+             background:var(--bg-panel); border:1px solid var(--hairline); border-radius:8px;}
+  table.tc{border-collapse:separate; border-spacing:0; width:100%; font-size:11.5px;
+           font-variant-numeric:tabular-nums; white-space:nowrap;}
+  table.tc th, table.tc td{padding:6px 9px; border-bottom:1px solid var(--hairline); text-align:right;}
+  table.tc thead th{background:var(--bg-field); color:var(--ink-faint); font-size:9.5px; font-weight:600;
+                    letter-spacing:.06em; text-transform:uppercase; padding:7px 9px;}
+  table.tc thead th:first-child{text-align:left;}
+  /* La columna de la accion queda fija y el resto se corre con el dedo: sin
+     esto, en el telefono se pierde de vista de que fila son los numeros. */
+  table.tc thead th:first-child, table.tc tbody th{position:sticky; left:0; z-index:2;}
+  table.tc thead th:first-child{z-index:3;}
+  table.tc tbody th{background:var(--bg-panel); text-align:left; font-weight:400;
+                    border-left:3px solid transparent; cursor:pointer;}
+  table.tc tbody td{font-family:'IBM Plex Mono',monospace; color:var(--ink-dim);}
+  table.tc tbody tr:last-child th, table.tc tbody tr:last-child td{border-bottom:none;}
+  .tc-tk{display:block; font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:12px;
+         color:var(--ink); line-height:1.3;}
+  .tc-nm{display:block; font-size:9.5px; color:var(--ink-faint); line-height:1.35;}
+  table.tc td.tc-up{color:var(--verdigris);}
+  table.tc td.tc-down{color:var(--copper);}
+  table.tc td.tc-alto{color:var(--copper); font-weight:600;}
+  /* La franja de estado. Va con `table.tc tbody` adelante y NO como
+     `tr.tc-alta th` a secas: ese selector pierde por especificidad contra
+     `table.tc tbody th{border-left:3px solid transparent}` de arriba (misma
+     cantidad de clases, mas elementos), y las tres franjas quedaban
+     invisibles. */
+  table.tc tbody tr.tc-alta th{border-left-color:var(--copper);}
+  table.tc tbody tr.tc-media th{border-left-color:var(--gold);}
+  table.tc tbody tr.tc-ok th{border-left-color:var(--verdigris);}
+  tr.tc-total th, tr.tc-total td{background:var(--bg-field); color:var(--ink); font-weight:600;}
+  tr.tc-total .tc-tk{font-size:11px;}
+  .tc-leyenda{display:flex; flex-wrap:wrap; gap:3px 14px; font-size:10px; color:var(--ink-faint); margin:8px 2px 0;}
+  .tc-leyenda i{display:inline-block; width:9px; height:3px; border-radius:2px; margin-right:5px; vertical-align:2px;}
+  .tc-pie{font-size:10px; color:var(--ink-faint); margin:7px 2px 0; line-height:1.55;}
+  .cartera-row.tc-destacada{box-shadow:0 0 0 2px var(--gold);}
+
+  /* Resultado por plataforma: los dos numeros que ya vivian arriba de "Mis
+     movimientos", ahora tambien por corredora. Van SEPARADOS del desglose de
+     valor por una linea, porque no suman al total de la tarjeta -- si
+     estuvieran en la misma lista se leerian como una parte mas del total. */
+  .plat-res{margin-top:9px; padding-top:8px; border-top:1px solid var(--hairline);}
+  .plat-res-k{display:block; font-size:9px; letter-spacing:.08em; text-transform:uppercase;
+              color:var(--ink-faint); margin-bottom:4px;}
+  .plat-res b.pl-up{color:var(--verdigris);}
+  .plat-res b.pl-down{color:var(--copper);}
   /* Sugerencia de stop en la media 50 (regla 4 del metodo). Aparece SOLO
      cuando la media esta por encima del stop guardado: el stop sube o se
      queda, nunca baja, asi que una media que cayo no tiene nada que
@@ -7642,26 +7706,34 @@ function platformasHTML(portClp, portUsd, oculto, cambioOk){
   });
   let hayPrecioIncompleto = false;
 
+  // El valor de una posicion se reparte entre plataformas segun de donde vino
+  // cada titulo comprado, en proporcion a la cantidad neta. Es una
+  // aproximacion honesta: si compraste 10 en Racional y 5 en IBKR, el valor de
+  // hoy se parte 2/3 - 1/3. No hay forma de hacerlo exacto sin llevar lotes
+  // por plataforma, y eso es mucho aparato para lo que resuelve.
+  //
+  // Vive en su propia funcion desde que existe el bloque "Resultado": el valor
+  // y la ganancia sin realizar TIENEN que repartirse con la misma regla. Si
+  // cada uno usara la suya, la tarjeta mostraria el valor de una corredora y
+  // la ganancia de otra.
+  function repartoCompras(pos){
+    const comprado = {};
+    CLAVES.forEach(k => { comprado[k] = 0; });
+    let total = 0;
+    pos.compras.forEach(m => {
+      const k = platDeMov(m) || 'null';
+      comprado[k] += m.cantidad; total += m.cantidad;
+    });
+    return total > 0
+      ? CLAVES.map(k => [k, comprado[k] / total]).filter(([, f]) => f > 0)
+      : [['null', 1]];
+  }
+
   AMBITOS.forEach(a => {
     Object.values(a.port).forEach(pos => {
       if(pos.netoQ <= 0) return;
 
-      // El valor de una posicion se reparte entre plataformas segun de
-      // donde vino cada titulo comprado, en proporcion a la cantidad neta.
-      // Es una aproximacion honesta: si compraste 10 en Racional y 5 en
-      // IBKR, el valor de hoy se parte 2/3 - 1/3. No hay forma de hacerlo
-      // exacto sin llevar lotes por plataforma, y eso es mucho aparato
-      // para lo que resuelve.
-      const compradoPorPlat = {};
-      CLAVES.forEach(k => { compradoPorPlat[k] = 0; });
-      let compradoTotal = 0;
-      pos.compras.forEach(m => {
-        const k = platDeMov(m) || 'null';
-        compradoPorPlat[k] += m.cantidad; compradoTotal += m.cantidad;
-      });
-      const reparto = compradoTotal > 0
-        ? CLAVES.map(k => [k, compradoPorPlat[k] / compradoTotal]).filter(([, f]) => f > 0)
-        : [['null', 1]];
+      const reparto = repartoCompras(pos);
 
       // SIN PRECIO ≠ SIN NADA. Antes, una posición sin precio se descartaba
       // en silencio y la tarjeta terminaba diciendo "Sin nada registrado
@@ -7685,6 +7757,65 @@ function platformasHTML(portClp, portUsd, oculto, cambioOk){
     return partes.some(x => x === null) ? null : partes.reduce((a,b) => a+b, 0);
   };
 
+  // ---- RESULTADO POR PLATAFORMA (septiembre 2026, a pedido) --------------
+  // Los dos numeros que ya vivian arriba de "Mis movimientos" -- utilidad
+  // realizada y no realizada -- pero repartidos por corredora. La tarjeta ya
+  // contestaba "cuanto tengo aca"; le faltaba "y como me ha ido aca".
+  //
+  // SE REPARTEN CON REGLAS DISTINTAS, Y ESO ES A PROPOSITO:
+  //  * La NO realizada sigue el reparto de las COMPRAS, igual que el valor
+  //    (repartoCompras). Es ganancia sobre titulos que todavia estan ahi.
+  //  * La REALIZADA sigue el reparto de las VENTAS: esa plata entro por la
+  //    corredora donde se vendio. Repartirla por compras pondria la ganancia
+  //    en una cuenta donde nunca aterrizo el dinero.
+  //
+  // Se acumulan EN PESOS (los totales de la tarjeta ya son en pesos). Sin
+  // tipo de cambio, la parte en dolares simplemente no se suma -- la tarjeta
+  // ya avisa arriba que falta el tipo de cambio.
+  //
+  // Ojo: aca NO se filtra netoQ > 0. Una posicion vendida entera tiene
+  // netoQ 0 y es justamente donde vive la utilidad realizada.
+  const noRealizada = {}, realizada = {};
+  CLAVES.forEach(k => { noRealizada[k] = 0; realizada[k] = 0; });
+  AMBITOS.forEach(a => {
+    Object.values(a.port).forEach(pos => {
+      if(pos.netoQ > 0 && pos.utilidadNoRealizada !== null){
+        repartoCompras(pos).forEach(([k, f]) => {
+          const clp = enClp(pos.utilidadNoRealizada * f, a.moneda);
+          if(clp !== null) noRealizada[k] += clp;
+        });
+      }
+      if(pos.totalVendidoQ > 0 && Math.abs(pos.utilidadRealizada) > 0.005){
+        const vendido = {};
+        CLAVES.forEach(k => { vendido[k] = 0; });
+        pos.ventas.forEach(m => { vendido[platDeMov(m) || 'null'] += m.cantidad; });
+        CLAVES.forEach(k => {
+          if(vendido[k] <= 0) return;
+          const clp = enClp(pos.utilidadRealizada * (vendido[k] / pos.totalVendidoQ), a.moneda);
+          if(clp !== null) realizada[k] += clp;
+        });
+      }
+    });
+  });
+
+  // Un "+" explicito en las ganancias: fmtMoneda solo pone el menos, y
+  // "$12.345" al lado de "-$4.120" se lee como un saldo y no como un
+  // resultado. Con las cifras ocultas no se antepone nada, obviamente.
+  const fmtRes = (v) => oculto
+    ? fmtMoneda(v, oculto, 'CLP')
+    : (v >= 0 ? '+' : '') + fmtMoneda(v, oculto, 'CLP');
+  const resultadoHTML = (k) => {
+    const nr = noRealizada[k], re = realizada[k];
+    if(Math.abs(nr) < 0.5 && Math.abs(re) < 0.5) return '';
+    return `<div class="plat-res">
+      <span class="plat-res-k">Resultado en pesos</span>
+      <div class="plat-kv">
+        ${Math.abs(nr) >= 0.5 ? `<span>Sin realizar</span><b class="${nr >= 0 ? 'pl-up' : 'pl-down'}">${fmtRes(nr)}</b>` : ''}
+        ${Math.abs(re) >= 0.5 ? `<span>Realizada</span><b class="${re >= 0 ? 'pl-up' : 'pl-down'}">${fmtRes(re)}</b>` : ''}
+      </div>
+    </div>`;
+  };
+
   const tarjeta = (k) => {
     const esSin = k === 'null';
     const total = totalDe(k);
@@ -7706,6 +7837,7 @@ function platformasHTML(portClp, portUsd, oculto, cambioOk){
         ${sinPrecio[k].length ? `<span style="color:var(--copper);">Tienes ${sinPrecio[k].join(', ')}</span><b style="color:var(--copper);">sin precio hoy</b>` : ''}
         ${nada ? `<span style="color:var(--ink-faint);">Sin nada registrado todavía</span><b></b>` : ''}
       </div>
+      ${resultadoHTML(k)}
       ${esSin ? `<div style="font-size:10.5px; color:var(--copper); margin-top:8px; line-height:1.5;">
         Movimientos anteriores a que la app separara plataformas. Asígnalos desde
         "Mis movimientos" — hay un botón arriba de la lista.</div>` : ''}
@@ -8480,6 +8612,185 @@ let carteraBuscadorTuvoFoco = false;
 // solo Chile, o solo Cripto, sin que ocultar uno oculte los otros dos.
 let carteraListadoVisible = { chile: true, usa: true, cripto: true };
 
+// =========================================================================
+// TABLA "MI CARTERA, DE UNA"  (septiembre 2026, a pedido)
+// =========================================================================
+// Las 22 posiciones en una sola tabla: que tengo, donde esta, cuanto pesa y
+// cuanta plata pongo en juego. Antes esto solo se podia contestar bajando por
+// 22 tarjetas y sumando de cabeza.
+//
+// DECISIONES
+// ==========
+//  * UNA sola tabla, con Chile / EE.UU. / Cripto mezclados y la corredora
+//    como columna. El peso de una posicion se mide sobre el TOTAL (esa regla
+//    ya esta peleada en otra parte), asi que separar por pais obligaria a
+//    sumar tres tablas para saber si algo excede el tope del 15 %.
+//  * Valor, peso y "en juego" en PESOS, para poder sumarlos y compararlos;
+//    titulos, compra, hoy y stop en la moneda de cada papel. El stop de NVDA
+//    se escribe en dolares: verlo convertido a pesos no sirve para nada.
+//  * NO recalcula nada. Las filas salen enteras de calcularRiesgo(), que ya
+//    hace la conversion de moneda, el riesgo y la perdida hasta el stop; el
+//    color de la franja sale de estadoDeAccion(), que ya elige UN estado por
+//    accion con prioridad. Dos calculos del mismo numero es como la app
+//    termina avisando una cosa aca y otra alla.
+//  * Sin campos editables (ver el comentario del CSS).
+//  * Respeta "ocultar cifras" en la plata; los porcentajes se muestran igual,
+//    como en la pestaña Riesgo.
+//  * Una posicion sin precio hoy NO entra a la tabla y se nombra al pie. No
+//    saber cuanto vale no es lo mismo que valer cero.
+let carteraTablaOrden = 'peso';
+const TC_ORDENES = [
+  {k:'peso',   t:'peso'},
+  {k:'juego',  t:'en juego'},
+  {k:'gana',   t:'ganancia'},
+  {k:'riesgo', t:'riesgo'},
+  {k:'ticker', t:'ticker'},
+];
+
+function tablaCarteraHTML(){
+  const oculto = estaOculto();
+  const r = calcularRiesgo();
+  const sinPrecio = Array.from(new Set(r.sinPrecio || []));
+  const pieSinPrecio = sinPrecio.length
+    ? `<p class="tc-pie" style="color:var(--copper);">No entran ${sinPrecio.length} posición(es) sin precio hoy:
+       ${sinPrecio.join(', ')}. Los títulos están; lo que falta es cuánto valen.</p>` : '';
+
+  if(!r.filas.length){
+    return `<p class="cartera-empty">Todavía no hay posiciones con precio para armar la tabla.</p>${pieSinPrecio}`;
+  }
+
+  const tope = asignacion.maxPorPosicion;
+  const pct = (v) => fmtNum(v, 1) + '%';
+
+  const filas = r.filas.map(f => {
+    const est = estadoDeAccion(f.ticker);
+    const plats = platsDePosicion(f.pos);
+    return {
+      f,
+      peso: r.expTotal > 0 ? f.expClp / r.expTotal * 100 : 0,
+      delta: (f.costo > 0) ? (f.precio / f.costo - 1) * 100 : null,
+      urgencia: est ? est.urgencia : 'ok',
+      pendiente: est ? est.pendiente : '',
+      plats,
+    };
+  });
+
+  // "Sin stop" ordena ARRIBA de cualquier riesgo, no abajo: no tener piso es
+  // peor que tenerlo lejos, aunque su riesgoPct sea null.
+  const ordenar = {
+    peso:   (a,b) => b.f.expClp - a.f.expClp,
+    juego:  (a,b) => b.f.perdidaClp - a.f.perdidaClp,
+    gana:   (a,b) => (b.delta === null ? -Infinity : b.delta) - (a.delta === null ? -Infinity : a.delta),
+    riesgo: (a,b) => (b.f.riesgoPct === null ? Infinity : b.f.riesgoPct)
+                   - (a.f.riesgoPct === null ? Infinity : a.f.riesgoPct),
+    ticker: (a,b) => a.f.ticker.localeCompare(b.f.ticker),
+  }[carteraTablaOrden] || ((a,b) => b.f.expClp - a.f.expClp);
+  filas.sort(ordenar);
+
+  const salidas = filas.filter(x => x.urgencia === 'alta');
+  const sobre8  = filas.filter(x => x.urgencia !== 'alta' && x.f.riesgoPct !== null && x.f.riesgoPct > RIESGO_MAX_PCT);
+  const sinStop = filas.filter(x => x.f.stop === null);
+  const corredoras = new Set();
+  filas.forEach(x => x.plats.forEach(p => corredoras.add(p.id || 'sin')));
+  const riesgoTotalPct = r.expTotal > 0 ? r.perdidaTotal / r.expTotal * 100 : 0;
+
+  const cuerpo = filas.map(x => {
+    const f = x.f;
+    const clase = x.urgencia === 'alta' ? 'tc-alta' : (x.urgencia === 'media' ? 'tc-media' : 'tc-ok');
+    const chips = x.plats.length ? x.plats.map(p => chipPlat(p.id)).join(' ') : '';
+    return `<tr class="${clase}" data-tc-ticker="${f.ticker}" title="${(x.pendiente || '').replace(/"/g, '&quot;')}">
+      <th scope="row"><span class="tc-tk">${f.ticker}</span><span class="tc-nm">${chips}</span></th>
+      <td>${fmtCantidad(f.cantidad, f.mon, f.ticker)}</td>
+      <td>${fmtMoneda2(f.costo, f.mon)}</td>
+      <td>${fmtMoneda2(f.precio, f.mon)}</td>
+      <td class="${x.delta === null ? '' : (x.delta >= 0 ? 'tc-up' : 'tc-down')}">${
+        x.delta === null ? '—' : (x.delta >= 0 ? '+' : '') + pct(x.delta)}</td>
+      <td>${fmtMoneda(f.expClp, oculto, 'CLP')}</td>
+      <td class="${x.peso > tope ? 'tc-alto' : ''}">${pct(x.peso)}</td>
+      <td>${f.stop === null ? '—' : fmtMoneda2(f.stop, f.mon)}</td>
+      <td class="${(f.riesgoPct === null || f.riesgoPct > RIESGO_MAX_PCT) ? 'tc-alto' : ''}">${
+        f.riesgoPct === null ? 'sin stop' : pct(f.riesgoPct)}</td>
+      <td>${fmtMoneda(f.perdidaClp, oculto, 'CLP')}</td>
+    </tr>`;
+  }).join('');
+
+  const total = `<tr class="tc-total">
+      <th scope="row"><span class="tc-tk">${filas.length} posiciones</span>
+        <span class="tc-nm">${corredoras.size} corredora(s)</span></th>
+      <td>—</td><td>—</td><td>—</td><td>—</td>
+      <td>${fmtMoneda(r.expTotal, oculto, 'CLP')}</td>
+      <td>100%</td>
+      <td>—</td>
+      <td class="tc-alto">${pct(riesgoTotalPct)}</td>
+      <td class="tc-alto">${fmtMoneda(r.perdidaTotal, oculto, 'CLP')}</td>
+    </tr>`;
+
+  return `
+    <p class="tc-tit">
+      <span><b>${filas.length}</b> posiciones</span>
+      <span><b>${fmtMoneda(r.expTotal, oculto, 'CLP')}</b> en cartera</span>
+      <span class="alto"><b>${fmtMoneda(r.perdidaTotal, oculto, 'CLP')}</b> en juego · ${pct(riesgoTotalPct)}</span>
+      ${salidas.length ? `<span class="alto"><b>${salidas.length}</b> ${salidas.length === 1 ? 'salida' : 'salidas'}</span>` : ''}
+      ${sinStop.length ? `<span class="alto"><b>${sinStop.length}</b> sin stop</span>` : ''}
+      ${sobre8.length ? `<span><b>${sobre8.length}</b> con el stop sobre tu ${RIESGO_MAX_PCT}%</span>` : ''}
+    </p>
+    <div class="tc-orden"><span class="tc-orden-k">ordenar por</span>${
+      TC_ORDENES.map(o => `<button type="button" data-tc-orden="${o.k}"${
+        carteraTablaOrden === o.k ? ' class="on"' : ''}>${o.t}</button>`).join('')}</div>
+    <div class="tc-scroll">
+      <table class="tc">
+        <thead><tr>
+          <th scope="col">Acción · dónde</th>
+          <th scope="col">Títulos</th>
+          <th scope="col">Compra</th>
+          <th scope="col">Hoy</th>
+          <th scope="col">Gana</th>
+          <th scope="col">Valor CLP</th>
+          <th scope="col">Peso</th>
+          <th scope="col">Stop</th>
+          <th scope="col">Riesgo</th>
+          <th scope="col">En juego</th>
+        </tr></thead>
+        <tbody>${cuerpo}${total}</tbody>
+      </table>
+    </div>
+    <p class="tc-leyenda">
+      <span><i style="background:var(--copper);"></i>salida: tocó tu stop o cerró bajo su media 50</span>
+      <span><i style="background:var(--gold);"></i>hay algo que hacer con su stop</span>
+      <span><i style="background:var(--verdigris);"></i>en orden</span>
+    </p>
+    <p class="tc-pie">Valor, peso y "en juego" en pesos para poder sumarlos; títulos, compra, hoy y stop
+    en la moneda de cada papel. Rojo = sobre tus topes (${tope}% por posición, ${RIESGO_MAX_PCT}% de riesgo).
+    Toca una fila para bajar a su tarjeta.</p>
+    ${pieSinPrecio}`;
+}
+
+// Baja de la tabla a la tarjeta de esa accion. La fila puede no estar visible
+// (el buscador la filtro, o su grupo esta plegado): en ese caso se limpia el
+// filtro, se abren los tres grupos y se redibuja ANTES de buscarla de nuevo.
+// offsetParent === null es la prueba de que esta en el DOM pero escondida --
+// scrollIntoView sobre algo con display:none no hace nada y el toque se
+// sentiria como que el boton no responde.
+function irAFilaCartera(ticker){
+  const buscar = () => document.querySelector(`#carteraListadoWrap .cartera-row[data-ticker="${ticker}"]`);
+  let fila = buscar();
+  if(!fila || fila.offsetParent === null){
+    carteraFiltro = '';
+    carteraListadoVisible = { chile:true, usa:true, cripto:true };
+    renderAmbienteCartera();
+    fila = buscar();
+  }
+  if(!fila) return;
+  fila.scrollIntoView({behavior:'smooth', block:'center'});
+  fila.classList.add('tc-destacada');
+  setTimeout(() => { fila.classList.remove('tc-destacada'); }, 1800);
+  // En el telefono NO se enfoca el campo: el foco levanta el teclado y tapa
+  // justo la tarjeta a la que acabamos de bajar.
+  const finoElPuntero = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+  const inp = fila.querySelector('input[data-campo="baja"]');
+  if(inp && finoElPuntero) inp.focus({preventScroll:true});
+}
+
 function renderAmbienteCartera(){
   const viewEl = document.getElementById('viewCartera');
   if(!viewEl) return;
@@ -8734,6 +9045,8 @@ function renderAmbienteCartera(){
     <div data-sec-body="patrimonio">${patrimonioHTML(d)}</div>
     <p class="section-title section-title--con-btn">Dónde está tu plata ${btnSeccionHTML('plataformas', 'Dónde está tu plata')}</p>
     <div data-sec-body="plataformas">${platformasHTML(portClp, portUsd, oculto, cambioOk)}</div>
+    <p class="section-title section-title--con-btn">Mi cartera, de una ${btnSeccionHTML('cartera-tabla', 'la tabla')}</p>
+    <div data-sec-body="cartera-tabla">${tablaCarteraHTML()}</div>
     <p class="section-title">Favoritas y posiciones</p>
     <input type="text" id="carteraBuscador" class="cartera-buscador" placeholder="Buscar por ticker o nombre (Chile o EE.UU.)…" value="${carteraFiltro.replace(/"/g,'&quot;')}">
     <label class="cartera-toggle"><input type="checkbox" id="carteraMostrarTodas" ${carteraMostrarTodas ? 'checked' : ''}> Mostrar todas las acciones, no solo favoritas o con posición</label>
@@ -8769,6 +9082,18 @@ function renderAmbienteCartera(){
       renderAmbienteCartera();
     });
   });
+  // Tabla: los botones de orden y el toque en una fila. Se reenganchan en
+  // cada render porque el innerHTML de arriba reemplaza la tabla entera.
+  viewEl.querySelectorAll('[data-tc-orden]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      carteraTablaOrden = btn.dataset.tcOrden;
+      renderAmbienteCartera();
+    });
+  });
+  viewEl.querySelectorAll('[data-tc-ticker]').forEach(tr => {
+    tr.addEventListener('click', () => irAFilaCartera(tr.dataset.tcTicker));
+  });
+
   // Nombres de plataforma (Racional/Interactive Brokers/Buda.com editables
   // desde "Dónde está tu plata", ver platformasHTML()) -- vive acá ahora
   // que ese bloque se movió de "A seguir" a "Mi Cartera".
@@ -8894,6 +9219,10 @@ function calcularRiesgo(){
       }
       filas.push({ticker:p.ticker, mon, expClp, stop, riesgoPct, perdidaClp,
                   precio:p.precioActual, cantidad:p.netoQ,
+                  // costo y pos los agrega la tabla de Mi Cartera (necesita
+                  // el precio de compra y las plataformas). La pestaña Riesgo
+                  // los ignora; agregar campos no le cambia nada.
+                  costo:p.costoPromedio, pos:p,
                   sector:sectorDe(p.ticker), industria:industriaDe(p.ticker),
                   etfAmplio:esEtfAmplio(p.ticker)});
     });
