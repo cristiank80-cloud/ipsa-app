@@ -187,6 +187,10 @@
                    background:var(--bg-panel); color:var(--ink-dim); cursor:pointer;
                    font-family:'IBM Plex Sans',sans-serif;}
   .tc-orden button.on{background:var(--gold); border-color:var(--gold); color:#fff; font-weight:600;}
+  /* El de Excel no es una opción de orden: se separa a la derecha para que no
+     se lea como una píldora más de la misma fila. */
+  .tc-orden button.tc-xls{margin-left:auto; color:var(--verdigris); border-color:var(--verdigris);}
+  .tc-orden button.tc-xls:hover{background:var(--verdigris-soft);}
   .tc-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;
              background:var(--bg-panel); border:1px solid var(--hairline); border-radius:8px;}
   table.tc{border-collapse:separate; border-spacing:0; width:100%; font-size:11.5px;
@@ -347,6 +351,10 @@
   .cargando::after{content:' …'; color:var(--gold);}
   .expl-alert-meta{display:flex; gap:14px; flex-wrap:wrap; font-size:11px; color:var(--ink-dim);}
   .expl-alert-meta b{color:var(--gold);}
+  .expl-xls{margin-top:10px; font-size:10.5px; padding:4px 10px; border-radius:12px;
+            background:var(--bg-panel); border:1px solid var(--verdigris); color:var(--verdigris);
+            cursor:pointer; font-family:'IBM Plex Sans',sans-serif;}
+  .expl-xls:hover{background:var(--verdigris-soft);}
   .expl-tags{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;}
   .expl-tag{font-size:10.5px; font-weight:600; padding:3px 9px; border-radius:20px; background:var(--bg-panel); border:1px solid var(--hairline); color:var(--ink-dim);}
   .expl-section-title{font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--gold); margin:20px 0 10px; border-bottom:1px solid var(--hairline); padding-bottom:6px;}
@@ -1265,6 +1273,7 @@
     <div class="portfolio-actions">
       <button id="btnExportarMovs" class="mov-btn" style="background:none; color:var(--ink-dim); border-color:var(--hairline);" title="Descarga un archivo con movimientos, caja, asignación/tesis, favoritos y W-8BEN de los dos ambientes">⬇️ Respaldar todo</button>
       <button id="btnImportarMovs" class="mov-btn" style="background:none; color:var(--ink-dim); border-color:var(--hairline);" title="Reemplaza TODOS los datos guardados en este dispositivo con el contenido del archivo">⬆️ Restaurar todo</button>
+      <button id="btnMovsExcel" class="mov-btn" style="background:none; color:var(--ink-dim); border-color:var(--hairline);" title="Descarga tus movimientos como planilla de Excel (.xlsx) para mirarlos fuera de la app — no reemplaza al respaldo, que es el que sirve para restaurar">⬇️ Excel</button>
       <input type="file" id="inputImportarMovs" accept="application/json" style="display:none;">
       <button id="btnSync" class="mov-btn" style="background:none; color:var(--ink-dim); border-color:var(--hairline);" title="Sincroniza tu cartera con tu otro dispositivo (cifrada, en un repo privado de GitHub). Doble clic para reconfigurar.">⇄ Sincronizar</button>
     </div>
@@ -7377,6 +7386,14 @@ const EXPL_UMBRALES_DEF = {precio:10, volM:2, capB:2, crecimiento:25, score:6};
 let explUmbrales = cargarExplUmbrales();
 let explFiltros = cargarExplFiltros();   // qué etapas están encendidas
 let explPaso = 0;                        // 0 = la alerta (el resultado), ver PASOS
+// Las dos listas del ultimo panel dibujado, para el boton de Excel.
+// NO se puede resolver con un closure: el HTML del panel lo arma una funcion
+// y los listeners se enganchan en OTRA (renderAmbienteExplorar), donde
+// `finales` y `mano` no existen. Enganchar el boton con esas variables
+// compila igual y revienta recien al tocarlo, que es la peor forma de
+// fallar. Se guardan aca, junto al paso activo, que es el otro estado de
+// pantalla de este ambiente.
+let _explListas = {finales: [], mano: []};
 let explCaidosAbiertos = {};             // qué etapas del embudo están desplegadas
 let explVerTodo = {};                    // '<etapa>|pasan' / '<etapa>|caen' -> mostrar la lista completa
 let explGrupoAbierto = null;             // 'sector|Tecnología' | 'industria|Semiconductores' | null
@@ -7884,6 +7901,8 @@ function explorarResultadoHTML(analisis){
          ${embudo.rotacionMercado ? `<span title="El resto del mercado (fuera del núcleo) se cubre de a poco, corrida tras corrida: hoy le tocó desde este punto de esa lista, y mañana empieza en otro. No queda guardado en ningún lado -- se calcula solo con la fecha de hoy, así que no depende de que el servidor siga prendido entre corridas. Con el paso de hoy, una vuelta completa toma ~${embudo.rotacionMercado.periodoDias} días.">Resto del mercado hoy: <b>desde el ${embudo.rotacionMercado.offsetHoy}/${embudo.rotacionMercado.totalResto}</b> · vuelta en ~${embudo.rotacionMercado.periodoDias}d</span>` : ''}
        </div>
        ${(a.sectoresFuertes && a.sectoresFuertes.length) ? `<div class="expl-tags">${a.sectoresFuertes.map(s=>`<span class="expl-tag">${s.replace(/</g,'&lt;')}</span>`).join('')}</div>` : ''}
+       ${(finales.length || mano.length) ? `<button type="button" class="expl-xls" data-expl-excel
+          title="Descarga estas mismas listas como planilla de Excel (.xlsx), con los umbrales que tienes puestos ahora">⬇ Excel</button>` : ''}
      </div>
      ${finales.length ? finales.map(tarjetaDe).join('')
        : embudoCortado
@@ -7939,6 +7958,9 @@ function explorarResultadoHTML(analisis){
      ${mano.length ? mano.map(c => explorarTarjetaHTML(c, 'mano')).join('') : '<p class="expl-empty">Ninguna esta vez.</p>'}`,
   ];
 
+  // Lo que quedo en pantalla, para que "⬇ Excel" exporte exactamente esto.
+  _explListas = {finales, mano};
+
   return `
     ${avisoDatos}
     ${riel}
@@ -7957,6 +7979,62 @@ function explorarResultadoHTML(analisis){
       ${notas.length ? `<ul style="font-size:11px; color:var(--ink-faint); line-height:1.6; margin:8px 0 0; padding-left:16px;">${notas.map(n=>`<li>${n.replace(/</g,'&lt;')}</li>`).join('')}</ul>` : ''}
     </details>
   `;
+}
+
+// ---- Explorar a Excel ---------------------------------------------------
+// Exporta lo que estás viendo, no la corrida cruda del servidor: las
+// candidatas salen del embudo REHECHO en el teléfono con tus umbrales, así
+// que si moviste un control, la planilla trae esa lista y no otra.
+//
+// Dos hojas, porque son dos listas con significados distintos: "Candidatas"
+// pasó todo, y "A mano" pasó lo técnico pero le falta un dato que Yahoo no
+// entregó -- por eso lleva su columna "Le falta". Juntarlas en una sola hoja
+// haría parecer que un "no se sabe" es un "no cumple", que es justo lo que
+// esta app evita en todos lados.
+function exportarExplorarExcel(finales, mano){
+  if(!finales.length && !mano.length){ alert('No hay candidatas que exportar todavía.'); return; }
+  const hojas = [];
+  if(finales.length){
+    const filas = [['Ticker', 'Nombre', 'Sector', 'Industria', 'Precio USD', 'Media 50',
+                    'Cap. B', 'Crec. BPA %', 'Crec. ventas %', 'Volumen 90d M',
+                    'Fase', 'Confirmaciones', 'Score', 'Fuerza relativa subiendo', 'TradingView']];
+    finales.forEach(x => filas.push([
+      x.t, x.n || '', x.se || '', x['in'] || '',
+      typeof x.p === 'number' ? x.p : null,
+      typeof x.c50 === 'number' ? x.c50 : null,
+      typeof x.cB === 'number' ? x.cB : null,
+      typeof x.gB === 'number' ? x.gB : null,
+      typeof x.gV === 'number' ? x.gV : null,
+      typeof x.v === 'number' ? x.v : null,
+      typeof x.f === 'number' ? x.f : null,
+      typeof x.cf === 'number' ? x.cf : null,
+      typeof x.sc === 'number' ? x.sc : null,
+      x.fr === 1 ? 'si' : (x.fr === 0 ? 'no' : ''),
+      `https://www.tradingview.com/symbols/${x.t}/`,
+    ]));
+    hojas.push({nombre: 'Candidatas', filas});
+  }
+  if(mano.length){
+    const filas = [['Ticker', 'Nombre', 'Sector', 'Industria', 'Precio USD', 'Media 50',
+                    'Cap. B', 'Crec. BPA %', 'Crec. ventas %', 'Volumen 90d M',
+                    'Fase', 'Confirmaciones', 'Score', 'Le falta', 'TradingView']];
+    mano.forEach(c => filas.push([
+      c.ticker, c.nombre || '', c.sector || '', c.industria || '',
+      typeof c.precio === 'number' ? c.precio : null,
+      typeof c.sma50 === 'number' ? c.sma50 : null,
+      typeof c.capB === 'number' ? c.capB : null,
+      typeof c.crecBpa === 'number' ? c.crecBpa : null,
+      typeof c.crecVentas === 'number' ? c.crecVentas : null,
+      typeof c.volM === 'number' ? c.volM : null,
+      typeof c.fase === 'number' ? c.fase : null,
+      typeof c.confirmaciones === 'number' ? c.confirmaciones : null,
+      typeof c.score === 'number' ? c.score : null,
+      (c.faltan || []).join(', '),
+      c.tradingview || `https://www.tradingview.com/symbols/${c.ticker}/`,
+    ]));
+    hojas.push({nombre: 'A mano', filas});
+  }
+  descargarXlsx(`ipsa-explorar-${_hoyArchivo()}.xlsx`, hojas);
 }
 
 function renderAmbienteExplorar(){
@@ -8077,6 +8155,13 @@ function renderAmbienteExplorar(){
     inp.addEventListener('change', aplicar);
     inp.addEventListener('input', aplicar);
   });
+
+  // _explListas se llena al armar el panel, un instante antes de esto: si
+  // mueves un umbral, la pantalla se redibuja entera y el botón exporta la
+  // lista nueva.
+  const btnExplXls = viewEl.querySelector('[data-expl-excel]');
+  if(btnExplXls) btnExplXls.addEventListener('click',
+    () => exportarExplorarExcel(_explListas.finales, _explListas.mano));
 
   const btnReset = viewEl.querySelector('[data-accion="exp-reset"]');
   if(btnReset) btnReset.addEventListener('click', () => {
@@ -9130,20 +9215,14 @@ const TC_ORDENES = [
   {k:'ticker', t:'ticker'},
 ];
 
-function tablaCarteraHTML(){
-  const oculto = estaOculto();
+// Las filas de la tabla, ya ordenadas. Vive aparte de tablaCarteraHTML()
+// porque el botón de Excel exporta EXACTAMENTE lo que estás viendo -- mismo
+// contenido y mismo orden. Si el Excel armara su propia lista, bastaría
+// tocar una de las dos para que la planilla y la pantalla dejaran de
+// coincidir, y esa diferencia no se nota hasta que ya la mandaste a alguien.
+function datosTablaCartera(){
   const r = calcularRiesgo();
-  const sinPrecio = Array.from(new Set(r.sinPrecio || []));
-  const pieSinPrecio = sinPrecio.length
-    ? `<p class="tc-pie" style="color:var(--copper);">No entran ${sinPrecio.length} posición(es) sin precio hoy:
-       ${sinPrecio.join(', ')}. Los títulos están; lo que falta es cuánto valen.</p>` : '';
-
-  if(!r.filas.length){
-    return `<p class="cartera-empty">Todavía no hay posiciones con precio para armar la tabla.</p>${pieSinPrecio}`;
-  }
-
   const tope = asignacion.maxPorPosicion;
-  const pct = (v) => fmtNum(v, 1) + '%';
 
   const filas = r.filas.map(f => {
     const est = estadoDeAccion(f.ticker);
@@ -9181,6 +9260,85 @@ function tablaCarteraHTML(){
     ticker: (a,b) => a.f.ticker.localeCompare(b.f.ticker),
   }[carteraTablaOrden] || ((a,b) => b.f.expClp - a.f.expClp);
   filas.sort(ordenar);
+  return {r, filas, tope};
+}
+
+
+// ---- La tabla de Mi Cartera a Excel ------------------------------------
+// Mas columnas que la pantalla (nombre, ámbito, valor en su moneda, estado y
+// el pendiente en palabras): en la planilla el ancho no cuesta nada, y esas
+// columnas son justo las que sirven para filtrar y ordenar fuera de la app.
+//
+// La plata va SIN simbolo y los porcentajes como numero (8,4 y no "8,4%"):
+// asi Excel los suma. El simbolo es formato, y el formato lo pone Excel.
+// "Ocultar cifras" NO se respeta acá a proposito: si pediste la planilla es
+// porque quieres los numeros; taparlos daria un archivo inservible lleno de
+// puntitos.
+function exportarCarteraExcel(){
+  const {r, filas, tope} = datosTablaCartera();
+  if(!filas.length){ alert('Todavía no hay posiciones con precio para exportar.'); return; }
+  const cab = [
+    'Accion', 'Nombre', 'Corredora', 'Ambito', 'Moneda', 'Titulos',
+    'Precio compra', 'Precio hoy', 'Gana %', 'Valor moneda', 'Valor CLP', 'Peso %',
+    'Sobre tope ' + tope + '%', 'Stop', 'Riesgo %', 'Sobre tu ' + RIESGO_MAX_PCT + '%',
+    'En juego CLP', 'Estado', 'Pendiente',
+  ];
+  const filasXls = [cab];
+  filas.forEach(x => {
+    const f = x.f;
+    filasXls.push([
+      f.ticker,
+      f.pos && f.pos.nombre ? f.pos.nombre : '',
+      x.plats.length ? x.plats.map(p => p.id ? nombrePlat(p.id) : 'Sin asignar').join(' + ') : 'Sin asignar',
+      (typeof ambitoDeTicker === 'function' ? ambitoDeTicker(f.ticker) : ''),
+      f.mon,
+      f.cantidad,
+      f.costo || null,
+      f.precio,
+      x.delta === null ? null : Math.round(x.delta * 10) / 10,
+      Math.round(f.precio * f.cantidad * 100) / 100,
+      Math.round(f.expClp),
+      Math.round(x.peso * 10) / 10,
+      x.peso > tope ? 'SI' : '',
+      f.stop === null ? null : f.stop,
+      f.riesgoPct === null ? null : Math.round(f.riesgoPct * 10) / 10,
+      f.riesgoPct === null ? 'sin stop' : (f.riesgoPct > RIESGO_MAX_PCT ? 'SI' : ''),
+      Math.round(f.perdidaClp),
+      x.urgencia === 'alta' ? 'Salida' : (x.urgencia === 'media' ? 'Revisar el stop' : 'En orden'),
+      x.pendiente || '',
+    ]);
+  });
+  // La fila de totales va en la planilla igual que en la pantalla, pero solo
+  // en las columnas que de verdad se pueden sumar: los precios y los
+  // porcentajes de cada fila no se suman entre si.
+  filasXls.push([]);
+  filasXls.push([
+    'TOTAL', filas.length + ' posiciones', '', '', '', null, null, null, null, null,
+    Math.round(r.expTotal), 100, '', null,
+    r.expTotal > 0 ? Math.round(r.perdidaTotal / r.expTotal * 1000) / 10 : null, '',
+    Math.round(r.perdidaTotal), '', '',
+  ]);
+  const sinPrecio = Array.from(new Set(r.sinPrecio || []));
+  if(sinPrecio.length){
+    filasXls.push([]);
+    filasXls.push(['No entran (sin precio hoy)', sinPrecio.join(', ')]);
+  }
+  descargarXlsx(`ipsa-cartera-${_hoyArchivo()}.xlsx`, [{nombre: 'Posiciones', filas: filasXls}]);
+}
+
+function tablaCarteraHTML(){
+  const oculto = estaOculto();
+  const {r, filas, tope} = datosTablaCartera();
+  const sinPrecio = Array.from(new Set(r.sinPrecio || []));
+  const pieSinPrecio = sinPrecio.length
+    ? `<p class="tc-pie" style="color:var(--copper);">No entran ${sinPrecio.length} posición(es) sin precio hoy:
+       ${sinPrecio.join(', ')}. Los títulos están; lo que falta es cuánto valen.</p>` : '';
+
+  if(!r.filas.length){
+    return `<p class="cartera-empty">Todavía no hay posiciones con precio para armar la tabla.</p>${pieSinPrecio}`;
+  }
+
+  const pct = (v) => fmtNum(v, 1) + '%';
 
   const salidas = filas.filter(x => x.urgencia === 'alta');
   const sobre8  = filas.filter(x => x.urgencia !== 'alta' && x.f.riesgoPct !== null && x.f.riesgoPct > RIESGO_MAX_PCT);
@@ -9231,7 +9389,8 @@ function tablaCarteraHTML(){
     </p>
     <div class="tc-orden"><span class="tc-orden-k">ordenar por</span>${
       TC_ORDENES.map(o => `<button type="button" data-tc-orden="${o.k}"${
-        carteraTablaOrden === o.k ? ' class="on"' : ''}>${o.t}</button>`).join('')}</div>
+        carteraTablaOrden === o.k ? ' class="on"' : ''}>${o.t}</button>`).join('')}
+      <button type="button" class="tc-xls" data-tc-excel title="Descarga esta misma tabla como planilla de Excel (.xlsx), en el orden en que la tienes ahora">⬇ Excel</button></div>
     <div class="tc-scroll">
       <table class="tc">
         <thead><tr>
@@ -9645,6 +9804,8 @@ function renderAmbienteCartera(){
       renderAmbienteCartera();
     });
   });
+  const btnXls = viewEl.querySelector('[data-tc-excel]');
+  if(btnXls) btnXls.addEventListener('click', exportarCarteraExcel);
   viewEl.querySelectorAll('[data-tc-ticker]').forEach(tr => {
     tr.addEventListener('click', () => irAFilaCartera(tr.dataset.tcTicker));
   });
@@ -11205,6 +11366,213 @@ function construirRespaldoUnificado(){
   };
 }
 
+// =========================================================================
+// EXCEL (.xlsx) SIN LIBRERIAS  (septiembre 2026, a pedido)
+// =========================================================================
+// Genera un .xlsx DE VERDAD -- no un CSV con otra extension, ni una tabla
+// HTML disfrazada de Excel. Los tres motivos:
+//
+//  * Excel lo abre con doble clic y SIN el cartel de "el formato del archivo
+//    no coincide con la extension", que es lo que sale con los otros dos
+//    trucos y que hace dudar de si el archivo esta bueno.
+//  * Los numeros llegan como NUMEROS y se pueden sumar. En un CSV,
+//    "$1.960.025" es texto; y si el CSV lleva coma decimal, un Excel en
+//    ingles lo lee mal. El XML del xlsx guarda SIEMPRE punto decimal y cada
+//    Excel lo muestra en el formato de su idioma. Por eso las columnas de
+//    plata van sin simbolo y los porcentajes como numero: el simbolo es
+//    formato, y el formato lo pone Excel.
+//  * Sin dependencias. La app es una PWA que tiene que abrir sin internet;
+//    un <script src="...cdn..."> la dejaria a merced de una CDN ajena.
+//
+// Un .xlsx es un ZIP con XML adentro. Se arma con compresion STORE (o sea,
+// sin comprimir): el archivo son unos pocos KB y asi no hay que implementar
+// deflate a mano. Excel, LibreOffice y Google Sheets lo abren igual.
+let _crcTabla = null;
+function _crc32(buf){
+  if(!_crcTabla){
+    _crcTabla = new Uint32Array(256);
+    for(let n = 0; n < 256; n++){
+      let c = n;
+      for(let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      _crcTabla[n] = c >>> 0;
+    }
+  }
+  let c = 0xFFFFFFFF;
+  for(let i = 0; i < buf.length; i++) c = _crcTabla[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function _zipStore(archivos){
+  const enc = new TextEncoder();
+  const u16 = (n) => [n & 0xFF, (n >>> 8) & 0xFF];
+  const u32 = (n) => [n & 0xFF, (n >>> 8) & 0xFF, (n >>> 16) & 0xFF, (n >>> 24) & 0xFF];
+  const partes = [], central = [];
+  let offset = 0;
+
+  archivos.forEach(f => {
+    const nombre = enc.encode(f.nombre);
+    const datos = enc.encode(f.texto);
+    const crc = _crc32(datos);
+    const cab = new Uint8Array([].concat(
+      u32(0x04034b50), u16(20), u16(0), u16(0), u16(0), u16(0),
+      u32(crc), u32(datos.length), u32(datos.length), u16(nombre.length), u16(0)));
+    partes.push(cab, nombre, datos);
+    central.push({nombre, crc, tam: datos.length, offset});
+    offset += cab.length + nombre.length + datos.length;
+  });
+
+  const dirInicio = offset;
+  central.forEach(e => {
+    const cab = new Uint8Array([].concat(
+      u32(0x02014b50), u16(20), u16(20), u16(0), u16(0), u16(0), u16(0),
+      u32(e.crc), u32(e.tam), u32(e.tam),
+      u16(e.nombre.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(e.offset)));
+    partes.push(cab, e.nombre);
+    offset += cab.length + e.nombre.length;
+  });
+
+  partes.push(new Uint8Array([].concat(
+    u32(0x06054b50), u16(0), u16(0), u16(central.length), u16(central.length),
+    u32(offset - dirInicio), u32(dirInicio), u16(0))));
+
+  return new Blob(partes, {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
+// Los caracteres de control no son XML valido: si se cuela uno (pegado desde
+// otra app en una nota, por ejemplo) Excel dice que el archivo esta dañado y
+// no abre NADA. Se sacan acá, no en cada llamador.
+function _xmlEsc(s){
+  return String(s)
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+function _colLetra(n){
+  let s = '';
+  while(n > 0){ const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); }
+  return s;
+}
+
+// filas = arreglo de arreglos. Numero -> celda numerica; texto -> celda de
+// texto; null/'' -> celda vacia (no un cero, que se sumaria).
+function _hojaXml(filas){
+  const anchos = [];
+  filas.forEach(fila => fila.forEach((c, i) => {
+    const t = (c === null || c === undefined) ? '' : String(c);
+    anchos[i] = Math.max(anchos[i] || 9, Math.min(40, t.length + 2));
+  }));
+  const cols = anchos.map((w, i) => `<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('');
+  const cuerpo = filas.map((fila, fi) => {
+    const celdas = fila.map((c, ci) => {
+      if(c === null || c === undefined || c === '') return '';
+      const ref = _colLetra(ci + 1) + (fi + 1);
+      const estilo = fi === 0 ? ' s="1"' : '';   // fila 1 = encabezados, en negrita
+      if(typeof c === 'number' && isFinite(c)) return `<c r="${ref}"${estilo}><v>${c}</v></c>`;
+      return `<c r="${ref}"${estilo} t="inlineStr"><is><t xml:space="preserve">${_xmlEsc(c)}</t></is></c>`;
+    }).join('');
+    return `<row r="${fi+1}">${celdas}</row>`;
+  }).join('');
+  // La primera fila queda congelada: con 22 posiciones y 17 columnas, sin
+  // esto se pierde de vista que columna es cual apenas bajas.
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`
+    + `<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
+    + `<sheetViews><sheetView workbookViewId="0">`
+    + `<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>`
+    + `</sheetView></sheetViews>`
+    + `<cols>${cols}</cols><sheetData>${cuerpo}</sheetData></worksheet>`;
+}
+
+// hojas = [{nombre, filas}]. Descarga por el MISMO camino que "Respaldar
+// todo" (Blob + <a download>), que ya funciona en el telefono de Cristian.
+function descargarXlsx(nombreArchivo, hojas){
+  const NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+  const CT = 'application/vnd.openxmlformats-officedocument.spreadsheetml';
+  const limpiar = (s, i) => (String(s || '').replace(/[\[\]:*?\/\\]/g, ' ').trim().slice(0, 31)) || `Hoja${i+1}`;
+
+  const archivos = [
+    {nombre: '[Content_Types].xml', texto:
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`
+      + `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">`
+      + `<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>`
+      + `<Default Extension="xml" ContentType="application/xml"/>`
+      + `<Override PartName="/xl/workbook.xml" ContentType="${CT}.sheet.main+xml"/>`
+      + hojas.map((hh, i) => `<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="${CT}.worksheet+xml"/>`).join('')
+      + `<Override PartName="/xl/styles.xml" ContentType="${CT}.styles+xml"/></Types>`},
+    {nombre: '_rels/.rels', texto:
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`
+      + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`
+      + `<Relationship Id="rId1" Type="${NS}/officeDocument" Target="xl/workbook.xml"/></Relationships>`},
+    {nombre: 'xl/workbook.xml', texto:
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`
+      + `<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="${NS}"><sheets>`
+      + hojas.map((hh, i) => `<sheet name="${_xmlEsc(limpiar(hh.nombre, i))}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')
+      + `</sheets></workbook>`},
+    {nombre: 'xl/_rels/workbook.xml.rels', texto:
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`
+      + `<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">`
+      + hojas.map((hh, i) => `<Relationship Id="rId${i+1}" Type="${NS}/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')
+      + `<Relationship Id="rId${hojas.length+1}" Type="${NS}/styles" Target="styles.xml"/></Relationships>`},
+    {nombre: 'xl/styles.xml', texto:
+      `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`
+      + `<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
+      + `<fonts count="2"><font><sz val="11"/><name val="Calibri"/></font>`
+      + `<font><b/><sz val="11"/><name val="Calibri"/></font></fonts>`
+      + `<fills count="2"><fill><patternFill patternType="none"/></fill>`
+      + `<fill><patternFill patternType="gray125"/></fill></fills>`
+      + `<borders count="1"><border/></borders>`
+      + `<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>`
+      + `<cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>`
+      + `<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs></styleSheet>`},
+  ].concat(hojas.map((hh, i) => ({nombre: `xl/worksheets/sheet${i+1}.xml`, texto: _hojaXml(hh.filas)})));
+
+  const url = URL.createObjectURL(_zipStore(archivos));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nombreArchivo;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function _hoyArchivo(){ return new Date().toISOString().slice(0, 10); }
+
+// ---- Mis movimientos a Excel -------------------------------------------
+// El respaldo JSON sirve para RESTAURAR la app; esto sirve para MIRAR el
+// historial fuera de ella (declaración de impuestos, cuadrar con la
+// cartola de la corredora). Son dos cosas distintas y por eso son dos
+// botones, no uno con opciones.
+function exportarMovimientosExcel(){
+  const filas = [[
+    'Fecha', 'Ticker', 'Nombre', 'Tipo', 'Ambito', 'Moneda', 'Corredora',
+    'Cantidad', 'Precio', 'Comision', 'Monto dividendo', 'Total operacion',
+  ]];
+  const orden = movimientos.slice().sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
+  orden.forEach(m => {
+    const s = todosLosStocks().find(x => x.ticker === m.ticker);
+    const mon = monedaDeMov(m);
+    const com = m.comision || 0;
+    // "Total operacion" con el signo del flujo real de caja: una compra sale
+    // (negativo), una venta y un dividendo entran (positivo). Asi la columna
+    // se puede sumar directo en Excel y da lo que movio la caja.
+    let total = null;
+    if(m.tipo === 'dividendo') total = m.monto;
+    else if(m.tipo === 'compra') total = -(m.cantidad * m.precio + com);
+    else total = m.cantidad * m.precio - com;
+    filas.push([
+      m.fecha || '', m.ticker, s ? s.name : '', m.tipo,
+      (typeof ambitoDeMov === 'function' ? ambitoDeMov(m) : ''), mon,
+      esPlatValida(m.plat) ? nombrePlat(m.plat) : 'Sin asignar',
+      m.tipo === 'dividendo' ? null : m.cantidad,
+      m.tipo === 'dividendo' ? null : m.precio,
+      com || null,
+      m.tipo === 'dividendo' ? m.monto : null,
+      total,
+    ]);
+  });
+  descargarXlsx(`ipsa-movimientos-${_hoyArchivo()}.xlsx`, [{nombre: 'Movimientos', filas}]);
+}
+
 function exportarMovimientos(){
   const datos = construirRespaldoUnificado();
   const blob = new Blob([JSON.stringify(datos, null, 2)], {type:'application/json'});
@@ -11497,6 +11865,8 @@ function inicializarPortafolio(){
     if(movsOverlay.classList.contains('open')) renderMovsDetailPanel();
   });
   document.getElementById('btnExportarMovs').addEventListener('click', exportarMovimientos);
+  const btnMovsXls = document.getElementById('btnMovsExcel');
+  if(btnMovsXls) btnMovsXls.addEventListener('click', exportarMovimientosExcel);
   document.getElementById('btnImportarMovs').addEventListener('click', () => document.getElementById('inputImportarMovs').click());
   document.getElementById('inputImportarMovs').addEventListener('change', (e) => {
     if(e.target.files[0]) importarMovimientos(e.target.files[0]);
