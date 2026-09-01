@@ -144,6 +144,17 @@
   .cartera-campo-baja-wrap .cartera-campo.baja{flex:none; width:100%;}
   .cartera-riesgo{font-size:10px; color:var(--ink-faint); padding-left:2px;}
   .cartera-riesgo--alto{color:var(--copper); font-weight:600;}
+  /* La PLATA del riesgo, ancho completo y bajo los dos campos: "58,5%" no
+     dice si son mil pesos o un millon, y "supera tu maximo de 8%" no dice
+     donde tendria que ir el stop para no superarlo. Va fuera de
+     .cartera-alertas a proposito -- en la mitad derecha (que mide la mitad
+     de la fila) esta linea quedaria en cuatro renglones en celular. */
+  .cartera-riesgo-monto{font-size:10px; color:var(--ink-faint); line-height:1.5; margin-top:5px;}
+  .cartera-riesgo-monto b{color:var(--ink-dim); font-weight:600;}
+  .cartera-riesgo-monto b.crm-stop{color:var(--copper);}
+  /* Cantidad al lado del chip de plataforma: solo aparece cuando la
+     posicion esta repartida en mas de una corredora. */
+  .cartera-plat-q{font-size:9.5px; color:var(--ink-faint);}
   /* Sugerencia de stop en la media 50 (regla 4 del metodo). Aparece SOLO
      cuando la media esta por encima del stop guardado: el stop sube o se
      queda, nunca baja, asi que una media que cayo no tiene nada que
@@ -6277,6 +6288,36 @@ function chipPlat(id){
   const clase = esPlatValida(id) ? 'plat-' + id : 'plat-none';
   return `<span class="plat-chip ${clase}">${nombrePlat(id)}</span>`;
 }
+// ¿DÓNDE ESTÁ COMPRADA ESTA POSICIÓN?  (septiembre 2026, a pedido)
+// Los títulos que quedan, repartidos por plataforma: compras menos ventas
+// de cada una. Devuelve [{id, q}] ordenado de mayor a menor; `id` null es
+// "sin asignar".
+//
+// NO se metió dentro de calcularPortafolio() a propósito: ese cálculo está
+// indexado por moneda y ticker, y agregarle una tercera dimensión obligaría
+// a revisar los ~20 lugares que lo consumen. Acá se deriva de los
+// movimientos que la posición YA trae adentro (pos.compras / pos.ventas),
+// así que no hay un segundo camino que pueda quedar desincronizado.
+//
+// Si el desglose no suma el neto -- pasa cuando una venta quedó cargada a
+// una corredora distinta de la compra -- NO se muestra una resta negativa:
+// se listan las plataformas donde compraste, sin cantidades. Mismo criterio
+// de siempre: antes de mostrar un número inventado, no se muestra el número.
+function platsDePosicion(pos){
+  if(!pos || pos.netoQ <= 0) return [];
+  const q = {};
+  (pos.compras || []).forEach(m => { const k = platDeMov(m) || '_'; q[k] = (q[k] || 0) + m.cantidad; });
+  (pos.ventas  || []).forEach(m => { const k = platDeMov(m) || '_'; q[k] = (q[k] || 0) - m.cantidad; });
+  const lista = Object.entries(q).filter(([, v]) => v > 1e-9)
+    .map(([k, v]) => ({ id: k === '_' ? null : k, q: v }))
+    .sort((a, b) => b.q - a.q);
+  const suma = lista.reduce((a, x) => a + x.q, 0);
+  const cuadra = lista.length && Math.abs(suma - pos.netoQ) <= Math.max(1e-6, Math.abs(pos.netoQ) * 0.001);
+  if(cuadra) return lista;
+  const vistos = [];
+  (pos.compras || []).forEach(m => { const k = platDeMov(m) || null; if(vistos.indexOf(k) === -1) vistos.push(k); });
+  return vistos.map(id => ({ id, q: null }));
+}
 function opcionesPlatHTML(sel){
   return PLAT_IDS.map(id =>
     `<option value="${id}"${id === sel ? ' selected' : ''}>${nombrePlat(id)}</option>`).join('');
@@ -9037,6 +9078,57 @@ function renderAmbienteCartera(){
       ? `<span class="cartera-riesgo${riesgoExcedido ? ' cartera-riesgo--alto' : ''}">arriesgas ${fmtNum(riesgoActualPct, 1)}%${riesgoExcedido ? ` ⚠ supera tu máximo de ${RIESGO_MAX_PCT}%` : ''}</span>`
       : `<span class="cartera-riesgo">tu stop ya quedó sobre el precio de hoy</span>`);
 
+    // ---- LA PLATA, no solo el porcentaje (septiembre 2026, a pedido) ----
+    // Un 58,5% no dice si son mil pesos o un millón, y saber que superas tu
+    // máximo no dice dónde tendría que ir el stop para no superarlo. Acá van
+    // las dos cosas: el tamaño del problema y el número que lo arregla.
+    //
+    // El stop del tope se redondea HACIA ARRIBA (entero en CLP, dos
+    // decimales en USD), no al más cercano, y no es un detalle: redondeando
+    // al más cercano, LATAM a $24 daría stop $22 -- que arriesga 8,3%. Es
+    // decir, la app propondría un número que al escribirlo enciende su
+    // propia alarma "supera tu máximo de 8%". Hacia arriba el stop propuesto
+    // siempre deja el riesgo DENTRO del tope; por eso la frase dice "para no
+    // pasar del 8%" y no "el 8% es".
+    //
+    // La plata se calcula DESDE el valor ya redondeado, no desde el 8%
+    // teórico: si no, el precio mostrado y el monto mostrado no cuadrarían
+    // entre sí y el que suma a mano queda pensando cuál de los dos está malo.
+    //
+    // Si el redondeo deja el stop en el precio o más arriba (una acción de
+    // $1: el 8% no alcanza a un peso) no se propone nada. Ahí no hay stop
+    // entero que respete el tope, y decirlo con un número falso sería peor
+    // que no decirlo.
+    //
+    // Los montos respetan "ocultar cifras" (fmtMoneda con `oculto`); el
+    // precio del stop no, porque es un precio de mercado y ya se muestran
+    // en claro en el resto de la fila.
+    const valorPos = (held && precioActual !== null && pos.netoQ > 0) ? precioActual * pos.netoQ : null;
+    const perdidaHoy = (valorPos !== null && riesgoActualPct !== null && riesgoActualPct > 0)
+      ? (precioActual - bajaNum) * pos.netoQ : null;
+    const stop8crudo = (valorPos !== null && precioActual > 0) ? precioActual * (1 - RIESGO_MAX_PCT / 100) : null;
+    const stop8bruto = stop8crudo === null ? null
+      : (currency === 'CLP' ? Math.ceil(stop8crudo) : Math.ceil(stop8crudo * 100) / 100);
+    const stop8 = (stop8bruto !== null && stop8bruto > 0 && stop8bruto < precioActual) ? stop8bruto : null;
+    const perdida8 = stop8 !== null ? (precioActual - stop8) * pos.netoQ : null;
+    const montoRiesgoHTML = valorPos === null ? '' : `<div class="cartera-riesgo-monto">${
+      perdidaHoy !== null
+        ? `Pones en juego <b>${fmtMoneda(perdidaHoy, oculto, currency)}</b> de ${fmtMoneda(valorPos, oculto, currency)}`
+        : `Tu posición vale <b>${fmtMoneda(valorPos, oculto, currency)}</b>`
+      }${perdida8 !== null
+        ? ` · para no pasar del ${RIESGO_MAX_PCT}%, stop en <b class="crm-stop">${fmtMoneda2(stop8, currency)}</b> (arriesgas ${fmtMoneda(perdida8, oculto, currency)})`
+        : ''}</div>`;
+
+    // Dónde está comprada: el chip de la corredora al final de la línea de
+    // la posición. Con una sola plataforma va el chip pelado; con dos o más
+    // va la cantidad al lado de cada una, que es justo cuando importa.
+    const plats = held ? platsDePosicion(pos) : [];
+    const platsHTML = plats.length
+      ? ' · ' + plats.map(p => chipPlat(p.id)
+          + ((plats.length > 1 && p.q !== null) ? ` <span class="cartera-plat-q mono">${fmtCantidad(p.q, currency, s.ticker)}</span>` : '')
+        ).join(' · ')
+      : '';
+
     return `
       <div class="cartera-row ${esFav ? 'is-favorite' : ''}" data-ticker="${s.ticker}">
         <div class="cartera-row-head">
@@ -9049,7 +9141,7 @@ function renderAmbienteCartera(){
           </span>
         </div>
         <div class="cartera-pos">${held
-          ? `Tienes ${fmtCantidad(pos.netoQ, currency, s.ticker)} título(s) · compra ${fmtMoneda2(pos.costoPromedio, currency)}`
+          ? `Tienes ${fmtCantidad(pos.netoQ, currency, s.ticker)} título(s) · compra ${fmtMoneda2(pos.costoPromedio, currency)}${platsHTML}`
           : 'Sin posición registrada (se calcula sola desde "Mis movimientos")'}</div>
         <div class="cartera-alertas">
           <label class="cartera-campo sube" title="${distancia(obj.sube) || 'Avisar si sube a (venta)'}">
@@ -9066,6 +9158,7 @@ function renderAmbienteCartera(){
             ${riesgoHTML}
           </div>
         </div>
+        ${montoRiesgoHTML}
         ${sugerenciaStopHTML(s, pos, obj, currency)}
       </div>`;
   };
