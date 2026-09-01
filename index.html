@@ -156,6 +156,20 @@
      posicion esta repartida en mas de una corredora. */
   .cartera-plat-q{font-size:9.5px; color:var(--ink-faint);}
 
+  /* Filtro por corredora sobre el listado de tarjetas. Mismas pildoras que
+     el "ordenar por" de la tabla, para que se lean como la misma familia de
+     control. La fila NO se dibuja si solo hay una corredora con posiciones:
+     un filtro con una sola opcion es ruido. */
+  .cpf{display:flex; gap:5px; flex-wrap:wrap; align-items:center; margin:0 0 8px;}
+  .cpf-k{font-size:10px; color:var(--ink-faint);}
+  .cpf button{font-size:10px; padding:3px 9px; border-radius:11px; border:1px solid var(--hairline);
+              background:var(--bg-panel); color:var(--ink-dim); cursor:pointer;
+              font-family:'IBM Plex Sans',sans-serif; display:inline-flex; align-items:center; gap:5px;}
+  .cpf button.on{background:var(--gold); border-color:var(--gold); color:#fff; font-weight:600;}
+  .cpf button i{font-style:normal; font-family:'IBM Plex Mono',monospace; font-size:9.5px; opacity:.75;}
+  .cpf button.cpf-sin{color:var(--copper);}
+  .cpf button.cpf-sin.on{background:var(--copper); border-color:var(--copper); color:#fff;}
+
   /* ---- Tabla "Mi cartera, de una" (septiembre 2026) --------------------
      Las tarjetas de abajo son para EDITAR (stop, favorita, sugerencia de la
      media 50); esta tabla es para LEER. Por eso no tiene ni un solo campo:
@@ -8607,6 +8621,14 @@ function toggleFavoritoTicker(ticker){
 
 let carteraFiltro = '';
 let carteraMostrarTodas = false;
+// Filtro por corredora del LISTADO de tarjetas (la tabla de arriba tiene su
+// propio "ordenar por corredora", que es otra pregunta: alla se ordena para
+// comparar, aca se filtra para trabajar solo con una cuenta). null = todas;
+// 'sin' = los movimientos viejos sin plataforma asignada.
+// No se guarda en localStorage a proposito: es un filtro de momento, igual
+// que el buscador. Abrir la app y encontrarse media cartera escondida por un
+// filtro puesto la semana pasada es como se pierde una posicion de vista.
+let carteraPlatFiltro = null;
 let carteraBuscadorTuvoFoco = false;
 // Un booleano por grupo (no uno global): Cristian quiere poder mirar
 // solo Chile, o solo Cripto, sin que ocultar uno oculte los otros dos.
@@ -8822,7 +8844,19 @@ function renderAmbienteCartera(){
     if(!filtroNorm) return true;
     return s.ticker.toLowerCase().includes(filtroNorm) || s.name.toLowerCase().includes(filtroNorm);
   }
+  // Una posicion repartida entre dos corredoras aparece en las DOS: los
+  // titulos estan de verdad en las dos cuentas.
+  function enPlataforma(pos, id){
+    if(!pos || pos.netoQ <= 0) return false;
+    return platsDePosicion(pos).some(p => (p.id || 'sin') === id);
+  }
   function visible(s, pos){
+    // El filtro de corredora manda sobre todo lo demas, incluso sobre el
+    // buscador: si pediste ver solo Racional, una accion que no esta ahi no
+    // aparece aunque calce con el texto. Una accion SIN posicion no tiene
+    // corredora, asi que con el filtro puesto no se muestra -- filtrar por
+    // corredora es preguntar "que tengo ahi", no "que estoy mirando".
+    if(carteraPlatFiltro && !enPlataforma(pos, carteraPlatFiltro)) return false;
     if(filtroNorm) return coincide(s); // buscando: se ignora el filtro de favoritas/con posición
     if(carteraMostrarTodas) return true;
     return favoritos.has(s.ticker) || (pos && pos.netoQ > 0);
@@ -9033,15 +9067,52 @@ function renderAmbienteCartera(){
   // no `state`, así que no se mezcla con las chilenas en ninguna dirección.
   const criptoItems = ordenar(stateCripto.map(s => ({s, pos: portClp[s.ticker]})).filter(x => visible(x.s, x.pos)));
 
+  const nombreFiltro = carteraPlatFiltro
+    ? (carteraPlatFiltro === 'sin' ? 'Sin asignar' : nombrePlat(carteraPlatFiltro)) : null;
+  // Un listado vacío tiene que decir POR QUÉ está vacío. "Sin favoritas
+  // todavía" cuando en realidad hay un filtro de corredora puesto es la clase
+  // de mensaje que hace pensar que se perdieron los datos.
+  // El punto final se omite si la zona ya termina en punto ("EE.UU."), si no
+  // queda "en EE.UU.." con dos puntos.
+  const vacio = (zona, base) => {
+    const fin = zona.slice(-1) === '.' ? '' : '.';
+    return carteraPlatFiltro
+      ? `No tienes nada de ${nombreFiltro} en ${zona}${filtroNorm ? ` que calce con la búsqueda.` : fin}`
+      : (filtroNorm ? `Nada calzó con la búsqueda en ${zona}${fin}` : base);
+  };
+
   const chileHTML = chileItems.length
     ? chileItems.map(x => filaCartera(x.s, x.pos, 'CLP')).join('')
-    : `<p class="cartera-empty">${filtroNorm ? 'Nada calzó con la búsqueda en Chile.' : 'Sin favoritas ni posiciones en Chile todavía. Marca una estrella o activa "Mostrar todas".'}</p>`;
+    : `<p class="cartera-empty">${vacio('Chile', 'Sin favoritas ni posiciones en Chile todavía. Marca una estrella o activa "Mostrar todas".')}</p>`;
   const criptoHTML = criptoItems.length
     ? criptoItems.map(x => filaCartera(x.s, x.pos, 'CLP')).join('')
-    : `<p class="cartera-empty">${filtroNorm ? 'Nada calzó con la búsqueda en Cripto.' : 'Sin posiciones en cripto todavía.'}</p>`;
+    : `<p class="cartera-empty">${vacio('Cripto', 'Sin posiciones en cripto todavía.')}</p>`;
   const usaHTML = usaItems.length
     ? usaItems.map(x => filaCartera(x.s, x.pos, 'USD')).join('')
-    : `<p class="cartera-empty">${filtroNorm ? 'Nada calzó con la búsqueda en EE.UU.' : 'Sin favoritas ni posiciones en EE.UU. todavía. Marca una estrella o activa "Mostrar todas".'}</p>`;
+    : `<p class="cartera-empty">${vacio('EE.UU.', 'Sin favoritas ni posiciones en EE.UU. todavía. Marca una estrella o activa "Mostrar todas".')}</p>`;
+
+  // ---- Las píldoras de corredora -----------------------------------------
+  // El conteo sale de las posiciones abiertas, no del filtro activo: si
+  // cambiara con lo que está filtrado, tocar "Racional" dejaría todos los
+  // demás en cero y no habría cómo volver.
+  const cuentaPlat = {};
+  [portClp, portUsd].forEach(port => {
+    Object.values(port).forEach(pos => {
+      if(pos.netoQ <= 0) return;
+      platsDePosicion(pos).forEach(p => {
+        const k = p.id || 'sin';
+        cuentaPlat[k] = (cuentaPlat[k] || 0) + 1;
+      });
+    });
+  });
+  const platsConAlgo = PLAT_IDS.concat('sin').filter(k => cuentaPlat[k]);
+  const filtroPlatHTML = platsConAlgo.length > 1 ? `
+    <div class="cpf">
+      <span class="cpf-k">corredora</span>
+      <button type="button" data-cpf=""${carteraPlatFiltro === null ? ' class="on"' : ''}>todas</button>
+      ${platsConAlgo.map(k => `<button type="button" data-cpf="${k}" class="${k === 'sin' ? 'cpf-sin' : ''}${
+        carteraPlatFiltro === k ? ' on' : ''}">${k === 'sin' ? 'Sin asignar' : nombrePlat(k)} <i>${cuentaPlat[k]}</i></button>`).join('')}
+    </div>` : '';
 
   const grupoHTML = (titulo, grupo, contenidoHTML) => `
     <div class="cartera-group-head">
@@ -9063,6 +9134,7 @@ function renderAmbienteCartera(){
     <p class="section-title">Favoritas y posiciones</p>
     <input type="text" id="carteraBuscador" class="cartera-buscador" placeholder="Buscar por ticker o nombre (Chile o EE.UU.)…" value="${carteraFiltro.replace(/"/g,'&quot;')}">
     <label class="cartera-toggle"><input type="checkbox" id="carteraMostrarTodas" ${carteraMostrarTodas ? 'checked' : ''}> Mostrar todas las acciones, no solo favoritas o con posición</label>
+    ${filtroPlatHTML}
     <div id="carteraListadoWrap">
       ${grupoHTML('Chile · CLP', 'chile', chileHTML)}
       ${grupoHTML('EE.UU. · USD', 'usa', usaHTML)}
@@ -9081,6 +9153,16 @@ function renderAmbienteCartera(){
     buscadorEl.addEventListener('blur', () => { carteraBuscadorTuvoFoco = false; });
     buscadorEl.addEventListener('input', () => { carteraFiltro = buscadorEl.value; renderAmbienteCartera(); });
   }
+  viewEl.querySelectorAll('[data-cpf]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const v = btn.dataset.cpf;
+      // Volver a tocar la corredora que ya está activa la apaga: sacar el
+      // filtro no obliga a apuntarle a "todas".
+      carteraPlatFiltro = (v === '' || v === carteraPlatFiltro) ? null : v;
+      renderAmbienteCartera();
+    });
+  });
+
   const mostrarTodasEl = document.getElementById('carteraMostrarTodas');
   if(mostrarTodasEl){
     mostrarTodasEl.addEventListener('change', () => { carteraMostrarTodas = mostrarTodasEl.checked; renderAmbienteCartera(); });
