@@ -9104,6 +9104,7 @@ const TC_ORDENES = [
   {k:'juego',  t:'en juego'},
   {k:'gana',   t:'ganancia'},
   {k:'riesgo', t:'riesgo'},
+  {k:'plat',   t:'corredora'},
   {k:'ticker', t:'ticker'},
 ];
 
@@ -9137,12 +9138,24 @@ function tablaCarteraHTML(){
 
   // "Sin stop" ordena ARRIBA de cualquier riesgo, no abajo: no tener piso es
   // peor que tenerlo lejos, aunque su riesgoPct sea null.
+  const clavePlat = (x) => {
+    const id = x.plats.length ? x.plats[0].id : null;
+    return id ? nombrePlat(id) : '\uffff';
+  };
   const ordenar = {
     peso:   (a,b) => b.f.expClp - a.f.expClp,
     juego:  (a,b) => b.f.perdidaClp - a.f.perdidaClp,
     gana:   (a,b) => (b.delta === null ? -Infinity : b.delta) - (a.delta === null ? -Infinity : a.delta),
     riesgo: (a,b) => (b.f.riesgoPct === null ? Infinity : b.f.riesgoPct)
                    - (a.f.riesgoPct === null ? Infinity : a.f.riesgoPct),
+    // Por corredora: agrupa por el NOMBRE que tenga hoy la plataforma (si le
+    // cambias "Interactive Broker" por otra cosa, el orden cambia con él), y
+    // dentro de cada una manda el peso -- una lista de una corredora ordenada
+    // al azar obliga a leerla entera para encontrar la posición grande.
+    // "Sin asignar" va al final: es la que hay que arreglar, no la que hay que
+    // comparar. Una posición repartida en dos corredoras se ordena por la que
+    // tiene MÁS títulos (plats viene ordenado de mayor a menor).
+    plat:   (a,b) => clavePlat(a).localeCompare(clavePlat(b)) || (b.f.expClp - a.f.expClp),
     ticker: (a,b) => a.f.ticker.localeCompare(b.f.ticker),
   }[carteraTablaOrden] || ((a,b) => b.f.expClp - a.f.expClp);
   filas.sort(ordenar);
