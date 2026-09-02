@@ -297,6 +297,13 @@
   .esp-vencida{background:var(--copper-soft); color:var(--copper);}
   .esp-cond{font-size:11.5px; color:var(--ink-dim); margin-top:5px; line-height:1.5;}
   .esp-cond b{color:var(--ink); font-family:'IBM Plex Mono',monospace;}
+  .esp-sug{font-size:11px; color:var(--ink-dim); line-height:1.6; margin:6px 2px 10px;}
+  .esp-sug b{color:var(--ink); font-family:'IBM Plex Mono',monospace;}
+  .esp-sug-nota{color:var(--ink-faint); font-size:10.5px;}
+  .esp-usar{font-size:10px; padding:2px 8px; border-radius:10px; cursor:pointer;
+            border:1px solid var(--verdigris); background:var(--bg-panel); color:var(--verdigris);
+            font-family:'IBM Plex Sans',sans-serif; margin-left:4px;}
+  .esp-usar:hover{background:var(--verdigris-soft);}
   .esp-btns{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
   .esp-btns button{font-size:10.5px; padding:4px 9px; border-radius:6px; border:1px solid var(--hairline);
                    background:var(--bg-field); color:var(--ink-dim); cursor:pointer; font-weight:600;}
@@ -2850,13 +2857,41 @@ function agregarAWatchlist(ticker, nombre){
   }
   watchlist.push({ticker, name: nombre || ticker});
   guardarWatchlist();
+
+  // ---- NO PERDER LO QUE YA ESTABA CARGADO (septiembre 2026) -------------
   // Si la habías mirado con la ficha bajo demanda, deja de ser una consulta
   // suelta y pasa a la watchlist de verdad: se saca de stateFicha para que no
-  // quede duplicada en todosLosStocks().
+  // quede duplicada en todosLosStocks(). Pero antes se le HEREDAN los datos:
+  // el objeto nuevo nacía vacío y se botaba el precio, la media 50 y el
+  // historial que ya estaban en pantalla, así que tocar "+ A seguir" dejaba
+  // el detalle en "Cargando datos reales de Yahoo Finance…" hasta el próximo
+  // ciclo. Se veía como que la app se colgaba; en realidad se estaba tirando
+  // a la basura un dato que ya tenía.
+  const ficha = stateFicha.find(s => s.ticker === ticker);
   stateFicha = stateFicha.filter(s => s.ticker !== ticker);
-  stateWatch.push(nuevoStockWatch(ticker, nombre));
+  const nuevo = nuevoStockWatch(ticker, (ficha && ficha.name) || nombre);
+  if(ficha){
+    nuevo.price = ficha.price;
+    nuevo.avg = ficha.avg;
+    nuevo.history = (ficha.history || []).slice();
+    nuevo.marketTime = ficha.marketTime || null;
+    CAMPOS_QUOTE.forEach(k => { nuevo[k] = (typeof ficha[k] === 'number') ? ficha[k] : null; });
+  }
+  stateWatch.push(nuevo);
   sincronizarWatchlist();
-  fetchRealQuotesUsa();   // para que aparezca con precio de inmediato
+  fetchRealQuotesUsa();   // para que entre al ciclo normal cuanto antes
+
+  // No venía de una ficha (la agregaste desde el buscador sin haberla
+  // mirado): se le pide la cotización al momento en vez de esperar el
+  // ciclo. Va en segundo plano -- quien llamó necesita su {ok} ahora.
+  if(!nuevo.price){
+    pedirQuoteAccion(ticker).then(r => {
+      if(!r.ok) return;
+      if(!aplicarQuoteAStock(nuevo, r.quote)) return;
+      if(typeof renderAmbienteSeguir === 'function' && ambienteActivo === 'seguir') renderAmbienteSeguir();
+      if(openTicker === ticker) renderDetail(ticker);
+    });
+  }
   return {ok:true};
 }
 
@@ -3825,6 +3860,40 @@ async function seedHistorialSiFalta(s){
 // /news del backend se dejo intacto por si se retoma mas adelante con
 // otra fuente, pero el frontend ya no lo llama.
 
+// Los campos que trae una cotizacion. UNA sola lista, usada por la ficha
+// suelta, por la watchlist y por lo que venga: cada copia suelta de esta
+// lista es un campo que alguien se olvida de copiar y una pantalla que
+// aparece a medias sin que nadie entienda por que.
+const CAMPOS_QUOTE = ['dayHigh','dayLow','volume','montoTransado','ret3m','ret1y',
+                      'rsi14','sma20','sma50','sma200','zscore','staleSeconds'];
+
+function aplicarQuoteAStock(s, q){
+  if(!s || !q || typeof q.price !== 'number') return false;
+  s.price = q.price;
+  if(typeof q.avg === 'number' && q.avg > 0) s.avg = q.avg;
+  CAMPOS_QUOTE.forEach(k => { s[k] = (typeof q[k] === 'number') ? q[k] : null; });
+  s.marketTime = q.marketTime || null;
+  s.bid = null; s.ask = null; s.bidSize = null; s.askSize = null;
+  pushHistory(s.history, s.price);
+  return true;
+}
+
+// Le pide al backend la cotizacion de UNA accion, esté o no en la grilla.
+// No toca la pantalla ni avisa nada: devuelve lo que llegó y el que llama
+// decide qué hacer. Nunca lanza.
+async function pedirQuoteAccion(ticker){
+  try {
+    const resp = await fetch(BACKEND_URL + '/accion?ticker=' + encodeURIComponent(ticker));
+    const body = await resp.json().catch(() => ({}));
+    if(!resp.ok) return {ok:false, error: body.error || `HTTP ${resp.status}`};
+    const q = body.quote || {};
+    if(typeof q.price !== 'number') return {ok:false, error:`Yahoo no entregó precio para ${ticker} en este momento.`};
+    return {ok:true, quote:q, currency: body.currency};
+  } catch(e){
+    return {ok:false, error:'No se pudo consultar. Revisa la conexión.'};
+  }
+}
+
 // Pide la ficha de una acción que no está en la grilla y la abre. Devuelve
 // true si quedó abierta. Nunca lanza: quien la llama necesita poder decirle
 // al usuario qué pasó.
@@ -3832,33 +3901,17 @@ async function abrirFichaSuelta(ticker, nombre){
   if(fichasPidiendo.has(ticker)) return false;
   fichasPidiendo.add(ticker);
   try {
-    const resp = await fetch(BACKEND_URL + '/accion?ticker=' + encodeURIComponent(ticker));
-    const body = await resp.json().catch(() => ({}));
-    if(!resp.ok){
-      alert(body.error || `No se pudo traer ${ticker} (HTTP ${resp.status}).`);
-      return false;
-    }
-    const q = body.quote || {};
-    if(typeof q.price !== 'number'){
-      alert(`Yahoo no entregó precio para ${ticker} en este momento.`);
-      return false;
-    }
-    let s = stateFicha.find(x => x.ticker === ticker);
+    const r = await pedirQuoteAccion(ticker);
+    if(!r.ok){ alert(`No se pudo traer ${ticker}: ${r.error}`); return false; }
+    // Si ya está en la grilla o en la watchlist se actualiza ESA, no se crea
+    // una ficha paralela: dos objetos con el mismo ticker en todosLosStocks()
+    // hacen que la app muestre el precio de uno y el estado del otro.
+    let s = todosLosStocks().find(x => x.ticker === ticker);
     if(!s){
-      s = nuevoStockFicha(ticker, nombre, body.currency);
+      s = nuevoStockFicha(ticker, nombre, r.currency);
       stateFicha.push(s);
     }
-    // Los mismos campos que aplica fetchRealQuotesUsa, para que el detalle no
-    // sepa ni le importe de dónde salió esta acción.
-    s.price = q.price;
-    if(typeof q.avg === 'number' && q.avg > 0) s.avg = q.avg;
-    ['dayHigh','dayLow','volume','montoTransado','ret3m','ret1y',
-     'rsi14','sma20','sma50','sma200','zscore','staleSeconds'].forEach(k => {
-      s[k] = (typeof q[k] === 'number') ? q[k] : null;
-    });
-    s.marketTime = q.marketTime || null;
-    s.bid = null; s.ask = null; s.bidSize = null; s.askSize = null;
-    pushHistory(s.history, s.price);
+    aplicarQuoteAStock(s, r.quote);
     openDetail(ticker);
     return true;
   } catch(e){
@@ -3942,7 +3995,13 @@ function renderDetail(ticker){
       </div>
       ${detailShortcutsHTML()}
       ${lineaEstadoHTML(s.ticker)}
-      <p style="padding:36px 0; text-align:center; color:var(--ink-faint);">Cargando datos reales de Yahoo Finance…</p>
+      <p style="padding:26px 0 8px; text-align:center; color:var(--ink-faint);">
+        ${estaEnWatchlist(s.ticker) || s.esFichaSuelta
+          ? 'Todavía sin precio. Esta acción no está en la grilla que se refresca sola, así que hay que pedírsela a Yahoo.'
+          : 'Cargando datos reales de Yahoo Finance…'}</p>
+      <div style="text-align:center; padding-bottom:26px;">
+        <button type="button" class="mov-btn" id="detallePedirDatos">Pedir datos ahora</button>
+      </div>
     `;
     // La línea de estado va TAMBIÉN acá, en la rama de "todavía sin precio".
     // Si la tienes comprada o la estás esperando, eso no depende del precio
@@ -3951,6 +4010,23 @@ function renderDetail(ticker){
     document.getElementById('closeBtn').addEventListener('click', closeDetail);
     inicializarFavBtnDetalle(s.ticker);
     inicializarDetailShortcuts(s.ticker);
+    // Salida del callejón: antes esta pantalla decía "Cargando…" para siempre
+    // y no había nada que tocar. Pide la cotización de esta acción y se
+    // redibuja sola con lo que llegue -- o dice por qué no llegó.
+    const btnPedir = document.getElementById('detallePedirDatos');
+    if(btnPedir) btnPedir.addEventListener('click', async () => {
+      btnPedir.disabled = true;
+      btnPedir.textContent = 'Pidiendo…';
+      const r = await pedirQuoteAccion(s.ticker);
+      if(r.ok && aplicarQuoteAStock(s, r.quote)){
+        renderDetail(s.ticker);
+        if(typeof renderCard === 'function' && cardEls[s.ticker]) renderCard(s);
+      } else {
+        btnPedir.disabled = false;
+        btnPedir.textContent = 'Pedir datos ahora';
+        alert(r.error || 'No llegó precio esta vez.');
+      }
+    });
     return;
   }
 
@@ -8478,6 +8554,7 @@ function esperaHTML(){
       <input type="text" id="espCond" placeholder="¿Qué esperas? (ej: vuelva a su media 50)" style="flex:1; min-width:170px;">
       <button class="mov-btn" id="espAgregar">Agregar</button>
     </div>
+    <p class="esp-sug" id="espSugerencia"></p>
     ${filas || '<p class="seguir-empty">Nada esperando entrada. Una acción entra acá cuando te interesa pero todavía no es el momento — y entra con la condición escrita, no como un nombre suelto.</p>'}
     <p style="font-size:10.5px; color:var(--ink-faint); margin:10px 0 0; line-height:1.55;">
       El precio objetivo se guarda además como alerta de precio, así que el aviso te llega al celular igual que
@@ -8496,6 +8573,51 @@ function esperaHTML(){
 // candidatas a "esperando entrada" con la condición ya escrita -- y es
 // exactamente la misma operación, no una parecida. Repetirla en dos lados
 // es el tipo de cosa que se desincroniza con el tiempo.
+// ---- EL PRECIO QUE PROPONE LA APP PARA ENTRAR (septiembre 2026) --------
+// Es su MEDIA 50: el mismo número que ya usaba "+ A seguir" desde Explorar y
+// el mismo que manda el stop en Mi Cartera. Un solo criterio en toda la app;
+// si acá se propusiera otra cosa, la app estaría diciendo dos verdades.
+//
+// La regla que pidió Cristian: **manda lo que escribe él**. El propuesto solo
+// entra si el campo va en blanco. Por eso esto devuelve el número y nunca
+// escribe en el formulario solo -- rellenar el campo sin que lo pida haría
+// imposible distinguir "lo dejé en blanco a propósito" de "ya estaba puesto".
+function precioPropuestoEntrada(ticker){
+  const s = todosLosStocks().find(x => x.ticker === ticker);
+  if(!s) return null;
+  const ma = (typeof s.sma50 === 'number' && isFinite(s.sma50) && s.sma50 > 0) ? s.sma50 : null;
+  if(ma === null) return null;
+  const moneda = s.currency === 'USD' ? 'USD' : 'CLP';
+  return {valor: redondearStop(ma, moneda), moneda, precioHoy: (typeof s.price === 'number') ? s.price : null};
+}
+
+function espSugerenciaHTML(tk){
+  if(!tk) return 'Elige una acción y acá aparece el precio que propone la app.';
+  const p = precioPropuestoEntrada(tk);
+  if(!p){
+    return `<span style="color:var(--copper);">${tk}: todavía no hay media 50 para proponerte un precio.</span>
+            Escríbelo tú — sin precio la condición queda escrita pero no suena ninguna alerta.`;
+  }
+  return `Propuesto para <b>${tk}</b>: <b>${fmtMoneda2(p.valor, p.moneda)}</b> (su media 50)`
+    + (p.precioHoy !== null ? ` · hoy ${fmtMoneda2(p.precioHoy, p.moneda)}` : '')
+    + ` <button type="button" class="esp-usar" id="espUsarPropuesto">usar</button>`
+    + `<br><span class="esp-sug-nota">Si dejas el precio en blanco, se usa este.</span>`;
+}
+
+function refrescarSugerenciaEspera(){
+  const cont = document.getElementById('espSugerencia');
+  const sel = document.getElementById('espTicker');
+  if(!cont || !sel) return;
+  cont.innerHTML = espSugerenciaHTML(sel.value);
+  const p = precioPropuestoEntrada(sel.value);
+  const inp = document.getElementById('espPrecio');
+  // El placeholder repite el número para el que no lee la línea de abajo. No
+  // es el valor del campo: sigue vacío, que es lo que activa la regla.
+  if(inp) inp.placeholder = p ? String(p.valor) : 'Precio';
+  const btn = document.getElementById('espUsarPropuesto');
+  if(btn && p && inp) btn.addEventListener('click', () => { inp.value = p.valor; inp.focus(); });
+}
+
 function guardarCondicion(tk, dir, precio, cond, dias){
   espera[tk] = {
     condicion: cond || '',
@@ -8816,6 +8938,10 @@ function renderAmbienteSeguir(){
   // ---- Esperando entrada ----
   // guardarCondicion() ahora vive a nivel de módulo (justo antes de esta
   // función) -- Explorar la reusa tal cual.
+  const selEsp = document.getElementById('espTicker');
+  if(selEsp) selEsp.addEventListener('change', refrescarSugerenciaEspera);
+  refrescarSugerenciaEspera();
+
   const btnAgregar = document.getElementById('espAgregar');
   if(btnAgregar){
     btnAgregar.addEventListener('click', () => {
@@ -8827,7 +8953,12 @@ function renderAmbienteSeguir(){
             + 'Ponerle acá un precio de entrada te borraría el stop sin avisar, así que no se puede.');
         return;
       }
-      const precio = parseFloat(document.getElementById('espPrecio').value);
+      // LA REGLA: manda lo escrito; si el campo va en blanco, entra el
+      // propuesto (la media 50). Nunca al revés.
+      const escrito = parseFloat(document.getElementById('espPrecio').value);
+      const loEscribio = isFinite(escrito) && escrito > 0;
+      const prop = loEscribio ? null : precioPropuestoEntrada(tk);
+      const precio = loEscribio ? escrito : (prop ? prop.valor : NaN);
       const cond = document.getElementById('espCond').value.trim();
       if(!cond && !(precio > 0)){
         alert('Escribe qué estás esperando, o al menos un precio objetivo.\n\n'
