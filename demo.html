@@ -155,6 +155,12 @@
   /* Cantidad al lado del chip de plataforma: solo aparece cuando la
      posicion esta repartida en mas de una corredora. */
   .cartera-plat-q{font-size:9.5px; color:var(--ink-faint);}
+  /* Etiqueta de las tarjetas que vienen de tu watchlist personal y no de la
+     grilla fija. Misma familia visual que la de "A seguir". */
+  .card-watch{display:inline-block; font-size:8.5px; font-weight:600; letter-spacing:.04em;
+              text-transform:uppercase; border-radius:4px; padding:1px 5px; vertical-align:1px;
+              background:var(--verdigris-soft); color:var(--verdigris);}
+  .card.is-watch{border-style:dashed;}
 
   /* Filtro por corredora sobre el listado de tarjetas. Mismas pildoras que
      el "ordenar por" de la tabla, para que se lean como la misma familia de
@@ -2878,6 +2884,11 @@ function agregarAWatchlist(ticker, nombre){
     CAMPOS_QUOTE.forEach(k => { nuevo[k] = (typeof ficha[k] === 'number') ? ficha[k] : null; });
   }
   stateWatch.push(nuevo);
+  // Tarjeta al tiro: sin esto aparecería en la grilla recién al recargar la
+  // app, que es justo cuando ya no te acuerdas de por qué la agregaste.
+  if(!cardEls[ticker]) crearTarjetaStock(nuevo);
+  if(typeof renderCard === 'function') renderCard(nuevo);
+  if(typeof renderGridOrder === 'function') renderGridOrder();
   sincronizarWatchlist();
   fetchRealQuotesUsa();   // para que entre al ciclo normal cuanto antes
 
@@ -2899,6 +2910,13 @@ function sacarDeWatchlist(ticker){
   watchlist = watchlist.filter(w => w.ticker !== ticker);
   stateWatch = stateWatch.filter(s => s.ticker !== ticker);
   guardarWatchlist();
+  // Y se lleva su tarjeta. `estaEnGrilla` es el seguro: si el ticker también
+  // vive en la grilla fija, esa tarjeta no es de la watchlist y no se toca.
+  if(!estaEnGrilla(ticker) && cardEls[ticker]){
+    cardEls[ticker].remove();
+    delete cardEls[ticker];
+  }
+  if(typeof renderGridOrder === 'function') renderGridOrder();
   sincronizarWatchlist();
 }
 
@@ -2934,10 +2952,15 @@ function nuevoStockFicha(ticker, nombre, currency){
 
 function todosLosStocks(){ return state.concat(stateUSA, stateCripto, stateWatch, stateFicha); }
 function stocksDelAmbiente(amb){
-  // OJO: stateWatch NO entra acá para 'usa'. Esta función alimenta la grilla
-  // de tarjetas, y las de watchlist no tienen tarjeta (ver el comentario de
-  // arriba). Sí entran en 'seguir', que es una lista y no una grilla.
-  if(amb === 'usa') return stateUSA;
+  // LAS DE WATCHLIST SÍ ENTRAN A LA GRILLA DE EE.UU. (septiembre 2026, a
+  // pedido). Antes quedaban fuera: se vigilaban y se veían en "A seguir",
+  // pero no tenían tarjeta. La razón original era no ensuciar la grilla con
+  // cada candidata; en la práctica pasó lo contrario -- las que estás
+  // esperando son justo las que más quieres mirar, y quedaban escondidas.
+  // Van marcadas con la etiqueta "watchlist" para no confundirlas con la
+  // grilla fija, y el tope de WATCHLIST_MAX (15) es lo que evita que la
+  // grilla crezca sin control.
+  if(amb === 'usa') return stateUSA.concat(stateWatch);
   if(amb === 'cripto') return stateCripto;
   if(amb === 'seguir') return todosLosStocks(); // el buscador de "A seguir" cubre ambos mercados (sección 6.3 de la spec v3)
   return state;
@@ -3308,16 +3331,21 @@ function inicializarFavBtnDetalle(ticker){
   });
 }
 
-todosLosStocks().forEach(s => {
+// Crea la tarjeta de UNA acción. Era un forEach suelto sobre
+// todosLosStocks() al arrancar; ahora es función porque la watchlist crece
+// mientras la app está abierta: una candidata que mandas desde Explorar tiene
+// que aparecer en la grilla al tiro, no en la próxima recarga.
+function crearTarjetaStock(s){
   const card = document.createElement('div');
-  card.className = 'card';
+  card.className = 'card' + (s.esWatchlist ? ' is-watch' : '');
   card.dataset.currency = s.currency || 'CLP'; // usado para mostrar/ocultar por ambiente
   card.innerHTML = `
     <div class="flag"><span class="flag-dot"></span>Bajo promedio</div>
     <div class="card-head">
       <div>
         <div class="ticker mono">${s.ticker} <button class="fav-btn" data-el="fav" title="Marcar como favorita">☆</button></div>
-        <div class="company">${s.name}</div>
+        <div class="company">${s.name}${s.esWatchlist
+          ? ' <span class="card-watch" title="No viene en la grilla fija: la sigues tú desde tu watchlist personal">watchlist</span>' : ''}</div>
       </div>
       <div class="price-block">
         <div class="price mono" data-el="price">···</div>
@@ -3391,7 +3419,9 @@ todosLosStocks().forEach(s => {
   });
   grid.appendChild(card);
   cardEls[s.ticker] = card;
-});
+  return card;
+}
+todosLosStocks().forEach(crearTarjetaStock);
 
 // Pintar el estado inicial de las estrellas (por si ya había favoritos guardados)
 todosLosStocks().forEach(s => {
@@ -3420,10 +3450,9 @@ function renderGridOrder(){
   const resto = visibles.filter(s => !favoritos.has(s.ticker));
   const ordenFinal = favoritas.concat(resto);
 
-  // Las de la watchlist NO tienen tarjeta (ver el bloque WATCHLIST más
-  // arriba): existen para "esperando entrada" y para el detalle, no para la
-  // grilla. Por eso hay que saltarlas acá -- sin este guardia, appendChild
-  // recibía `undefined` y reventaba el render de la grilla completa.
+  // El guardia se queda aunque la watchlist ya tenga tarjeta: stateFicha (las
+  // que miras una vez, sin seguirlas) sigue sin tenerla, y sin esto
+  // appendChild recibiría `undefined` y reventaría la grilla completa.
   ordenFinal.forEach(s => { if(cardEls[s.ticker]) grid.appendChild(cardEls[s.ticker]); }); // reordena moviendo los nodos existentes
 
   // Oculta las del otro ambiente Y las que no calzan con la búsqueda.
