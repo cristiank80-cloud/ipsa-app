@@ -303,9 +303,11 @@
   .esp-vencida{background:var(--copper-soft); color:var(--copper);}
   .esp-cond{font-size:11.5px; color:var(--ink-dim); margin-top:5px; line-height:1.5;}
   .esp-cond b{color:var(--ink); font-family:'IBM Plex Mono',monospace;}
-  .esp-sug{font-size:11px; color:var(--ink-dim); line-height:1.6; margin:6px 2px 10px;}
-  .esp-sug b{color:var(--ink); font-family:'IBM Plex Mono',monospace;}
-  .esp-sug-nota{color:var(--ink-faint); font-size:10.5px;}
+  .esp-precio{display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin:6px 0 2px;}
+  .esp-precio label{display:flex; align-items:center; gap:5px; font-size:11px; color:var(--ink-dim);}
+  .esp-precio input{width:96px; padding:3px 6px; border:1px solid var(--hairline); border-radius:5px;
+                    background:var(--bg-field); font-size:12px; box-sizing:border-box;}
+  .esp-sin-precio{font-size:10.5px; color:var(--copper);}
   .esp-usar{font-size:10px; padding:2px 8px; border-radius:10px; cursor:pointer;
             border:1px solid var(--verdigris); background:var(--bg-panel); color:var(--verdigris);
             font-family:'IBM Plex Sans',sans-serif; margin-left:4px;}
@@ -8087,6 +8089,7 @@ function esperaHTML(){
       ? `${fmtNum((precioHoy / reg.precio - 1) * 100, 1)}%` : null;
 
     const enWatch = estaEnWatchlist(tk);
+    const prop = precioPropuestoEntrada(tk);
     return `<div class="esp-row ${clase}" data-esp="${tk}">
       <div class="esp-head">
         <span class="esp-tk" data-accion="esp-abrir" data-ticker="${tk}">${tk}</span>
@@ -8096,12 +8099,22 @@ function esperaHTML(){
       </div>
       <div class="esp-cond">
         ${reg.condicion ? reg.condicion.replace(/</g,'&lt;') : 'Sin condición escrita'}
-        ${typeof reg.precio === 'number'
-          ? ` — entras cuando ${reg.dir === 'sube' ? 'suba a' : 'baje a'} <b>${fmtMoneda2(reg.precio, moneda)}</b>`
-          : ' — <span style="color:var(--copper);">sin precio, así que no hay alerta que suene</span>'}
         ${precioHoy !== null ? `<br>Hoy: <b>${fmtMoneda2(precioHoy, moneda)}</b>${distancia ? ` (${distancia} del objetivo)` : ''}` : ''}
         ${restantes !== null && !vencida ? `<br><span style="color:var(--ink-faint);">Quedan ${restantes} días de los ${reg.dias || ESPERA_DIAS_DEFAULT}.</span>` : ''}
         ${conPos ? `<br><span style="color:var(--copper);">Ya tienes esta acción — acá la alerta es tu stop, no una entrada. Sácala de esta lista.</span>` : ''}
+      </div>
+      <div class="esp-precio">
+        <label>Entras cuando ${reg.dir === 'sube' ? 'suba a' : 'baje a'}
+          <input type="number" step="any" min="0" class="mono" data-esp-precio="${tk}"
+                 value="${typeof reg.precio === 'number' ? reg.precio : ''}"
+                 placeholder="${prop ? prop.valor : 'sin precio'}"
+                 title="Cámbialo cuando quieras: al salir del campo se guarda y el aviso al celular se ajusta solo.">
+        </label>
+        ${(prop && (typeof reg.precio !== 'number' || Math.abs(reg.precio - prop.valor) > 1e-9))
+          ? `<button type="button" class="esp-usar" data-esp-media="${tk}" data-valor="${prop.valor}"
+                     title="Pone la media 50 en el campo">media 50 · ${fmtMoneda2(prop.valor, moneda)}</button>` : ''}
+        ${typeof reg.precio !== 'number'
+          ? '<span class="esp-sin-precio">sin precio no suena ninguna alerta</span>' : ''}
       </div>
       <div class="esp-btns">
         ${vencida ? `<button data-accion="esp-renovar" data-ticker="${tk}">Renovar ${ESPERA_DIAS_DEFAULT} días</button>` : ''}
@@ -8123,7 +8136,6 @@ function esperaHTML(){
       <input type="text" id="espCond" placeholder="¿Qué esperas? (ej: vuelva a su media 50)" style="flex:1; min-width:170px;">
       <button class="mov-btn" id="espAgregar">Agregar</button>
     </div>
-    <p class="esp-sug" id="espSugerencia"></p>
     ${filas || '<p class="seguir-empty">Nada esperando entrada. Una acción entra acá cuando te interesa pero todavía no es el momento — y entra con la condición escrita, no como un nombre suelto.</p>'}
     <p style="font-size:10.5px; color:var(--ink-faint); margin:10px 0 0; line-height:1.55;">
       El precio objetivo se guarda además como alerta de precio, así que el aviso te llega al celular igual que
@@ -8160,31 +8172,20 @@ function precioPropuestoEntrada(ticker){
   return {valor: redondearStop(ma, moneda), moneda, precioHoy: (typeof s.price === 'number') ? s.price : null};
 }
 
-function espSugerenciaHTML(tk){
-  if(!tk) return 'Elige una acción y acá aparece el precio que propone la app.';
-  const p = precioPropuestoEntrada(tk);
-  if(!p){
-    return `<span style="color:var(--copper);">${tk}: todavía no hay media 50 para proponerte un precio.</span>
-            Escríbelo tú — sin precio la condición queda escrita pero no suena ninguna alerta.`;
-  }
-  return `Propuesto para <b>${tk}</b>: <b>${fmtMoneda2(p.valor, p.moneda)}</b> (su media 50)`
-    + (p.precioHoy !== null ? ` · hoy ${fmtMoneda2(p.precioHoy, p.moneda)}` : '')
-    + ` <button type="button" class="esp-usar" id="espUsarPropuesto">usar</button>`
-    + `<br><span class="esp-sug-nota">Si dejas el precio en blanco, se usa este.</span>`;
-}
-
+// La línea explicativa bajo el formulario se sacó a pedido (sep-2026): el
+// precio propuesto se ve donde de verdad se usa -- en el placeholder del
+// campo, y en la fila de cada acción ya agregada, que ahora es editable.
+// La REGLA no cambió: si el campo va en blanco al agregar, entra el propuesto.
 function refrescarSugerenciaEspera(){
-  const cont = document.getElementById('espSugerencia');
   const sel = document.getElementById('espTicker');
-  if(!cont || !sel) return;
-  cont.innerHTML = espSugerenciaHTML(sel.value);
-  const p = precioPropuestoEntrada(sel.value);
   const inp = document.getElementById('espPrecio');
-  // El placeholder repite el número para el que no lee la línea de abajo. No
-  // es el valor del campo: sigue vacío, que es lo que activa la regla.
-  if(inp) inp.placeholder = p ? String(p.valor) : 'Precio';
-  const btn = document.getElementById('espUsarPropuesto');
-  if(btn && p && inp) btn.addEventListener('click', () => { inp.value = p.valor; inp.focus(); });
+  if(!sel || !inp) return;
+  const p = precioPropuestoEntrada(sel.value);
+  // El placeholder muestra el número propuesto sin escribirlo: el campo sigue
+  // vacío, que es justo lo que activa la regla de arriba.
+  inp.placeholder = p ? String(p.valor) : 'Precio';
+  inp.title = p ? `Si lo dejas en blanco se usa ${fmtMoneda2(p.valor, p.moneda)}, su media 50.`
+                : 'Precio al que quieres entrar';
 }
 
 function guardarCondicion(tk, dir, precio, cond, dias){
@@ -8537,6 +8538,48 @@ function renderAmbienteSeguir(){
       guardarCondicion(tk, document.getElementById('espDir').value, precio, cond);
     });
   }
+
+  // ---- El precio objetivo, editable en la propia fila (sep-2026) --------
+  // Antes había que entrar a "Cambiar condición" para mover un número. Se
+  // guarda al salir del campo (change), no en cada tecla: con "input" cada
+  // dígito intermedio se mandaría al servidor como objetivo -- escribir 17
+  // camino a 17,73 dispararía una alerta falsa.
+  //
+  // Vaciar el campo BORRA el objetivo a propósito: la fila pasa a decir que
+  // sin precio no suena ninguna alerta, que es la verdad. No se rellena con
+  // el propuesto acá; el propuesto es para CREAR, no para pisar una decisión
+  // que ya tomaste.
+  viewEl.querySelectorAll('[data-esp-precio]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const tk = inp.dataset.espPrecio;
+      const reg = espera[tk];
+      if(!reg) return;
+      const v = parseFloat(inp.value);
+      const nuevo = (isFinite(v) && v > 0) ? v : null;
+      if(nuevo === reg.precio) return;
+      reg.precio = nuevo;
+      guardarEspera();
+      // La alerta de precio es la MISMA que la de Mi Cartera: si no se
+      // actualiza, la fila diría un número y el celular avisaría por otro.
+      // Con posición abierta ese campo es el STOP y no se toca (ver la regla
+      // que impide poner condición de entrada a algo que ya tienes).
+      if(!tienePosicion(tk)){
+        if(!alertasPrecio[tk]) alertasPrecio[tk] = {sube:null, baja:null};
+        alertasPrecio[tk][reg.dir === 'sube' ? 'sube' : 'baja'] = nuevo;
+        guardarAlertasPrecio();
+        sincronizarAlertasPrecio();
+      }
+      renderAmbienteSeguir();
+    });
+  });
+  viewEl.querySelectorAll('[data-esp-media]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const inp = viewEl.querySelector(`[data-esp-precio="${btn.dataset.espMedia}"]`);
+      if(!inp) return;
+      inp.value = btn.dataset.valor;
+      inp.dispatchEvent(new Event('change'));
+    });
+  });
 
   viewEl.querySelectorAll('[data-accion="esp-abrir"]').forEach(el => {
     el.addEventListener('click', () => openDetail(el.dataset.ticker));
