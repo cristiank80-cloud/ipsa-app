@@ -5788,6 +5788,11 @@ function inicializarFormularioMovimientos(){
     if(typeof renderRecordatorioAporte === 'function') renderRecordatorioAporte();
     // Atajo: recién comprada es cuando más sentido tiene poner el stop.
     if(tipo === 'compra') mostrarAtajoStop(ticker);
+    // Vendida entera: el precio objetivo NO se apaga solo (vive también en
+    // el servidor, que no conoce tus movimientos). Este es el único momento
+    // en que se sabe que la posición quedó en cero, así que se pregunta acá.
+    else if(tipo === 'venta' && ofrecerLimpiarObjetivos(ticker)
+            && ambienteActivo === 'cartera') renderAmbienteCartera();
 
     document.getElementById('movCantidad').value = '';
     document.getElementById('movPrecio').value = '';
@@ -8797,6 +8802,107 @@ function guardarAlertasPrecio(){
 }
 const alertasPrecio = cargarAlertasPrecio(); // {TICKER: {sube: num|null, baja: num|null}}
 
+// ---- Objetivos huerfanos: precio objetivo de algo que ya no tienes ------
+// (sep-2026, a raiz de un correo real: "DELL subio a US$ 527,26 (objetivo
+// US$ 520,00)" llego DESPUES de haberla vendido entera.)
+//
+// El precio objetivo y la posicion son dos cosas distintas. El objetivo se
+// guarda aca y ADEMAS se manda al servidor, que es quien manda el correo y
+// el push. El servidor NO sabe nada de tus movimientos -- viven solo en
+// este dispositivo -- asi que registrar una venta no apaga nada por si
+// solo. Estas funciones cierran ese hueco por los dos lados: al vender todo
+// se ofrece borrar el objetivo, y los que hayan quedado sueltos de antes se
+// listan en Mi Cartera para que ninguno quede vigilandose a escondidas.
+
+// Titulos que te quedan de un ticker, mirando solo los movimientos. Los
+// dividendos no cambian la cantidad, por eso no se cuentan.
+function cantidadNetaDe(ticker){
+  return (movimientos || []).reduce((s, m) => {
+    if(m.ticker !== ticker) return s;
+    const q = parseFloat(m.cantidad) || 0;
+    if(m.tipo === 'compra') return s + q;
+    if(m.tipo === 'venta')  return s - q;
+    return s;
+  }, 0);
+}
+
+// Devuelve {sube, baja} SOLO si hay algo que de verdad se este vigilando.
+// Un ticker con las dos casillas vacias no cuenta como objetivo.
+function objetivosDe(ticker){
+  const o = alertasPrecio[ticker];
+  if(!o) return null;
+  const num = (v) => (v === null || v === undefined || v === '' || isNaN(v)) ? null : v;
+  const sube = num(o.sube), baja = num(o.baja);
+  return (sube === null && baja === null) ? null : {sube: sube, baja: baja};
+}
+
+// Una venta total puede dejar un residuo minimo por los decimales de las
+// fracciones de accion (las compras "por monto" de EE.UU. dan cantidades
+// como 0.07438882). Por eso "cero" es un margen, no un ===.
+const RESIDUO_CERO = 1e-6;
+
+function tickersConObjetivoSinPosicion(){
+  return Object.keys(alertasPrecio)
+    .filter(t => objetivosDe(t) && cantidadNetaDe(t) <= RESIDUO_CERO)
+    .sort();
+}
+
+function borrarObjetivosDe(ticker){
+  if(!alertasPrecio[ticker]) return false;
+  delete alertasPrecio[ticker];
+  guardarAlertasPrecio();
+  // El servidor recibe SIEMPRE la lista completa, asi que borrar aca y
+  // sincronizar es lo que de verdad apaga el correo.
+  sincronizarAlertasPrecio(true);
+  return true;
+}
+
+function textoObjetivos(ticker){
+  const obj = objetivosDe(ticker);
+  if(!obj) return '';
+  const s = (typeof todosLosStocks === 'function')
+    ? todosLosStocks().find(x => x.ticker === ticker) : null;
+  const mon = (s && s.currency === 'USD') ? 'USD' : 'CLP';
+  const partes = [];
+  if(obj.sube !== null) partes.push('avisar si sube a ' + fmtMoneda2(obj.sube, mon));
+  if(obj.baja !== null) partes.push('avisar si baja a ' + fmtMoneda2(obj.baja, mon));
+  return partes.join(' · ');
+}
+
+// Se llama justo despues de registrar una VENTA. Solo pregunta si la
+// posicion quedo en cero: vender una parte no toca el objetivo.
+function ofrecerLimpiarObjetivos(ticker){
+  if(!objetivosDe(ticker)) return false;
+  if(cantidadNetaDe(ticker) > RESIDUO_CERO) return false;
+  const ok = confirm(
+    'Ya no tienes ' + ticker + '.\n\n'
+    + 'Su precio objetivo sigue activo (' + textoObjetivos(ticker) + ') y el '
+    + 'servidor te va a seguir mandando el correo y el push aunque no tengas '
+    + 'la accion.\n\n'
+    + 'Borrar ese objetivo?');
+  if(!ok) return false;
+  borrarObjetivosDe(ticker);
+  return true;
+}
+
+// Aviso en Mi Cartera con los objetivos que quedaron sueltos. Mismo criterio
+// que se uso con la caja sin asignar: si algo esta activo, tiene que poder
+// verse y corregirse desde la pantalla, no solo desde el correo.
+function objetivosHuerfanosHTML(){
+  const ts = tickersConObjetivoSinPosicion();
+  if(!ts.length) return '';
+  const filas = ts.map(t =>
+      '<li style="display:flex; justify-content:space-between; align-items:center; gap:10px; padding:6px 0; border-top:1px solid rgba(0,0,0,.08);">'
+    + '<span><b>' + t + '</b> · ' + textoObjetivos(t) + '</span>'
+    + '<button class="oh-borrar" data-oh="' + t + '" style="flex:0 0 auto; cursor:pointer;">Borrar objetivo</button>'
+    + '</li>').join('');
+  return '<div class="oh-aviso" style="border:1px solid #e6a23c; background:#fff8ec; border-radius:8px; padding:10px 12px; margin:0 0 14px;">'
+    + '<p style="margin:0 0 4px; font-weight:600;">Objetivos que siguen sonando sin que tengas la accion (' + ts.length + ')</p>'
+    + '<p style="margin:0 0 6px; font-size:12px; color:var(--ink-dim);">Un precio objetivo es una regla aparte de tu posicion: vender no la apaga. Estos se siguen vigilando en el servidor, asi que te llega correo y push aunque ya no tengas nada.</p>'
+    + '<ul style="list-style:none; margin:0; padding:0;">' + filas + '</ul>'
+    + '</div>';
+}
+
 // ¿Este dispositivo llegó SIN precios objetivo propios? Se mide al abrir,
 // antes de que cualquier edición escriba la clave. Si es que sí, la primera
 // vez que guardes un objetivo aquí estarías reemplazando en el servidor la
@@ -9487,6 +9593,7 @@ function renderAmbienteCartera(){
   viewEl.innerHTML = `
     <p class="section-title" style="margin-top:0;">Mi Cartera</p>
     <p style="font-size:12px; color:var(--ink-dim); margin:-6px 0 14px;">Favoritos y precios objetivo para Chile, EE.UU. y Cripto — al cruzar un objetivo llega correo y push con el monto y el porcentaje de diferencia. La cantidad y el precio de compra se calculan solos desde "Mis movimientos".</p>
+    ${objetivosHuerfanosHTML()}
     <p class="section-title section-title--con-btn">Patrimonio ${btnSeccionHTML('patrimonio', 'Patrimonio')}</p>
     <div data-sec-body="patrimonio">${patrimonioHTML(d)}</div>
     <p class="section-title section-title--con-btn">Dónde está tu plata ${btnSeccionHTML('plataformas', 'Dónde está tu plata')}</p>
@@ -9503,6 +9610,16 @@ function renderAmbienteCartera(){
       ${grupoHTML('Cripto · CLP', 'cripto', criptoHTML)}
     </div>
   `;
+
+  viewEl.querySelectorAll('.oh-borrar').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = btn.dataset.oh;
+      if(!t) return;
+      if(!confirm('¿Borrar el precio objetivo de ' + t + '?\n\nDeja de avisarte por correo y push.')) return;
+      borrarObjetivosDe(t);
+      renderAmbienteCartera();
+    });
+  });
 
   const buscadorEl = document.getElementById('carteraBuscador');
   if(buscadorEl){
