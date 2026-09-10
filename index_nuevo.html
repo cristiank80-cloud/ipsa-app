@@ -271,6 +271,21 @@
               border-radius:8px; padding:10px 12px; margin-bottom:10px;}
   .atajo-stop-titulo{font-size:12px; color:var(--ink-dim); margin:0; line-height:1.5;}
   .atajo-stop-titulo .mono{color:var(--ink); font-weight:700;}
+  /* Vender un pedazo de lo que ya tienes, sin sacar la calculadora -- ver
+     renderVentaRapida(). Va en tono cobre (el mismo de .mi-tipo.venta) para
+     que se lea de un vistazo que este cuadro es de ventas, no del stop. */
+  .venta-rapida{border:1px solid rgba(179,74,50,0.35); background:rgba(179,74,50,0.05);
+                border-radius:8px; padding:10px 12px; margin-bottom:10px;}
+  .vr-titulo{font-size:12px; color:var(--ink-dim); margin:0 0 8px; line-height:1.5;}
+  .vr-titulo .mono{color:var(--ink); font-weight:700;}
+  .vr-chips{display:flex; flex-wrap:wrap; gap:6px;}
+  .vr-chip{display:flex; flex-direction:column; align-items:center; gap:1px; line-height:1.3;
+           background:var(--bg-field); border:1px solid var(--hairline); color:var(--ink);
+           padding:6px 12px; border-radius:7px; font-size:12px; cursor:pointer;}
+  .vr-chip:hover{border-color:var(--copper);}
+  .vr-chip.on{border-color:var(--copper); background:var(--copper-soft); color:var(--copper);}
+  .vr-chip .vr-q{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink-faint);}
+  .vr-chip.on .vr-q{color:var(--copper);}
   .plat-block{background:var(--bg-panel); border:1px solid var(--hairline); border-radius:12px;
               padding:14px; margin-bottom:12px;}
   .plat-nombres{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
@@ -1309,6 +1324,16 @@
       <input type="date" id="movFecha" class="mov-input">
       <select id="movPlat" class="mov-input" title="En qué plataforma se hizo esta operación"></select>
       <button id="movGuardar" class="mov-btn">Registrar</button>
+    </div>
+    <!-- Vender: la app ya sabe cuántos títulos tienes, así que en vez de
+         sacar el 25% con calculadora se ofrecen los pedazos de siempre, cada
+         uno con la cantidad exacta que va a quedar en el campo. "Otro" deja
+         el campo en blanco para escribirla a mano. Aparece SOLO con tipo
+         "venta" y con posición abierta en ese ticker -- ver
+         renderVentaRapida() en inicializarFormularioMovimientos(). -->
+    <div id="ventaRapidaBox" class="venta-rapida" style="display:none;">
+      <p class="vr-titulo">Tienes <span class="mono" id="vrTengo"></span> de <span class="mono" id="vrTicker"></span>. ¿Cuánto vendes?</p>
+      <div class="vr-chips" id="vrChips"></div>
     </div>
     <!-- Atajo: después de registrar una COMPRA, antes había que ir a "Mi
          Cartera" a mano para poner el stop/objetivo -- fricción real en el
@@ -5294,7 +5319,10 @@ function poblarSelectorTickers(){
     clearBtn: document.getElementById('movTickerClear'),
     dropdown: document.getElementById('movTickerDropdown'),
     getItems: () => stocksDelAmbiente(ambienteActivo),
-    onSelect: () => {},
+    // Elegir de la lista no dispara el 'input' del campo, así que los
+    // pedazos de venta se redibujan desde acá -- si no, quedaban con la
+    // posición del ticker anterior.
+    onSelect: () => { if(typeof renderVentaRapida === 'function') renderVentaRapida(); },
     permiteTextoLibre: true,
     agrupar: () => ambienteActivo === 'seguir',
   });
@@ -5562,6 +5590,7 @@ function renderMovimientos(){
     const moneda = monedaDelAmbiente(ambienteActivo);
     listEl.innerHTML = `<p class="analysis-empty">Sin movimientos registrados todavía en ${moneda}.</p>`;
     renderResumenPortafolio();
+    if(typeof renderVentaRapida === 'function') renderVentaRapida();
     return;
   }
 
@@ -5654,6 +5683,9 @@ function renderMovimientos(){
     }
   }
   renderResumenPortafolio();
+  // La posición cambió (movimiento nuevo, borrado, cambio de ambiente) y los
+  // pedazos de venta se calculan sobre ella.
+  if(typeof renderVentaRapida === 'function') renderVentaRapida();
 }
 
 // Dividendo no tiene cantidad ni comisión -- es un monto que entró, punto.
@@ -5718,12 +5750,147 @@ function actualizarFormularioSegunTipo(){
   if(elCant) elCant.style.display = esDividendo ? 'none' : '';
   if(elComision) elComision.style.display = esDividendo ? 'none' : '';
   if(elPrecio) elPrecio.placeholder = esDividendo ? 'Monto recibido' : 'Precio';
+  // Los pedazos de venta solo tienen sentido vendiendo -- se recalculan acá
+  // porque este es el único lugar que reacciona al cambio de tipo.
+  if(typeof renderVentaRapida === 'function') renderVentaRapida();
+}
+
+// ---- VENDER UN PEDAZO SIN CALCULARLO A MANO ---------------------------
+// La app ya sabe cuántos títulos hay (cantidadNetaDe), así que al elegir
+// "Venta" ofrece los pedazos de siempre -- 100 / 75 / 50 / 25 % -- más
+// "Otro" para escribir la cantidad. Cada botón muestra ADEMÁS del
+// porcentaje la cantidad exacta que va a quedar en el campo: el porcentaje
+// solo no dice nada, y ese número es justo el que después hay que tipear en
+// la corredora.
+//
+// DECIMALES: cripto 8 (el satoshi), USD 6 (Racional compra por monto y deja
+// fracciones como 0,017993), CLP 0 -- en Chile no se venden fracciones de
+// acción. Es la misma regla que usa fmtCantidad() para mostrarlas.
+function decCantidadDeTicker(ticker){
+  if(esTickerCripto(ticker)) return 8;
+  return monedaDeTicker(ticker) === 'USD' ? 6 : 0;
+}
+// Los parciales se redondean SIEMPRE HACIA ABAJO, nunca al más cercano:
+// vender más títulos de los que tienes deja la posición en negativo y la
+// orden la rechaza la corredora. El 100% es la excepción y devuelve el neto
+// exacto, para que la posición quede en cero de verdad y no con un resto de
+// 0,000001 títulos colgando en Mi Cartera.
+function cantidadPorPorcentaje(neto, pct, ticker){
+  if(pct >= 1) return neto;
+  const f = Math.pow(10, decCantidadDeTicker(ticker));
+  return Math.floor(neto * pct * f) / f;
+}
+// Texto para el `value` de un <input type="number">: punto decimal, sin
+// separador de miles y sin notación científica. Ver el comentario de
+// fmtNum() sobre por qué acá NO va el formato chileno.
+//
+// NO REDONDEA, A PROPÓSITO. Con toFixed(6) el neto de 0,01799276 títulos de
+// VOO salía como 0,017993 -- 0,00000024 títulos MÁS de los que hay -- y ese
+// es justo el número que después se escribe en la corredora al vender todo.
+// El recorte a los decimales que corresponden ya lo hizo
+// cantidadPorPorcentaje(), y el 100% tiene que entregar el neto EXACTO para
+// que la posición quede en cero de verdad.
+function cantidadParaInput(v){
+  const s = String(v);
+  if(s.indexOf('e') === -1 && s.indexOf('E') === -1) return s;
+  // Cantidades muy chicas (satoshis) salen como "1e-7" desde String(), y eso
+  // el value de un <input type="number"> no lo acepta.
+  return v.toFixed(20).replace(/0+$/, '').replace(/\.$/, '');
+}
+
+const VENTA_PEDAZOS = [
+  {pct: 1,    etiqueta: 'Todo (100%)'},
+  {pct: 0.75, etiqueta: '75%'},
+  {pct: 0.5,  etiqueta: '50%'},
+  {pct: 0.25, etiqueta: '25%'},
+];
+
+function renderVentaRapida(){
+  const box = document.getElementById('ventaRapidaBox');
+  if(!box) return;
+  const selTipo = document.getElementById('movTipo');
+  const elTicker = document.getElementById('movTicker');
+  const chips = document.getElementById('vrChips');
+  if(!selTipo || !elTicker || !chips){ box.style.display = 'none'; return; }
+
+  const ticker = selTipo.value === 'venta' ? tickerDesdeInputMov(elTicker.value) : null;
+  // cantidadNetaDe() cuenta TODOS los movimientos de ese ticker sin filtrar
+  // por ambiente, que es justo lo que se quiere: un ticker vive en un solo
+  // mercado. RESIDUO_CERO deja fuera los restos de float de una posición ya
+  // cerrada -- 0,0000000001 títulos no son media posición que vender.
+  const neto = ticker ? cantidadNetaDe(ticker) : 0;
+  if(!ticker || neto <= RESIDUO_CERO){
+    box.style.display = 'none';
+    box.dataset.ticker = '';
+    return;
+  }
+
+  const moneda = monedaDeTicker(ticker);
+  document.getElementById('vrTengo').textContent = fmtCantidad(neto, moneda, ticker) + ' títulos';
+  document.getElementById('vrTicker').textContent = ticker;
+
+  const botones = VENTA_PEDAZOS.map(pedazo => {
+    const q = cantidadPorPorcentaje(neto, pedazo.pct, ticker);
+    // Con pocos títulos un pedazo chico se va a cero al redondear hacia
+    // abajo (25% de 2 acciones chilenas = 0). Ese botón no se dibuja, en vez
+    // de ofrecer una venta de cero que el formulario después rechaza.
+    if(q <= 0) return '';
+    return `<button type="button" class="vr-chip" data-q="${cantidadParaInput(q)}">`
+         + `<span>${pedazo.etiqueta}</span>`
+         + `<span class="vr-q">${fmtCantidad(q, moneda, ticker)}</span></button>`;
+  }).join('');
+
+  chips.innerHTML = botones
+    + '<button type="button" class="vr-chip" data-otro="1"><span>Otro</span><span class="vr-q">escribir</span></button>';
+  box.dataset.ticker = ticker;
+  marcarChipVentaActivo();
+  box.style.display = '';
+}
+
+// Marca cuál pedazo corresponde a lo que hay escrito en Cantidad. Va aparte
+// de renderVentaRapida() a propósito: se llama en cada tecla del campo, y
+// reescribir el innerHTML de los botones en cada golpe de tecla haría
+// parpadear la fila entera.
+function marcarChipVentaActivo(){
+  const chips = document.getElementById('vrChips');
+  const elCant = document.getElementById('movCantidad');
+  if(!chips || !elCant) return;
+  const actual = parseFloat(elCant.value);
+  chips.querySelectorAll('.vr-chip').forEach(ch => {
+    const q = ch.dataset.q ? parseFloat(ch.dataset.q) : NaN;
+    ch.classList.toggle('on', !isNaN(actual) && !isNaN(q) && Math.abs(actual - q) < 1e-9);
+  });
+}
+
+// Delegado sobre el contenedor de los botones (no sobre cada botón): su
+// innerHTML se reemplaza entero en cada renderVentaRapida(), así que un
+// listener puesto en un botón no sobreviviría al siguiente redibujado.
+// Mismo patrón que el delegado de movsDetailPanel.
+function inicializarVentaRapida(){
+  const elTicker = document.getElementById('movTicker');
+  if(elTicker) elTicker.addEventListener('input', renderVentaRapida);
+  const elCant = document.getElementById('movCantidad');
+  if(elCant) elCant.addEventListener('input', marcarChipVentaActivo);
+  const chips = document.getElementById('vrChips');
+  if(!chips) return;
+  chips.addEventListener('click', (e) => {
+    const chip = e.target.closest('.vr-chip');
+    if(!chip || !elCant) return;
+    if(chip.dataset.otro){
+      elCant.value = '';
+      elCant.focus();
+    } else {
+      elCant.value = chip.dataset.q;
+    }
+    marcarChipVentaActivo();
+  });
 }
 
 function inicializarFormularioMovimientos(){
   poblarSelectorTickers();
   document.getElementById('movFecha').value = new Date().toLocaleDateString('en-CA', {timeZone:'America/Santiago'});
   document.getElementById('movTipo').addEventListener('change', actualizarFormularioSegunTipo);
+  inicializarVentaRapida();
   actualizarFormularioSegunTipo();
   inicializarAtajoStop();
 
@@ -6628,30 +6795,51 @@ function aplicarMovimientoACaja(mov){
 // misma entrada del historial de caja (por id) en vez de crear una nueva
 // -- así un aporte o retiro manual que quedó mezclado en el mismo
 // historial no se ve afectado.
-function editarMovimiento(id, nuevaCantidad, nuevoPrecio){
+function editarMovimiento(id, nuevaCantidad, nuevoPrecio, nuevoTipo){
   const mov = movimientos.find(m => m.id === id);
   if(!mov) return false;
   if(mov.tipo === 'dividendo') return false; // no tiene cantidad/precio -- esta función no le aplica
 
+  // CORREGIR COMPRA <-> VENTA (a pedido, sep-2026): elegir el tipo
+  // equivocado en el formulario y darse cuenta después obligaba a borrar el
+  // movimiento y reescribirlo entero. Solo entre esos dos: un dividendo no
+  // tiene cantidad ni precio, así que convertir hacia o desde dividendo
+  // sería otro movimiento, no una corrección. Sin `nuevoTipo` se queda con
+  // el que ya tenía, así que los llamados de tres argumentos siguen valiendo.
+  const tipoViejo = mov.tipo;
+  const tipoNuevo = (nuevoTipo === 'compra' || nuevoTipo === 'venta') ? nuevoTipo : tipoViejo;
+
   const esCripto = esTickerCripto(mov.ticker); // cripto no toca la caja, ver aplicarMovimientoACaja()
   const moneda = monedaDeMov(mov);
-  const signo = mov.tipo === 'compra' ? -1 : 1;
-  const montoViejo = signo * mov.cantidad * mov.precio;
+  const montoViejo = (tipoViejo === 'compra' ? -1 : 1) * mov.cantidad * mov.precio;
 
   mov.cantidad = nuevaCantidad;
   mov.precio = nuevoPrecio;
+  mov.tipo = tipoNuevo;
   saveMovimientos(movimientos);
 
-  const montoNuevo = signo * mov.cantidad * mov.precio;
+  const montoNuevo = (tipoNuevo === 'compra' ? -1 : 1) * mov.cantidad * mov.precio;
   const delta = montoNuevo - montoViejo;
-  if(!esCripto && delta !== 0){
-    caja[moneda] = (caja[moneda] || 0) + delta;
-    const platEd = platDeMov(mov);
-    if(platEd) caja.plat[platEd][moneda] = (caja.plat[platEd][moneda] || 0) + delta;
+  // El tipo entra en la condición además del delta: dar vuelta una compra a
+  // venta con el mismo monto igual tiene que reescribir la entrada del
+  // historial (dice "Compra de..." y cuenta como auto-compra).
+  if(!esCripto && (delta !== 0 || tipoNuevo !== tipoViejo)){
+    if(delta !== 0){
+      caja[moneda] = (caja[moneda] || 0) + delta;
+      const platEd = platDeMov(mov);
+      if(platEd) caja.plat[platEd][moneda] = (caja.plat[platEd][moneda] || 0) + delta;
+    }
     const entradaHistorial = caja.historial.find(h => h.id === id);
     if(entradaHistorial){
-      entradaHistorial.monto = montoNuevo;
-      entradaHistorial.nota = `${mov.tipo === 'compra' ? 'Compra' : 'Venta'} de ${mov.cantidad} ${mov.ticker} @ ${mov.precio} (editado)`;
+      // La comisión NO entra en el delta -- no se edita, así que se cancela
+      // sola entre el monto viejo y el nuevo -- pero SÍ tiene que quedar
+      // dentro del monto guardado en el historial: es el número que
+      // moverEfectoCajaPlat() traspasa de una plataforma a otra si después
+      // se corrige el "Dónde". Antes se guardaba sin ella y ese traspaso
+      // quedaba corto justo por el valor de la comisión.
+      entradaHistorial.monto = montoNuevo - (mov.comision || 0);
+      entradaHistorial.tipo = tipoNuevo === 'compra' ? 'auto-compra' : 'auto-venta';
+      entradaHistorial.nota = `${tipoNuevo === 'compra' ? 'Compra' : 'Venta'} de ${mov.cantidad} ${mov.ticker} @ ${mov.precio} (editado)`;
     }
     guardarCaja();
   }
@@ -10838,10 +11026,19 @@ function iniciarEdicionMovimiento(tr, id){
   const tdCant = tr.querySelector('.mov-cant');
   const tdPrec = tr.querySelector('.mov-prec');
   const tdAcc = tr.querySelector('.mov-acciones');
+  const tdMonto = tr.querySelector('.mov-monto');
   if(!tdCant || !tdPrec || !tdAcc) return;
 
   tdCant.innerHTML = `<input type="number" step="any" min="0" inputmode="decimal" class="mov-input mono mov-edit-cant" value="${mov.cantidad}" style="width:72px; padding:3px 5px;">`;
   tdPrec.innerHTML = `<input type="number" step="any" min="0" inputmode="decimal" class="mov-input mono mov-edit-prec" value="${mov.precio}" style="width:84px; padding:3px 5px;">`;
+  // El tipo va en la celda de PxQ: es un número derivado de los otros dos,
+  // así que mientras se edita queda viejo igual -- es el único espacio de la
+  // fila que se puede ocupar sin apretar las columnas que sí importan.
+  // Guardado el cambio, la fila se va sola a la otra tabla (Compras/Ventas).
+  if(tdMonto) tdMonto.innerHTML = `<select class="mov-input mono mov-edit-tipo" data-id="${id}" title="Compra o venta" style="width:84px; padding:3px 4px; font-size:11px;">`
+    + `<option value="compra"${mov.tipo === 'compra' ? ' selected' : ''}>Compra</option>`
+    + `<option value="venta"${mov.tipo === 'venta' ? ' selected' : ''}>Venta</option>`
+    + `</select>`;
   tdAcc.innerHTML = `<button type="button" class="mov-save-btn" data-id="${id}" title="Guardar">✓</button>`
                    + `<button type="button" class="mov-cancel-btn" title="Cancelar">✕</button>`;
   const inputCant = tr.querySelector('.mov-edit-cant');
@@ -10895,15 +11092,44 @@ movsDetailPanel.addEventListener('click', (e) => {
     const id = Number(btnGuardar.dataset.id);
     const inputCant = tr.querySelector('.mov-edit-cant');
     const inputPrec = tr.querySelector('.mov-edit-prec');
+    const selTipo = tr.querySelector('.mov-edit-tipo');
     const nuevaCantidad = inputCant ? parseFloat(inputCant.value) : NaN;
     const nuevoPrecio = inputPrec ? parseFloat(inputPrec.value) : NaN;
+    const nuevoTipo = selTipo ? selTipo.value : null;
     if(!nuevaCantidad || nuevaCantidad <= 0 || !nuevoPrecio || nuevoPrecio <= 0){
       alert('Cantidad y precio deben ser mayores a cero.');
       return;
     }
-    editarMovimiento(id, nuevaCantidad, nuevoPrecio);
+    // Dar vuelta una compra a venta puede dejar la posición en negativo
+    // (vendiste más de lo que compraste). Se AVISA, no se bloquea -- mismo
+    // criterio que la caja negativa: puede haber movimientos que nunca
+    // pasaron por esta app, y esconder el número sería peor.
+    const movAntes = movimientos.find(m => m.id === id);
+    if(movAntes && movAntes.tipo !== 'dividendo'){
+      const netoDespues = cantidadNetaDe(movAntes.ticker)
+        - (movAntes.tipo === 'compra' ? 1 : -1) * movAntes.cantidad
+        + ((nuevoTipo === 'venta' || (!nuevoTipo && movAntes.tipo === 'venta')) ? -1 : 1) * nuevaCantidad;
+      if(netoDespues < -RESIDUO_CERO){
+        const seguir = confirm('Con este cambio quedarías con '
+          + fmtCantidad(netoDespues, monedaDeMov(movAntes), movAntes.ticker)
+          + ' títulos de ' + movAntes.ticker + ': estarías vendiendo más de lo que tienes registrado.\n\n'
+          + '¿Guardar igual?');
+        if(!seguir) return;
+      }
+    }
+    const tipoAntes = movAntes ? movAntes.tipo : null;
+    editarMovimiento(id, nuevaCantidad, nuevoPrecio, nuevoTipo);
+    // Quedó vendida entera al dar vuelta el tipo: el precio objetivo NO se
+    // apaga solo (vive en el servidor, que no conoce tus movimientos), así
+    // que se pregunta acá igual que al registrar una venta.
+    if(movAntes && tipoAntes === 'compra' && nuevoTipo === 'venta'
+       && typeof ofrecerLimpiarObjetivos === 'function') ofrecerLimpiarObjetivos(movAntes.ticker);
     renderMovsDetailPanel(); // refleja el cambio en la tabla y en los totales
     if(typeof renderMovimientos === 'function') renderMovimientos(); // idem en el panel compacto y en la caja
+    if(typeof renderCaja === 'function') renderCaja();
+    // Cambiar cantidad, precio o tipo mueve la posición entera: si Mi
+    // Cartera está abierta, se redibuja (antes quedaba con el número viejo).
+    if(ambienteActivo === 'cartera' && typeof renderAmbienteCartera === 'function') renderAmbienteCartera();
     return;
   }
 
@@ -10943,6 +11169,26 @@ movsDetailPanel.addEventListener('click', (e) => {
   if(btnPlatCancel){
     renderMovsDetailPanel(); // descarta, vuelve a mostrar el chip tal como estaba
     return;
+  }
+});
+
+// Enter guarda, Escape cancela -- mientras se edita una fila. En el teléfono
+// esta tabla es más ancha que la pantalla (seis columnas), así que llegar al
+// ✓ obliga a arrastrarla de lado justo después de escribir el número. Con el
+// teclado abierto, el "listo" del teclado hace lo mismo sin moverse de ahí.
+// Va delegado sobre el panel por lo mismo que el listener de clic: el
+// innerHTML se reemplaza entero en cada redibujado.
+movsDetailPanel.addEventListener('keydown', (e) => {
+  const campo = e.target.closest && e.target.closest('.mov-edit-cant, .mov-edit-prec, .mov-edit-tipo');
+  if(!campo) return;
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    const tr = campo.closest('tr[data-id]');
+    const btn = tr && tr.querySelector('.mov-save-btn');
+    if(btn) btn.click(); // pasa por el mismo camino que el clic (validaciones incluidas)
+  } else if(e.key === 'Escape'){
+    e.preventDefault();
+    renderMovsDetailPanel(); // descarta la edición en curso
   }
 });
 movsOverlay.addEventListener('click', e => { if(e.target === movsOverlay) closeMovsDetail(); });
@@ -11058,9 +11304,9 @@ function renderMovsDetailPanel(){
         <td>${m.fecha}</td>
         <td class="mov-cant">${fmtCantidad(m.cantidad, moneda, m.ticker)}</td>
         <td class="mov-prec">${fmt(m.precio, p.dec, moneda)}</td>
-        <td>${$$(m.cantidad*m.precio)}</td>
+        <td class="mov-monto">${$$(m.cantidad*m.precio)}</td>
         <td><button type="button" class="mov-plat-edit" data-id="${m.id}" title="Cambiar dónde está">${chipPlat(platDeMov(m))}</button></td>
-        <td class="mov-acciones"><button type="button" class="mov-edit-btn" data-id="${m.id}" title="Editar cantidad o precio">✎</button></td>
+        <td class="mov-acciones"><button type="button" class="mov-edit-btn" data-id="${m.id}" title="Editar cantidad, precio o tipo">✎</button></td>
       </tr>`).join('');
 
     const filasVenta = p.ventas.map(m => `
@@ -11068,9 +11314,9 @@ function renderMovsDetailPanel(){
         <td>${m.fecha}</td>
         <td class="mov-cant">${fmtCantidad(m.cantidad, moneda, m.ticker)}</td>
         <td class="mov-prec">${fmt(m.precio, p.dec, moneda)}</td>
-        <td>${$$(m.cantidad*m.precio)}</td>
+        <td class="mov-monto">${$$(m.cantidad*m.precio)}</td>
         <td><button type="button" class="mov-plat-edit" data-id="${m.id}" title="Cambiar dónde está">${chipPlat(platDeMov(m))}</button></td>
-        <td class="mov-acciones"><button type="button" class="mov-edit-btn" data-id="${m.id}" title="Editar cantidad o precio">✎</button></td>
+        <td class="mov-acciones"><button type="button" class="mov-edit-btn" data-id="${m.id}" title="Editar cantidad, precio o tipo">✎</button></td>
       </tr>`).join('');
 
     // Dividendos: sin cantidad/precio que editar (por eso no llevan botón
