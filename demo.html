@@ -1222,6 +1222,14 @@
            interruptor que oculta cifras monetarias en los tres ambientes,
            no solo en el panel de movimientos. -->
       <button id="btnOcultarCifras" class="live-pill" style="cursor:pointer; background:none;" title="Ocultar/mostrar cifras en todos los ambientes">👁️</button>
+      <!-- PxQ (cantidad x precio) en Mi Cartera, a pedido de Cristian
+           (11-sep-2026). Interruptor PROPIO, aislado del ojito de arriba:
+           uno controla si el numero se ve tachado (privacidad, los tres
+           ambientes), este otro controla si el DATO existe en la fila
+           (informacion, solo Mi Cartera). Los dos se pueden combinar: con
+           el ojito general encendido, el PxQ igual se muestra pero
+           tachado -- ver estaOcultoPxQ()/fmtMoneda en filaCartera(). -->
+      <button id="btnOcultarPxQ" class="live-pill" style="cursor:pointer; background:none;" title="Ocultar/mostrar el PxQ (cantidad x precio de compra y de hoy) en cada posicion de Mi Cartera. No afecta el ojito general de cifras.">PxQ 👁️</button>
       <!-- Glosario. Antes la ayuda vivía SOLO dentro del detalle de una
            acción, en la fila de indicadores del gráfico, y cubría nada más
            los seis trazados del gráfico. Pero la app usa muchas más cosas
@@ -6532,6 +6540,14 @@ function estaOculto(){
   try { return localStorage.getItem('ipsa_ocultar_cifras') === '1'; } catch(e){ return false; }
 }
 
+// Interruptor propio del PxQ en Mi Cartera (11-sep-2026): a proposito NO
+// comparte clave con 'ipsa_ocultar_cifras'. El del ojito general dice "no
+// quiero que SE VEA el numero"; este dice "no quiero que EXISTA la fila de
+// PxQ". Apagar uno no apaga el otro.
+function estaOcultoPxQ(){
+  try { return localStorage.getItem('ipsa_ocultar_pxq') === '1'; } catch(e){ return false; }
+}
+
 // ---- QUÉ PLATAFORMAS EXISTEN ----
 // Van ACÁ ARRIBA, y no junto al resto del bloque de plataformas (más abajo),
 // por un motivo concreto: `let caja = cargarCaja()` corre unas líneas más
@@ -10159,6 +10175,21 @@ function renderAmbienteCartera(){
         ).join(' · ')
       : '';
 
+    // PxQ -- cantidad x precio, de la compra y de hoy (11-sep-2026, a
+    // pedido de Cristian). "de hoy" reusa `valorPos` (ya calculado arriba
+    // para "Pones en juego"): no se recalcula dos veces lo mismo.
+    // Estilo `cartera-plat-q` a propósito -- MISMA familia tenue que el
+    // chip de cantidad por corredora, de la línea de al lado: no es un
+    // dato nuevo que grite, es un detalle más de esa misma línea.
+    // `fmtMoneda` (con `oculto`) tapa el número si el ojito GENERAL está
+    // encendido; `estaOcultoPxQ()` de abajo hace que la frase entera ni
+    // aparezca si el interruptor PROPIO de PxQ está apagado -- son dos
+    // controles independientes, no uno hecho con el otro.
+    const pxqCompra = (held && pos.costoPromedio > 0) ? pos.costoPromedio * pos.netoQ : null;
+    const pxqHTML = (held && !estaOcultoPxQ())
+      ? ` · <span class="cartera-plat-q mono" title="Cantidad × precio de compra, y cantidad × precio de hoy">PxQ compra ${fmtMoneda(pxqCompra, oculto, currency)} · hoy ${fmtMoneda(valorPos, oculto, currency)}</span>`
+      : '';
+
     return `
       <div class="cartera-row ${esFav ? 'is-favorite' : ''}" data-ticker="${s.ticker}">
         <div class="cartera-row-head">
@@ -10171,7 +10202,7 @@ function renderAmbienteCartera(){
           </span>
         </div>
         <div class="cartera-pos">${held
-          ? `Tienes ${fmtCantidad(pos.netoQ, currency, s.ticker)} título(s) · compra ${fmtMoneda2(pos.costoPromedio, currency)}${platsHTML}`
+          ? `Tienes ${fmtCantidad(pos.netoQ, currency, s.ticker)} título(s) · compra ${fmtMoneda2(pos.costoPromedio, currency)}${platsHTML}${pxqHTML}`
           : 'Sin posición registrada (se calcula sola desde "Mis movimientos")'}</div>
         <div class="cartera-alertas">
           <label class="cartera-campo sube" title="${distancia(obj.sube) || 'Avisar si sube a (venta)'}">
@@ -10728,6 +10759,8 @@ function renderResumenPortafolio(){
   elNoReal.className = 'msb-val mono ' + (oculto ? '' : (hayNoRealizadaCompleta ? (noRealizada>=0?'up':'down') : ''));
 
   document.getElementById('btnOcultarCifras').textContent = oculto ? '🙈' : '👁️';
+  const btnPxQ = document.getElementById('btnOcultarPxQ');
+  if(btnPxQ) btnPxQ.textContent = 'PxQ ' + (estaOcultoPxQ() ? '🙈' : '👁️');
 
   // El detalle completo (tickers, cantidades y fechas por acción) tiene
   // que quedar tapado igual que la lista de movimientos -- si no, alguien
@@ -12445,6 +12478,14 @@ function inicializarPortafolio(){
     if(typeof renderAmbienteCartera === 'function' && ambienteActivo === 'cartera') renderAmbienteCartera();
     if(openTicker) renderDetail(openTicker);
     if(movsOverlay.classList.contains('open')) renderMovsDetailPanel();
+  });
+  document.getElementById('btnOcultarPxQ').addEventListener('click', () => {
+    const nuevoEstado = !estaOcultoPxQ();
+    try { localStorage.setItem('ipsa_ocultar_pxq', nuevoEstado ? '1' : '0'); } catch(e){}
+    document.getElementById('btnOcultarPxQ').textContent = 'PxQ ' + (nuevoEstado ? '🙈' : '👁️');
+    // Solo Mi Cartera dibuja PxQ -- a diferencia del ojito general, no hace
+    // falta re-renderizar movimientos, caja ni la grilla.
+    if(typeof renderAmbienteCartera === 'function' && ambienteActivo === 'cartera') renderAmbienteCartera();
   });
   document.getElementById('btnExportarMovs').addEventListener('click', exportarMovimientos);
   const btnMovsXls = document.getElementById('btnMovsExcel');
