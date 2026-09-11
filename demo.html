@@ -2715,6 +2715,13 @@ const stocksUSA = [
   {ticker:'IYT',     name:"Transporte · ETF de industria",                    dec:2, currency:'USD'},
   {ticker:'UBS',     name:"UBS Group",                                        dec:2, currency:'USD'},
   {ticker:'URSP',    name:"ProShares Ultra S&P 500 Equal Weight (2x)",        dec:2, currency:'USD'},
+  // Agregadas a pedido (11-sep-2026). Mismo orden y mismos simbolos que el
+  // bloque nuevo en backend/main.py -- si tocas uno, toca el otro. Las
+  // cuatro son acciones normales (ninguna es ETF).
+  {ticker:'CDNA',    name:"CareDx",                                          dec:2, currency:'USD'},
+  {ticker:'CF',      name:"CF Industries",                                   dec:2, currency:'USD'},
+  {ticker:'DHT',     name:"DHT Holdings",                                    dec:2, currency:'USD'},
+  {ticker:'TECK',    name:"Teck Resources",                                  dec:2, currency:'USD'},
   // -----------------------------------------------------------------------
   // ETF DE SECTOR E INDUSTRIA (27-ago-2026)
   // -----------------------------------------------------------------------
@@ -9423,6 +9430,15 @@ const GICS = {
   'XLRE':['Inmobiliario','Sector inmobiliario'], 'XLC':['Comunicaciones','Sector comunicaciones'],
   'SMH':['Tecnología','Semiconductores'], 'SOXX':['Tecnología','Semiconductores'],
   'GLD':['Materiales','Oro'], 'SLV':['Materiales','Plata'],
+  // Agregados a pedido (11-sep-2026): los 4 tickers nuevos de la grilla y
+  // los 4 que quedaron sin clasificar del lote del 27-ago-2026 (UBS, HNGE,
+  // IYT, URSP) -- estaban en la grilla pero no en este diccionario, asi
+  // que Mi Cartera los mostraba como "Sin clasificar" si Cristian tenia
+  // posicion en alguno.
+  'CF':['Materiales','Fertilizantes y agroquímicos'], 'TECK':['Materiales','Minería diversificada'],
+  'CDNA':['Salud','Diagnóstico y análisis'], 'DHT':['Industriales','Transporte marítimo'],
+  'UBS':['Financieras','Banca global'], 'HNGE':['Salud','Salud digital'],
+  'IYT':['Industriales','Transporte'], 'URSP':['Diversificado','S&P 500 equiponderado (2x)'],
 };
 const SIN_CLASIFICAR = 'Sin clasificar';
 // Los ETF que NO son de un sector puntual: se marcan para poder decir en
