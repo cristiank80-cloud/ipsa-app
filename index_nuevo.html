@@ -1814,7 +1814,7 @@ const ALERT_THRESHOLD = 0.96; // 4% bajo el promedio
 const PERIOD_LABELS = {'1d':'1D','5d':'5D','1mo':'1M','3mo':'3M','6mo':'6M','ytd':'YTD','1y':'1A','5y':'5A','8y':'8A','10y':'10A'};
 const OVERLAY_LABELS = {sma:'SMA', ema:'EMA', bbands:'BBands', macd:'MACD', rsi:'RSI', volume:'Volume'};
 let ultimoHistorialCargado = null; // {ticker, period, points, dec} -- sobrevive a re-renders del panel
-let overlaysActivos = {sma:false, ema:false, bbands:false, macd:false, rsi:false, volume:false, indice:false, fuerza:false, weinstein:false};
+let overlaysActivos = {sma:false, ema:false, bbands:false, macd:false, rsi:false, volume:false, indice:false, fuerza:false, weinstein:false, misMedias:false};
 // Colores de fondo por "caso" diario (fuerza relativa/absoluta) y por "fase"
 // semanal (Weinstein) para pintar detras de las velas del grafico -- MISMOS
 // colores que usan los .pine originales en TradingView (no los colores del
@@ -3778,6 +3778,7 @@ function renderDetail(ticker){
       <button class="overlay-btn" data-overlay="indice" title="Compara el movimiento de ${s.ticker} contra ${moneda === 'USD' ? 'el S&P 500' : 'el IPSA'} en el mismo período, reescalado para que quepa en el mismo gráfico.">${moneda === 'USD' ? 'S&P 500' : 'IPSA'}</button>
       <button class="overlay-btn" data-overlay="fuerza" title="Pinta el fondo del gráfico con el caso diario de fuerza relativa/absoluta (verde=oportunidad, celeste=recuperando, amarillo=sobreextendida, rojo=divergencia/declive).">Fuerza</button>
       <button class="overlay-btn" data-overlay="weinstein" title="Pinta el fondo del gráfico con la fase semanal de Weinstein (gris=fase 1, verde=fase 2, naranjo=fase 3, rojo=fase 4).">Weinstein</button>
+      <button class="overlay-btn" data-overlay="misMedias" title="Dibuja en el gráfico las 4 medias de tu TradingView: EMA 21 (verde), SMA 50 (amarillo), SMA 100 (azul) y SMA 200 (rojo) — los mismos colores de la tabla Indicadores técnicos.">Medias TV</button>
       <button class="overlay-btn" id="btnLimpiarOverlays">Limpiar</button>
       <button class="overlay-btn" id="btnAyudaIndicadores" title="¿Qué significa cada indicador?">❓ Ayuda</button>
     </div>
@@ -4156,6 +4157,12 @@ function renderHistoryChart(){
   const series = [];
   if(overlaysActivos.sma) series.push({data: calcSMASeries(closes,20), color:'#E8B84B', label:'SMA20'});
   if(overlaysActivos.ema) series.push({data: calcEMASeries(closes,20), color:'#7FB2E5', label:'EMA20'});
+  if(overlaysActivos.misMedias){
+    series.push({data: calcEMASeries(closes,21), color:'#4CAF50', label:'EMA21'});
+    series.push({data: calcSMASeries(closes,50), color:'#FFC107', label:'SMA50'});
+    series.push({data: calcSMASeries(closes,100), color:'#2196F3', label:'SMA100'});
+    series.push({data: calcSMASeries(closes,200), color:'#F44336', label:'SMA200'});
+  }
   let bb = null;
   if(overlaysActivos.bbands){ bb = calcBollinger(closes,20,2); }
 
