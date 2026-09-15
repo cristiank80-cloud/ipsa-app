@@ -3876,6 +3876,12 @@ function calcSMA(prices, window){
   const slice = prices.slice(-window);
   return slice.reduce((a,b) => a+b, 0) / window;
 }
+function calcEMA(prices, period){
+  if(!prices || prices.length < 1 || period < 1) return null;
+  const serie = calcEMASeries(prices, period);
+  for(let i = serie.length - 1; i >= 0; i--){ if(serie[i] !== null) return serie[i]; }
+  return null;
+}
 function calcRSI(prices, period=14){
   if(prices.length < period+1) return null;
   const deltas = [];
@@ -3936,7 +3942,7 @@ async function seedHistorialSiFalta(s){
 // lista es un campo que alguien se olvida de copiar y una pantalla que
 // aparece a medias sin que nadie entienda por que.
 const CAMPOS_QUOTE = ['dayHigh','dayLow','volume','montoTransado','ret3m','ret1y',
-                      'rsi14','sma20','sma50','sma200','zscore','staleSeconds'];
+                      'rsi14','sma20','sma50','sma100','sma200','ema21','zscore','staleSeconds'];
 
 function aplicarQuoteAStock(s, q){
   if(!s || !q || typeof q.price !== 'number') return false;
@@ -4148,17 +4154,23 @@ function renderDetail(ticker){
   const rsiVal = (liveMode && typeof s.rsi14 === 'number') ? s.rsi14 : calcRSI(s.history, 14);
   const sma20Val = (liveMode && typeof s.sma20 === 'number') ? s.sma20 : calcSMA(s.history, 20);
   const sma50Val = (liveMode && typeof s.sma50 === 'number') ? s.sma50 : calcSMA(s.history, Math.min(40, s.history.length));
+  const ema21Val = (liveMode && typeof s.ema21 === 'number') ? s.ema21 : calcEMA(s.history, 21);
   const rsiTexto = rsiVal === null ? 'Calculando…' :
     rsiVal + (rsiVal < 30 ? ' (sobrevendido)' : rsiVal > 70 ? ' (sobrecomprado)' : '');
   const sma20Texto = sma20Val === null ? 'Calculando…' : fmt(sma20Val, s.dec);
   const sma50Texto = sma50Val === null ? 'Calculando…' : fmt(sma50Val, s.dec);
+  const ema21Texto = ema21Val === null ? 'Calculando…' : fmt(ema21Val, s.dec);
 
-  // SMA200: a diferencia de las dos de arriba, no tiene respaldo local --
-  // 200 datos a un tick cada ~60s tardarian horas en juntarse y en la
-  // practica nunca se verian, asi que solo se muestra si vino real del
-  // backend. Si no vino (recien conectado, o el papel tiene menos de 200
-  // dias habiles de historial), se dice explicitamente en vez de dejar un
-  // "Calculando…" que nunca se resuelve.
+  // SMA100/SMA200: a diferencia de las de arriba, no tienen respaldo local --
+  // 100/200 datos a un tick cada ~60s tardarian horas en juntarse y en la
+  // practica nunca se verian, asi que solo se muestran si vinieron reales del
+  // backend. Si no vinieron (recien conectado, o el papel tiene menos dias
+  // habiles de historial de los necesarios), se dice explicitamente en vez
+  // de dejar un "Calculando…" que nunca se resuelve.
+  const sma100Val = (liveMode && typeof s.sma100 === 'number') ? s.sma100 : null;
+  const sma100Texto = sma100Val !== null
+    ? fmt(sma100Val, s.dec)
+    : (liveMode ? 'No disponible (esperando datos o menos de 100 días de historial)' : 'No disponible en modo simulado');
   const sma200Val = (liveMode && typeof s.sma200 === 'number') ? s.sma200 : null;
   const sma200Texto = sma200Val !== null
     ? fmt(sma200Val, s.dec)
@@ -4287,8 +4299,10 @@ function renderDetail(ticker){
     <table class="mini-table">
       <tr><td>RSI (14)</td><td>${rsiTexto}</td></tr>
       <tr><td>Media móvil 20</td><td>${sma20Texto}</td></tr>
-      <tr><td>Media móvil 50</td><td>${sma50Texto}</td></tr>
-      <tr><td>Media móvil 200</td><td>${sma200Texto}</td></tr>
+      <tr><td>Media móvil exponencial 21 (EMA)</td><td style="color:#4CAF50;">${ema21Texto}</td></tr>
+      <tr><td>Media móvil 50</td><td style="color:#FFC107;">${sma50Texto}</td></tr>
+      <tr><td>Media móvil 100</td><td style="color:#2196F3;">${sma100Texto}</td></tr>
+      <tr><td>Media móvil 200</td><td style="color:#F44336;">${sma200Texto}</td></tr>
     </table>
     <p style="font-size:11.5px; color:var(--ink-faint); margin:8px 0 0; background:var(--bg-field); padding:8px 10px; border-radius:6px;">
       <b style="color:var(--ink-dim);">¿Qué es el RSI?</b> Mide qué tan rápido subió o bajó el precio recientemente, en una escala de 0 a 100. Sobre 70 = subió muy rápido (posible sobrecompra). Bajo 30 = cayó muy rápido (posible sobreventa). Cerca de 50 = sin sesgo claro.
@@ -12546,6 +12560,8 @@ function hydrateFromCache(){
     s.rsi14 = q.rsi14 ?? null;
     s.sma20 = q.sma20 ?? null;
     s.sma50 = q.sma50 ?? null;
+    s.sma100 = q.sma100 ?? null;
+    s.ema21 = q.ema21 ?? null;
     s.sma200 = q.sma200 ?? null;
     s.zscore = q.zscore ?? null;
     s.marketTime = q.marketTime || null;
@@ -12629,6 +12645,8 @@ async function fetchRealQuotes(){
         s.rsi14 = (typeof q.rsi14 === 'number') ? q.rsi14 : null;
         s.sma20 = (typeof q.sma20 === 'number') ? q.sma20 : null;
         s.sma50 = (typeof q.sma50 === 'number') ? q.sma50 : null;
+        s.sma100 = (typeof q.sma100 === 'number') ? q.sma100 : null;
+        s.ema21 = (typeof q.ema21 === 'number') ? q.ema21 : null;
         s.sma200 = (typeof q.sma200 === 'number') ? q.sma200 : null;
         s.zscore = (typeof q.zscore === 'number') ? q.zscore : null;
         s.staleSeconds = (typeof q.staleSeconds === 'number') ? q.staleSeconds : null;
@@ -12719,6 +12737,8 @@ async function fetchRealQuotesUsa(){
       s.rsi14 = (typeof q.rsi14 === 'number') ? q.rsi14 : null;
       s.sma20 = (typeof q.sma20 === 'number') ? q.sma20 : null;
       s.sma50 = (typeof q.sma50 === 'number') ? q.sma50 : null;
+      s.sma100 = (typeof q.sma100 === 'number') ? q.sma100 : null;
+      s.ema21 = (typeof q.ema21 === 'number') ? q.ema21 : null;
       s.sma200 = (typeof q.sma200 === 'number') ? q.sma200 : null;
       s.zscore = (typeof q.zscore === 'number') ? q.zscore : null;
       s.staleSeconds = (typeof q.staleSeconds === 'number') ? q.staleSeconds : null;
@@ -12760,6 +12780,8 @@ async function fetchRealQuotesUsa(){
       s.rsi14 = (typeof q.rsi14 === 'number') ? q.rsi14 : null;      // índice 0-100
       s.sma20 = enClp(q.sma20);
       s.sma50 = enClp(q.sma50);
+      s.sma100 = enClp(q.sma100);
+      s.ema21 = enClp(q.ema21);
       s.sma200 = enClp(q.sma200);
       s.zscore = (typeof q.zscore === 'number') ? q.zscore : null;   // desviaciones
       s.staleSeconds = (typeof q.staleSeconds === 'number') ? q.staleSeconds : null;
