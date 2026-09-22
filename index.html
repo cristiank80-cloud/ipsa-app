@@ -2270,6 +2270,14 @@ const stocksUSA = [
   {ticker:'CF',      name:"CF Industries",                                   dec:2, currency:'USD'},
   {ticker:'DHT',     name:"DHT Holdings",                                    dec:2, currency:'USD'},
   {ticker:'TECK',    name:"Teck Resources",                                  dec:2, currency:'USD'},
+  // Agregadas a pedido (22-sep-2026). Mismo orden y mismos simbolos que el
+  // bloque nuevo en backend/main.py -- si tocas uno, toca el otro.
+  // SPCX es accion (SpaceX, salio a bolsa en junio de 2026: sus indicadores
+  // de largo plazo van a decir "sin dato" hasta ~febrero de 2027, no es un
+  // error). VLUE es ETF de factor "value": se ve aca, pero Explorar no lo
+  // analiza.
+  {ticker:'SPCX',    name:"SpaceX (Space Exploration Technologies)",           dec:2, currency:'USD'},
+  {ticker:'VLUE',    name:"iShares MSCI USA Value Factor ETF",                 dec:2, currency:'USD'},
   // -----------------------------------------------------------------------
   // ETF DE SECTOR E INDUSTRIA (27-ago-2026)
   // -----------------------------------------------------------------------
@@ -9016,11 +9024,13 @@ const GICS = {
   'CDNA':['Salud','Diagnóstico y análisis'], 'DHT':['Industriales','Transporte marítimo'],
   'UBS':['Financieras','Banca global'], 'HNGE':['Salud','Salud digital'],
   'IYT':['Industriales','Transporte'], 'URSP':['Diversificado','S&P 500 equiponderado (2x)'],
+  // Agregados a pedido (22-sep-2026).
+  'SPCX':['Industriales','Aeroespacial y defensa'], 'VLUE':['Diversificado','Factor value EE.UU.'],
 };
 const SIN_CLASIFICAR = 'Sin clasificar';
 // Los ETF que NO son de un sector puntual: se marcan para poder decir en
 // pantalla que su peso no está repartido por sector.
-const ETF_AMPLIOS = ['VOO','VTI','VT','VXUS','SPY','IVV','QQQ','QQQM','SCHD','VIG','ARKK','BND','AGG','TLT'];
+const ETF_AMPLIOS = ['VOO','VTI','VT','VXUS','SPY','IVV','QQQ','QQQM','SCHD','VIG','ARKK','BND','AGG','TLT','VLUE'];
 function sectorDe(t){ return (GICS[t] || [SIN_CLASIFICAR, SIN_CLASIFICAR])[0]; }
 function industriaDe(t){ return (GICS[t] || [SIN_CLASIFICAR, SIN_CLASIFICAR])[1]; }
 function esEtfAmplio(t){ return ETF_AMPLIOS.indexOf(t) !== -1; }
