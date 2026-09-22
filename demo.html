@@ -1131,9 +1131,26 @@
     font-size:11.5px; color:var(--ink-faint); line-height:1.6;
     border-top:1px dashed var(--hairline); padding-top:12px; margin:6px 0 0;
   }
+  /* Aviso de monitoreo caido (22-sep-2026). Ver el bloque "EL LATIDO" mas
+     abajo en el JS: aparece cuando el servidor lleva rato sin que nadie lo
+     mande a revisar tus stops. Va arriba de todo y en cobre porque es lo
+     unico de esta app que significa "lo que estas viendo no te esta
+     cuidando"; si se pareciera al resto, se aprenderia a ignorar. */
+  .aviso-latido{
+    display:none; margin:0 0 14px; padding:12px 14px;
+    border:1px solid var(--copper); border-left-width:4px; border-radius:8px;
+    background:var(--copper-soft); color:var(--ink);
+    font-size:13px; line-height:1.5;
+  }
+  .aviso-latido.visible{display:block;}
+  .aviso-latido b{color:var(--copper);}
+  .aviso-latido .al-detalle{display:block; margin-top:4px; color:var(--ink-dim); font-size:12px;}
 </style>
 </head>
 <body>
+
+  <!-- Aviso de monitoreo caido. Nace vacio y oculto; lo llena revisarLatido(). -->
+  <div class="aviso-latido" id="avisoLatido" role="status" aria-live="polite"></div>
 
   <div class="topbar">
     <div class="brand">
@@ -13256,6 +13273,43 @@ function marcarBotonActivo(btn){
 // envío no está condicionado a `permisoOk`.
 if(Object.keys(alertasPrecio).length) sincronizarAlertasPrecio(true);
 
+// ...Y TAMBIÉN al volver a la app y cada 30 minutos, no solo al abrirla.
+//
+// POR QUÉ SE AGREGÓ (22-sep-2026)
+// ================================
+// Este mismo arreglo ya se le había hecho a la suscripción push, unas
+// líneas más abajo, con esta razón escrita: "si el servidor se reiniciaba a
+// las 09:00 y tú no abrías la app hasta la tarde, pasaba todo el día sin
+// saber a quién avisarle". A los precios objetivo NUNCA se les aplicó, y es
+// exactamente el mismo problema con peores consecuencias: el servidor sabía
+// a quién avisarle, pero no qué vigilar. Un reinicio de Render (disco
+// efímero) le borraba los stops y no volvían hasta la próxima vez que
+// Cristian abriera la app, mientras el botón de notificaciones seguía en
+// verde -- ese verde lo recuerda el teléfono, no el servidor.
+//
+// `inmediato` va en true: esto no es una edición que convenga agrupar con
+// otras, es una reposición.
+//
+// EL GUARDIA DEL `confirm()`: sin esto, una reposición automática podría
+// abrir el diálogo de "este dispositivo no tenía precios objetivo" cada 30
+// minutos si Cristian alguna vez lo cancela (ver sincronizarAlertasPrecio:
+// el flag solo se marca cuando ACEPTA, así que un "no" deja la pregunta
+// viva). Una pregunta que reaparece sola es peor que no reponer.
+function _puedeReponerAlertas(){
+  return Object.keys(alertasPrecio).length > 0
+      && (!_alertasSinCopiaLocalAlAbrir || _alertasAvisoHecho);
+}
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible' && _puedeReponerAlertas()){
+    sincronizarAlertasPrecio(true);
+  }
+});
+setInterval(() => {
+  if(document.visibilityState === 'visible' && _puedeReponerAlertas()){
+    sincronizarAlertasPrecio(true);
+  }
+}, 30 * 60 * 1000);
+
 // El disco de Render (plan gratuito) es EFÍMERO: la lista de suscripciones
 // se borra en cada reinicio y en cada despliegue. Esta función la vuelve a
 // registrar.
@@ -13344,6 +13398,74 @@ setInterval(() => {
   try { activadas = localStorage.getItem('ipsa_notif_activas') === '1'; } catch(e){}
   if(activadas && document.visibilityState === 'visible') resincronizarSuscripcion();
 }, 30 * 60 * 1000);
+
+// ==========================================================================
+// EL LATIDO · "¿alguien está revisando mis stops?"
+// ==========================================================================
+// LO QUE PASÓ EL 22-sep-2026
+// ==========================
+// Cristian vendió Visa a mano al ver que estaba bajo su stop de 365, sin
+// push ni correo. No falló ninguna de las cosas que uno revisa primero: el
+// permiso estaba dado, la suscripción registrada, la clave VAPID buena y
+// Resend configurado. Lo que pasó es que NADIE llamó a /run-check en toda
+// la mañana -- el cron gratuito de GitHub Actions no disparó -- y sin esas
+// llamadas cada 10 minutos Render se duerme a los 15. El servidor no estaba
+// lento: estaba apagado.
+//
+// POR QUÉ ESTE AVISO Y NO SOLO UN CRON MEJOR
+// ===========================================
+// El cron se cambió por uno externo que sí dispara. Pero cualquier llamador
+// se puede caer, y lo que no puede volver a pasar es que se caiga sin que
+// se note. Hasta hoy, desde esta pantalla "no pasó nada en el mercado" y
+// "no te estoy mirando" se veían exactamente igual: todo verde, precios
+// dibujados (que vienen de /quotes, que SÍ responde aunque nadie revise
+// nada) y ninguna alerta. Este aviso es lo único que separa esos dos casos.
+//
+// OJO CON ESTO AL LEER EL CÓDIGO
+// ===============================
+// Que la grilla muestre precios NO prueba que las alertas corran. Son dos
+// caminos distintos: los precios los pide la app cuando la abres, y las
+// alertas dependen de que algo externo llame a /run-check. Por eso el
+// estado del monitoreo se pregunta aparte, a /latido.
+//
+// FUERA DE HORARIO NO AVISA, A PROPÓSITO
+// =======================================
+// El servidor manda `en_horario`. De noche y los fines de semana que no
+// haya chequeos es lo normal; avisar ahí sería ruido, y un aviso que sale
+// cuando no pasa nada enseña a ignorarlo justo el día que importa.
+async function revisarLatido(){
+  const caja = document.getElementById('avisoLatido');
+  if(!caja) return;
+  try {
+    const resp = await fetch(BACKEND_URL + '/latido', {cache: 'no-store'});
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    const d = await resp.json();
+    if(d.ok){ caja.classList.remove('visible'); caja.innerHTML = ''; return; }
+
+    const min = d.minutos_desde_ultimo_check;
+    const cuando = (min === null || min === undefined)
+      ? 'no ha revisado ni una vez desde que arrancó'
+      : ('la última revisión fue hace ' + min + ' minutos');
+    caja.innerHTML =
+        '<b>⚠ Tus alertas no se están revisando.</b> El servidor ' + cuando
+      + ', así que un stop que se cruce ahora mismo <b>no te va a avisar</b>.'
+      + '<span class="al-detalle">Los precios que ves acá están al día — eso se pide aparte '
+      + 'y no prueba que las alertas corran. Revisa que el cron externo esté activo.</span>';
+    caja.classList.add('visible');
+  } catch(e){
+    // Sin conexión o servidor dormido: no se inventa un diagnóstico. Que la
+    // app diga "no te estoy cuidando" cuando en realidad es el metro sin
+    // señal sería el mismo error al revés.
+    console.warn('No se pudo consultar el latido del monitoreo:', e);
+  }
+}
+revisarLatido();
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible') revisarLatido();
+});
+setInterval(() => {
+  if(document.visibilityState === 'visible') revisarLatido();
+}, 10 * 60 * 1000);
 
 // ---- Autodiagnóstico de notificaciones ----
 //
