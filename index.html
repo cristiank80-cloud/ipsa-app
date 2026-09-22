@@ -103,6 +103,18 @@
 
   /* Bloque 8: Ambiente 4 · Mi Cartera (favoritos + precios objetivo). */
   .cartera-buscador{width:100%; padding:9px 12px; border:1px solid var(--hairline); border-radius:8px; background:var(--bg-field); font-size:13px; margin-bottom:10px; box-sizing:border-box;}
+  /* Borrado rapido del buscador (22-sep-2026, a pedido). El campo se envuelve
+     para poder poner la X encima, a la derecha. `padding-right` deja el hueco
+     para que el texto largo no pase por debajo del boton. */
+  .cartera-buscador-wrap{position:relative;}
+  .cartera-buscador-wrap .cartera-buscador{padding-right:34px;}
+  .cartera-buscador-x{
+    position:absolute; top:0; right:0; height:36px; width:32px;
+    display:flex; align-items:center; justify-content:center;
+    border:0; background:transparent; cursor:pointer; padding:0;
+    font-size:15px; line-height:1; color:var(--ink-faint);
+  }
+  .cartera-buscador-x:hover{color:var(--copper);}
   .cartera-toggle{font-size:11.5px; color:var(--ink-dim); margin-bottom:14px; display:flex; align-items:center; gap:6px; cursor:pointer; user-select:none;}
   .cartera-group-title{font-size:12.5px; font-weight:600; margin:18px 0 8px; color:var(--ink-dim);}
   .cartera-group-head{display:flex; align-items:baseline; justify-content:space-between; gap:8px;}
@@ -142,6 +154,18 @@
      en vez de compartir la fila horizontal de .cartera-campo. */
   .cartera-campo-baja-wrap{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
   .cartera-campo-baja-wrap .cartera-campo.baja{flex:none; width:100%;}
+  /* El lado de "Vta si sube" tambien se envuelve en columna, por lo mismo:
+     desde el 22-sep-2026 los dos campos llevan abajo cuanto valdria la
+     posicion a ese precio. Antes solo el de baja necesitaba columna. */
+  .cartera-campo-sube-wrap{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
+  .cartera-campo-sube-wrap .cartera-campo.sube{flex:none; width:100%;}
+  /* "Si se cumple este precio, tu posicion vale X, que es +Y% de lo que
+     pagaste." Tenue como .cartera-riesgo: es contexto del campo de arriba,
+     no un dato que compita con el. El % va en color (verde/cobre) porque es
+     lo unico de la linea que dice si el negocio sale bien o mal. */
+  .cartera-pxq-obj{font-size:10px; color:var(--ink-faint); padding-left:2px; white-space:nowrap;
+                   overflow:hidden; text-overflow:ellipsis;}
+  .cartera-pxq-obj b{font-weight:600;}
   .cartera-riesgo{font-size:10px; color:var(--ink-faint); padding-left:2px;}
   .cartera-riesgo--alto{color:var(--copper); font-weight:600;}
   /* La PLATA del riesgo, ancho completo y bajo los dos campos: "58,5%" no
@@ -726,6 +750,39 @@
   .cs-box-val{display:block; font-size:13px; font-weight:600; margin-top:1px;}
   .cs-box-sub{display:block; font-size:9px; color:var(--ink-faint); margin-top:1px; line-height:1.2;}
   .cs-ret{font-size:12px; color:var(--ink-dim); display:flex; justify-content:space-between; padding:3px 0;}
+  /* ---- TARJETA NUEVA (22-sep-2026) -------------------------------------
+     Reemplaza extension/tendencia/evento + rentabilidades + rango 5 años +
+     promedio 90d por lo que Cristian de verdad mira antes de abrir el
+     detalle: los dos veredictos, sus medias de TradingView y sus dos
+     precios de salida. Pidio EXPRESAMENTE que la tarjeta no creciera, asi
+     que todo esto entra en el alto que ocupaba lo anterior: las medias van
+     en dos filas de tres en vez de una lista de seis. */
+  .cs-veredictos{display:flex; gap:6px; margin-bottom:7px;}
+  .cs-ver{flex:1; min-width:0; border-radius:8px; padding:5px 7px;
+          background:var(--bg-field); border:1px solid transparent;}
+  .cs-ver-head{display:flex; align-items:baseline; justify-content:space-between; gap:4px;}
+  .cs-ver-tit{font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;
+              white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .cs-ver-score{font-size:12.5px; font-weight:700; flex-shrink:0;}
+  .cs-ver-sub{display:block; font-size:9.5px; color:var(--ink-faint); line-height:1.25; margin-top:1px;
+              overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  /* Dos filas de tres. `tabular-nums` para que las comas queden alineadas
+     entre filas -- son seis numeros que se leen en bloque, no de a uno. */
+  .cs-medias{display:grid; grid-template-columns:repeat(3,1fr); gap:3px 14px; margin-bottom:7px;}
+  .cs-media{display:flex; align-items:baseline; justify-content:space-between; gap:4px; min-width:0;}
+  .cs-media-lab{font-size:9.5px; color:var(--ink-faint); white-space:nowrap;}
+  .cs-media-val{font-size:11.5px; font-weight:600; font-variant-numeric:tabular-nums;
+                white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  /* Los dos precios de salida que ya tiene puestos en Mi Cartera. Se leen
+     aca, no se editan: la tarjeta es de lectura (mismo criterio que la
+     tabla de Mi Cartera, ver esa nota). */
+  .cs-objetivos{display:flex; gap:6px; font-size:10.5px;}
+  .cs-obj{flex:1; min-width:0; display:flex; justify-content:space-between; gap:4px;
+          border-top:1px solid var(--hairline); padding-top:4px; white-space:nowrap;}
+  .cs-obj-lab{color:var(--ink-faint);}
+  .cs-obj--sube .cs-obj-lab{color:var(--verdigris);}
+  .cs-obj--baja .cs-obj-lab{color:var(--copper);}
+  .cs-obj b{font-weight:600; font-variant-numeric:tabular-nums;}
   .cs-ret .mono{font-weight:600;}
   .cs-rango{font-size:12px; color:var(--ink-dim); margin-top:4px;}
   .cs-rango-head{display:flex; justify-content:space-between; margin-bottom:4px;}
@@ -2942,10 +2999,103 @@ function inicializarFavBtnDetalle(ticker){
 // todosLosStocks() al arrancar; ahora es función porque la watchlist crece
 // mientras la app está abierta: una candidata que mandas desde Explorar tiene
 // que aparecer en la grilla al tiro, no en la próxima recarga.
+// ==========================================================================
+// LOS DOS VEREDICTOS EN LA TARJETA · carga perezosa, en lotes
+// ==========================================================================
+// QUE PROBLEMA RESUELVE ESTE BLOQUE
+// ==================================
+// La tarjeta ahora muestra "OPORTUNIDAD 7/8" y "FASE 2 · AVANCE 4/5". Esos
+// dos numeros NO vienen con la cotizacion: los calcula el backend en
+// /diagnostico, y para calcularlos necesita CINCO AÑOS de historial de esa
+// accion (ver _serie5y_ticker en server.py). Con 205 tarjetas en la grilla
+// de EE.UU., pedirlos todos de una es exactamente lo que tumbo el servidor
+// cuando EE.UU. crecio de 7 a 107 instrumentos -- un solo worker de
+// gunicorn y los 429 de Yahoo. NO se puede.
+//
+// COMO SE RESUELVE
+// ================
+// Solo se pide el diagnostico de las tarjetas que ENTRAN EN PANTALLA, y de
+// a lotes, por /diagnostico-lote (que acepta hasta 40 por llamada y reusa
+// la misma cache de 5 años, 24 h, que ya usa el detalle). Mirando la grilla
+// en un celular eso son tres o cuatro acciones a la vez, no doscientas. Si
+// Cristian nunca baja hasta el final de la lista, esas nunca se piden.
+//
+// ADEMAS: una sola peticion en vuelo a la vez (`diagLoteEnVuelo`). El
+// servidor tiene UN worker; mandarle cuatro lotes en paralelo no lo hace
+// mas rapido, lo bloquea.
+const DIAG_LOTE_MAX = 20;          // el endpoint acepta 40; 20 es medio segundo de worker
+const DIAG_LOTE_ESPERA_MS = 350;   // junta lo que aparezca mientras se desplaza
+const diagTarjetaCache = {};       // ticker -> {diario, semanal} (o {error})
+const diagTarjetaPedidos = new Set();  // ya pedidos: no se vuelven a pedir en esta sesion
+let diagTarjetaCola = [];
+let diagTarjetaTimer = null;
+let diagLoteEnVuelo = false;
+
+function pedirDiagnosticoTarjeta(ticker){
+  if(!ticker || diagTarjetaCache[ticker] || diagTarjetaPedidos.has(ticker)) return;
+  // Si el detalle ya lo bajo antes, se reusa: es el MISMO dato, no tiene
+  // sentido pedirlo dos veces por dos caminos distintos.
+  if(typeof diagFuerzaCache === 'object' && diagFuerzaCache && diagFuerzaCache[ticker]
+     && !diagFuerzaCache[ticker].error){
+    diagTarjetaCache[ticker] = diagFuerzaCache[ticker];
+    const st = todosLosStocks().find(x => x.ticker === ticker);
+    if(st) renderCard(st);
+    return;
+  }
+  if(diagTarjetaCola.indexOf(ticker) === -1) diagTarjetaCola.push(ticker);
+  if(diagTarjetaTimer) return;
+  diagTarjetaTimer = setTimeout(() => { diagTarjetaTimer = null; vaciarColaDiagnostico(); }, DIAG_LOTE_ESPERA_MS);
+}
+
+async function vaciarColaDiagnostico(){
+  if(diagLoteEnVuelo || !diagTarjetaCola.length) return;
+  const lote = diagTarjetaCola.splice(0, DIAG_LOTE_MAX);
+  lote.forEach(t => diagTarjetaPedidos.add(t));
+  diagLoteEnVuelo = true;
+  try {
+    const resp = await fetch(`${BACKEND_URL}/diagnostico-lote?tickers=${encodeURIComponent(lote.join(','))}`);
+    if(resp.ok){
+      const data = await resp.json();
+      const diags = (data && data.diagnosticos) || {};
+      Object.keys(diags).forEach(t => { diagTarjetaCache[t] = diags[t]; });
+      // Redibujar SOLO las tarjetas de este lote, no la grilla entera.
+      lote.forEach(t => {
+        const st = todosLosStocks().find(x => x.ticker === t);
+        if(st) renderCard(st);
+      });
+    } else {
+      // Que vuelva a intentarse la proxima vez que aparezcan en pantalla:
+      // un 503 del backend dormido no tiene por que dejar la tarjeta en
+      // gris para el resto de la sesion.
+      lote.forEach(t => diagTarjetaPedidos.delete(t));
+    }
+  } catch(e){
+    console.warn('No se pudo pedir el diagnóstico en lote:', e);
+    lote.forEach(t => diagTarjetaPedidos.delete(t));
+  } finally {
+    diagLoteEnVuelo = false;
+    if(diagTarjetaCola.length) setTimeout(vaciarColaDiagnostico, 150);
+  }
+}
+
+// El observador: una tarjeta que asoma en pantalla pide su diagnostico. Se
+// deja de observar en cuanto se pidio -- no hace falta volver a mirarla.
+const observadorTarjetas = ('IntersectionObserver' in window)
+  ? new IntersectionObserver((entradas) => {
+      entradas.forEach(e => {
+        if(!e.isIntersecting) return;
+        const t = e.target.dataset.ticker;
+        if(t) pedirDiagnosticoTarjeta(t);
+        observadorTarjetas.unobserve(e.target);
+      });
+    }, {rootMargin: '150px 0px'})
+  : null;
+
 function crearTarjetaStock(s){
   const card = document.createElement('div');
   card.className = 'card' + (s.esWatchlist ? ' is-watch' : '');
   card.dataset.currency = s.currency || 'CLP'; // usado para mostrar/ocultar por ambiente
+  card.dataset.ticker = s.ticker; // lo lee el observador de tarjetas (veredictos)
   card.innerHTML = `
     <div class="flag"><span class="flag-dot"></span>Bajo promedio</div>
     <div class="card-head">
@@ -2961,47 +3111,34 @@ function crearTarjetaStock(s){
       </div>
     </div>
     <div class="card-stats" data-el="cardStats">
-      <p class="cs-loading" data-el="csLoading">Cargando señales…</p>
-      <div class="cs-boxes" data-el="csBoxes" style="display:none">
-        <div class="cs-box">
-          <span class="cs-box-label">Extensión</span>
-          <span class="cs-box-val mono" data-el="csExtVal">···</span>
-          <span class="cs-box-sub" data-el="csExtSub"></span>
+      <div class="cs-veredictos">
+        <div class="cs-ver" data-el="csOp" title="Diagnóstico diario (fuerza relativa y absoluta)">
+          <div class="cs-ver-head">
+            <span class="cs-ver-tit" data-el="csOpTit">Oportunidad</span>
+            <span class="cs-ver-score mono" data-el="csOpScore">—</span>
+          </div>
+          <span class="cs-ver-sub" data-el="csOpSub">tocando la tarjeta se calcula</span>
         </div>
-        <div class="cs-box">
-          <span class="cs-box-label">Tendencia</span>
-          <span class="cs-box-val" data-el="csTendVal">···</span>
-          <span class="cs-box-sub" data-el="csTendSub"></span>
-        </div>
-        <div class="cs-box">
-          <span class="cs-box-label">Evento</span>
-          <span class="cs-box-val" data-el="csEvtVal">···</span>
-          <span class="cs-box-sub" data-el="csEvtSub"></span>
+        <div class="cs-ver" data-el="csFase" title="Fase semanal de Weinstein">
+          <div class="cs-ver-head">
+            <span class="cs-ver-tit" data-el="csFaseTit">Fase</span>
+            <span class="cs-ver-score mono" data-el="csFaseScore">—</span>
+          </div>
+          <span class="cs-ver-sub" data-el="csFaseSub">&nbsp;</span>
         </div>
       </div>
-      <div class="cs-ret" data-el="csRsiRow" style="display:none">
-        <span>RSI (14)</span>
-        <span class="mono" data-el="csRsiVal"></span>
+      <div class="cs-medias">
+        <div class="cs-media"><span class="cs-media-lab">RSI 14</span><span class="cs-media-val mono" data-el="csMrsi">···</span></div>
+        <div class="cs-media"><span class="cs-media-lab">MM 20</span><span class="cs-media-val mono" data-el="csM20">···</span></div>
+        <div class="cs-media"><span class="cs-media-lab">EMA 21</span><span class="cs-media-val mono" data-el="csMe21" style="color:#4CAF50;">···</span></div>
+        <div class="cs-media"><span class="cs-media-lab">MM 50</span><span class="cs-media-val mono" data-el="csM50" style="color:#FFC107;">···</span></div>
+        <div class="cs-media"><span class="cs-media-lab">MM 100</span><span class="cs-media-val mono" data-el="csM100" style="color:#2196F3;">···</span></div>
+        <div class="cs-media"><span class="cs-media-lab">MM 200</span><span class="cs-media-val mono" data-el="csM200" style="color:#F44336;">···</span></div>
       </div>
-      <div class="cs-ret" data-el="csRet3mRow" style="display:none">
-        <span>Rentabilidad 3 meses</span>
-        <span class="mono" data-el="csRet3mVal"></span>
+      <div class="cs-objetivos">
+        <span class="cs-obj cs-obj--sube"><span class="cs-obj-lab">Vta si sube</span><b class="mono" data-el="csObjSube">—</b></span>
+        <span class="cs-obj cs-obj--baja"><span class="cs-obj-lab">Vta si baja</span><b class="mono" data-el="csObjBaja">—</b></span>
       </div>
-      <div class="cs-ret" data-el="csRet1yRow" style="display:none">
-        <span>Rentabilidad 1 año</span>
-        <span class="mono" data-el="csRet1yVal"></span>
-      </div>
-      <div class="cs-rango" data-el="csRangoRow" style="display:none">
-        <div class="cs-rango-head">
-          <span>Rango 5 años</span>
-          <span class="mono" data-el="csRangoTxt"></span>
-        </div>
-        <div class="cs-rango-bar"><div class="cs-rango-marker" data-el="csRangoMarker"></div></div>
-      </div>
-    </div>
-    <div class="avg-line">
-      <span>Promedio 90d</span>
-      <span class="mono" data-el="avgline">···</span>
     </div>
     <div class="dato-hora mono" data-el="datoHora"><span>&nbsp;</span></div>
     <div class="tap-hint">Toca para ver detalle</div>
@@ -3026,6 +3163,9 @@ function crearTarjetaStock(s){
   });
   grid.appendChild(card);
   cardEls[s.ticker] = card;
+  // Desde aca se pide el diagnostico SOLO cuando la tarjeta asoma en
+  // pantalla -- ver el bloque de arriba para por que no se piden los 205.
+  if(observadorTarjetas) observadorTarjetas.observe(card);
   return card;
 }
 todosLosStocks().forEach(crearTarjetaStock);
@@ -4684,7 +4824,7 @@ function renderCard(s){
     priceEl.textContent = '···';
     deltaEl.textContent = '';
     if(priceClpEl) priceClpEl.textContent = '';
-    avgEl.textContent = '···';
+    if(avgEl) avgEl.textContent = '···';
     card.classList.remove('alert');
     return;
   }
@@ -4720,7 +4860,7 @@ function renderCard(s){
   const deltaVal = (s.price/s.avg)-1;
   deltaEl.textContent = fmtPct(deltaVal);
   deltaEl.style.color = deltaVal>=0 ? 'var(--verdigris)' : 'var(--copper)';
-  avgEl.textContent = fmt(s.avg, s.dec, s.currency);
+  if(avgEl) avgEl.textContent = fmt(s.avg, s.dec, s.currency);
 
   s.inAlert = isBelow;
 
@@ -5065,114 +5205,87 @@ function textoExtension(z){
 // quedaba vacío. Se llama tanto desde renderCard() (cada refresco de
 // precio) como desde fetchSignals()/obtenerRango5y().
 function actualizarStatsCard(card, s){
-  const loadingEl = card.querySelector('[data-el="csLoading"]');
-  const boxesEl = card.querySelector('[data-el="csBoxes"]');
-  const rsiRow = card.querySelector('[data-el="csRsiRow"]');
-  const ret3mRow = card.querySelector('[data-el="csRet3mRow"]');
-  const ret1yRow = card.querySelector('[data-el="csRet1yRow"]');
-  const rangoRow = card.querySelector('[data-el="csRangoRow"]');
-  if(!loadingEl || !boxesEl) return; // tarjeta todavía no montada del todo
+  const poner = (el, txt, color) => {
+    const n = card.querySelector(`[data-el="${el}"]`);
+    if(!n) return;
+    n.textContent = txt;
+    if(color !== undefined) n.style.color = color;
+  };
 
-  const ev = signalsPorTicker[s.ticker];
-  if(!ev || ev.puntaje === null || ev.puntaje === undefined){
-    loadingEl.style.display = '';
-    loadingEl.textContent = ev ? 'Sin datos suficientes para evaluar esta acción.' : 'Cargando señales…';
-    boxesEl.style.display = 'none';
-    if(rsiRow) rsiRow.style.display = 'none';
-    ret3mRow.style.display = 'none';
-    ret1yRow.style.display = 'none';
+  // ---- Las seis medias -----------------------------------------------------
+  // Vienen en la MISMA cotizacion que el precio (s.sma20/ema21/sma50/sma100/
+  // sma200, calculadas en el backend sobre cierres diarios reales), asi que
+  // dibujarlas aca no cuesta ni una peticion extra. RSI sale de la señal si
+  // esta, y si no del propio stock -- son el mismo numero por dos caminos.
+  const ev = signalsPorTicker[s.ticker] || {};
+  const rsi = (typeof ev.rsi14 === 'number') ? ev.rsi14
+            : (typeof s.rsi14 === 'number') ? s.rsi14 : null;
+  poner('csMrsi', rsi === null ? '···' : fmtNum(rsi, 1),
+        rsi === null ? 'var(--ink-faint)'
+        : rsi <= 30 ? 'var(--verdigris)' : rsi >= 70 ? 'var(--copper)' : 'var(--ink-dim)');
+
+  // El color de las cuatro con color lo pone el HTML (style inline, mismos
+  // hex que la leyenda de TradingView de Cristian y que el overlay "Medias
+  // TV" del grafico) -- aca NO se toca, por eso va `undefined`.
+  const media = (el, v) => poner(el, (typeof v === 'number') ? fmtNum(v, s.dec) : '···', undefined);
+  media('csM20',  s.sma20);
+  media('csMe21', s.ema21);
+  media('csM50',  s.sma50);
+  media('csM100', s.sma100);
+  media('csM200', s.sma200);
+
+  // ---- Los dos precios de salida ------------------------------------------
+  // Salen de alertasPrecio (localStorage), lo mismo que edita en Mi Cartera.
+  // Aca solo se leen: la tarjeta es para mirar, no para editar -- mismo
+  // criterio que la tabla "Mi cartera, de una".
+  const obj = (typeof alertasPrecio === 'object' && alertasPrecio) ? (alertasPrecio[s.ticker] || {}) : {};
+  const num = (v) => (v === null || v === undefined || v === '' || isNaN(v)) ? null : Number(v);
+  const sube = num(obj.sube), baja = num(obj.baja);
+  poner('csObjSube', sube === null ? '—' : fmtNum(sube, s.dec), sube === null ? 'var(--ink-faint)' : 'var(--ink)');
+  poner('csObjBaja', baja === null ? '—' : fmtNum(baja, s.dec), baja === null ? 'var(--ink-faint)' : 'var(--ink)');
+
+  // ---- Los dos veredictos --------------------------------------------------
+  // Estos SI cuestan una peticion (5 años de historial por accion), asi que
+  // NO se piden para las 205 tarjetas: se piden solo para las que entran en
+  // pantalla, de a lotes. Ver pedirDiagnosticoTarjeta() mas abajo. Mientras
+  // no haya dato, los chips quedan en gris con un guion -- nunca en
+  // "Calculando..." eterno, que fue justo el error que hubo que arreglar en
+  // la SMA100.
+  const d = diagTarjetaCache[s.ticker];
+  const opBox = card.querySelector('[data-el="csOp"]');
+  const faseBox = card.querySelector('[data-el="csFase"]');
+
+  if(d && d.diario && d.diario.disponible){
+    const dd = d.diario;
+    const c = CASO_COLOR[dd.caso] || 'var(--ink-dim)';
+    // La palabra sola, no `casoTexto` ("OPORTUNIDAD · comprar"): en el
+    // ancho del chip eso se cortaba a "OPORTUNIDAD · COMP...". El texto
+    // completo y la decision viven en el tooltip.
+    poner('csOpTit', dd.caso || 'Oportunidad', c);
+    poner('csOpScore', `${dd.score}/8`, c);
+    poner('csOpSub', dd.lecturaAbsoluta || dd.decision || '', undefined);
+    if(opBox) opBox.style.borderColor = c + '55';
+    if(opBox) opBox.title = [dd.casoTexto, dd.decision].filter(Boolean).join(' — ');
   } else {
-    loadingEl.style.display = 'none';
-    boxesEl.style.display = '';
-
-    // --- Eje 1: extensión (distancia a su línea de tendencia) ---
-    const extEl = card.querySelector('[data-el="csExtVal"]');
-    const extSubEl = card.querySelector('[data-el="csExtSub"]');
-    const e = textoExtension(ev.zscore);
-    extEl.textContent = e.txt;
-    extEl.style.color = e.color;
-    if(extSubEl) extSubEl.textContent = e.sub;
-    extEl.parentElement.title = (ev.zscoreMetodo === 'regresion')
-      ? 'Desviaciones respecto de su línea de tendencia de 90 días (no de un promedio plano). Cerca de 0 = se comporta como su propia tendencia.'
-      : 'Desviaciones respecto de su promedio de 90 días (no se pudo calcular la línea de tendencia).';
-
-    // --- Eje 2: tendencia (dirección + pendiente) ---
-    const tendVal = card.querySelector('[data-el="csTendVal"]');
-    const tendSub = card.querySelector('[data-el="csTendSub"]');
-    const tendencia = ev.tendencia || 'neutra';
-    tendVal.textContent = ICONOS_TENDENCIA[tendencia] || '—';
-    tendVal.style.color = tendencia === 'alcista' ? 'var(--verdigris)'
-                         : tendencia === 'bajista' ? 'var(--copper)'
-                         : tendencia === 'evento' ? 'var(--gold)' : 'var(--ink-faint)';
-    if(tendSub){
-      tendSub.textContent = (typeof ev.pendientePct === 'number')
-        ? (ev.pendientePct >= 0 ? '+' : '') + fmtNum(ev.pendientePct, 2) + '%/día'
-        : tendencia;
-    }
-    tendVal.parentElement.title = TITULOS_TENDENCIA[tendencia] || '';
-
-    // --- Eje 3: evento (reporte próximo o gap reciente) ---
-    const evtVal = card.querySelector('[data-el="csEvtVal"]');
-    const evtSub = card.querySelector('[data-el="csEvtSub"]');
-    if(typeof ev.diasAReporte === 'number' && ev.diasAReporte <= 7){
-      evtVal.textContent = ev.diasAReporte + 'd';
-      evtVal.style.color = 'var(--copper)';
-      if(evtSub) evtSub.textContent = 'al reporte';
-      evtVal.parentElement.title = `Reporta el ${ev.fechaReporte}. Un reporte mueve el precio mucho más que cualquier señal técnica: esta lectura no es accionable hasta después.`;
-    } else if(typeof ev.gapPct === 'number' && typeof ev.gapDiasAtras === 'number' && ev.gapDiasAtras <= 15){
-      evtVal.textContent = (ev.gapPct >= 0 ? '+' : '') + fmtNum(ev.gapPct * 100, 0) + '%';
-      evtVal.style.color = 'var(--gold)';
-      if(evtSub) evtSub.textContent = 'hace ' + ev.gapDiasAtras + 'd';
-      evtVal.parentElement.title = 'Salto puntual reciente (reporte o noticia). El movimiento viene de ese día, no de una tendencia.';
-    } else if(typeof ev.diasAReporte === 'number'){
-      evtVal.textContent = ev.diasAReporte + 'd';
-      evtVal.style.color = 'var(--ink-faint)';
-      if(evtSub) evtSub.textContent = 'al reporte';
-      evtVal.parentElement.title = `Próximo reporte de resultados: ${ev.fechaReporte}.`;
-    } else {
-      evtVal.textContent = '—';
-      evtVal.style.color = 'var(--ink-faint)';
-      if(evtSub) evtSub.textContent = 'sin evento';
-      evtVal.parentElement.title = 'Sin reporte próximo conocido ni salto reciente que explique el movimiento.';
-    }
-
-    if(rsiRow){
-      if(typeof ev.rsi14 === 'number'){
-        rsiRow.style.display = '';
-        const rsiVal = card.querySelector('[data-el="csRsiVal"]');
-        rsiVal.textContent = fmtNum(ev.rsi14, 1)
-          + (ev.rsi14 <= 30 ? ' · sobreventa' : ev.rsi14 >= 70 ? ' · sobrecompra' : '');
-        rsiVal.style.color = ev.rsi14 <= 30 ? 'var(--verdigris)'
-                            : ev.rsi14 >= 70 ? 'var(--copper)' : 'var(--ink-dim)';
-      } else rsiRow.style.display = 'none';
-    }
-
-    if(typeof ev.ret3m === 'number'){
-      ret3mRow.style.display = '';
-      const el = card.querySelector('[data-el="csRet3mVal"]');
-      el.textContent = fmtPctCartera(ev.ret3m);
-      el.style.color = ev.ret3m >= 0 ? 'var(--verdigris)' : 'var(--copper)';
-    } else ret3mRow.style.display = 'none';
-
-    if(typeof ev.ret1y === 'number'){
-      ret1yRow.style.display = '';
-      const el = card.querySelector('[data-el="csRet1yVal"]');
-      el.textContent = fmtPctCartera(ev.ret1y);
-      el.style.color = ev.ret1y >= 0 ? 'var(--verdigris)' : 'var(--copper)';
-    } else ret1yRow.style.display = 'none';
+    poner('csOpTit', 'Oportunidad', 'var(--ink-faint)');
+    poner('csOpScore', '—', 'var(--ink-faint)');
+    poner('csOpSub', (d && d.diario && d.diario.motivo) ? 'sin datos suficientes' : 'calculando…', undefined);
+    if(opBox) opBox.style.borderColor = 'transparent';
   }
 
-  const rango = rango5yPorTicker[s.ticker];
-  if(rangoRow){
-    if(rango && typeof s.price === 'number' && rango.max5y > rango.min5y){
-      rangoRow.style.display = '';
-      const txt = card.querySelector('[data-el="csRangoTxt"]');
-      txt.textContent = `${fmtEje(rango.min5y, s.dec, s.currency)} – ${fmtEje(rango.max5y, s.dec, s.currency)}`;
-      const pct = Math.max(0, Math.min(100, (s.price - rango.min5y) / (rango.max5y - rango.min5y) * 100));
-      card.querySelector('[data-el="csRangoMarker"]').style.left = pct + '%';
-    } else {
-      rangoRow.style.display = 'none';
-    }
+  if(d && d.semanal && d.semanal.disponible){
+    const ss = d.semanal;
+    const c = FASE_COLOR[ss.fase] || 'var(--ink-dim)';
+    poner('csFaseTit', `Fase ${ss.fase} · ${ss.nombreFase || ''}`.trim(), c);
+    poner('csFaseScore', `${ss.scoreConfirmaciones}/5`, c);
+    poner('csFaseSub', ss.veredicto || ss.accionFase || '', undefined);
+    if(faseBox) faseBox.style.borderColor = c + '55';
+    if(faseBox) faseBox.title = ss.accionFase || '';
+  } else {
+    poner('csFaseTit', 'Fase', 'var(--ink-faint)');
+    poner('csFaseScore', '—', 'var(--ink-faint)');
+    poner('csFaseSub', (d && d.semanal && d.semanal.motivo) ? 'sin datos suficientes' : 'calculando…', undefined);
+    if(faseBox) faseBox.style.borderColor = 'transparent';
   }
 }
 
@@ -9774,6 +9887,46 @@ function renderAmbienteCartera(){
     // aparezca si el interruptor PROPIO de PxQ está apagado -- son dos
     // controles independientes, no uno hecho con el otro.
     const pxqCompra = (held && pos.costoPromedio > 0) ? pos.costoPromedio * pos.netoQ : null;
+
+    // ---- CUANTO VALDRIA SI SE CUMPLE EL OBJETIVO (22-sep-2026, a pedido) --
+    // Los dos campos de abajo son precios sueltos: "150" y "128" no dicen
+    // nada sobre la plata hasta que uno multiplica de cabeza por la
+    // cantidad. Esto lo hace: el mismo PxQ que ya esta en la linea de
+    // arriba ("PxQ compra ... hoy ..."), pero al precio del objetivo.
+    //
+    // EL PORCENTAJE VA CONTRA LO QUE PAGASTE, NO CONTRA HOY
+    // =====================================================
+    // Es la pregunta que el numero contesta: si se gatilla, ¿el negocio
+    // termino ganando o perdiendo? La lectura contra HOY ya existe y vive
+    // dos lineas mas abajo ("Pones en juego ..."), que es cuanto entregas
+    // del valor actual. Son dos cosas distintas y conviene que cada una
+    // tenga su lugar: en C, con compra 128,75 y hoy 132,46, un stop en 128
+    // es -0,6% contra lo que pagaste pero US$4,67 del valor de hoy.
+    //
+    // QUE SE TAPA Y QUE NO
+    // ====================
+    // La PLATA sigue los dos interruptores que ya existen (el ojito general
+    // via fmtMoneda, y el propio de PxQ). El PORCENTAJE se muestra igual
+    // aunque PxQ este apagado: no es un monto, es de la misma familia que
+    // "arriesgas 3,4%" de al lado, que tampoco se tapa. Asi, apagar PxQ
+    // esconde cuanta plata tienes sin dejarte ciego sobre si tu objetivo
+    // gana o pierde.
+    const subeNum = (obj.sube !== null && obj.sube !== undefined && obj.sube !== '') ? Number(obj.sube) : null;
+    const pxqObjetivoHTML = (precioObj) => {
+      if(!held || !(pos.netoQ > 0)) return '';
+      if(precioObj === null || !isFinite(precioObj) || precioObj <= 0) return '';
+      const valor = precioObj * pos.netoQ;
+      const pct = (pos.costoPromedio > 0) ? (precioObj / pos.costoPromedio - 1) * 100 : null;
+      const plata = estaOcultoPxQ() ? '' : `PxQ ${fmtMoneda(valor, oculto, currency)}`;
+      const pctTxt = (pct === null) ? ''
+        : `<b style="color:${pct >= 0 ? 'var(--verdigris)' : 'var(--copper)'};">${pct >= 0 ? '+' : ''}${fmtNum(pct, 1)}%</b>`;
+      const cuerpo = [plata, pctTxt].filter(Boolean).join(' · ');
+      if(!cuerpo) return '';
+      const detalle = (pos.costoPromedio > 0)
+        ? ` El ${fmtNum(pct, 1)}% es contra tu precio de compra (${fmtMoneda2(pos.costoPromedio, currency)}), no contra el de hoy.`
+        : '';
+      return `<span class="cartera-pxq-obj" title="Si se cumple ${fmtMoneda2(precioObj, currency)}, tus ${fmtCantidad(pos.netoQ, currency, s.ticker)} título(s) valen ${fmtMoneda2(valor, currency)}.${detalle}">${cuerpo}</span>`;
+    };
     const pxqHTML = (held && !estaOcultoPxQ())
       ? ` · <span class="cartera-plat-q mono" title="Cantidad × precio de compra, y cantidad × precio de hoy">PxQ compra ${fmtMoneda(pxqCompra, oculto, currency)} · hoy ${fmtMoneda(valorPos, oculto, currency)}</span>`
       : '';
@@ -9793,11 +9946,14 @@ function renderAmbienteCartera(){
           ? `Tienes ${fmtCantidad(pos.netoQ, currency, s.ticker)} título(s) · compra ${fmtMoneda2(pos.costoPromedio, currency)}${platsHTML}${pxqHTML}`
           : 'Sin posición registrada (se calcula sola desde "Mis movimientos")'}</div>
         <div class="cartera-alertas">
-          <label class="cartera-campo sube" title="${distancia(obj.sube) || 'Avisar si sube a (venta)'}">
-            <span>Vta si sube</span>
-            <input type="number" step="any" min="0" inputmode="decimal" class="mono" data-ticker="${s.ticker}" data-campo="sube"
-                   value="${(obj.sube !== null && obj.sube !== undefined) ? obj.sube : ''}" placeholder="—">
-          </label>
+          <div class="cartera-campo-sube-wrap">
+            <label class="cartera-campo sube" title="${distancia(obj.sube) || 'Avisar si sube a (venta)'}">
+              <span>Vta si sube</span>
+              <input type="number" step="any" min="0" inputmode="decimal" class="mono" data-ticker="${s.ticker}" data-campo="sube"
+                     value="${(obj.sube !== null && obj.sube !== undefined) ? obj.sube : ''}" placeholder="—">
+            </label>
+            ${pxqObjetivoHTML(subeNum)}
+          </div>
           <div class="cartera-campo-baja-wrap">
             <label class="cartera-campo baja" title="${distancia(obj.baja) || 'Avisar si baja a'}">
               <span>Vta si baja</span>
@@ -9805,6 +9961,7 @@ function renderAmbienteCartera(){
                      value="${(obj.baja !== null && obj.baja !== undefined) ? obj.baja : ''}" placeholder="—">
             </label>
             ${riesgoHTML}
+            ${pxqObjetivoHTML(bajaNum)}
           </div>
         </div>
         ${montoRiesgoHTML}
@@ -9884,7 +10041,10 @@ function renderAmbienteCartera(){
     <p class="section-title section-title--con-btn">Mi cartera, de una ${btnSeccionHTML('cartera-tabla', 'la tabla')}</p>
     <div data-sec-body="cartera-tabla">${tablaCarteraHTML()}</div>
     <p class="section-title">Favoritas y posiciones</p>
-    <input type="text" id="carteraBuscador" class="cartera-buscador" placeholder="Buscar por ticker o nombre (Chile o EE.UU.)…" value="${carteraFiltro.replace(/"/g,'&quot;')}">
+    <div class="cartera-buscador-wrap">
+      <input type="text" id="carteraBuscador" class="cartera-buscador" placeholder="Buscar por ticker o nombre (Chile o EE.UU.)…" value="${carteraFiltro.replace(/"/g,'&quot;')}">
+      ${carteraFiltro ? '<button type="button" id="carteraBuscadorX" class="cartera-buscador-x" title="Borrar la búsqueda" aria-label="Borrar la búsqueda">✕</button>' : ''}
+    </div>
     <label class="cartera-toggle"><input type="checkbox" id="carteraMostrarTodas" ${carteraMostrarTodas ? 'checked' : ''}> Mostrar todas las acciones, no solo favoritas o con posición</label>
     ${filtroPlatHTML}
     <div id="carteraListadoWrap">
@@ -9914,6 +10074,24 @@ function renderAmbienteCartera(){
     buscadorEl.addEventListener('focus', () => { carteraBuscadorTuvoFoco = true; });
     buscadorEl.addEventListener('blur', () => { carteraBuscadorTuvoFoco = false; });
     buscadorEl.addEventListener('input', () => { carteraFiltro = buscadorEl.value; renderAmbienteCartera(); });
+  }
+  // Borrado rapido (22-sep-2026). La X solo existe cuando hay algo escrito:
+  // en un campo vacio seria un boton que no hace nada.
+  //
+  // `mousedown` con preventDefault ANTES del click: sin eso, tocar el boton
+  // primero le saca el foco al input, el handler de 'blur' pone
+  // carteraBuscadorTuvoFoco en false, y al re-renderizar el campo queda sin
+  // foco -- o sea, borrar la busqueda te obligaria a volver a tocar el campo
+  // para escribir de nuevo. Con esto, borrar y seguir escribiendo es
+  // continuo, como en cualquier buscador.
+  const buscadorXEl = document.getElementById('carteraBuscadorX');
+  if(buscadorXEl){
+    buscadorXEl.addEventListener('mousedown', (e) => e.preventDefault());
+    buscadorXEl.addEventListener('click', () => {
+      carteraFiltro = '';
+      carteraBuscadorTuvoFoco = true;
+      renderAmbienteCartera();
+    });
   }
   viewEl.querySelectorAll('[data-cpf]').forEach(btn => {
     btn.addEventListener('click', () => {
