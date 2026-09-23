@@ -106,6 +106,34 @@
   /* Borrado rapido del buscador (22-sep-2026, a pedido). El campo se envuelve
      para poder poner la X encima, a la derecha. `padding-right` deja el hueco
      para que el texto largo no pase por debajo del boton. */
+  /* Recordatorio de "esperando entrada" en Mi Cartera (23-sep-2026). En
+     oro y no en cobre: no es una alerta, es un "tienes algo pendiente allá".
+     El cobre de esta app significa "esto te puede costar plata". */
+  /* Barra de orden y filtros de la grilla (23-sep-2026). Misma familia de
+     píldoras que el filtro por corredora de Mi Cartera, para que se lea como
+     "lo mismo en otra parte" y no como un control nuevo que hay que aprender. */
+  .orden-row{display:flex; flex-direction:column; gap:6px; margin:0 0 12px;}
+  .orden-linea{display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+  .orden-lab{font-size:10px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.04em; margin-right:2px;}
+  .orden-pill{
+    border:1px solid var(--hairline); background:var(--bg-panel); color:var(--ink-dim);
+    border-radius:20px; padding:4px 11px; font-size:11.5px; cursor:pointer; white-space:nowrap;
+  }
+  .orden-pill:hover{border-color:var(--gold);}
+  .orden-pill.activa{background:var(--gold); border-color:var(--gold); color:#fff; font-weight:600;}
+  .orden-progreso{font-size:11px; color:var(--gold);}
+  .orden-nota{font-size:10.5px; color:var(--ink-faint); line-height:1.4;}
+  .cartera-espera-aviso{
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    margin:0 0 12px; padding:9px 12px; border-radius:8px;
+    border:1px solid rgba(144,111,55,0.35); background:rgba(144,111,55,0.07);
+    font-size:12px; color:var(--ink-dim);
+  }
+  .cartera-espera-aviso b{color:var(--gold);}
+  .cartera-espera-ir{
+    margin-left:auto; border:0; background:transparent; cursor:pointer; padding:0;
+    font-size:12px; font-weight:600; color:var(--gold); text-decoration:underline; white-space:nowrap;
+  }
   .cartera-buscador-wrap{position:relative;}
   .cartera-buscador-wrap .cartera-buscador{padding-right:34px;}
   .cartera-buscador-x{
@@ -452,6 +480,18 @@
   .expl-fuerza-val{font-family:'IBM Plex Mono',monospace; font-weight:600;}
   .expl-fuerza-val.up{color:var(--verdigris);}
   .expl-fuerza-val.down{color:var(--copper);}
+  /* El segundo listado de Explorar: los ETF por fuerza (23-sep-2026).
+     Tres columnas fijas -- nombre, fase, fuerza -- para que los porcentajes
+     queden alineados y la lista se pueda leer de arriba abajo de un vistazo,
+     que es justo lo que se le pide a un ranking. */
+  .expl-etf-lista{margin-top:4px;}
+  .expl-etf-row{display:grid; grid-template-columns:1fr auto auto; gap:8px; align-items:baseline;
+                font-size:11.5px; padding:5px 0; border-bottom:1px solid var(--hairline);}
+  .expl-etf-row:last-child{border-bottom:none;}
+  .expl-etf-nom{color:var(--ink-dim); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .expl-etf-tic{font-size:10px; color:var(--ink-faint); margin-left:5px;}
+  .expl-etf-grp{font-size:9px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.04em; margin-left:5px;}
+  .expl-etf-fase{font-size:10px; white-space:nowrap; min-width:44px; text-align:right;}
   .expl-embudo-pasos{font-size:11.5px; color:var(--ink-dim); line-height:1.8;}
   .expl-embudo-pasos b{color:var(--ink); font-family:'IBM Plex Mono',monospace;}
 
@@ -738,6 +778,13 @@
   .price-block{text-align:right;}
   .price{font-size:21px; font-weight:600;}
   .delta{font-size:12.5px; font-weight:500;}
+  /* La distancia al promedio va un punto mas chica y en tono secundario que
+     la variacion del dia: son dos lecturas distintas y la de arriba es la
+     que uno espera ver pegada al precio. La etiqueta "vs prom. 90d" no es
+     decoracion -- ver el comentario de deltaVal en renderCard: sin ella, ese
+     porcentaje se leia como la variacion del dia, que es otra cosa. */
+  .delta-prom{font-size:11px; font-weight:500; opacity:.85;}
+  .delta-prom .dp-ref{color:var(--ink-faint); font-weight:400;}
   /* Reemplaza al grafico que iba aca antes: en la tarjeta de LISTA nunca
      alcanzaba a mostrar nada real (el historial solo se carga completo al
      abrir el detalle de una accion), asi que quedaba vacio. Esta franja usa
@@ -1241,7 +1288,8 @@
         <button type="button" class="env-btn" data-amb="riesgo"><span class="env-largo">Riesgo</span><span class="env-corto">Riesgo</span></button>
       </div>
       <div class="env-fila">
-        <button type="button" class="env-btn" data-amb="usa"><span class="env-largo">EE.UU. · USD</span><span class="env-corto">EE.UU.</span></button>
+        <button type="button" class="env-btn" data-amb="usa"><span class="env-largo">Acciones EE.UU.</span><span class="env-corto">Acciones</span></button>
+        <button type="button" class="env-btn" data-amb="etf"><span class="env-largo">ETF · USD</span><span class="env-corto">ETF</span></button>
         <button type="button" class="env-btn" data-amb="chile"><span class="env-largo">Chile · CLP</span><span class="env-corto">Chile</span></button>
         <button type="button" class="env-btn" data-amb="cripto"><span class="env-largo">Cripto · CLP</span><span class="env-corto">Cripto</span></button>
       </div>
@@ -1338,41 +1386,19 @@
        Ahora este panel describe el dato y no opina: quien decide QUE
        comprar es el embudo, quien decide CUANDO es el diagnostico de
        fase/fuerza. Ver "como-encaja-todo" en la carpeta del proyecto. -->
-  <div class="analysis-panel" id="analysisPanelWrap">
-    <p class="feed-title">Distancia a su promedio
-      <span class="sec-head-right">
-        <span class="analysis-refresh" id="analysisRefresh">···</span>
-        <button type="button" class="sec-toggle" data-sec="analisis" aria-expanded="true" title="Ocultar esta sección">Ocultar ▾</button>
-      </span>
-    </p>
-    <div data-sec-body="analisis">
-    <p class="analysis-disclaimer">
-      Esto NO es una señal de compra ni de venta, y no dice si una acción está barata o cara — solo mide <b>cuánto se separó de su propio promedio</b> (distancia al promedio de 90 días, RSI, tendencia SMA20/SMA50 y liquidez). Ojo con la trampa de este dato: una acción que va cayendo aparece "lejos bajo su promedio" durante toda la caída, y no deja de estarlo nunca. Para saber si vale la pena, mira su fase y su fuerza en el detalle. El precio viene de Yahoo Finance con rezago y yo no soy asesor financiero. Las marcadas con ⚠ están además en una tendencia bajista sostenida, y se muestran atenuadas a propósito.
-    </p>
-    <div class="analysis-cols" id="analysisCols">
-      <!-- La columna "bajo su promedio" es, en la práctica, la columna de
-           entrada: son las que se ven "baratas" respecto de sí mismas. En
-           Chile se oculta a propósito (ver renderAnalysis) -- Cristian está
-           cerrando su exposición a Chile, y mostrarle ahí una lista de
-           candidatas a comprar es invitarlo a hacer justo lo contrario de
-           lo que decidió. La columna sigue existiendo para EE.UU. -->
-      <div class="analysis-col" id="analysisColDown">
-        <p class="analysis-col-title down">Más lejos <b>bajo</b> su promedio</p>
-        <div id="analysisDown" class="analysis-list"><p class="analysis-empty">Cargando datos reales…</p></div>
-      </div>
-      <div class="analysis-col">
-        <p class="analysis-col-title up">Más lejos <b>sobre</b> su promedio</p>
-        <div id="analysisUp" class="analysis-list"><p class="analysis-empty">Cargando datos reales…</p></div>
-      </div>
-    </div>
-    <p class="analysis-solo-salida" id="analysisSoloSalida" style="display:none;">
-      <b>Chile está en modo salida.</b> La columna de las que están lejos <b>bajo</b> su promedio
-      (las que se ven "baratas") no se muestra acá a propósito: decidiste cerrar tu exposición a
-      Chile, no ampliarla. Queda solo el lado de arriba, que es el que sirve para decidir cuándo
-      vender. En EE.UU. se ven las dos.
-    </p>
-    </div>
-  </div>
+  <!-- ---- PANEL "DISTANCIA A SU PROMEDIO": ELIMINADO (23-sep-2026) ----
+       Cristian pidio sacarlo: no lo usaba. Media cuanto se habia separado
+       cada accion de su promedio de 90 dias y listaba las cinco mas lejos
+       de cada lado.
+       POR QUE NO LO USABA, que es lo que conviene recordar si alguna vez se
+       piensa en revivirlo: el propio texto del panel lo decia. Una accion
+       que va cayendo aparece "lejos bajo su promedio" durante TODA la
+       caida y no deja de estarlo nunca, asi que la lista de "baratas" era
+       en buena parte la lista de las que venian peor. Quien decide QUE
+       comprar es el embudo de Explorar, y CUANDO, el diagnostico de fase y
+       fuerza -- los dos veredictos que ahora trae cada tarjeta.
+       Con el panel se fueron tambien sus alertas: ver el bloque de señales
+       tecnicas apagado en backend/server.py (/run-check). -->
 
   <div class="movs-panel" id="movsPanelWrap">
     <p class="feed-title">Mis movimientos
@@ -1538,6 +1564,10 @@
     </div>
     <span class="search-hint" id="searchHint"></span>
   </div>
+
+  <!-- Orden y filtros de la grilla. Lo dibuja renderOrdenRow(); nace vacío
+       para no repetir las etiquetas en dos sitios. -->
+  <div class="orden-row" id="ordenRow"></div>
 
   <div class="layout" id="mainLayout">
     <div class="grid" id="cardsGrid"></div>
@@ -2352,6 +2382,19 @@ const stocksUSA = [
   // analiza.
   {ticker:'SPCX',    name:"SpaceX (Space Exploration Technologies)",           dec:2, currency:'USD'},
   {ticker:'VLUE',    name:"iShares MSCI USA Value Factor ETF",                 dec:2, currency:'USD'},
+  // Agregados al separar la pestaña de ETF (23-sep-2026). Mismo orden y
+  // mismos símbolos que el bloque nuevo de TICKERS_USA en backend/main.py.
+  // Son los que AGREGAN exposición que la grilla no tenía: metales, bonos
+  // largos, dividendo creciente y los tres factores hermanos de VLUE. Ver
+  // ese comentario para cuáles se dejaron fuera y por qué (SPY, QQQ, AGG y
+  // SOXX serían la misma curva que VOO, QQQM, BND y SMH).
+  {ticker:'GLD',     name:"Oro · ETF",                                        dec:2, currency:'USD'},
+  {ticker:'SLV',     name:"Plata · ETF",                                      dec:2, currency:'USD'},
+  {ticker:'TLT',     name:"Bonos del Tesoro 20+ años · ETF",                  dec:2, currency:'USD'},
+  {ticker:'VIG',     name:"Dividendo creciente · ETF",                        dec:2, currency:'USD'},
+  {ticker:'MTUM',    name:"Factor momentum · ETF",                            dec:2, currency:'USD'},
+  {ticker:'QUAL',    name:"Factor calidad · ETF",                             dec:2, currency:'USD'},
+  {ticker:'USMV',    name:"Factor mínima volatilidad · ETF",                  dec:2, currency:'USD'},
   // -----------------------------------------------------------------------
   // ETF DE SECTOR E INDUSTRIA (27-ago-2026)
   // -----------------------------------------------------------------------
@@ -2384,8 +2427,29 @@ const stocksUSA = [
   {ticker:'PAVE',    name:"Infraestructura · ETF de industria",               dec:2, currency:'USD'},
   {ticker:'URA',     name:"Nuclear / uranio · ETF de industria",              dec:2, currency:'USD'},
 ];
+// ---- QUÉ ES UN ETF, DEL LADO DEL TELÉFONO (23-sep-2026) ------------------
+// Espejo de ETFS_USA en backend/main.py, que a su vez sale de
+// ETFS_NO_ANALIZAR. Tiene que vivir acá porque la app dibuja la grilla ANTES
+// de que llegue la primera cotización: sin esta lista no sabría en qué
+// pestaña poner cada tarjeta.
+//
+// Es una lista duplicada, con todo lo que eso significa (ver el archivo de
+// listas duplicadas). Por eso el backend manda `esEtf` en cada cotización y
+// aplicarQuote() avisa por consola si no calzan: el desajuste no se arregla
+// solo, pero al menos no pasa en silencio.
+const ETFS_USA_SET = new Set([
+  // Sector (11)
+  'XLK','XLV','XLF','XLY','XLP','XLE','XLI','XLB','XLU','XLRE','XLC',
+  // Industria (12)
+  'SMH','IGV','CIBR','XBI','ITA','KRE','XRT','XOP','GDX','IYT','PAVE','URA',
+  // Amplios, renta fija, metales y factores (17)
+  'VOO','VTI','VT','VXUS','QQQM','URSP','SCHD','VIG','BND','TLT',
+  'GLD','SLV','ARKK','VLUE','MTUM','QUAL','USMV',
+]);
+
 const stateUSA = stocksUSA.map(s => ({
   ...s,
+  esEtf: ETFS_USA_SET.has(s.ticker),
   avg: null, price: null, history: [], inAlert: false,
   dayHigh: null, dayLow: null, volume: null, montoTransado: null, ret3m: null, ret1y: null,
   rand: seedRand(s.ticker),
@@ -2624,7 +2688,15 @@ function stocksDelAmbiente(amb){
   // Van marcadas con la etiqueta "watchlist" para no confundirlas con la
   // grilla fija, y el tope de WATCHLIST_MAX (15) es lo que evita que la
   // grilla crezca sin control.
-  if(amb === 'usa') return stateUSA.concat(stateWatch);
+  // Desde el 23-sep-2026 la grilla de EE.UU. está partida en dos pestañas.
+  // Es la MISMA tanda de precios: separar no cuesta ni una petición más, solo
+  // cambia qué tarjetas se dibujan en cada vista.
+  //
+  // La watchlist va con las ACCIONES: lo que mandas desde Explorar son
+  // candidatas de acción, y las que no lo son igual se leen mejor ahí que
+  // mezcladas con los fondos.
+  if(amb === 'usa') return stateUSA.filter(s => !s.esEtf).concat(stateWatch);
+  if(amb === 'etf') return stateUSA.filter(s => s.esEtf);
   if(amb === 'cripto') return stateCripto;
   if(amb === 'seguir') return todosLosStocks(); // el buscador de "A seguir" cubre ambos mercados (sección 6.3 de la spec v3)
   return state;
@@ -2641,7 +2713,12 @@ function cargarAmbienteActivo(){
     // cerrar la app parada en Mi Cartera la hacía volver a Chile sola, sin
     // avisar. Se corrige de paso porque cambiarAmbiente() de más abajo sí
     // aceptaba "cartera" desde siempre: las dos listas deben coincidir.
-    return (v === 'usa' || v === 'cripto' || v === 'seguir' || v === 'cartera' || v === 'explorar') ? v : 'chile';
+    // 'riesgo' faltaba también (mismo bug que tenía 'cartera'): cerrar la
+    // app parada en Riesgo te devolvía a Chile sin avisar. Y 'etf' es la
+    // pestaña nueva. Esta lista y la de cambiarAmbiente() tienen que decir
+    // lo mismo, siempre.
+    return (v === 'usa' || v === 'etf' || v === 'cripto' || v === 'seguir'
+            || v === 'cartera' || v === 'explorar' || v === 'riesgo') ? v : 'chile';
   } catch(e){ return 'chile'; }
 }
 function guardarAmbienteActivo(a){
@@ -2654,7 +2731,12 @@ let ambienteActivo = cargarAmbienteActivo();
 const DISCLAIMER_CHILE = '<b>Datos reales de Yahoo Finance, con rezago.</b> Yahoo no publica de cuántos minutos es el rezago, así que cada precio muestra su antigüedad real: fíjate en la hora junto a cada acción y en el semáforo de estado. <b>El IPSA (y la UF/UTM) vienen directo de Diario Financiero</b>, no de Yahoo — el "Consultado" que ves junto al IPSA es el momento en que este servidor revisó esa página, no la hora exacta en que la bolsa fijó ese valor. <b>Yahoo no entrega puntas de compra/venta de la Bolsa de Santiago</b> — ese dato aparece como no disponible, nunca inventado. Toca cualquier tarjeta para ver el detalle.';
 const DISCLAIMER_CRIPTO = '<b>Precios en pesos, convertidos.</b> Bitcoin cotiza en dólares: el precio que ves acá es el de Yahoo Finance multiplicado por el dólar observado de arriba, que viene de Diario Financiero. <b>No es el precio exacto de Buda.com</b>, que tiene su propio spread — tu porcentaje puede no calzar al peso con lo que muestra su app. <b>Tu costo, tu porcentaje y tus objetivos sí están en pesos de verdad</b>, que es lo que pusiste y lo que vas a sacar. La media y las variaciones se calculan sobre la serie en dólares (el mercado real de bitcoin) y se convierten con el mismo dólar de hoy, así que la comparación "precio contra media" es exacta aunque los dos números estén convertidos. Si el dólar no está fresco, el precio no se actualiza en vez de mostrarte una conversión vieja sin decirlo.';
 
-const DISCLAIMER_USA = '<b>Datos reales de Yahoo Finance, con rezago.</b> Los ETF de este ambiente cotizan en USD y el tipo de cambio (USD/CLP) que ves arriba viene de Diario Financiero, igual que el UF/UTM. <b>El S&P 500 (^GSPC) viene de Yahoo Finance</b>, no de Diario Financiero. Toca cualquier tarjeta para ver el detalle.';
+const DISCLAIMER_USA = '<b>Datos reales de Yahoo Finance, con rezago.</b> Las acciones de este ambiente cotizan en USD y el tipo de cambio (USD/CLP) que ves arriba viene de Diario Financiero, igual que el UF/UTM. <b>El S&P 500 (^GSPC) viene de Yahoo Finance</b>, no de Diario Financiero. Toca cualquier tarjeta para ver el detalle.';
+// La pestaña de ETF (23-sep-2026). Mismos datos y mismo ciclo que la de
+// acciones -- lo que cambia es qué se puede leer en ellos, y eso sí conviene
+// decirlo: los dos veredictos de cada tarjeta miden a una EMPRESA, y un
+// fondo no lo es.
+const DISCLAIMER_ETF = '<b>Mismos datos que la pestaña de acciones</b>, mismo rezago de Yahoo y el mismo dólar de Diario Financiero: lo único que cambia es que acá van los fondos y allá las empresas. <b>Ojo con los dos veredictos de cada tarjeta</b> ("Oportunidad" y "Fase"): miden fuerza y tendencia, que en un fondo sí significan algo, pero el método del que salen está pensado para elegir ACCIONES. Para un ETF la lectura útil es la de Explorar: qué tan fuerte viene contra el S&P 500. Toca cualquier tarjeta para ver el detalle.';
 
 // ---- cambiarAmbiente(nuevo): conmutador central de los 3 ambientes ----
 // No duplica componentes -- oculta/muestra los que ya existen (grilla,
@@ -2664,7 +2746,7 @@ const DISCLAIMER_USA = '<b>Datos reales de Yahoo Finance, con rezago.</b> Los ET
 // bloque. El ambiente "seguir" (consolidado) se construye en el bloque 7;
 // por ahora solo conmuta la vista, #viewSeguir puede llegar vacío.
 function cambiarAmbiente(nuevo){
-  if(nuevo !== 'chile' && nuevo !== 'usa' && nuevo !== 'cripto' && nuevo !== 'seguir' && nuevo !== 'cartera' && nuevo !== 'explorar' && nuevo !== 'riesgo') return;
+  if(nuevo !== 'chile' && nuevo !== 'usa' && nuevo !== 'etf' && nuevo !== 'cripto' && nuevo !== 'seguir' && nuevo !== 'cartera' && nuevo !== 'explorar' && nuevo !== 'riesgo') return;
   ambienteActivo = nuevo;
   guardarAmbienteActivo(nuevo);
 
@@ -2680,6 +2762,12 @@ function cambiarAmbiente(nuevo){
 
   const esChile = nuevo === 'chile';
   const esUsa = nuevo === 'usa';
+  const esEtf = nuevo === 'etf';
+  // Las dos pestañas de EE.UU. comparten TODO menos qué tarjetas se ven: el
+  // mismo índice (S&P 500), el mismo semáforo de mercado abierto/cerrado, el
+  // mismo tipo de cambio y el mismo ciclo de precios. Por eso los bloques de
+  // arriba miran esta variable y no `esUsa`.
+  const esMercadoUsa = esUsa || esEtf;
   const esCripto = nuevo === 'cripto';
   const esSeguir = nuevo === 'seguir';
   const esCartera = nuevo === 'cartera';
@@ -2701,16 +2789,15 @@ function cambiarAmbiente(nuevo){
 
   if(idxBlock) idxBlock.style.display = esChile ? '' : 'none';
   if(idxBlockOculto) idxBlockOculto.style.display = 'none'; // renderIndexDisplay() decide si corresponde mostrarlo
-  if(idxBlockUsa) idxBlockUsa.style.display = esUsa ? '' : 'none';
+  if(idxBlockUsa) idxBlockUsa.style.display = esMercadoUsa ? '' : 'none';
   if(ufUtmBlock) ufUtmBlock.style.display = esVistaConsolidada ? 'none' : '';
   if(statusChile) statusChile.style.display = esChile ? '' : 'none';
-  if(statusUsa) statusUsa.style.display = esUsa ? '' : 'none';
+  if(statusUsa) statusUsa.style.display = esMercadoUsa ? '' : 'none';
   if(topDisclaimer) topDisclaimer.innerHTML = esCripto
     ? (avisoObjetivosCriptoHTML() + DISCLAIMER_CRIPTO)
-    : (esUsa ? DISCLAIMER_USA : DISCLAIMER_CHILE);
+    : (esEtf ? DISCLAIMER_ETF : (esUsa ? DISCLAIMER_USA : DISCLAIMER_CHILE));
 
   // Paneles principales vs. vista consolidada
-  const analysisPanelWrap = document.getElementById('analysisPanelWrap');
   const movsPanelWrap = document.getElementById('movsPanelWrap');
   const searchRowWrap = document.getElementById('searchRowWrap');
   const mainLayout = document.getElementById('mainLayout');
@@ -2724,7 +2811,6 @@ function cambiarAmbiente(nuevo){
   // El panel de señales queda FUERA de Cripto: sus filas se arman con los
   // datos de /signals del lote de EE.UU., en dólares. Mostrarlos dentro de
   // una vista en pesos sería repetir el error que este ambiente arregla.
-  if(analysisPanelWrap) analysisPanelWrap.style.display = (esVistaConsolidada || esCripto) ? 'none' : '';
   if(movsPanelWrap) movsPanelWrap.style.display = esVistaConsolidada ? 'none' : '';
   // Cripto no lleva caja propia: Cristian financia sus compras de BTC
   // directo desde el banco, no desde una caja que la app le lleve la
@@ -2739,6 +2825,10 @@ function cambiarAmbiente(nuevo){
   // encabezado por grupo (ver buscadorTop.agrupar) y abre el detalle sin
   // necesitar la grilla de tarjetas, que sigue oculta.
   if(mainLayout) mainLayout.style.display = esVistaConsolidada ? 'none' : '';
+  // La barra de orden es de la grilla: se va con ella en las vistas
+  // consolidadas. El buscador SÍ se queda (ver el comentario de arriba).
+  const ordenRowEl = document.getElementById('ordenRow');
+  if(ordenRowEl) ordenRowEl.style.display = esVistaConsolidada ? 'none' : '';
   if(footerNote) footerNote.style.display = esVistaConsolidada ? 'none' : '';
   if(viewSeguir) viewSeguir.style.display = esSeguir ? '' : 'none';
   if(viewCartera) viewCartera.style.display = esCartera ? '' : 'none';
@@ -2746,6 +2836,16 @@ function cambiarAmbiente(nuevo){
   if(viewRiesgo) viewRiesgo.style.display = esRiesgo ? '' : 'none';
 
   // Re-renderizar los componentes compartidos con el ambiente ya cambiado
+  // La barra de orden va ANTES de la grilla: si el ambiente nuevo tiene un
+  // orden caro activo, hay que volver a pedir sus veredictos (la cola es por
+  // ticker, no por ambiente).
+  if(typeof renderOrdenRow === 'function'){
+    renderOrdenRow();
+    if(GRID_ORDENES[gridOrden] && GRID_ORDENES[gridOrden].caro
+       && (nuevo === 'chile' || nuevo === 'usa' || nuevo === 'etf' || nuevo === 'cripto')){
+      pedirDiagnosticoDeTodoElAmbiente();
+    }
+  }
   if(typeof renderGridOrder === 'function') renderGridOrder();
   if(typeof renderIndexDisplay === 'function') renderIndexDisplay();
   if(typeof renderIndexDisplayUsa === 'function') renderIndexDisplayUsa();
@@ -2866,18 +2966,23 @@ function camposCacheables(s){
     volume: s.volume, montoTransado: s.montoTransado, ret3m: s.ret3m, ret1y: s.ret1y,
     rsi14: s.rsi14 ?? null, sma20: s.sma20 ?? null, sma50: s.sma50 ?? null,
     sma200: s.sma200 ?? null, zscore: s.zscore ?? null, marketTime: s.marketTime || null,
+    // Faltaban tres (23-sep-2026). `aplicarCacheado` YA los leia, pero aca
+    // nunca se guardaban, asi que al abrir la app con cache fria la tarjeta
+    // mostraba MM100/EMA21 en "···" y sin variacion del dia hasta que
+    // llegara la primera tanda de precios. Es la misma lista duplicada de
+    // siempre: si se agrega un campo a la cotizacion, va tambien aca.
+    sma100: s.sma100 ?? null, ema21: s.ema21 ?? null,
+    previousClose: s.previousClose ?? null,
   };
 }
 function saveCache(){
   try {
     const quotesOut = {};
     state.forEach(s => {
-      if(s.price !== null){
-        quotesOut[s.ticker] = {
-          price: s.price, avg: s.avg, dayHigh: s.dayHigh, dayLow: s.dayLow,
-          volume: s.volume, montoTransado: s.montoTransado, ret3m: s.ret3m, ret1y: s.ret1y,
-        };
-      }
+      // Antes esto repetia la lista a mano y ademas mas corta (sin ningun
+      // indicador), asi que las tarjetas chilenas abrian sin medias aunque
+      // la cache estuviera fresca.
+      if(s.price !== null) quotesOut[s.ticker] = camposCacheables(s);
     });
     const quotesUsaOut = {};
     [...stateUSA, ...stateWatch].forEach(s => {
@@ -3063,6 +3168,13 @@ async function vaciarColaDiagnostico(){
         const st = todosLosStocks().find(x => x.ticker === t);
         if(st) renderCard(st);
       });
+      // Si se está ordenando por un criterio que depende de estos datos, el
+      // orden y la barra de progreso tienen que moverse con cada lote: si no,
+      // la lista se quedaría quieta hasta el final y parecería colgada.
+      if(typeof GRID_ORDENES !== 'undefined' && GRID_ORDENES[gridOrden] && GRID_ORDENES[gridOrden].caro){
+        if(typeof renderOrdenRow === 'function') renderOrdenRow();
+        if(typeof renderGridOrder === 'function') renderGridOrder();
+      }
     } else {
       // Que vuelva a intentarse la proxima vez que aparezcan en pantalla:
       // un 503 del backend dormido no tiene por que dejar la tarjeta en
@@ -3106,7 +3218,8 @@ function crearTarjetaStock(s){
       </div>
       <div class="price-block">
         <div class="price mono" data-el="price">···</div>
-        <div class="delta mono" data-el="delta"></div>
+        <div class="delta mono" data-el="deltaDia"></div>
+        <div class="delta delta-prom mono" data-el="delta"></div>
         ${(s.currency === 'USD' || s.esCripto) ? '<div class="price-clp-eq mono" data-el="priceClp"></div>' : ''}
       </div>
     </div>
@@ -3183,19 +3296,213 @@ todosLosStocks().forEach(s => {
 // renderGridOrder() ahora solo ordena/filtra las tarjetas del AMBIENTE
 // ACTIVO -- las del otro mercado ya están ocultas por cambiarAmbiente()
 // (ver más abajo), así que basta con operar sobre stocksDelAmbiente().
+// =========================================================================
+// ORDEN Y FILTROS DE LA GRILLA (23-sep-2026)
+// =========================================================================
+// Cuatro órdenes: nombre, favoritas, oportunidad y fase. Los dos últimos
+// además filtran.
+//
+// LO QUE HAY QUE SABER ANTES DE TOCAR ESTO
+// ========================================
+// Nombre y favoritas son GRATIS: salen de datos que la app ya tiene.
+// Oportunidad y fase NO: cada uno sale de /diagnostico, que necesita cinco
+// años de historial por acción, y hasta ahora solo se pedían para las
+// tarjetas que asomaban en pantalla (ver el bloque de carga perezosa).
+// Ordenar por ellos exige tenerlos TODOS -- si no, el orden cambiaría solo
+// mientras bajas, y una acción 8/8 que nunca miraste no aparecería arriba.
+//
+// Por eso elegir uno de esos dos órdenes dispara la descarga del ambiente
+// completo, con barra de progreso. Cristian lo eligió así sabiendo el
+// costo: la primera vez del día pueden ser varios minutos para las 172
+// acciones; después queda en la caché de 24 h del servidor y es instantáneo.
+// La descarga reusa la misma cola y el mismo tope de un lote en vuelo que la
+// carga perezosa -- no hay un segundo camino que pueda saturar al worker.
+//
+// EL ORDEN SE GUARDA, LOS FILTROS NO
+// ===================================
+// Mismo criterio que el filtro por corredora de Mi Cartera: un orden
+// olvidado es una molestia, un FILTRO olvidado esconde media grilla en la
+// próxima apertura y parece que la app perdió acciones.
+const GRID_ORDENES = {
+  favoritas:   {lab: 'Favoritas',   caro: false},
+  nombre:      {lab: 'Nombre',      caro: false},
+  oportunidad: {lab: 'Oportunidad', caro: true},
+  fase:        {lab: 'Fase',        caro: true},
+};
+const CASOS_FILTRO = ['OPORTUNIDAD', 'RECUPERANDO', 'SOBREEXTENDIDA', 'DIVERGENCIA', 'DECLIVE'];
+// El orden de fase NO es 1,2,3,4: es el orden en que sirven. La 2 (avance)
+// es la única en la que el método compra; la 1 (base) es la antesala; la 3
+// (techo) y la 4 (caída) son para salir. Ordenar por número pondría arriba
+// justo las que no se miran.
+const FASE_PRIORIDAD = {2: 0, 1: 1, 3: 2, 4: 3};
+
+function cargarGridOrden(){
+  try {
+    const v = localStorage.getItem('ipsa_grid_orden');
+    return GRID_ORDENES[v] ? v : 'favoritas';
+  } catch(e){ return 'favoritas'; }
+}
+let gridOrden = cargarGridOrden();
+let gridFiltroCaso = null;   // null = todas
+let gridFiltroFase = null;   // null = todas
+let diagDescargaActiva = false;
+
+function diagDe(ticker){ return diagTarjetaCache[ticker] || null; }
+function scoreDe(ticker){
+  const d = diagDe(ticker);
+  return (d && d.diario && d.diario.disponible && typeof d.diario.score === 'number') ? d.diario.score : null;
+}
+function casoDe(ticker){
+  const d = diagDe(ticker);
+  return (d && d.diario && d.diario.disponible) ? (d.diario.caso || null) : null;
+}
+function faseDe(ticker){
+  const d = diagDe(ticker);
+  const f = (d && d.semanal && d.semanal.disponible) ? d.semanal.fase : null;
+  return (typeof f === 'number' && f > 0) ? f : null;
+}
+
+// Cuántas del ambiente ya tienen veredicto. Es lo que alimenta la barra de
+// progreso y lo que decide si hace falta seguir pidiendo.
+function progresoDiagnostico(){
+  const universo = stocksDelAmbiente(ambienteActivo);
+  const listas = universo.filter(s => diagDe(s.ticker)).length;
+  return {listas, total: universo.length};
+}
+
+function pedirDiagnosticoDeTodoElAmbiente(){
+  const universo = stocksDelAmbiente(ambienteActivo);
+  universo.forEach(s => pedirDiagnosticoTarjeta(s.ticker));
+  const {listas, total} = progresoDiagnostico();
+  diagDescargaActiva = listas < total;
+  renderOrdenRow();
+}
+
+function cambiarGridOrden(nuevo){
+  if(!GRID_ORDENES[nuevo]) return;
+  gridOrden = nuevo;
+  try { localStorage.setItem('ipsa_grid_orden', nuevo); } catch(e){}
+  // Cambiar de orden limpia el filtro del otro: dejar activo un filtro de
+  // fase mientras ordenas por oportunidad escondería tarjetas por una razón
+  // que ya no está en pantalla.
+  if(nuevo !== 'oportunidad') gridFiltroCaso = null;
+  if(nuevo !== 'fase') gridFiltroFase = null;
+  if(GRID_ORDENES[nuevo].caro) pedirDiagnosticoDeTodoElAmbiente();
+  else diagDescargaActiva = false;
+  renderOrdenRow();
+  renderGridOrder();
+}
+
+function renderOrdenRow(){
+  const cont = document.getElementById('ordenRow');
+  if(!cont) return;
+  const pill = (txt, activa, attrs) => `<button type="button" class="orden-pill${activa ? ' activa' : ''}" ${attrs}>${txt}</button>`;
+
+  let html = `<div class="orden-linea"><span class="orden-lab">Ordenar por</span>`
+    + Object.entries(GRID_ORDENES).map(([k, v]) =>
+        pill(v.lab, gridOrden === k, `data-orden="${k}"`)).join('')
+    + `</div>`;
+
+  if(gridOrden === 'oportunidad'){
+    html += `<div class="orden-linea"><span class="orden-lab">Mostrar</span>`
+      + pill('Todas', gridFiltroCaso === null, 'data-fcaso=""')
+      + CASOS_FILTRO.map(c => pill(c.charAt(0) + c.slice(1).toLowerCase(), gridFiltroCaso === c, `data-fcaso="${c}"`)).join('')
+      + `</div>`;
+  }
+  if(gridOrden === 'fase'){
+    html += `<div class="orden-linea"><span class="orden-lab">Mostrar</span>`
+      + pill('Todas', gridFiltroFase === null, 'data-ffase=""')
+      + [2,1,3,4].map(f => pill('Fase ' + f, gridFiltroFase === f, `data-ffase="${f}"`)).join('')
+      + `</div>`;
+  }
+
+  if(GRID_ORDENES[gridOrden].caro){
+    const {listas, total} = progresoDiagnostico();
+    if(listas < total){
+      html += `<p class="orden-progreso">Calculando veredictos… ${listas} de ${total}.
+        Cada acción son 5 años de historial, así que la primera vez del día toma un rato.
+        Las que faltan quedan al final de la lista mientras tanto.</p>`;
+    }
+  }
+  cont.innerHTML = html;
+
+  cont.querySelectorAll('[data-orden]').forEach(b =>
+    b.addEventListener('click', () => cambiarGridOrden(b.dataset.orden)));
+  cont.querySelectorAll('[data-fcaso]').forEach(b =>
+    b.addEventListener('click', () => {
+      gridFiltroCaso = b.dataset.fcaso || null;
+      renderOrdenRow(); renderGridOrder();
+    }));
+  cont.querySelectorAll('[data-ffase]').forEach(b =>
+    b.addEventListener('click', () => {
+      gridFiltroFase = b.dataset.ffase ? Number(b.dataset.ffase) : null;
+      renderOrdenRow(); renderGridOrder();
+    }));
+}
+
 function renderGridOrder(){
   const query = document.getElementById('searchInput').value.trim().toLowerCase();
   const universo = stocksDelAmbiente(ambienteActivo);
 
-  const visibles = universo.filter(s =>
-    !query || s.ticker.toLowerCase().includes(query) || s.name.toLowerCase().includes(query)
-  );
+  const visibles = universo.filter(s => {
+    if(query && !s.ticker.toLowerCase().includes(query) && !s.name.toLowerCase().includes(query)) return false;
+    // Los filtros solo aplican con su orden activo (ver renderOrdenRow). Una
+    // tarjeta SIN veredicto todavía no se esconde: que la caché aún no haya
+    // llegado no es lo mismo que "no cumple", y esconderla sería afirmar
+    // algo que la app no sabe.
+    if(gridOrden === 'oportunidad' && gridFiltroCaso){
+      const c = casoDe(s.ticker);
+      if(c !== null && c !== gridFiltroCaso) return false;
+    }
+    if(gridOrden === 'fase' && gridFiltroFase){
+      const f = faseDe(s.ticker);
+      if(f !== null && f !== gridFiltroFase) return false;
+    }
+    return true;
+  });
 
-  // Favoritas primero (en el orden en que se marcaron no importa, mantenemos
-  // el orden original de la lista dentro de cada grupo), despues el resto.
-  const favoritas = visibles.filter(s => favoritos.has(s.ticker));
-  const resto = visibles.filter(s => !favoritos.has(s.ticker));
-  const ordenFinal = favoritas.concat(resto);
+  // ---- El orden ----------------------------------------------------------
+  // `idx` conserva el orden original de la lista como desempate en todos los
+  // criterios: sin él, dos acciones con el mismo puntaje podrían cambiarse
+  // de lugar entre un refresco de precios y el siguiente, y la grilla
+  // "bailaría" sola cada 60 segundos.
+  const idx = new Map(universo.map((s, i) => [s.ticker, i]));
+  const desempate = (a, b) => idx.get(a.ticker) - idx.get(b.ticker);
+  let ordenFinal;
+  if(gridOrden === 'nombre'){
+    ordenFinal = [...visibles].sort((a, b) =>
+      a.name.localeCompare(b.name, 'es', {sensitivity:'base'}) || a.ticker.localeCompare(b.ticker));
+  } else if(gridOrden === 'oportunidad'){
+    // Puntaje alto primero; las que todavía no tienen veredicto, al final.
+    ordenFinal = [...visibles].sort((a, b) => {
+      const sa = scoreDe(a.ticker), sb = scoreDe(b.ticker);
+      if(sa === null && sb === null) return desempate(a, b);
+      if(sa === null) return 1;
+      if(sb === null) return -1;
+      return (sb - sa) || desempate(a, b);
+    });
+  } else if(gridOrden === 'fase'){
+    // Por utilidad, no por número: ver FASE_PRIORIDAD. Dentro de la misma
+    // fase manda cuántas confirmaciones tiene.
+    const conf = (t) => {
+      const d = diagDe(t);
+      return (d && d.semanal && d.semanal.disponible && typeof d.semanal.scoreConfirmaciones === 'number')
+        ? d.semanal.scoreConfirmaciones : -1;
+    };
+    ordenFinal = [...visibles].sort((a, b) => {
+      const fa = faseDe(a.ticker), fb = faseDe(b.ticker);
+      if(fa === null && fb === null) return desempate(a, b);
+      if(fa === null) return 1;
+      if(fb === null) return -1;
+      const pa = FASE_PRIORIDAD[fa] ?? 9, pb = FASE_PRIORIDAD[fb] ?? 9;
+      return (pa - pb) || (conf(b.ticker) - conf(a.ticker)) || desempate(a, b);
+    });
+  } else {
+    // 'favoritas' -- el de siempre: las marcadas arriba, y dentro de cada
+    // grupo el orden original de la lista.
+    ordenFinal = visibles.filter(s => favoritos.has(s.ticker))
+                 .concat(visibles.filter(s => !favoritos.has(s.ticker)));
+  }
 
   // El guardia se queda aunque la watchlist ya tenga tarjeta: stateFicha (las
   // que miras una vez, sin seguirlas) sigue sin tenerla, y sin esto
@@ -3217,8 +3524,14 @@ function renderGridOrder(){
   });
 
   const hint = document.getElementById('searchHint');
-  if(query){
-    hint.textContent = `${visibles.length} de ${universo.length} acciones`;
+  const hayFiltro = (gridOrden === 'oportunidad' && gridFiltroCaso)
+                 || (gridOrden === 'fase' && gridFiltroFase);
+  if(query || hayFiltro){
+    // "acciones" era correcto cuando la grilla gringa eran solo empresas;
+    // en la pestaña de ETF decía "11 de 40 acciones" sobre una lista de
+    // fondos.
+    const sustantivo = ambienteActivo === 'etf' ? 'ETF' : 'acciones';
+    hint.textContent = `${visibles.length} de ${universo.length} ${sustantivo}`;
   } else {
     const favEnAmbiente = universo.filter(s => favoritos.has(s.ticker)).length;
     hint.textContent = favEnAmbiente ? `${favEnAmbiente} favorita${favEnAmbiente>1?'s':''}` : '';
@@ -3647,7 +3960,8 @@ async function seedHistorialSiFalta(s){
 // lista es un campo que alguien se olvida de copiar y una pantalla que
 // aparece a medias sin que nadie entienda por que.
 const CAMPOS_QUOTE = ['dayHigh','dayLow','volume','montoTransado','ret3m','ret1y',
-                      'rsi14','sma20','sma50','sma100','sma200','ema21','zscore','staleSeconds'];
+                      'rsi14','sma20','sma50','sma100','sma200','ema21','zscore','staleSeconds',
+                      'previousClose'];
 
 function aplicarQuoteAStock(s, q){
   if(!s || !q || typeof q.price !== 'number') return false;
@@ -4798,6 +5112,7 @@ function renderCard(s){
   if(!card) return;
   const priceEl = card.querySelector('[data-el="price"]');
   const deltaEl = card.querySelector('[data-el="delta"]');
+  const deltaDiaEl = card.querySelector('[data-el="deltaDia"]');
   const priceClpEl = card.querySelector('[data-el="priceClp"]');
   const avgEl = card.querySelector('[data-el="avgline"]');
   const horaEl = card.querySelector('[data-el="datoHora"]');
@@ -4823,6 +5138,7 @@ function renderCard(s){
   if(s.price === null || s.avg === null){
     priceEl.textContent = '···';
     deltaEl.textContent = '';
+    if(deltaDiaEl) deltaDiaEl.textContent = '';
     if(priceClpEl) priceClpEl.textContent = '';
     if(avgEl) avgEl.textContent = '···';
     card.classList.remove('alert');
@@ -4857,9 +5173,50 @@ function renderCard(s){
         : 'CLP: tipo de cambio no disponible';
     }
   }
+  // ---- DOS PORCENTAJES, Y DICEN COSAS DISTINTAS (23-sep-2026) -----------
+  // Cristian preguntó qué medía el "+7,9%" de la tarjeta. Medía la distancia
+  // al promedio de 90 días, no la variación del día -- pero se leía como lo
+  // segundo, porque va pegado al precio y porque la línea "Promedio 90d",
+  // que era su referencia en pantalla, se sacó al rediseñar la tarjeta.
+  //
+  // Ahora van los dos, cada uno rotulado:
+  //
+  //   ARRIBA, "+1,2% hoy": precio contra el CIERRE ANTERIOR. Es lo que
+  //   cualquiera espera ver al lado de un precio, y es el único de los dos
+  //   que responde "¿qué pasó hoy?".
+  //
+  //   ABAJO, "+7,9% vs prom. 90d": qué tan lejos está de su propia media de
+  //   90 días. Es el mismo eje que enciende el borde rojo y la etiqueta
+  //   "Bajo promedio" de la tarjeta, y NO se mueve solo con el día: si
+  //   mañana el precio no cambia, este número igual cambia, porque el
+  //   promedio se recalcula.
+  //
+  // LA ETIQUETA NO SE SACA. Un porcentaje suelto al lado de un precio se
+  // lee como la variación del día; ése fue exactamente el malentendido que
+  // este bloque existe para cerrar. Si algún día hay que ganar espacio, se
+  // saca el número, no su rótulo.
+  if(deltaDiaEl){
+    const prev = s.previousClose;
+    if(typeof prev === 'number' && prev > 0){
+      const diaVal = (s.price / prev) - 1;
+      deltaDiaEl.textContent = fmtPct(diaVal) + ' hoy';
+      deltaDiaEl.style.color = diaVal >= 0 ? 'var(--verdigris)' : 'var(--copper)';
+      deltaDiaEl.title = 'Variación contra el cierre anterior ('
+                       + fmt(prev, s.dec, s.currency) + '). Esto sí es "cuánto se movió hoy".';
+    } else {
+      // Sin cierre anterior no se inventa un 0%: se deja vacío. Un "0,0%"
+      // falso al lado del precio es peor que no decir nada.
+      deltaDiaEl.textContent = '';
+      deltaDiaEl.title = '';
+    }
+  }
+
   const deltaVal = (s.price/s.avg)-1;
-  deltaEl.textContent = fmtPct(deltaVal);
+  deltaEl.innerHTML = fmtPct(deltaVal) + ' <span class="dp-ref">vs prom. 90d</span>';
   deltaEl.style.color = deltaVal>=0 ? 'var(--verdigris)' : 'var(--copper)';
+  deltaEl.title = 'Qué tan lejos está el precio de su promedio de 90 días ('
+                + fmt(s.avg, s.dec, s.currency) + '). No es la variación del día: '
+                + 'cambia también cuando se mueve el promedio.';
   if(avgEl) avgEl.textContent = fmt(s.avg, s.dec, s.currency);
 
   s.inAlert = isBelow;
@@ -5289,179 +5646,26 @@ function actualizarStatsCard(card, s){
   }
 }
 
-// A pedido: las listas "Señal técnica: posible compra/venta" solo
-// muestran los 2 primeros resultados; el resto queda detrás de un botón
-// "Ver X más" (mismo estilo que "Ver posición actual e historial completo"
-// de Mis movimientos) que también sirve para volver a ocultarlos. El
-// estado (expandido/colapsado) se guarda en memoria -- no en localStorage,
-// igual criterio que el panel de asignación de "A seguir" -- para que no
-// se cierre solo cada vez que llega un refresco de precios (renderAnalysis()
-// corre cada ~60s) pero tampoco quede pegado entre sesiones.
-const analisisExpandido = { analysisDown: false, analysisUp: false };
-function renderListaColapsable(contenedorId, filas){
-  const el = document.getElementById(contenedorId);
-  if(!el) return;
-  if(!filas.length){
-    el.innerHTML = '<p class="analysis-empty">Nada relevante ahora.</p>';
-    return;
-  }
-  const expandido = analisisExpandido[contenedorId];
-  const visibles = filas.slice(0, 2);
-  const resto = filas.slice(2);
-  let html = visibles.join('');
-  if(resto.length){
-    html += `<div class="analysis-mas" style="${expandido ? '' : 'display:none;'}">${resto.join('')}</div>`;
-    html += `<button type="button" class="movs-detail-link analysis-toggle" data-cont="${contenedorId}">`
-          + (expandido ? 'Ocultar ‹' : `Ver ${resto.length} más ›`) + '</button>';
-  }
-  el.innerHTML = html;
-}
-// Delegado UNA sola vez sobre el contenedor que nunca se reemplaza entero
-// (#analysisCols) -- así el botón sigue funcionando aunque analysisDown/Up
-// se vuelvan a dibujar en cada refresco, sin tener que reenganchar el
-// listener cada vez.
-(function inicializarToggleAnalisis(){
-  const cont = document.getElementById('analysisCols');
-  if(!cont) return;
-  cont.addEventListener('click', (e) => {
-    const btn = e.target.closest('.analysis-toggle');
-    if(!btn) return;
-    const id = btn.dataset.cont;
-    analisisExpandido[id] = !analisisExpandido[id];
-    if(typeof renderAnalysis === 'function') renderAnalysis();
-  });
-})();
+// Las listas colapsables del panel de distancia al promedio se fueron con
+// el panel (23-sep-2026): renderListaColapsable(), analisisExpandido y el
+// delegado de #analysisCols no tenian ningun otro uso en la app.
 
 function renderAnalysis(){
-  if(ambienteActivo === 'seguir' && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir(); // bloque 7
-  // Patrimonio (Día 23) vive ahora en "Mi Cartera", no en "A seguir" --
-  // necesita el mismo refresco cuando cambian los precios.
+  // Lo que quedo de esta funcion (23-sep-2026). Antes dibujaba el panel
+  // "Distancia a su promedio"; ese panel se elimino (ver el comentario en el
+  // HTML, mas arriba) y con el sus ~130 lineas de armado de listas.
+  //
+  // El nombre y las llamadas se mantienen a proposito: renderAnalysis() se
+  // invoca desde una decena de sitios (cada refresco de precios, cada cambio
+  // de ambiente, el buscador) y es el punto por el que "A seguir" y "Mi
+  // Cartera" se enteran de que llegaron precios nuevos. Renombrarla o
+  // borrarla obligaria a tocar esos diez sitios para nada.
+  if(ambienteActivo === 'seguir' && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir();
   if(ambienteActivo === 'cartera' && typeof renderAmbienteCartera === 'function') renderAmbienteCartera();
-  const refreshEl = document.getElementById('analysisRefresh');
-
-  // Ambiente "A seguir" no usa este panel (queda oculto por cambiarAmbiente()).
-  if(ambienteActivo === 'seguir') return;
-
-  // ---- Chile en modo salida: sin columna de entrada -----------------------
-  // Se resuelve acá y no en cambiarAmbiente() porque renderAnalysis() corre
-  // también con cada refresco de precios: si solo se ocultara al cambiar de
-  // pestaña, cualquier refresco la volvería a dejar visible.
-  const soloSalida = ambienteActivo === 'chile';
-  const colDown = document.getElementById('analysisColDown');
-  const colsWrap = document.getElementById('analysisCols');
-  const notaSalida = document.getElementById('analysisSoloSalida');
-  if(colDown) colDown.style.display = soloSalida ? 'none' : '';
-  if(colsWrap) colsWrap.classList.toggle('solo-salida', soloSalida);
-  if(notaSalida) notaSalida.style.display = soloSalida ? '' : 'none';
-
-  function candItemHTML(ev, esVenta){
-    const flagged = Array.isArray(ev.banderas) && ev.banderas.length > 0;
-    const color = esVenta ? 'var(--copper)' : (flagged ? 'var(--ink-faint)' : 'var(--verdigris)');
-    let rsiTxt = (typeof ev.rsi14 === 'number')
-      ? `RSI ${ev.rsi14}${ev.rsi14<30?' · sobrevendida':ev.rsi14>70?' · sobrecomprada':''}`
-      : 'RSI: sin dato';
-    if(typeof ev.zscore === 'number'){ rsiTxt += ` · z ${ev.zscore>=0?'+':''}${fmtNum(ev.zscore, 1)}σ`; }
-    const flagTxt = flagged
-      ? `<div class="ai-flag">⚠ ${ev.banderas[0].split('—')[0].trim()}</div>`
-      : '';
-    const delta = typeof ev.distanciaPromedio === 'number' ? ev.distanciaPromedio/100 : 0;
-    return `
-      <div class="analysis-item${flagged?' analysis-item--flag':''}" data-ticker="${ev.ticker}">
-        <div class="ai-left">
-          <span class="ai-ticker mono">${ev.ticker}</span>
-          <span class="ai-rsi">${rsiTxt}</span>
-          ${flagTxt}
-        </div>
-        <span class="ai-delta mono" style="color:${color}">${fmtPct(delta)}</span>
-      </div>`;
-  }
-
-  // Dentro de cada lista: primero las "limpias" (sin bandera roja), luego
-  // las que traen advertencia de tendencia -- esas últimas van atenuadas
-  // y al final, no borradas, para que sigan siendo auditables. Devuelve un
-  // ARRAY de filas (no un string ya unido) para que renderListaColapsable
-  // pueda mostrar solo las 2 primeras y esconder el resto.
-  function filasConGrupos(candidatos, esVenta){
-    if(!candidatos || candidatos.length === 0) return [];
-    const limpias = candidatos.filter(c => !(c.banderas && c.banderas.length));
-    const conBandera = candidatos.filter(c => c.banderas && c.banderas.length);
-    const filas = limpias.map(c => candItemHTML(c, esVenta));
-    if(conBandera.length){
-      filas.push('<p class="analysis-group-label">Con advertencia de tendencia</p>');
-      filas.push(...conBandera.map(c => candItemHTML(c, esVenta)));
-    }
-    return filas;
-  }
-
-  // Cada ambiente tiene su propia fuente de señales -- nunca se muestran
-  // los candidatos de Chile mientras se mira EE.UU. o viceversa.
-  const datosDeEsteAmbiente = ambienteActivo === 'usa' ? signalsDataUsa : signalsData;
-
-  if(datosDeEsteAmbiente && (datosDeEsteAmbiente.candidatos_compra || datosDeEsteAmbiente.candidatos_venta)){
-    if(ambienteActivo === 'chile') detectarNuevasSenales(datosDeEsteAmbiente);
-
-    renderListaColapsable('analysisDown', filasConGrupos(datosDeEsteAmbiente.candidatos_compra, false));
-    renderListaColapsable('analysisUp', filasConGrupos(datosDeEsteAmbiente.candidatos_venta, true));
-
-    document.querySelectorAll('.analysis-item').forEach(el => {
-      el.addEventListener('click', () => openDetail(el.dataset.ticker));
-    });
-
-    if(datosDeEsteAmbiente.serverTime){
-      const t = new Date(datosDeEsteAmbiente.serverTime);
-      refreshEl.textContent = 'actualizado ' + t.toLocaleTimeString('es-CL', {timeZone:'America/Santiago', hour12:false});
-    }
-    return;
-  }
-
-  // EE.UU. sin /signals?mercado=usa todavía (esperado -- ver nota en
-  // server.py) o Chile sin respuesta: degrada con gracia al cálculo local
-  // de respaldo de abajo, que ya usa stocksDelAmbiente() y por lo tanto
-  // sirve para cualquier ambiente sin inventar nada.
-
-  // Respaldo: si /signals aun no respondio (o fallo), no dejar el panel
-  // en blanco -- se arma una version simple con lo que ya hay en /quotes,
-  // solo del universo del ambiente activo.
-  const conDatos = stocksDelAmbiente(ambienteActivo).filter(s => s.price !== null && s.avg !== null);
-  if(conDatos.length === 0){
-    document.getElementById('analysisDown').innerHTML = '<p class="analysis-empty">Cargando datos reales…</p>';
-    document.getElementById('analysisUp').innerHTML = '<p class="analysis-empty">Cargando datos reales…</p>';
-    refreshEl.textContent = '';
-    return;
-  }
-
-  const conDelta = conDatos.map(s => {
-    const deltaVal = (s.price/s.avg) - 1;
-    const rsi = (typeof s.rsi14 === 'number') ? s.rsi14 : calcRSI(s.history, 14);
-    return {s, deltaVal, rsi, z: (typeof s.zscore === 'number') ? s.zscore : null};
-  });
-  const masAbajo = [...conDelta].sort((a,b) => a.deltaVal - b.deltaVal).slice(0, 5);
-  const masArriba = [...conDelta].sort((a,b) => b.deltaVal - a.deltaVal).slice(0, 5);
-
-  function itemHTMLRespaldo(entry){
-    const {s, deltaVal, rsi, z} = entry;
-    const color = deltaVal >= 0 ? 'var(--verdigris)' : 'var(--copper)';
-    let rsiTxt = rsi === null ? 'RSI: sin dato' :
-      `RSI ${rsi}${rsi<30?' · sobrevendida':rsi>70?' · sobrecomprada':''}`;
-    if(z !== null){ rsiTxt += ` · z ${z>=0?'+':''}${fmtNum(z, 1)}σ`; }
-    return `
-      <div class="analysis-item" data-ticker="${s.ticker}">
-        <div class="ai-left">
-          <span class="ai-ticker mono">${s.ticker}</span>
-          <span class="ai-rsi">${rsiTxt}</span>
-        </div>
-        <span class="ai-delta mono" style="color:${color}">${fmtPct(deltaVal)}</span>
-      </div>`;
-  }
-
-  renderListaColapsable('analysisDown', masAbajo.map(itemHTMLRespaldo));
-  renderListaColapsable('analysisUp', masArriba.map(itemHTMLRespaldo));
-  document.querySelectorAll('.analysis-item').forEach(el => {
-    el.addEventListener('click', () => openDetail(el.dataset.ticker));
-  });
-  if(ultimaActualizacionReal){
-    refreshEl.textContent = 'actualizado ' + ultimaActualizacionReal.toLocaleTimeString('es-CL', {timeZone:'America/Santiago', hour12:false});
-  }
+  // Riesgo se sumó el 23-sep-2026: desde que tiene la asignación objetivo,
+  // sus barras dependen del patrimonio consolidado y ese cambia con cada
+  // refresco de precios.
+  if(ambienteActivo === 'riesgo' && typeof renderAmbienteRiesgo === 'function') renderAmbienteRiesgo();
 }
 
 // ---- Registro de movimientos (compras/ventas que TÚ decidas) ----
@@ -7666,6 +7870,11 @@ function explorarResultadoHTML(analisis){
   const a = analisis.alerta || {};
   const sectores = analisis.sectores || [];
   const industrias = analisis.industrias || [];
+  // El listado de ETF (23-sep-2026). Viene del backend ya ordenado por
+  // fuerza a 12 meses contra el S&P 500. Si el servidor todavía es una
+  // versión vieja llega `undefined` y la sección simplemente no se dibuja,
+  // en vez de reventar la vista entera.
+  const etfsFuerza = analisis.etfs || [];
   const embudo = analisis.embudo || {};
   const notas = analisis.notas || [];
   const acciones = analisis.acciones || [];
@@ -7686,12 +7895,59 @@ function explorarResultadoHTML(analisis){
         : `<br><span class="expl-roto-tec">Motivo: ${JSON.stringify(ff.motivosFicha || {}).replace(/</g,'&lt;')} · lote: ${JSON.stringify(ff.motivosLote || []).replace(/</g,'&lt;')}</span>`}
     </div>` : '';
 
+  // ---- EL SEGUNDO LISTADO: LOS ETF (23-sep-2026) -------------------------
+  // Cristian pidió que Explorar entregue dos listados separados, uno de
+  // acciones y otro de ETF. Esta es la mitad de los ETF.
+  //
+  // POR QUÉ NO ES UN EMBUDO COMO EL DE ARRIBA
+  // ==========================================
+  // Tres de los siete filtros del método (capitalización, crecimiento de
+  // utilidades, y el de "empresa cara o barata") no existen en un fondo. Si
+  // se le corrieran igual, todos saldrían como "sin dato, revisar a mano"
+  // — que es exactamente lo que pasaba antes de excluirlos del embudo.
+  //
+  // Lo que sí significa algo en un fondo es la FUERZA RELATIVA: si le está
+  // ganando o perdiendo al S&P 500. Esto es ese ranking, y es el mismo
+  // cálculo que el paso 1 ya hacía para los 23 de sector e industria,
+  // extendido a los 40 de la grilla.
+  //
+  // Van todos en UNA sola tabla, no tres por familia, porque la pregunta
+  // que contesta es "¿qué está mandando hoy?" — y eso se responde
+  // comparando el oro con el software y con los bonos, no cada grupo por su
+  // cuenta. La etiqueta de grupo queda al lado para poder leerlo igual.
+  const ETF_GRUPO_TXT = {sector: 'sector', industria: 'industria', otro: 'amplio'};
+  const filaEtf = (x) => {
+    const m12 = (x.fuerza && typeof x.fuerza.m12 === 'number') ? x.fuerza.m12 : null;
+    const cls = m12 === null ? '' : (m12 >= 0 ? 'up' : 'down');
+    // La fase de Weinstein en un fondo se lee igual que en una acción: 2 es
+    // avance, 4 es caída. Es la única de las dos lecturas del método que
+    // sobrevive entera cuando el papel no es una empresa.
+    const fase = (typeof x.fase === 'number' && x.fase > 0) ? x.fase : null;
+    return `<div class="expl-etf-row">
+        <span class="expl-etf-nom">${(x.nombre||x.etf).replace(/</g,'&lt;')}
+          <span class="expl-etf-tic mono">${x.etf}</span>
+          <span class="expl-etf-grp">${ETF_GRUPO_TXT[x.grupo] || ''}</span></span>
+        ${fase ? `<span class="expl-etf-fase" style="color:${FASE_COLOR[fase] || 'var(--ink-faint)'};">fase ${fase}</span>` : '<span class="expl-etf-fase"></span>'}
+        <span class="expl-fuerza-val ${cls}">${m12 === null ? '—' : (m12>=0?'+':'') + fmtNum(m12, 1) + '%'}</span>
+      </div>`;
+  };
+  const ETF_LISTA_HTML = etfsFuerza.length ? `
+     <p class="expl-section-title">ETF · fuerza contra el S&amp;P 500 (${etfsFuerza.length})</p>
+     <p class="expl-section-nota">El segundo listado, separado de las acciones a propósito. A un fondo no se le
+     pueden aplicar los filtros de empresa del método —no tiene capitalización ni utilidades—, así que acá manda
+     lo que sí se puede medir: <b>rendimiento a 12 meses contra el S&amp;P 500</b>. Positivo = le está ganando al
+     mercado. La fase es la misma lectura semanal de Weinstein de las acciones.</p>
+     <div class="expl-etf-lista">${etfsFuerza.map(filaEtf).join('')}</div>` : '';
+
   // ---- Si el análisis es viejo y no trae métricas crudas ----------------
   // Un resultado guardado de antes de esta versión no tiene `acciones`. En
   // vez de dibujar un embudo vacío que parecería decir "no pasó ninguna",
   // se pide correr de nuevo.
   if(!acciones.length){
+    // El ranking de ETF SI se dibuja igual: no sale del embudo de acciones,
+    // sale del paso 1, y ese no depende de `acciones`.
     return `${avisoDatos}
+      ${ETF_LISTA_HTML}
       <p class="expl-empty">Este resultado es de una versión anterior de la app y no trae el detalle
       por acción, así que no se puede recalcular acá. Aprieta <b>"Volver a ejecutar"</b> para tener
       el embudo por etapas con los filtros movibles.</p>`;
@@ -7931,7 +8187,8 @@ function explorarResultadoHTML(analisis){
          ? '<p class="expl-empty" style="color:var(--copper);">No se puede saber todavía: el embudo se cortó antes de llegar acá, por lo que dice el aviso de arriba.</p>'
          : '<p class="expl-empty">Ninguna con estos umbrales. Puedes aflojarlos en el paso 2 o apagar los dos filtros del paso 3 y ver qué aparece.</p>'}
      ${repetidas.length ? `<p class="expl-section-title">Descartadas por repetir industria (${repetidas.length})</p>
-       <div class="exp-caidos">${repetidas.map(x=>`<div class="exp-caido"><b>${x.t}</b><span class="ec-val">repite con ${x.repiteCon}</span></div>`).join('')}</div>` : ''}`;
+       <div class="exp-caidos">${repetidas.map(x=>`<div class="exp-caido"><b>${x.t}</b><span class="ec-val">repite con ${x.repiteCon}</span></div>`).join('')}</div>` : ''}
+     ${ETF_LISTA_HTML}`;
 
   // ---- Los cinco pasos, uno visible a la vez -----------------------------
   // El orden de este array TIENE que calzar con el de PASOS (el riel).
@@ -8756,128 +9013,156 @@ function patrimonioHTML(d){
   `;
 }
 
+// =========================================================================
+// EL PLAN DE INVERSION -- asignacion objetivo y "que revisar"
+// =========================================================================
+// VIVIA EN "A SEGUIR" HASTA EL 23-sep-2026, cuando Cristian pidio moverlo a
+// Riesgo. Tiene sentido: las dos cosas que muestra -- que tan lejos estas de
+// tu asignacion objetivo, y que reglas de TU PROPIA politica se gatillaron --
+// son la misma pregunta que contesta Riesgo (cuanto puedes perder si se
+// gatillan tus stops), mirada desde el otro lado. "A seguir" quedo con lo
+// unico que su nombre promete: las acciones que estas esperando para entrar.
+//
+// Se extrajo a una funcion en vez de copiarse: el calculo es largo (110
+// lineas) y depende de `calcularPatrimonioConsolidado()`, que es caro.
+// Tenerlo en dos lugares habria sido tenerlo distinto en dos lugares en
+// cuanto alguien tocara uno.
+//
+// NADA DE ESTO MIRA EL PRECIO NI UN INDICADOR TECNICO, y eso es a proposito
+// -- lo dice el titulo de la seccion. Son reglas que Cristian se puso: el
+// porcentaje en renta variable, el reparto Chile/global, el maximo por
+// posicion y los umbrales de caja ociosa.
+function planInversionHTML(){
+  const d = calcularPatrimonioConsolidado();
+  const { oculto, cambioOk, portClp, portUsd, valorClp, cajaClp, cajaUsd,
+          totalCompleto, rentaVariableClp, patrimonioTotalClp } = d;
+
+    // ---- Asignación objetivo vs. real (sección 3.2 — Día 23) ----
+    // OJO: exige totalCompleto a propósito. patrimonioTotalClp ahora se calcula
+    // aunque falten precios (para poder MOSTRAR un piso en la tarjeta), pero un
+    // porcentaje sacado de un total incompleto haría que las reglas del plan
+    // gritaran "compra" o "vende" sobre una foto que no es la real.
+    const rentaVariablePct = (totalCompleto && patrimonioTotalClp && patrimonioTotalClp > 0) ? (rentaVariableClp / patrimonioTotalClp * 100) : null;
+    const liquidezPct = rentaVariablePct !== null ? (100 - rentaVariablePct) : null;
+    const chilePct = (totalCompleto && rentaVariableClp && rentaVariableClp > 0) ? (valorClp / rentaVariableClp * 100) : null;
+    const globalPct = chilePct !== null ? (100 - chilePct) : null;
+
+    function filaBarra(etiqueta, real, objetivo){
+      if(real === null){
+        return `<div class="asig-row"><span>${etiqueta}</span><span class="seguir-empty">sin datos suficientes todavía</span></div>`;
+      }
+      const fuera = Math.abs(real - objetivo) > asignacion.banda;
+      return `
+        <div class="asig-row">
+          <span>${etiqueta}</span>
+          <span><b class="${fuera?'asig-fuera':''}">${fmtNum(real, 1)}%</b> / objetivo ${objetivo}%${fuera ? ' <span class="asig-fuera">⚠ fuera de banda (±'+asignacion.banda+'pp)</span>' : ''}</span>
+        </div>
+        <div class="asig-bar-wrap">
+          <div class="asig-bar-real" style="width:${Math.min(100,Math.max(0,real))}%; background:${fuera?'var(--copper)':'var(--gold)'};"></div>
+          <div class="asig-bar-objetivo" style="left:${Math.min(100,Math.max(0,objetivo))}%;"></div>
+        </div>`;
+    }
+
+    const asignacionHTML = `
+      <details class="asig-box" id="asigDetails" ${asignacionPanelAbierto ? 'open' : ''} style="border-top:none; margin-top:0;">
+        <summary style="cursor:pointer; font-size:12.5px; font-weight:600; color:var(--ink-dim); margin-bottom:6px;">Asignación objetivo vs. real (Día 23) · configurar</summary>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(110px,1fr)); gap:8px; margin:8px 0 12px; font-size:11.5px;">
+          <label>Renta variable % <input type="number" id="asigRentaVariable" class="mono" min="0" max="100" value="${asignacion.rentaVariable}" style="width:100%; padding:3px 6px;"></label>
+          <label>Liquidez % <input type="number" id="asigLiquidez" class="mono" min="0" max="100" value="${asignacion.liquidez}" style="width:100%; padding:3px 6px;"></label>
+          <label>Chile % (de RV) <input type="number" id="asigChile" class="mono" min="0" max="100" value="${asignacion.chile}" style="width:100%; padding:3px 6px;"></label>
+          <label>Global % (de RV) <input type="number" id="asigGlobal" class="mono" min="0" max="100" value="${asignacion.global}" style="width:100%; padding:3px 6px;"></label>
+          <label>Banda ±pp <input type="number" id="asigBanda" class="mono" min="0" max="50" value="${asignacion.banda}" style="width:100%; padding:3px 6px;"></label>
+          <label>Máx. por posición % <input type="number" id="asigMaxPosicion" class="mono" min="0" max="100" value="${asignacion.maxPorPosicion}" style="width:100%; padding:3px 6px;"></label>
+          <label>Umbral caja ociosa CLP <input type="number" id="asigUmbralClp" class="mono" min="0" value="${asignacion.umbralCajaClp !== null ? asignacion.umbralCajaClp : ''}" placeholder="—" style="width:100%; padding:3px 6px;"></label>
+          <label>Umbral caja ociosa USD <input type="number" id="asigUmbralUsd" class="mono" min="0" value="${asignacion.umbralCajaUsd !== null ? asignacion.umbralCajaUsd : ''}" placeholder="—" style="width:100%; padding:3px 6px;"></label>
+        </div>
+        ${filaBarra('Renta variable', rentaVariablePct, asignacion.rentaVariable)}
+        ${filaBarra('Liquidez', liquidezPct, asignacion.liquidez)}
+        ${filaBarra('Chile (de tu renta variable)', chilePct, asignacion.chile)}
+        ${filaBarra('Global (de tu renta variable)', globalPct, asignacion.global)}
+      </details>
+    `;
+
+    // ---- "Según tu plan: compra/venta" -- SOLO reglas del plan, nunca de precio ----
+    const compraRows = [];
+    const ventaRows = [];
+
+    if(rentaVariablePct !== null){
+      if(rentaVariablePct < asignacion.rentaVariable - asignacion.banda){
+        compraRows.push({texto:`Renta variable ${fmtNum(rentaVariablePct, 1)}% bajo tu objetivo de ${asignacion.rentaVariable}%`, regla:'Asignación objetivo · Día 23'});
+      } else if(rentaVariablePct > asignacion.rentaVariable + asignacion.banda){
+        ventaRows.push({texto:`Renta variable ${fmtNum(rentaVariablePct, 1)}% sobre tu objetivo de ${asignacion.rentaVariable}%`, regla:'Asignación objetivo (rebalanceo) · Día 23'});
+      }
+    }
+    if(chilePct !== null){
+      if(chilePct < asignacion.chile - asignacion.banda){
+        compraRows.push({texto:`Chile ${fmtNum(chilePct, 1)}% bajo tu objetivo de ${asignacion.chile}% (dentro de renta variable)`, regla:'Asignación objetivo · Día 23'});
+      } else if(chilePct > asignacion.chile + asignacion.banda){
+        ventaRows.push({texto:`Chile ${fmtNum(chilePct, 1)}% sobre tu objetivo de ${asignacion.chile}% (dentro de renta variable)`, regla:'Asignación objetivo (rebalanceo) · Día 23'});
+      }
+    }
+    if(asignacion.umbralCajaClp !== null && cajaClp > asignacion.umbralCajaClp){
+      compraRows.push({texto:`Caja CLP ociosa: ${fmtMoneda(cajaClp, oculto, 'CLP')}, sobre tu umbral de ${fmtMoneda(asignacion.umbralCajaClp, oculto, 'CLP')}`, regla:'Caja sin destino · umbral configurado'});
+    }
+    if(asignacion.umbralCajaUsd !== null && cajaUsd > asignacion.umbralCajaUsd){
+      compraRows.push({texto:`Caja USD ociosa: ${fmtMoneda(cajaUsd, oculto, 'USD')}, sobre tu umbral de ${fmtMoneda(asignacion.umbralCajaUsd, oculto, 'USD')}`, regla:'Caja sin destino · umbral configurado'});
+    }
+    if(diaActualSantiago() >= DIA_APORTE_MENSUAL && !yaAportoEsteMes() && !recordatorioDescartadoEsteMes()){
+      compraRows.push({texto:`Sin aporte registrado este mes (día ${DIA_APORTE_MENSUAL} del plan ya pasó o está pasando)`, regla:'Aporte mensual · Días 3 y 25'});
+    }
+    if(totalCompleto && patrimonioTotalClp && patrimonioTotalClp > 0){
+      [...Object.values(portClp), ...Object.values(portUsd)].forEach(p => {
+        if(p.netoQ <= 0 || p.valorActual === null) return;
+        const valorClpEq = p.moneda === 'USD' ? (cambioOk ? p.valorActual * usdclpValue : null) : p.valorActual;
+        if(valorClpEq === null) return;
+        const pct = valorClpEq / patrimonioTotalClp * 100;
+        if(pct > asignacion.maxPorPosicion){
+          ventaRows.push({ticker:p.ticker, texto:`${p.ticker} es ${fmtNum(pct, 1)}% de tu patrimonio (máximo configurado: ${asignacion.maxPorPosicion}%)`, regla:'Máximo por posición · Días 14 y 23'});
+        }
+      });
+    }
+
+    function filaSeguir(row){
+      return `
+        <div class="seguir-row" ${row.ticker ? `data-ticker="${row.ticker}"` : ''}>
+          <div class="seguir-row-head">
+            <span class="seguir-ticker mono">${row.ticker || '—'}</span>
+          </div>
+          <div class="seguir-regla">${row.texto}<br>Regla: ${row.regla}</div>
+        </div>`;
+    }
+
+    const colsHTML = `
+      <div class="seguir-cols">
+        <div>
+          <p class="seguir-col-title">Según tu plan: compra</p>
+          ${!totalCompleto ? '<p class="seguir-empty">No disponible todavía — falta tipo de cambio o algún precio real para calcular la asignación.</p>' : ''}
+          ${compraRows.length ? compraRows.map(filaSeguir).join('') : '<p class="seguir-empty">Nada gatilló una regla de tu plan ahora mismo.</p>'}
+        </div>
+        <div>
+          <p class="seguir-col-title">Según tu plan: venta</p>
+          ${!totalCompleto ? '<p class="seguir-empty">No disponible todavía — falta tipo de cambio o algún precio real para calcular la asignación.</p>' : ''}
+          ${ventaRows.length ? ventaRows.map(filaSeguir).join('') : '<p class="seguir-empty">Nada gatilló una regla de tu plan ahora mismo.</p>'}
+        </div>
+      </div>
+    `;
+
+  return { asignacionHTML, colsHTML };
+}
+
 function renderAmbienteSeguir(){
   const viewEl = document.getElementById('viewSeguir');
   if(!viewEl) return;
   const d = calcularPatrimonioConsolidado();
   const { oculto, cambioOk, portClp, portUsd, valorClp, cajaClp, cajaUsd, totalCompleto, rentaVariableClp, patrimonioTotalClp } = d;
 
-  // ---- Asignación objetivo vs. real (sección 3.2 — Día 23) ----
-  // OJO: exige totalCompleto a propósito. patrimonioTotalClp ahora se calcula
-  // aunque falten precios (para poder MOSTRAR un piso en la tarjeta), pero un
-  // porcentaje sacado de un total incompleto haría que las reglas del plan
-  // gritaran "compra" o "vende" sobre una foto que no es la real.
-  const rentaVariablePct = (totalCompleto && patrimonioTotalClp && patrimonioTotalClp > 0) ? (rentaVariableClp / patrimonioTotalClp * 100) : null;
-  const liquidezPct = rentaVariablePct !== null ? (100 - rentaVariablePct) : null;
-  const chilePct = (totalCompleto && rentaVariableClp && rentaVariableClp > 0) ? (valorClp / rentaVariableClp * 100) : null;
-  const globalPct = chilePct !== null ? (100 - chilePct) : null;
-
-  function filaBarra(etiqueta, real, objetivo){
-    if(real === null){
-      return `<div class="asig-row"><span>${etiqueta}</span><span class="seguir-empty">sin datos suficientes todavía</span></div>`;
-    }
-    const fuera = Math.abs(real - objetivo) > asignacion.banda;
-    return `
-      <div class="asig-row">
-        <span>${etiqueta}</span>
-        <span><b class="${fuera?'asig-fuera':''}">${fmtNum(real, 1)}%</b> / objetivo ${objetivo}%${fuera ? ' <span class="asig-fuera">⚠ fuera de banda (±'+asignacion.banda+'pp)</span>' : ''}</span>
-      </div>
-      <div class="asig-bar-wrap">
-        <div class="asig-bar-real" style="width:${Math.min(100,Math.max(0,real))}%; background:${fuera?'var(--copper)':'var(--gold)'};"></div>
-        <div class="asig-bar-objetivo" style="left:${Math.min(100,Math.max(0,objetivo))}%;"></div>
-      </div>`;
-  }
-
-  const asignacionHTML = `
-    <details class="asig-box" id="asigDetails" ${asignacionPanelAbierto ? 'open' : ''} style="border-top:none; margin-top:0;">
-      <summary style="cursor:pointer; font-size:12.5px; font-weight:600; color:var(--ink-dim); margin-bottom:6px;">Asignación objetivo vs. real (Día 23) · configurar</summary>
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(110px,1fr)); gap:8px; margin:8px 0 12px; font-size:11.5px;">
-        <label>Renta variable % <input type="number" id="asigRentaVariable" class="mono" min="0" max="100" value="${asignacion.rentaVariable}" style="width:100%; padding:3px 6px;"></label>
-        <label>Liquidez % <input type="number" id="asigLiquidez" class="mono" min="0" max="100" value="${asignacion.liquidez}" style="width:100%; padding:3px 6px;"></label>
-        <label>Chile % (de RV) <input type="number" id="asigChile" class="mono" min="0" max="100" value="${asignacion.chile}" style="width:100%; padding:3px 6px;"></label>
-        <label>Global % (de RV) <input type="number" id="asigGlobal" class="mono" min="0" max="100" value="${asignacion.global}" style="width:100%; padding:3px 6px;"></label>
-        <label>Banda ±pp <input type="number" id="asigBanda" class="mono" min="0" max="50" value="${asignacion.banda}" style="width:100%; padding:3px 6px;"></label>
-        <label>Máx. por posición % <input type="number" id="asigMaxPosicion" class="mono" min="0" max="100" value="${asignacion.maxPorPosicion}" style="width:100%; padding:3px 6px;"></label>
-        <label>Umbral caja ociosa CLP <input type="number" id="asigUmbralClp" class="mono" min="0" value="${asignacion.umbralCajaClp !== null ? asignacion.umbralCajaClp : ''}" placeholder="—" style="width:100%; padding:3px 6px;"></label>
-        <label>Umbral caja ociosa USD <input type="number" id="asigUmbralUsd" class="mono" min="0" value="${asignacion.umbralCajaUsd !== null ? asignacion.umbralCajaUsd : ''}" placeholder="—" style="width:100%; padding:3px 6px;"></label>
-      </div>
-      ${filaBarra('Renta variable', rentaVariablePct, asignacion.rentaVariable)}
-      ${filaBarra('Liquidez', liquidezPct, asignacion.liquidez)}
-      ${filaBarra('Chile (de tu renta variable)', chilePct, asignacion.chile)}
-      ${filaBarra('Global (de tu renta variable)', globalPct, asignacion.global)}
-    </details>
-  `;
-
-  // ---- "Según tu plan: compra/venta" -- SOLO reglas del plan, nunca de precio ----
-  const compraRows = [];
-  const ventaRows = [];
-
-  if(rentaVariablePct !== null){
-    if(rentaVariablePct < asignacion.rentaVariable - asignacion.banda){
-      compraRows.push({texto:`Renta variable ${fmtNum(rentaVariablePct, 1)}% bajo tu objetivo de ${asignacion.rentaVariable}%`, regla:'Asignación objetivo · Día 23'});
-    } else if(rentaVariablePct > asignacion.rentaVariable + asignacion.banda){
-      ventaRows.push({texto:`Renta variable ${fmtNum(rentaVariablePct, 1)}% sobre tu objetivo de ${asignacion.rentaVariable}%`, regla:'Asignación objetivo (rebalanceo) · Día 23'});
-    }
-  }
-  if(chilePct !== null){
-    if(chilePct < asignacion.chile - asignacion.banda){
-      compraRows.push({texto:`Chile ${fmtNum(chilePct, 1)}% bajo tu objetivo de ${asignacion.chile}% (dentro de renta variable)`, regla:'Asignación objetivo · Día 23'});
-    } else if(chilePct > asignacion.chile + asignacion.banda){
-      ventaRows.push({texto:`Chile ${fmtNum(chilePct, 1)}% sobre tu objetivo de ${asignacion.chile}% (dentro de renta variable)`, regla:'Asignación objetivo (rebalanceo) · Día 23'});
-    }
-  }
-  if(asignacion.umbralCajaClp !== null && cajaClp > asignacion.umbralCajaClp){
-    compraRows.push({texto:`Caja CLP ociosa: ${fmtMoneda(cajaClp, oculto, 'CLP')}, sobre tu umbral de ${fmtMoneda(asignacion.umbralCajaClp, oculto, 'CLP')}`, regla:'Caja sin destino · umbral configurado'});
-  }
-  if(asignacion.umbralCajaUsd !== null && cajaUsd > asignacion.umbralCajaUsd){
-    compraRows.push({texto:`Caja USD ociosa: ${fmtMoneda(cajaUsd, oculto, 'USD')}, sobre tu umbral de ${fmtMoneda(asignacion.umbralCajaUsd, oculto, 'USD')}`, regla:'Caja sin destino · umbral configurado'});
-  }
-  if(diaActualSantiago() >= DIA_APORTE_MENSUAL && !yaAportoEsteMes() && !recordatorioDescartadoEsteMes()){
-    compraRows.push({texto:`Sin aporte registrado este mes (día ${DIA_APORTE_MENSUAL} del plan ya pasó o está pasando)`, regla:'Aporte mensual · Días 3 y 25'});
-  }
-  if(totalCompleto && patrimonioTotalClp && patrimonioTotalClp > 0){
-    [...Object.values(portClp), ...Object.values(portUsd)].forEach(p => {
-      if(p.netoQ <= 0 || p.valorActual === null) return;
-      const valorClpEq = p.moneda === 'USD' ? (cambioOk ? p.valorActual * usdclpValue : null) : p.valorActual;
-      if(valorClpEq === null) return;
-      const pct = valorClpEq / patrimonioTotalClp * 100;
-      if(pct > asignacion.maxPorPosicion){
-        ventaRows.push({ticker:p.ticker, texto:`${p.ticker} es ${fmtNum(pct, 1)}% de tu patrimonio (máximo configurado: ${asignacion.maxPorPosicion}%)`, regla:'Máximo por posición · Días 14 y 23'});
-      }
-    });
-  }
-
-  function filaSeguir(row){
-    return `
-      <div class="seguir-row" ${row.ticker ? `data-ticker="${row.ticker}"` : ''}>
-        <div class="seguir-row-head">
-          <span class="seguir-ticker mono">${row.ticker || '—'}</span>
-        </div>
-        <div class="seguir-regla">${row.texto}<br>Regla: ${row.regla}</div>
-      </div>`;
-  }
-
-  const colsHTML = `
-    <div class="seguir-cols">
-      <div>
-        <p class="seguir-col-title">Según tu plan: compra</p>
-        ${!totalCompleto ? '<p class="seguir-empty">No disponible todavía — falta tipo de cambio o algún precio real para calcular la asignación.</p>' : ''}
-        ${compraRows.length ? compraRows.map(filaSeguir).join('') : '<p class="seguir-empty">Nada gatilló una regla de tu plan ahora mismo.</p>'}
-      </div>
-      <div>
-        <p class="seguir-col-title">Según tu plan: venta</p>
-        ${!totalCompleto ? '<p class="seguir-empty">No disponible todavía — falta tipo de cambio o algún precio real para calcular la asignación.</p>' : ''}
-        ${ventaRows.length ? ventaRows.map(filaSeguir).join('') : '<p class="seguir-empty">Nada gatilló una regla de tu plan ahora mismo.</p>'}
-      </div>
-    </div>
-  `;
-
+  // Desde el 23-sep-2026 esta pestaña es SOLO "esperando entrada". La
+  // asignación objetivo y "qué revisar" se fueron a Riesgo (ver
+  // planInversionHTML), que es donde vive el resto de la política de
+  // inversión.
   viewEl.innerHTML = `
     <p class="section-title" style="margin-top:0;">Esperando entrada — qué miro y qué espero que pase</p>
     ${esperaHTML()}
-    ${asignacionHTML}
-    <p class="section-title">Qué revisar (solo reglas de tu propia política de inversión — nada basado en movimiento de precio ni indicadores técnicos)</p>
-    ${colsHTML}
   `;
 
   // ---- Esperando entrada ----
@@ -9004,28 +9289,6 @@ function renderAmbienteSeguir(){
 
   viewEl.querySelectorAll('.seguir-row[data-ticker]').forEach(el => {
     el.addEventListener('click', () => openDetail(el.dataset.ticker));
-  });
-  const asigDetails = document.getElementById('asigDetails');
-  if(asigDetails){
-    asigDetails.addEventListener('toggle', () => { asignacionPanelAbierto = asigDetails.open; });
-  }
-
-  // Configuración de asignación: se guarda al cambiar (no en cada tecla)
-  // y vuelve a dibujar la vista completa para que las filas reflejen el
-  // objetivo nuevo de inmediato.
-  const campos = {
-    asigRentaVariable:'rentaVariable', asigLiquidez:'liquidez', asigChile:'chile', asigGlobal:'global',
-    asigBanda:'banda', asigMaxPosicion:'maxPorPosicion', asigUmbralClp:'umbralCajaClp', asigUmbralUsd:'umbralCajaUsd',
-  };
-  Object.entries(campos).forEach(([id, campo]) => {
-    const el = document.getElementById(id);
-    if(!el) return;
-    el.addEventListener('change', () => {
-      const v = el.value === '' ? null : parseFloat(el.value);
-      asignacion[campo] = (v === null || isNaN(v)) ? ((campo==='umbralCajaClp'||campo==='umbralCajaUsd') ? null : 0) : v;
-      guardarAsignacion();
-      renderAmbienteSeguir();
-    });
   });
 
 }
@@ -9156,11 +9419,17 @@ const GICS = {
   'IYT':['Industriales','Transporte'], 'URSP':['Diversificado','S&P 500 equiponderado (2x)'],
   // Agregados a pedido (22-sep-2026).
   'SPCX':['Industriales','Aeroespacial y defensa'], 'VLUE':['Diversificado','Factor value EE.UU.'],
+  // Los siete del 23-sep-2026, al separar la pestaña de ETF.
+  'GLD':['Materiales','Oro'], 'SLV':['Materiales','Plata'],
+  'TLT':['Renta fija','Bonos largos EE.UU.'], 'VIG':['Diversificado','Dividendos EE.UU.'],
+  'MTUM':['Diversificado','Factor momentum EE.UU.'], 'QUAL':['Diversificado','Factor calidad EE.UU.'],
+  'USMV':['Diversificado','Factor mínima volatilidad EE.UU.'],
 };
 const SIN_CLASIFICAR = 'Sin clasificar';
 // Los ETF que NO son de un sector puntual: se marcan para poder decir en
 // pantalla que su peso no está repartido por sector.
-const ETF_AMPLIOS = ['VOO','VTI','VT','VXUS','SPY','IVV','QQQ','QQQM','SCHD','VIG','ARKK','BND','AGG','TLT','VLUE'];
+const ETF_AMPLIOS = ['VOO','VTI','VT','VXUS','SPY','IVV','QQQ','QQQM','SCHD','VIG','ARKK','BND','AGG','TLT','VLUE',
+                     'MTUM','QUAL','USMV'];
 function sectorDe(t){ return (GICS[t] || [SIN_CLASIFICAR, SIN_CLASIFICAR])[0]; }
 function industriaDe(t){ return (GICS[t] || [SIN_CLASIFICAR, SIN_CLASIFICAR])[1]; }
 function esEtfAmplio(t){ return ETF_AMPLIOS.indexOf(t) !== -1; }
@@ -9269,6 +9538,30 @@ function ofrecerLimpiarObjetivos(ticker){
 // Aviso en Mi Cartera con los objetivos que quedaron sueltos. Mismo criterio
 // que se uso con la caja sin asignar: si algo esta activo, tiene que poder
 // verse y corregirse desde la pantalla, no solo desde el correo.
+// Recordatorio de que hay acciones esperando entrada (23-sep-2026).
+//
+// POR QUE EXISTE: ese listado se fue a vivir solo a "A seguir", y una
+// pestaña en la que no hay nada urgente es una pestaña que se deja de
+// abrir. Mi Cartera si se abre todos los dias, asi que el recordatorio va
+// aca -- pero como UNA linea, no como una copia de la lista: si se
+// duplicara el listado, en dos semanas habria dos versiones distintas de la
+// misma verdad.
+//
+// Solo dice cuantas hay y ofrece ir. La lista, y la decision, siguen siendo
+// de "A seguir".
+function carteraEsperaAvisoHTML(){
+  const tks = Object.keys(espera || {});
+  if(!tks.length) return '';
+  const n = tks.length;
+  // Los primeros tres nombres alcanzan para reconocer de que se trata sin
+  // que la linea se parta en el telefono.
+  const muestra = tks.slice(0, 3).join(', ') + (n > 3 ? ` y ${n - 3} más` : '');
+  return `<div class="cartera-espera-aviso">
+      <span>⏳ <b>${n} ${n === 1 ? 'acción esperando entrada' : 'acciones esperando entrada'}</b> — ${muestra}.</span>
+      <button type="button" class="cartera-espera-ir" data-ir-seguir>Ver en "A seguir" ›</button>
+    </div>`;
+}
+
 function objetivosHuerfanosHTML(){
   const ts = tickersConObjetivoSinPosicion();
   if(!ts.length) return '';
@@ -9407,7 +9700,7 @@ let carteraPlatFiltro = null;
 let carteraBuscadorTuvoFoco = false;
 // Un booleano por grupo (no uno global): Cristian quiere poder mirar
 // solo Chile, o solo Cripto, sin que ocultar uno oculte los otros dos.
-let carteraListadoVisible = { chile: true, usa: true, cripto: true };
+let carteraListadoVisible = { chile: true, usa: true, etf: true, cripto: true };
 
 // =========================================================================
 // TABLA "MI CARTERA, DE UNA"  (septiembre 2026, a pedido)
@@ -9660,7 +9953,7 @@ function irAFilaCartera(ticker){
   let fila = buscar();
   if(!fila || fila.offsetParent === null){
     carteraFiltro = '';
-    carteraListadoVisible = { chile:true, usa:true, cripto:true };
+    carteraListadoVisible = { chile:true, usa:true, etf:true, cripto:true };
     renderAmbienteCartera();
     fila = buscar();
   }
@@ -9970,7 +10263,12 @@ function renderAmbienteCartera(){
   };
 
   const chileItems = ordenar(state.map(s => ({s, pos: portClp[s.ticker]})).filter(x => visible(x.s, x.pos)));
-  const usaItems = ordenar(stateUSA.map(s => ({s, pos: portUsd[s.ticker]})).filter(x => visible(x.s, x.pos)));
+  // Las dos pestañas de EE.UU. también separan acá (23-sep-2026): un ETF y
+  // una acción no se leen igual, y mezclados en una sola lista los fondos
+  // amplios (VOO, VT) quedan entre las empresas como si fueran candidatas.
+  const usaTodos = ordenar(stateUSA.map(s => ({s, pos: portUsd[s.ticker]})).filter(x => visible(x.s, x.pos)));
+  const usaItems = usaTodos.filter(x => !x.s.esEtf);
+  const etfItems = usaTodos.filter(x => x.s.esEtf);
   // Cripto sale de portClp (se compra en pesos), pero recorre stateCripto y
   // no `state`, así que no se mezcla con las chilenas en ninguna dirección.
   const criptoItems = ordenar(stateCripto.map(s => ({s, pos: portClp[s.ticker]})).filter(x => visible(x.s, x.pos)));
@@ -9997,7 +10295,10 @@ function renderAmbienteCartera(){
     : `<p class="cartera-empty">${vacio('Cripto', 'Sin posiciones en cripto todavía.')}</p>`;
   const usaHTML = usaItems.length
     ? usaItems.map(x => filaCartera(x.s, x.pos, 'USD')).join('')
-    : `<p class="cartera-empty">${vacio('EE.UU.', 'Sin favoritas ni posiciones en EE.UU. todavía. Marca una estrella o activa "Mostrar todas".')}</p>`;
+    : `<p class="cartera-empty">${vacio('EE.UU.', 'Sin favoritas ni posiciones en acciones de EE.UU. todavía. Marca una estrella o activa "Mostrar todas".')}</p>`;
+  const etfHTML = etfItems.length
+    ? etfItems.map(x => filaCartera(x.s, x.pos, 'USD')).join('')
+    : `<p class="cartera-empty">${vacio('ETF', 'Sin favoritos ni posiciones en ETF todavía. Marca una estrella o activa "Mostrar todas".')}</p>`;
 
   // ---- Las píldoras de corredora -----------------------------------------
   // El conteo sale de las posiciones abiertas, no del filtro activo: si
@@ -10032,7 +10333,8 @@ function renderAmbienteCartera(){
 
   viewEl.innerHTML = `
     <p class="section-title" style="margin-top:0;">Mi Cartera</p>
-    <p style="font-size:12px; color:var(--ink-dim); margin:-6px 0 14px;">Favoritos y precios objetivo para Chile, EE.UU. y Cripto — al cruzar un objetivo llega correo y push con el monto y el porcentaje de diferencia. La cantidad y el precio de compra se calculan solos desde "Mis movimientos".</p>
+    <p style="font-size:12px; color:var(--ink-dim); margin:-6px 0 14px;">Favoritos y precios objetivo para Chile, acciones de EE.UU., ETF y Cripto — al cruzar un objetivo llega correo y push con el monto y el porcentaje de diferencia. La cantidad y el precio de compra se calculan solos desde "Mis movimientos".</p>
+    ${carteraEsperaAvisoHTML()}
     ${objetivosHuerfanosHTML()}
     <p class="section-title section-title--con-btn">Patrimonio ${btnSeccionHTML('patrimonio', 'Patrimonio')}</p>
     <div data-sec-body="patrimonio">${patrimonioHTML(d)}</div>
@@ -10049,7 +10351,8 @@ function renderAmbienteCartera(){
     ${filtroPlatHTML}
     <div id="carteraListadoWrap">
       ${grupoHTML('Chile · CLP', 'chile', chileHTML)}
-      ${grupoHTML('EE.UU. · USD', 'usa', usaHTML)}
+      ${grupoHTML('Acciones EE.UU. · USD', 'usa', usaHTML)}
+      ${grupoHTML('ETF · USD', 'etf', etfHTML)}
       ${grupoHTML('Cripto · CLP', 'cripto', criptoHTML)}
     </div>
   `;
@@ -10063,6 +10366,9 @@ function renderAmbienteCartera(){
       renderAmbienteCartera();
     });
   });
+
+  const irSeguirEl = viewEl.querySelector('[data-ir-seguir]');
+  if(irSeguirEl) irSeguirEl.addEventListener('click', () => cambiarAmbiente('seguir'));
 
   const buscadorEl = document.getElementById('carteraBuscador');
   if(buscadorEl){
@@ -10317,13 +10623,42 @@ function renderAmbienteRiesgo(){
   if(!viewEl) return;
   const oculto = estaOculto();
   const r = calcularRiesgo();
+  // La asignación objetivo y "qué revisar" viven acá desde el 23-sep-2026
+  // (antes estaban en "A seguir"). Ver planInversionHTML() para el por qué.
+  const plan = planInversionHTML();
   const pct = (v) => fmtNum(v, 1) + ' %';
 
   if(!r.filas.length){
+    // Sin posiciones con precio no hay riesgo que medir, PERO el plan de
+    // inversión sí se puede mostrar: son reglas tuyas, no dependen de que
+    // haya precios. Dejarlo fuera acá escondería la única parte de la
+    // pestaña que funciona con el servicio dormido.
     viewEl.innerHTML = `
       <p class="section-title" style="margin-top:0;">Riesgo</p>
       <p class="seguir-empty">Todavía no hay posiciones con precio para medir. Cuando el servicio
-      entregue precios, acá aparece cuánto puedes perder si tus stops se gatillan.</p>`;
+      entregue precios, acá aparece cuánto puedes perder si tus stops se gatillan.</p>
+      <p class="section-title">Tu plan de inversión</p>
+      ${plan.asignacionHTML}`;
+    // Sin esto los campos de la asignación quedarían muertos justo en el
+    // caso en que son lo único de la pestaña.
+    const asigDetails0 = document.getElementById('asigDetails');
+    if(asigDetails0){
+      asigDetails0.addEventListener('toggle', () => { asignacionPanelAbierto = asigDetails0.open; });
+    }
+    const campos0 = {
+      asigRentaVariable:'rentaVariable', asigLiquidez:'liquidez', asigChile:'chile', asigGlobal:'global',
+      asigBanda:'banda', asigMaxPosicion:'maxPorPosicion', asigUmbralClp:'umbralCajaClp', asigUmbralUsd:'umbralCajaUsd',
+    };
+    Object.entries(campos0).forEach(([id, campo]) => {
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.addEventListener('change', () => {
+        const v = el.value === '' ? null : parseFloat(el.value);
+        asignacion[campo] = (v === null || isNaN(v)) ? ((campo==='umbralCajaClp'||campo==='umbralCajaUsd') ? null : 0) : v;
+        guardarAsignacion();
+        renderAmbienteRiesgo();
+      });
+    });
     return;
   }
 
@@ -10487,6 +10822,11 @@ function renderAmbienteRiesgo(){
     <p class="riesgo-nota" style="margin-top:18px;">Los sectores salen de una tabla guardada dentro de
     la app (GICS, revisión 2023), no del servidor — por eso funciona sin conexión. Los ETF de sector
     se cuentan en su sector; los diversificados van aparte.</p>
+
+    <p class="section-title">Tu plan de inversión</p>
+    ${plan.asignacionHTML}
+    <p class="section-title">Qué revisar (solo reglas de tu propia política de inversión — nada basado en movimiento de precio ni indicadores técnicos)</p>
+    ${plan.colsHTML}
   `;
 
   viewEl.querySelectorAll('.riesgo-tabla tbody tr').forEach((tr, i) => {
@@ -10494,6 +10834,32 @@ function renderAmbienteRiesgo(){
     if(!f) return;
     tr.style.cursor = 'pointer';
     tr.addEventListener('click', () => openDetail(f.ticker));
+  });
+
+  // ---- Cableado de la asignación objetivo (se mudó con el bloque) --------
+  // Recuerda si el <details> quedó abierto: sin esto, cualquier refresco de
+  // precios lo cerraría a mitad de una edición.
+  const asigDetails = document.getElementById('asigDetails');
+  if(asigDetails){
+    asigDetails.addEventListener('toggle', () => { asignacionPanelAbierto = asigDetails.open; });
+  }
+
+  // Se guarda al CAMBIAR el campo, no en cada tecla, y se redibuja la vista
+  // para que las barras y las reglas reflejen el objetivo nuevo de
+  // inmediato. Ahora redibuja Riesgo, que es donde vive el bloque.
+  const campos = {
+    asigRentaVariable:'rentaVariable', asigLiquidez:'liquidez', asigChile:'chile', asigGlobal:'global',
+    asigBanda:'banda', asigMaxPosicion:'maxPorPosicion', asigUmbralClp:'umbralCajaClp', asigUmbralUsd:'umbralCajaUsd',
+  };
+  Object.entries(campos).forEach(([id, campo]) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('change', () => {
+      const v = el.value === '' ? null : parseFloat(el.value);
+      asignacion[campo] = (v === null || isNaN(v)) ? ((campo==='umbralCajaClp'||campo==='umbralCajaUsd') ? null : 0) : v;
+      guardarAsignacion();
+      renderAmbienteRiesgo();
+    });
   });
 }
 
@@ -12313,6 +12679,7 @@ function hydrateFromCache(){
     s.sma20 = q.sma20 ?? null;
     s.sma50 = q.sma50 ?? null;
     s.sma100 = q.sma100 ?? null;
+    s.previousClose = q.previousClose ?? null;
     s.ema21 = q.ema21 ?? null;
     s.sma200 = q.sma200 ?? null;
     s.zscore = q.zscore ?? null;
@@ -12398,6 +12765,7 @@ async function fetchRealQuotes(){
         s.sma20 = (typeof q.sma20 === 'number') ? q.sma20 : null;
         s.sma50 = (typeof q.sma50 === 'number') ? q.sma50 : null;
         s.sma100 = (typeof q.sma100 === 'number') ? q.sma100 : null;
+        s.previousClose = (typeof q.previousClose === 'number') ? q.previousClose : null;
         s.ema21 = (typeof q.ema21 === 'number') ? q.ema21 : null;
         s.sma200 = (typeof q.sma200 === 'number') ? q.sma200 : null;
         s.zscore = (typeof q.zscore === 'number') ? q.zscore : null;
@@ -12490,6 +12858,18 @@ async function fetchRealQuotesUsa(){
       s.sma20 = (typeof q.sma20 === 'number') ? q.sma20 : null;
       s.sma50 = (typeof q.sma50 === 'number') ? q.sma50 : null;
       s.sma100 = (typeof q.sma100 === 'number') ? q.sma100 : null;
+      s.previousClose = (typeof q.previousClose === 'number') ? q.previousClose : null;
+      // Aviso de desincronización de la lista de ETF (23-sep-2026). La app
+      // tiene su propia copia (ETFS_USA_SET) porque dibuja la grilla antes
+      // de la primera cotización; el servidor manda la suya en cada quote.
+      // Si no calzan, la tarjeta queda en la pestaña equivocada y nada más
+      // lo notaría. No se corrige sola a propósito: mover una tarjeta de
+      // pestaña a mitad de sesión sería más confuso que el aviso.
+      if(typeof q.esEtf === 'boolean' && q.esEtf !== s.esEtf){
+        console.warn('Desajuste ETF en ' + s.ticker + ': el servidor dice '
+          + (q.esEtf ? 'ETF' : 'acción') + ' y la app lo tiene como '
+          + (s.esEtf ? 'ETF' : 'acción') + '. Revisa ETFS_USA_SET contra ETFS_USA de main.py.');
+      }
       s.ema21 = (typeof q.ema21 === 'number') ? q.ema21 : null;
       s.sma200 = (typeof q.sma200 === 'number') ? q.sma200 : null;
       s.zscore = (typeof q.zscore === 'number') ? q.zscore : null;
@@ -12533,6 +12913,7 @@ async function fetchRealQuotesUsa(){
       s.sma20 = enClp(q.sma20);
       s.sma50 = enClp(q.sma50);
       s.sma100 = enClp(q.sma100);
+      s.previousClose = enClp(q.previousClose);
       s.ema21 = enClp(q.ema21);
       s.sma200 = enClp(q.sma200);
       s.zscore = (typeof q.zscore === 'number') ? q.zscore : null;   // desviaciones
