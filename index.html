@@ -1288,7 +1288,7 @@
         <button type="button" class="env-btn" data-amb="riesgo"><span class="env-largo">Riesgo</span><span class="env-corto">Riesgo</span></button>
       </div>
       <div class="env-fila">
-        <button type="button" class="env-btn" data-amb="usa"><span class="env-largo">Acciones EE.UU.</span><span class="env-corto">Acciones</span></button>
+        <button type="button" class="env-btn" data-amb="usa"><span class="env-largo">EE.UU. · USD</span><span class="env-corto">EE.UU.</span></button>
         <button type="button" class="env-btn" data-amb="etf"><span class="env-largo">ETF · USD</span><span class="env-corto">ETF</span></button>
         <button type="button" class="env-btn" data-amb="chile"><span class="env-largo">Chile · CLP</span><span class="env-corto">Chile</span></button>
         <button type="button" class="env-btn" data-amb="cripto"><span class="env-largo">Cripto · CLP</span><span class="env-corto">Cripto</span></button>
@@ -5344,7 +5344,10 @@ function renderIndexDisplayUsa(){
   const timeEl = document.getElementById('idxTimeUsa');
   if(!valEl) return;
 
-  if(ambienteActivo !== 'usa') return; // el bloque ya quedó oculto por cambiarAmbiente()
+  // Las dos pestañas de EE.UU. comparten el índice (ver esMercadoUsa en
+  // cambiarAmbiente). Sin el 'etf' acá, el bloque se mostraba pero se
+  // quedaba con el último valor dibujado en la pestaña de acciones.
+  if(ambienteActivo !== 'usa' && ambienteActivo !== 'etf') return;
 
   if(indexValueUsa === null){
     valEl.textContent = '···';
@@ -5775,11 +5778,22 @@ function ambitoDeMov(m){
 // 'cartera', 'explorar') caen a Chile/CLP, que es lo que hacían antes de
 // que existiera esto -- ahí los paneles por ambiente están ocultos igual.
 function ambitoDelAmbiente(amb){
-  if(amb === 'usa') return 'usa';
+  // 'etf' se sumó el 23-sep-2026 y AL PRINCIPIO NO ESTABA ACÁ: como esta
+  // función termina en `return 'chile'`, la pestaña de ETF caía en el ámbito
+  // chileno. Resultado visible: en ETF aparecían los movimientos de COPEC,
+  // RIPLEY y FALABELLA, la caja en pesos y el resumen "Tu cartera vs. IPSA".
+  // La grilla estaba bien; lo que se colaba era todo el panel de
+  // movimientos, que es ámbito-dependiente.
+  //
+  // MORALEJA para la próxima pestaña: un ambiente nuevo no es solo un botón
+  // y un filtro de tarjetas. Hay que buscar TODAS las funciones que
+  // traducen ambiente → ámbito/moneda/índice y sumarlo en cada una; las que
+  // tienen un `return` por defecto no fallan, mienten.
+  if(amb === 'usa' || amb === 'etf') return 'usa';
   if(amb === 'cripto') return 'cripto';
   return 'chile';
 }
-function monedaDelAmbiente(amb){ return amb === 'usa' ? 'USD' : 'CLP'; }
+function monedaDelAmbiente(amb){ return (amb === 'usa' || amb === 'etf') ? 'USD' : 'CLP'; }
 
 function movimientosDelAmbiente(amb){
   const objetivo = ambitoDelAmbiente(amb);
@@ -12968,8 +12982,12 @@ async function fetchRealQuotesUsa(){
       // cartera de EE.UU. nunca llegaba a la caché y abrir la app con el
       // backend apagado la dejaba entera sin precios. Ver saveCache().
       saveCache();
-      if(ambienteActivo === 'usa'){
-        setStatusPill('real', `Datos reales (${recibidos}/${stateUSA.length})`);
+      if(ambienteActivo === 'usa' || ambienteActivo === 'etf'){
+        // El conteo es por pestaña: en ETF decir "40/213" sería contar una
+        // grilla que no se está mirando.
+        const delAmbiente = stocksDelAmbiente(ambienteActivo);
+        const conPrecioAmb = delAmbiente.filter(s => s.price !== null).length;
+        setStatusPill('real', `Datos reales (${conPrecioAmb}/${delAmbiente.length})`);
       }
       if(ambienteActivo === 'cripto'){
         const conPrecio = stateCripto.filter(s => s.price !== null).length;
@@ -12982,7 +13000,7 @@ async function fetchRealQuotesUsa(){
     }
   } catch(e){
     console.warn('No se pudo obtener /quotes-usa real:', e);
-    if(ambienteActivo === 'usa'){
+    if(ambienteActivo === 'usa' || ambienteActivo === 'etf'){
       if(ultimaActualizacionRealUsa === null){
         setStatusPill('error', 'Sin conexión al backend (EE.UU.) — reintentando');
       } else {
@@ -13202,8 +13220,11 @@ if(claveNuncaEscrita('ipsa_watchlist') && watchlist.length === 0){
   const params = new URLSearchParams(location.search);
   const ticker = (params.get('ticker') || '').toUpperCase();
   if(ticker && todosLosStocks().some(s => s.ticker === ticker)){
-    const ambEnlace = ambitoDeTicker(ticker);
-    if(ambEnlace === 'usa' || ambEnlace === 'cripto') cambiarAmbiente(ambEnlace);
+    // Un ETF vive en su propia pestaña desde el 23-sep-2026: mandarlo a
+    // 'usa' abriría la grilla de acciones, donde su tarjeta no está.
+    let ambEnlace = ambitoDeTicker(ticker);
+    if(ambEnlace === 'usa' && typeof ETFS_USA_SET !== 'undefined' && ETFS_USA_SET.has(ticker)) ambEnlace = 'etf';
+    if(ambEnlace === 'usa' || ambEnlace === 'etf' || ambEnlace === 'cripto') cambiarAmbiente(ambEnlace);
     openDetail(ticker);
   }
 })();
@@ -13532,6 +13553,8 @@ setInterval(() => {
 // El servidor manda `en_horario`. De noche y los fines de semana que no
 // haya chequeos es lo normal; avisar ahí sería ruido, y un aviso que sale
 // cuando no pasa nada enseña a ignorarlo justo el día que importa.
+let _pulsoEnCurso = false;
+let _pulsoUltimo = 0;
 async function revisarLatido(){
   const caja = document.getElementById('avisoLatido');
   if(!caja) return;
@@ -13540,6 +13563,37 @@ async function revisarLatido(){
     if(!resp.ok) throw new Error('HTTP ' + resp.status);
     const d = await resp.json();
     if(d.ok){ caja.classList.remove('visible'); caja.innerHTML = ''; return; }
+
+    // ---- EL PULSO: abrir la app cuenta como un chequeo (23-sep-2026) ----
+    // Si nadie está revisando y estamos en horario de bolsa, en vez de
+    // limitarse a acusar el problema la app PIDE la revisión. El servidor
+    // decide si corresponde (como mucho una vez cada 10 minutos, solo en
+    // horario de bolsa) -- ver _pulso_permitido() en server.py.
+    //
+    // Por qué acá y no al abrir a secas: así el pulso solo sale cuando de
+    // verdad hace falta. Si el cron está funcionando, `d.ok` es true y esta
+    // rama no se toca nunca.
+    //
+    // El cooldown del teléfono existe además del candado del servidor: sin
+    // él, volver a la app cinco veces seguidas mandaría cinco peticiones que
+    // el servidor rechazaría igual, pero gastando su único worker en
+    // contestar 401.
+    const AHORA = Date.now();
+    if(d.en_horario && !_pulsoEnCurso && (AHORA - _pulsoUltimo) > 5 * 60 * 1000){
+      _pulsoEnCurso = true;
+      _pulsoUltimo = AHORA;
+      caja.innerHTML = '<b>⏳ Pidiendo una revisión ahora…</b>'
+        + '<span class="al-detalle">Nadie había revisado tus alertas, así que la app lo está pidiendo. '
+        + 'Toma unos segundos.</span>';
+      caja.classList.add('visible');
+      // La respuesta puede tardar (el chequeo baja los precios de los dos
+      // mercados). Cuando termine, se vuelve a preguntar el latido: si el
+      // pulso se aceptó, la banda desaparece sola.
+      fetch(BACKEND_URL + '/run-check', {cache: 'no-store'})
+        .catch(() => {})
+        .then(() => { _pulsoEnCurso = false; revisarLatido(); });
+      return;
+    }
 
     const min = d.minutos_desde_ultimo_check;
     const cuando = (min === null || min === undefined)
