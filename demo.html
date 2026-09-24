@@ -8209,21 +8209,25 @@ const EXPL_SECTOR_YAHOO = {
 //            (Ciberseguridad: esas empresas viven en "Software—Infrastructure",
 //            mezcladas con todo el resto del software de infraestructura.)
 const EXPL_INDUSTRIA_YAHOO = {
+  // Desde el 24-sep-2026 la industria suele venir de TradingView (FactSet),
+  // con otros nombres. Se agregan los equivalentes a cada lista.
   'Semiconductores':        {cruce:'exacta', ind:['Semiconductors', 'Semiconductor Equipment & Materials']},
-  'Software':               {cruce:'exacta', ind:['Software—Infrastructure', 'Software—Application']},
+  'Software':               {cruce:'exacta', ind:['Software—Infrastructure', 'Software—Application', 'Packaged Software']},
   'Biotecnología':          {cruce:'exacta', ind:['Biotechnology']},
   'Aeroespacial y defensa': {cruce:'exacta', ind:['Aerospace & Defense']},
-  'Banca regional':         {cruce:'exacta', ind:['Banks—Regional']},
-  'Petróleo y gas E&P':     {cruce:'exacta', ind:['Oil & Gas E&P']},
+  'Banca regional':         {cruce:'exacta', ind:['Banks—Regional', 'Regional Banks']},
+  'Petróleo y gas E&P':     {cruce:'exacta', ind:['Oil & Gas E&P', 'Oil & Gas Production']},
   'Nuclear / uranio':       {cruce:'exacta', ind:['Uranium']},
-  'Oro y mineras':          {cruce:'amplia', ind:['Gold', 'Silver', 'Other Precious Metals & Mining']},
+  'Oro y mineras':          {cruce:'amplia', ind:['Gold', 'Silver', 'Other Precious Metals & Mining', 'Precious Metals']},
   'Retail':                 {cruce:'amplia', ind:['Specialty Retail', 'Internet Retail', 'Apparel Retail',
                                                   'Discount Stores', 'Department Stores', 'Home Improvement Retail',
-                                                  'Luxury Goods', 'Footwear & Accessories', 'Auto & Truck Dealerships']},
+                                                  'Luxury Goods', 'Footwear & Accessories', 'Auto & Truck Dealerships',
+                                                  'Specialty Stores', 'Apparel/Footwear Retail', 'Home Improvement Chains',
+                                                  'Electronics/Appliance Stores']},
   'Transporte':             {cruce:'amplia', ind:['Railroads', 'Trucking', 'Integrated Freight & Logistics',
-                                                  'Airlines', 'Marine Shipping']},
+                                                  'Airlines', 'Marine Shipping', 'Air Freight/Couriers']},
   'Infraestructura':        {cruce:'amplia', ind:['Engineering & Construction', 'Building Products & Equipment',
-                                                  'Building Materials']},
+                                                  'Building Materials', 'Building Products', 'Construction Materials']},
   'Ciberseguridad':         {cruce:'sinCruce', ind:[]},
 };
 
@@ -8808,7 +8812,10 @@ function explorarResultadoHTML(analisis){
       <div class="expl-embudo-pasos">
         Universo: <b>${embudo.universoTotal ?? '—'}</b> · Revisadas: <b>${embudo.revisadas ?? '—'}</b> (${embudo.cobertura ?? '—'}%) · Ya en caché al empezar: <b>${embudo.veniaEnCache ?? '—'}</b>
         ${ff ? `<br><span style="color:var(--ink-faint);">Fundamentales: <b>${ff.conCapitalizacion}</b> de ${ff.pedidos} con capitalización
-          (${ff.porLote} por lote) · crecimiento: <b>${ff.conCrecimientoTTM ?? 0}</b> en TTM, <b>${ff.conCrecimientoTrimestral ?? 0}</b> en trimestral.</span>` : ''}
+          (${ff.porLote ?? 0} por lote) · crecimiento: <b>${ff.conCrecimientoTTM ?? 0}</b> en TTM, <b>${ff.conCrecimientoTrimestral ?? 0}</b> en trimestral.</span>` : ''}
+        ${ff && ff.tradingview ? `<br><span style="color:var(--ink-faint);">Fuente principal: ${ff.tradingview.ok
+          ? `<b>screener de TradingView</b> — ${ff.tradingview.filas} acciones en ${fmtNum(ff.tradingview.segundos || 0, 1)} s (piso: precio ≥ ${ff.tradingview.piso.precio}, cap. ≥ ${fmtNum(ff.tradingview.piso.capB, 1)} B, vol. ≥ ${fmtNum(ff.tradingview.piso.volM, 1)} M; bajar un slider bajo el piso no trae acciones nuevas)`
+          : `TradingView no respondió (${String(ff.tradingview.motivo || '?').replace(/</g,'&lt;')}), se usó Yahoo`}</span>` : ''}
         ${typeof embudo.metricasPorLote === 'number' ? `<br><span style="color:var(--ink-faint);">Precio y medias: <b>${embudo.metricasPorLote}</b> por lote${
           embudo.diagLote && embudo.diagLote.peticiones ? ` (${embudo.diagLote.peticiones} peticiones)` : ''} · <b>${embudo.metricasPorSerie ?? 0}</b> por historial completo.</span>` : ''}
       </div>
@@ -8921,7 +8928,7 @@ function renderAmbienteExplorar(){
   viewEl.innerHTML = `
     <p class="section-title" style="margin-top:0;">Explorar — primera alerta</p>
     <p class="expl-run-nota" style="margin-bottom:10px;">
-      Barre el S&amp;P 500 + el Nasdaq-100 + tu grilla (536 acciones en total), aplica el método completo
+      Barre el mercado de EE.UU. completo con el screener de TradingView (si no responde, el S&amp;P 500 + el Nasdaq-100 + tu grilla, 536 acciones), aplica el método completo
       — precio, tendencia, capitalización, crecimiento, fase de Weinstein y fuerza relativa — y te deja
       lo que vale la pena abrir en TradingView, que es donde haces el análisis en profundidad. No corre
       solo: lo pides tú, cuando te sientas a revisar el mercado.
