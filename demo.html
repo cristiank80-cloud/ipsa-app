@@ -2850,6 +2850,7 @@ const stocksUSA = [
   // SOXX serían la misma curva que VOO, QQQM, BND y SMH).
   {ticker:'GLD',     name:"Oro · ETF",                                        dec:2, currency:'USD'},
   {ticker:'SLV',     name:"Plata · ETF",                                      dec:2, currency:'USD'},
+  {ticker:'DBC',     name:"Commodities · ETF",                                dec:2, currency:'USD'},
   {ticker:'TLT',     name:"Bonos del Tesoro 20+ años · ETF",                  dec:2, currency:'USD'},
   {ticker:'VIG',     name:"Dividendo creciente · ETF",                        dec:2, currency:'USD'},
   {ticker:'MTUM',    name:"Factor momentum · ETF",                            dec:2, currency:'USD'},
@@ -2902,9 +2903,9 @@ const ETFS_USA_SET = new Set([
   'XLK','XLV','XLF','XLY','XLP','XLE','XLI','XLB','XLU','XLRE','XLC',
   // Industria (12)
   'SMH','IGV','CIBR','XBI','ITA','KRE','XRT','XOP','GDX','IYT','PAVE','URA',
-  // Amplios, renta fija, metales y factores (17)
+  // Amplios, renta fija, metales y factores (18)
   'VOO','VTI','VT','VXUS','QQQM','URSP','SCHD','VIG','BND','TLT',
-  'GLD','SLV','ARKK','VLUE','MTUM','QUAL','USMV',
+  'GLD','SLV','DBC','ARKK','VLUE','MTUM','QUAL','USMV',
 ]);
 
 const stateUSA = stocksUSA.map(s => ({
@@ -9881,7 +9882,7 @@ const GICS = {
   'XLU':['Servicios básicos','Sector utilities'], 'XLB':['Materiales','Sector materiales'],
   'XLRE':['Inmobiliario','Sector inmobiliario'], 'XLC':['Comunicaciones','Sector comunicaciones'],
   'SMH':['Tecnología','Semiconductores'], 'SOXX':['Tecnología','Semiconductores'],
-  'GLD':['Materiales','Oro'], 'SLV':['Materiales','Plata'],
+  'GLD':['Materiales','Oro'], 'SLV':['Materiales','Plata'], 'DBC':['Materiales','Commodities'],
   // Agregados a pedido (11-sep-2026): los 4 tickers nuevos de la grilla y
   // los 4 que quedaron sin clasificar del lote del 27-ago-2026 (UBS, HNGE,
   // IYT, URSP) -- estaban en la grilla pero no en este diccionario, asi
@@ -9894,7 +9895,7 @@ const GICS = {
   // Agregados a pedido (22-sep-2026).
   'SPCX':['Industriales','Aeroespacial y defensa'], 'VLUE':['Diversificado','Factor value EE.UU.'],
   // Los siete del 23-sep-2026, al separar la pestaña de ETF.
-  'GLD':['Materiales','Oro'], 'SLV':['Materiales','Plata'],
+  'GLD':['Materiales','Oro'], 'SLV':['Materiales','Plata'], 'DBC':['Materiales','Commodities'],
   'TLT':['Renta fija','Bonos largos EE.UU.'], 'VIG':['Diversificado','Dividendos EE.UU.'],
   'MTUM':['Diversificado','Factor momentum EE.UU.'], 'QUAL':['Diversificado','Factor calidad EE.UU.'],
   'USMV':['Diversificado','Factor mínima volatilidad EE.UU.'],
