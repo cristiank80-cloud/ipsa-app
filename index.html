@@ -7883,7 +7883,9 @@ function explDedup(lista){
   // cuando dos repiten industria. Sin Mansfield (análisis viejo) va al final.
   const mfOrden = a => (typeof a.mf === 'number') ? a.mf : -1e9;
   lista.slice().sort((a,b) => (b.sc||0) - (a.sc||0) || mfOrden(b) - mfOrden(a) || a.t.localeCompare(b.t)).forEach(a => {
-    const ind = a['in'] || '(industria desconocida)';
+    // Sin industria conocida no se compara con nadie (igual que explorar.py):
+    // si no, todas las desconocidas se juntaban y sobrevivía solo una.
+    const ind = a['in'] || ('(sin industria: ' + a.t + ')');
     if(vistas[ind]){ repetidas.push(Object.assign({}, a, {repiteCon: vistas[ind]})); }
     else { vistas[ind] = a.t; finales.push(a); }
   });
