@@ -2163,6 +2163,7 @@ const stocksUSA = [
   {ticker:'VT',     name:"Vanguard Total World Stock ETF",            dec:2, currency:'USD'},
   {ticker:'VXUS',   name:"Vanguard Total International Stock ETF",    dec:2, currency:'USD'},
   {ticker:'QQQM',   name:"Invesco NASDAQ-100 ETF",                    dec:2, currency:'USD'},
+  {ticker:'QQQ',    name:"Invesco QQQ Trust (Nasdaq-100)",            dec:2, currency:'USD'},
   {ticker:'SCHD',   name:"Schwab US Dividend Equity ETF",             dec:2, currency:'USD'},
   {ticker:'BND',    name:"Vanguard Total Bond Market ETF",            dec:2, currency:'USD'},
   // 100 acciones grandes de EE.UU. -- misma lista y mismo orden que
@@ -2390,6 +2391,7 @@ const stocksUSA = [
   // SOXX serían la misma curva que VOO, QQQM, BND y SMH).
   {ticker:'GLD',     name:"Oro · ETF",                                        dec:2, currency:'USD'},
   {ticker:'SLV',     name:"Plata · ETF",                                      dec:2, currency:'USD'},
+  {ticker:'DBC',     name:"Commodities · ETF",                                dec:2, currency:'USD'},
   {ticker:'TLT',     name:"Bonos del Tesoro 20+ años · ETF",                  dec:2, currency:'USD'},
   {ticker:'VIG',     name:"Dividendo creciente · ETF",                        dec:2, currency:'USD'},
   {ticker:'MTUM',    name:"Factor momentum · ETF",                            dec:2, currency:'USD'},
@@ -2442,9 +2444,9 @@ const ETFS_USA_SET = new Set([
   'XLK','XLV','XLF','XLY','XLP','XLE','XLI','XLB','XLU','XLRE','XLC',
   // Industria (12)
   'SMH','IGV','CIBR','XBI','ITA','KRE','XRT','XOP','GDX','IYT','PAVE','URA',
-  // Amplios, renta fija, metales y factores (17)
-  'VOO','VTI','VT','VXUS','QQQM','URSP','SCHD','VIG','BND','TLT',
-  'GLD','SLV','ARKK','VLUE','MTUM','QUAL','USMV',
+  // Amplios, renta fija, metales y factores (19)
+  'VOO','VTI','VT','VXUS','QQQM','QQQ','URSP','SCHD','VIG','BND','TLT',
+  'GLD','SLV','DBC','ARKK','VLUE','MTUM','QUAL','USMV',
 ]);
 
 const stateUSA = stocksUSA.map(s => ({
@@ -4336,6 +4338,10 @@ function renderDetail(ticker){
     <div id="diagFuerzaWrap">
       <p style="font-size:12px; color:var(--ink-faint); padding:8px 0;">Cargando diagnóstico…</p>
     </div>
+    ${otrasFuentesHTML(s.ticker) ? `
+    <p class="section-title" style="margin-top:16px;">Mirarla en otras plataformas</p>
+    <div class="expl-card-btns">${tvAnclaHTML(s.ticker, 'TradingView ↗')}${otrasFuentesHTML(s.ticker)}</div>
+    <p style="font-size:10.5px; color:var(--ink-faint); margin:6px 0 0;">Finviz es gratis; Seeking Alpha e IBD piden cuenta de pago para ver las notas y el Composite Rating. Cuando varias fuentes coinciden, la señal pesa más.</p>` : ''}
 
   `;
 
@@ -4359,13 +4365,36 @@ function renderDetail(ticker){
 // plano al abrir el detalle y se redibuja solo cuando llega, sin bloquear
 // la apertura del panel.
 const diagFuerzaCache = {};      // ticker -> ultima respuesta de /diagnostico
+
+// ETF contra el que se mide "¿lidera dentro de su sector?" (Clase 3, lámina
+// 41). Primero la industria, si tiene ETF propio entre los 23 del paso 1 de
+// Explorar; si no, el SPDR de su sector. Sale de GICS (la tabla de sectores
+// de Mi Cartera): una acción sin clasificar no tiene comparación de sector.
+// El backend solo acepta estos 23 ETF.
+const ETF_DE_INDUSTRIA = {
+  'Semiconductores':'SMH', 'Software':'IGV', 'Aeroespacial y defensa':'ITA',
+  'Bancos regionales':'KRE', 'Transporte':'IYT', 'Petróleo y gas':'XOP',
+};
+const ETF_DE_SECTOR = {
+  'Tecnología':'XLK', 'Salud':'XLV', 'Financieras':'XLF', 'Consumo discrecional':'XLY',
+  'Consumo básico':'XLP', 'Energía':'XLE', 'Industriales':'XLI', 'Materiales':'XLB',
+  'Servicios básicos':'XLU', 'Inmobiliario':'XLRE', 'Comunicaciones':'XLC',
+};
+function etfReferenciaSector(ticker){
+  if(typeof ETFS_USA_SET !== 'undefined' && ETFS_USA_SET.has(ticker)) return null;
+  const g = GICS[ticker];
+  if(!g) return null;
+  return ETF_DE_INDUSTRIA[g[1]] || ETF_DE_SECTOR[g[0]] || null;
+}
 const diagFuerzaEnCurso = new Set();
 async function cargarDiagnosticoFuerza(ticker){
   if(diagFuerzaCache[ticker]){ renderDiagnosticoFuerza(ticker); return; }
   if(diagFuerzaEnCurso.has(ticker)) return;
   diagFuerzaEnCurso.add(ticker);
   try {
-    const resp = await fetch(`${BACKEND_URL}/diagnostico?ticker=${encodeURIComponent(ticker)}`);
+    const etfSec = etfReferenciaSector(ticker);
+    const resp = await fetch(`${BACKEND_URL}/diagnostico?ticker=${encodeURIComponent(ticker)}`
+                             + (etfSec ? `&sector=${etfSec}` : ''));
     if(resp.ok){
       diagFuerzaCache[ticker] = await resp.json();
     } else {
@@ -4398,6 +4427,32 @@ const FASE_COLOR = {1: 'var(--ink-faint)', 2: 'var(--verdigris)', 3: 'var(--gold
 
 function tickIcono(b){ return b ? '✓' : '·'; }
 function tickColor(b){ return b ? 'var(--verdigris)' : 'var(--ink-faint)'; }
+
+// Las tres capas de la fuerza relativa semanal (indicador oficial v5):
+// contra el índice y, si la acción tiene sector conocido, contra el ETF de
+// su sector. Informativo: no cambia la confirmación 4 ni el veredicto.
+function frCapasHTML(s, mercado){
+  const col = v => v == null ? 'var(--ink-faint)' : (v > 0 ? 'var(--verdigris)' : 'var(--copper)');
+  const num = (v, suf) => v == null ? '—' : `${v > 0 ? '+' : ''}${fmtNum(v, 1)}${suf}`;
+  const cols = [];
+  const fi = s.fuerzaRelativa;
+  if(fi && fi.disponible) cols.push({nombre: mercado === 'usa' ? 'S&P 500' : 'IPSA', fr: fi});
+  const fs = s.vsSector;
+  if(fs && fs.disponible) cols.push({nombre: fs.etf + ' (sector)', fr: fs});
+  if(!cols.length) return '';
+  const fila = (txt, f) => `<tr><td>${txt}</td>${cols.map(c => f(c.fr)).join('')}</tr>`;
+  return `
+    <p style="font-size:10.5px; font-weight:600; color:var(--ink-dim); margin:10px 0 4px;">Fuerza relativa semanal</p>
+    <table class="mini-table">
+      <tr><td></td>${cols.map(c => `<td style="color:var(--ink-dim);">vs ${c.nombre}</td>`).join('')}</tr>
+      ${fila('Mansfield (0 = empata)', f => `<td class="mono" style="color:${col(f.mansfield)};">${num(f.mansfield, '')}${f.cruzaMansfield ? ' ↑ cruzó' : ''}</td>`)}
+      ${fila('Pendiente 13 sem', f => `<td class="mono" style="color:${col(f.pendiente13SemPct)};">${num(f.pendiente13SemPct, '%')}</td>`)}
+      ${fila('Líder (máx. de 13 sem)', f => `<td style="color:${tickColor(f.lider13Sem)};">${f.lider13Sem == null ? '—' : (f.lider13Sem ? 'sí' : 'no')}</td>`)}
+      ${fila('Ventaja 52 sem', f => `<td class="mono" style="color:${col(f.ventaja52SemPts)};">${num(f.ventaja52SemPts, ' pts')}</td>`)}
+    </table>
+    ${!fs && mercado === 'usa' && !(typeof ETFS_USA_SET !== 'undefined' && ETFS_USA_SET.has(openTicker))
+      ? '<p style="font-size:10.5px; color:var(--ink-faint); margin:4px 0 0;">Sin comparación de sector: la acción no está en la tabla de sectores.</p>' : ''}`;
+}
 
 function renderDiagnosticoFuerza(ticker){
   const wrap = document.getElementById('diagFuerzaWrap');
@@ -4470,6 +4525,7 @@ function renderDiagnosticoFuerza(ticker){
       <div style="color:${s.agotamiento.a5_distribucion ? 'var(--gold)' : 'var(--ink-faint)'};">${tickIcono(s.agotamiento.a5_distribucion)} Distribución (vol. bajista)</div>
     </div>
     <p style="font-size:11px; margin-top:6px; color:${s.techoConfirmado ? 'var(--copper)' : 'var(--ink-faint)'};">${s.techoConfirmado ? '⚠ TECHO CONFIRMADO' : (s.scoreAgotamiento >= 3 ? 'vigilar' : 'sin agotamiento')} — ${s.scoreAgotamiento}/5</p>
+    ${frCapasHTML(s, data.mercado)}
     <p style="font-size:10.5px; color:var(--ink-faint); margin-top:8px;">Semana cerrada hasta ${s.semanaCerradaHasta} (${s.semanasDeHistorial} semanas de historial). La semana en curso no se cuenta todavía.</p>
   `;
 
@@ -7526,6 +7582,24 @@ function tvEnlace(ticker){
   return {href: web, pestanaNueva: true};
 }
 
+// Las otras tres plataformas de la Clase 3 (lámina 24). Solo enlaces: no se
+// leen datos de ellas (IBD y Seeking Alpha son de pago y no tienen API
+// abierta). Se abren en pestaña nueva; los ETF y el bitcoin no tienen ficha
+// útil en Finviz/IBD, así que para esos no se muestran.
+function otrasFuentesHTML(ticker){
+  const t = String(ticker || '');
+  if(!t || TV_CRIPTO.has(t) || (typeof ETFS_USA_SET !== 'undefined' && ETFS_USA_SET.has(t))) return '';
+  // Solo EE.UU.: las chilenas (tickers de la grilla de Chile) no existen ahí.
+  if(typeof stocks !== 'undefined' && stocks.some(s => s.ticker === t)) return '';
+  // Finviz escribe las clases con guion (BRK-B); Seeking Alpha e IBD con punto (BRK.B).
+  const conGuion = encodeURIComponent(t.replace(/\./g, '-'));
+  const conPunto = encodeURIComponent(t.replace(/-/g, '.'));
+  const a = (href, txt) => `<a href="${href}" target="_blank" rel="noopener" class="fuente-ext">${txt} ↗</a>`;
+  return a(`https://finviz.com/quote.ashx?t=${conGuion}`, 'Finviz')
+       + a(`https://seekingalpha.com/symbol/${conPunto}`, 'Seeking Alpha')
+       + a(`https://research.investors.com/quote.aspx?symbol=${conPunto}`, 'IBD');
+}
+
 function tvAnclaHTML(ticker, texto){
   const l = tvEnlace(ticker);
   return `<a href="${l.href}" rel="noopener"${l.pestanaNueva ? ' target="_blank"' : ''}
@@ -7583,6 +7657,8 @@ function explorarTarjetaHTML(c, tipo){
   const score = (typeof c.score === 'number') ? `Score ${c.score}/8` : '';
   const fr = c.fuerzaRelativa || {};
   const frTxt = fr.disponible ? (fr.pendientePositiva ? 'fuerza relativa subiendo' : 'fuerza relativa cayendo') : 'fuerza relativa no disponible';
+  const mfTxt = (typeof c.mansfield === 'number')
+    ? ` · Mansfield <b style="color:${c.mansfield > 0 ? 'var(--verdigris)' : 'var(--copper)'};">${c.mansfield > 0 ? '+' : ''}${fmtNum(c.mansfield, 1)}</b>` : '';
 
   return `<div class="expl-card ${tipo === 'mano' ? 'expl-mano' : ''}">
     <div class="expl-card-head">
@@ -7591,7 +7667,7 @@ function explorarTarjetaHTML(c, tipo){
       ${score ? `<span class="expl-card-score">${score}</span>` : ''}
     </div>
     <div class="expl-card-meta">
-      ${fase}${conf ? ' · ' + conf : ''} · ${frTxt}<br>
+      ${fase}${conf ? ' · ' + conf : ''} · ${frTxt}${mfTxt}<br>
       Precio: <b>US$${typeof c.precio === 'number' ? c.precio.toLocaleString('es-CL') : '—'}</b>
       ${typeof c.capB === 'number' ? ` · Cap.: US$${fmtNum(c.capB, 1)} B` : ''}
       ${c.sinFundamentales ? ' · <span style="color:var(--ink-dim);">sin datos de empresa (cripto) — pasó solo con precio/tendencia/fase/fuerza</span>' : ''}
@@ -7599,6 +7675,7 @@ function explorarTarjetaHTML(c, tipo){
     ${tipo === 'mano' && c.faltan && c.faltan.length ? explFaltaHTML(c) : ''}
     <div class="expl-card-btns">
       ${tvAnclaHTML(c.ticker, 'Abrir en TradingView ↗')}
+      ${otrasFuentesHTML(c.ticker)}
       ${/* Antes esto solo aparecía si la acción ya estaba en la grilla o en la
              watchlist. Ahora se puede abrir cualquiera: si no tiene precio
              todavía, se le pide en el momento (ver abrirFichaSuelta). */''}
@@ -7801,7 +7878,11 @@ function explDestinos(filas, sobreviven){
 // Una por industria, como el paso 5 del método.
 function explDedup(lista){
   const vistas = {}, finales = [], repetidas = [];
-  lista.slice().sort((a,b) => (b.sc||0) - (a.sc||0) || a.t.localeCompare(b.t)).forEach(a => {
+  // Entre las que empatan en score manda Mansfield (fuerza relativa semanal
+  // vs S&P 500), igual que en explorar.py: decide también cuál se queda
+  // cuando dos repiten industria. Sin Mansfield (análisis viejo) va al final.
+  const mfOrden = a => (typeof a.mf === 'number') ? a.mf : -1e9;
+  lista.slice().sort((a,b) => (b.sc||0) - (a.sc||0) || mfOrden(b) - mfOrden(a) || a.t.localeCompare(b.t)).forEach(a => {
     const ind = a['in'] || '(industria desconocida)';
     if(vistas[ind]){ repetidas.push(Object.assign({}, a, {repiteCon: vistas[ind]})); }
     else { vistas[ind] = a.t; finales.push(a); }
@@ -8080,6 +8161,7 @@ function explorarResultadoHTML(analisis){
     ticker:x.t, nombre:x.n, sector:x.se, industria:x['in'], precio:x.p, sma50:x.c50,
     capB:x.cB, crecBpa:x.gB, crecVentas:x.gV, volM:x.v, fase:x.f, confirmaciones:x.cf,
     score:x.sc, fuerzaRelativa:{disponible:x.fr!==null, pendientePositiva:x.fr===1},
+    mansfield:x.mf,
     tradingview:`https://www.tradingview.com/symbols/${x.t}/`,
     sinFundamentales: x.sf === 1,
   }, 'finalista');
@@ -9421,7 +9503,7 @@ const GICS = {
   'XLU':['Servicios básicos','Sector utilities'], 'XLB':['Materiales','Sector materiales'],
   'XLRE':['Inmobiliario','Sector inmobiliario'], 'XLC':['Comunicaciones','Sector comunicaciones'],
   'SMH':['Tecnología','Semiconductores'], 'SOXX':['Tecnología','Semiconductores'],
-  'GLD':['Materiales','Oro'], 'SLV':['Materiales','Plata'],
+  'GLD':['Materiales','Oro'], 'SLV':['Materiales','Plata'], 'DBC':['Materiales','Commodities'],
   // Agregados a pedido (11-sep-2026): los 4 tickers nuevos de la grilla y
   // los 4 que quedaron sin clasificar del lote del 27-ago-2026 (UBS, HNGE,
   // IYT, URSP) -- estaban en la grilla pero no en este diccionario, asi
@@ -9434,7 +9516,7 @@ const GICS = {
   // Agregados a pedido (22-sep-2026).
   'SPCX':['Industriales','Aeroespacial y defensa'], 'VLUE':['Diversificado','Factor value EE.UU.'],
   // Los siete del 23-sep-2026, al separar la pestaña de ETF.
-  'GLD':['Materiales','Oro'], 'SLV':['Materiales','Plata'],
+  'GLD':['Materiales','Oro'], 'SLV':['Materiales','Plata'], 'DBC':['Materiales','Commodities'],
   'TLT':['Renta fija','Bonos largos EE.UU.'], 'VIG':['Diversificado','Dividendos EE.UU.'],
   'MTUM':['Diversificado','Factor momentum EE.UU.'], 'QUAL':['Diversificado','Factor calidad EE.UU.'],
   'USMV':['Diversificado','Factor mínima volatilidad EE.UU.'],
