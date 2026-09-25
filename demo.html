@@ -618,6 +618,10 @@
   /* Aviso de posiciones sin precio bajo el total consolidado: el número de
      arriba es un piso, no el total real. Ver `sinPrecio` en
      calcularPatrimonioConsolidado(). */
+  .patr-inv{font-size:12.5px; color:var(--ink-dim); margin-top:12px; padding-top:10px; border-top:1px solid var(--hairline);}
+  .patr-inv b{color:var(--ink); font-weight:600;}
+  .patr-inv b.pl-up{color:var(--verdigris);}
+  .patr-inv b.pl-down{color:var(--copper);}
   .patr-faltan{font-size:10.5px; color:var(--copper); margin-top:6px; line-height:1.5;}
   .patr-fx{font-size:11px; color:var(--ink-dim); margin-top:10px; text-align:right;}
   /* Tipo de cambio vencido (backend caído): se sigue mostrando el total con
@@ -9447,16 +9451,23 @@ function calcularPatrimonioConsolidado(){
   const portUsd = calcularPortafolio('USD');
   const sinPrecio = [];
   let valorClp = 0, valorClpCompleto = true;
+  // TOTAL INVERTIDO (sep-2026, a pedido): lo que costaron los títulos que
+  // todavía tienes (costo promedio x cantidad, con comisiones). Solo se
+  // suman posiciones CON precio, para comparar peras con peras contra el
+  // valor de hoy. Lo en dólares se pasa a pesos al dólar de HOY, igual que
+  // el "Sin realizar" de las tarjetas por corredora: así el % es el
+  // resultado de las acciones, sin mezclarlo con lo que se movió el dólar.
+  let costoClp = 0, costoUsd = 0;
   Object.values(portClp).forEach(p => {
     if(p.netoQ <= 0) return;
     if(p.valorActual === null){ valorClpCompleto = false; sinPrecio.push(p.ticker); }
-    else valorClp += p.valorActual;
+    else { valorClp += p.valorActual; costoClp += p.costoDeLoQueQueda; }
   });
   let valorUsd = 0, valorUsdCompleto = true;
   Object.values(portUsd).forEach(p => {
     if(p.netoQ <= 0) return;
     if(p.valorActual === null){ valorUsdCompleto = false; sinPrecio.push(p.ticker); }
-    else valorUsd += p.valorActual;
+    else { valorUsd += p.valorActual; costoUsd += p.costoDeLoQueQueda; }
   });
 
   const cajaClp = caja.CLP || 0;
@@ -9471,16 +9482,29 @@ function calcularPatrimonioConsolidado(){
   const cajaTotalClp = cambioOk ? (cajaClp + cajaUsdEnClp) : null;
   const patrimonioTotalClp = (rentaVariableClp !== null && cajaTotalClp !== null)
     ? (rentaVariableClp + cajaTotalClp) : null;
+  const invertidoClp = cambioOk ? (costoClp + costoUsd * usdclpValue) : null;
 
   return { oculto, cambioOk, cambioViejo, cambioEdadSeg, sinPrecio, portClp, portUsd, valorClp, valorClpCompleto,
            valorUsd, valorUsdCompleto, cajaClp, cajaUsd, valorUsdEnClp, cajaUsdEnClp, totalCompleto,
-           rentaVariableClp, cajaTotalClp, patrimonioTotalClp };
+           rentaVariableClp, cajaTotalClp, patrimonioTotalClp, invertidoClp };
 }
 
 function patrimonioHTML(d){
   const { oculto, cambioOk, cambioViejo, cambioEdadSeg, sinPrecio, valorClp, valorClpCompleto,
           valorUsd, valorUsdCompleto, cajaClp, cajaUsd, valorUsdEnClp, cajaUsdEnClp, totalCompleto,
-          rentaVariableClp, cajaTotalClp, patrimonioTotalClp } = d;
+          rentaVariableClp, cajaTotalClp, patrimonioTotalClp, invertidoClp } = d;
+
+  // "Total invertido: $X → Valor hoy: $Y (+z,z%)". Compara lo que pagaste
+  // por lo que todavía tienes contra lo que vale hoy. La caja no entra: no
+  // es una inversión que suba o baje.
+  const invLinea = (invertidoClp !== null && rentaVariableClp !== null && invertidoClp > 0.5)
+    ? (() => {
+        const pct = rentaVariableClp / invertidoClp - 1;
+        return `<div class="patr-inv">Total invertido: <b class="mono">${fmtMoneda(invertidoClp, oculto, 'CLP')}</b>
+          → Valor hoy: <b class="mono">${((totalCompleto || oculto) ? '' : '≥ ') + fmtMoneda(rentaVariableClp, oculto, 'CLP')}</b>
+          <b class="mono ${pct >= 0 ? 'pl-up' : 'pl-down'}">(${fmtPctCartera(pct)})</b></div>`;
+      })()
+    : '';
 
   // Cuando faltan precios, el número que se muestra es un PISO: se antepone
   // "≥" y se nombra lo que falta, en vez de esconder el total entero.
@@ -9520,6 +9544,7 @@ function patrimonioHTML(d){
           <div class="patr-col-val mono">${cajaTotalClp !== null ? fmtMoneda(cajaTotalClp, oculto, 'CLP') : 'No disponible'}</div>
         </div>
       </div>
+      ${invLinea}
     </div>
 
     <div class="patr-block">
