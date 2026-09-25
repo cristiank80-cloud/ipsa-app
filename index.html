@@ -620,6 +620,8 @@
      calcularPatrimonioConsolidado(). */
   .patr-inv{font-size:12.5px; color:var(--ink-dim); margin-top:12px; padding-top:10px; border-top:1px solid var(--hairline);}
   .patr-inv b{color:var(--ink); font-weight:600;}
+  .patr-res-tot{border-top:none; margin-top:4px; padding-top:0;}
+  .patr-res-det{font-size:11px; color:var(--ink-faint);}
   .patr-inv b.pl-up{color:var(--verdigris);}
   .patr-inv b.pl-down{color:var(--copper);}
   .patr-faltan{font-size:10.5px; color:var(--copper); margin-top:6px; line-height:1.5;}
@@ -8997,17 +8999,17 @@ function calcularPatrimonioConsolidado(){
   // valor de hoy. Lo en dólares se pasa a pesos al dólar de HOY, igual que
   // el "Sin realizar" de las tarjetas por corredora: así el % es el
   // resultado de las acciones, sin mezclarlo con lo que se movió el dólar.
-  let costoClp = 0, costoUsd = 0;
+  let costoClp = 0, costoUsd = 0, valorClpRes = 0, valorUsdRes = 0;
   Object.values(portClp).forEach(p => {
     if(p.netoQ <= 0) return;
     if(p.valorActual === null){ valorClpCompleto = false; sinPrecio.push(p.ticker); }
-    else { valorClp += p.valorActual; costoClp += p.costoDeLoQueQueda; }
+    else { valorClp += p.valorActual; if(!excluidoDelResultado(p.ticker)){ costoClp += p.costoDeLoQueQueda; valorClpRes += p.valorActual; } }
   });
   let valorUsd = 0, valorUsdCompleto = true;
   Object.values(portUsd).forEach(p => {
     if(p.netoQ <= 0) return;
     if(p.valorActual === null){ valorUsdCompleto = false; sinPrecio.push(p.ticker); }
-    else { valorUsd += p.valorActual; costoUsd += p.costoDeLoQueQueda; }
+    else { valorUsd += p.valorActual; if(!excluidoDelResultado(p.ticker)){ costoUsd += p.costoDeLoQueQueda; valorUsdRes += p.valorActual; } }
   });
 
   const cajaClp = caja.CLP || 0;
@@ -9023,26 +9025,78 @@ function calcularPatrimonioConsolidado(){
   const patrimonioTotalClp = (rentaVariableClp !== null && cajaTotalClp !== null)
     ? (rentaVariableClp + cajaTotalClp) : null;
   const invertidoClp = cambioOk ? (costoClp + costoUsd * usdclpValue) : null;
+  // Valor hoy comparable con el invertido (mismo universo, sin excluidos).
+  const valorResClp = cambioOk ? (valorClpRes + valorUsdRes * usdclpValue) : null;
+
+  // RESULTADO TOTAL = sin realizar + realizada (sep-2026, a pedido). La
+  // línea de arriba solo mira lo que sigue abierto: al tomar ganancias, esa
+  // ganancia se iba a la caja y desaparecía del %. Esta la recupera.
+  // La realizada se toma de TODAS las posiciones, abiertas o cerradas (una
+  // vendida entera tiene netoQ 0 y es justo donde vive lo realizado).
+  // Los tickers de RESULTADO_EXCLUIR no entran: Cristian pidió dejar fuera
+  // ENJOY (compra 2020, quedó en ~0; distorsiona la lectura de su método).
+  // Se excluye TODO el ticker (realizada y sin realizar), y la línea lo dice.
+  const excluidos = [];
+  let realizadaClp = 0, realizadaUsd = 0;
+  const sumarRealizada = (port, esUsd) => Object.values(port).forEach(p => {
+    if(excluidoDelResultado(p.ticker)){
+      if(p.totalVendidoQ > 0 || p.netoQ > 0) excluidos.push(p.ticker);
+      return;
+    }
+    if(p.totalVendidoQ > 0 && isFinite(p.utilidadRealizada)){
+      if(esUsd) realizadaUsd += p.utilidadRealizada; else realizadaClp += p.utilidadRealizada;
+    }
+  });
+  sumarRealizada(portClp, false);
+  sumarRealizada(portUsd, true);
+  const realizadaTotalClp = cambioOk ? (realizadaClp + realizadaUsd * usdclpValue) : null;
 
   return { oculto, cambioOk, cambioViejo, cambioEdadSeg, sinPrecio, portClp, portUsd, valorClp, valorClpCompleto,
            valorUsd, valorUsdCompleto, cajaClp, cajaUsd, valorUsdEnClp, cajaUsdEnClp, totalCompleto,
-           rentaVariableClp, cajaTotalClp, patrimonioTotalClp, invertidoClp };
+           rentaVariableClp, cajaTotalClp, patrimonioTotalClp, invertidoClp,
+           realizadaTotalClp, excluidos, valorResClp };
 }
+
+// Tickers que NO entran a "Total invertido" ni a "Resultado total" en
+// Patrimonio consolidado. Siguen en Mis movimientos, en la caja y en las
+// tarjetas por corredora; solo se sacan de esas dos líneas. Pedido de
+// Cristian (sep-2026): ENJOY, compra de 2020 que terminó en ~0.
+var RESULTADO_EXCLUIR = ['ENJOY'];
+// Tolera mayúsculas/minúsculas y el sufijo .SN de Yahoo.
+function excluidoDelResultado(t){
+  const k = String(t || '').toUpperCase().replace(/\.SN$/, '');
+  return RESULTADO_EXCLUIR.includes(k);
+}  // var, no const: se lee desde calcularPatrimonioConsolidado(), definida antes
 
 function patrimonioHTML(d){
   const { oculto, cambioOk, cambioViejo, cambioEdadSeg, sinPrecio, valorClp, valorClpCompleto,
           valorUsd, valorUsdCompleto, cajaClp, cajaUsd, valorUsdEnClp, cajaUsdEnClp, totalCompleto,
-          rentaVariableClp, cajaTotalClp, patrimonioTotalClp, invertidoClp } = d;
+          rentaVariableClp, cajaTotalClp, patrimonioTotalClp, invertidoClp,
+          realizadaTotalClp, excluidos, valorResClp } = d;
 
   // "Total invertido: $X → Valor hoy: $Y (+z,z%)". Compara lo que pagaste
   // por lo que todavía tienes contra lo que vale hoy. La caja no entra: no
   // es una inversión que suba o baje.
-  const invLinea = (invertidoClp !== null && rentaVariableClp !== null && invertidoClp > 0.5)
+  const valorCmp = (valorResClp !== null && valorResClp !== undefined) ? valorResClp : rentaVariableClp;
+  const invLinea = (invertidoClp !== null && valorCmp !== null && invertidoClp > 0.5)
     ? (() => {
-        const pct = rentaVariableClp / invertidoClp - 1;
+        const pct = valorCmp / invertidoClp - 1;
         return `<div class="patr-inv">Total invertido: <b class="mono">${fmtMoneda(invertidoClp, oculto, 'CLP')}</b>
-          → Valor hoy: <b class="mono">${((totalCompleto || oculto) ? '' : '≥ ') + fmtMoneda(rentaVariableClp, oculto, 'CLP')}</b>
+          → Valor hoy: <b class="mono">${((totalCompleto || oculto) ? '' : '≥ ') + fmtMoneda(valorCmp, oculto, 'CLP')}</b>
           <b class="mono ${pct >= 0 ? 'pl-up' : 'pl-down'}">(${fmtPctCartera(pct)})</b></div>`;
+      })()
+    : '';
+
+  // Resultado total: lo abierto (sin realizar) + lo ya vendido (realizada).
+  const fmtResTot = (v) => oculto ? fmtMoneda(v, oculto, 'CLP')
+    : (v >= 0 ? '+' : '') + fmtMoneda(v, oculto, 'CLP');
+  const noReal = (invertidoClp !== null && valorCmp !== null) ? (valorCmp - invertidoClp) : null;
+  const resLinea = (noReal !== null && realizadaTotalClp !== null && realizadaTotalClp !== undefined)
+    ? (() => {
+        const tot = noReal + realizadaTotalClp;
+        const exc = (excluidos && excluidos.length) ? ` · no incluye ${[...new Set(excluidos)].join(', ')}` : '';
+        return `<div class="patr-inv patr-res-tot">Resultado total: <b class="mono ${tot >= 0 ? 'pl-up' : 'pl-down'}">${fmtResTot(tot)}</b>
+          <span class="patr-res-det">(sin realizar ${fmtResTot(noReal)} · realizada ${fmtResTot(realizadaTotalClp)}${exc})</span></div>`;
       })()
     : '';
 
@@ -9085,6 +9139,7 @@ function patrimonioHTML(d){
         </div>
       </div>
       ${invLinea}
+      ${resLinea}
     </div>
 
     <div class="patr-block">
