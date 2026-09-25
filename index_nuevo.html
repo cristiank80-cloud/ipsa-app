@@ -7716,7 +7716,7 @@ let explPaso = 0;                        // 0 = la alerta (el resultado), ver PA
 // compila igual y revienta recien al tocarlo, que es la peor forma de
 // fallar. Se guardan aca, junto al paso activo, que es el otro estado de
 // pantalla de este ambiente.
-let _explListas = {finales: [], mano: []};
+let _explListas = {finales: [], mano: [], etfs: []};
 let explCaidosAbiertos = {};             // qué etapas del embudo están desplegadas
 let explVerTodo = {};                    // '<etapa>|pasan' / '<etapa>|caen' -> mostrar la lista completa
 let explGrupoAbierto = null;             // 'sector|Tecnología' | 'industria|Semiconductores' | null
@@ -8287,7 +8287,7 @@ function explorarResultadoHTML(analisis){
          ${embudo.rotacionMercado ? `<span title="El resto del mercado (fuera del núcleo) se cubre de a poco, corrida tras corrida: hoy le tocó desde este punto de esa lista, y mañana empieza en otro. No queda guardado en ningún lado -- se calcula solo con la fecha de hoy, así que no depende de que el servidor siga prendido entre corridas. Con el paso de hoy, una vuelta completa toma ~${embudo.rotacionMercado.periodoDias} días.">Resto del mercado hoy: <b>desde el ${embudo.rotacionMercado.offsetHoy}/${embudo.rotacionMercado.totalResto}</b> · vuelta en ~${embudo.rotacionMercado.periodoDias}d</span>` : ''}
        </div>
        ${(a.sectoresFuertes && a.sectoresFuertes.length) ? `<div class="expl-tags">${a.sectoresFuertes.map(s=>`<span class="expl-tag">${s.replace(/</g,'&lt;')}</span>`).join('')}</div>` : ''}
-       ${(finales.length || mano.length) ? `<button type="button" class="expl-xls" data-expl-excel
+       ${(finales.length || mano.length || etfsFuerza.length) ? `<button type="button" class="expl-xls" data-expl-excel
           title="Descarga estas mismas listas como planilla de Excel (.xlsx), con los umbrales que tienes puestos ahora">⬇ Excel</button>` : ''}
      </div>
      ${finales.length ? finales.map(tarjetaDe).join('')
@@ -8346,7 +8346,7 @@ function explorarResultadoHTML(analisis){
   ];
 
   // Lo que quedo en pantalla, para que "⬇ Excel" exporte exactamente esto.
-  _explListas = {finales, mano};
+  _explListas = {finales, mano, etfs: etfsFuerza};
 
   return `
     ${avisoDatos}
@@ -8381,13 +8381,21 @@ function explorarResultadoHTML(analisis){
 // entregó -- por eso lleva su columna "Le falta". Juntarlas en una sola hoja
 // haría parecer que un "no se sabe" es un "no cumple", que es justo lo que
 // esta app evita en todos lados.
-function exportarExplorarExcel(finales, mano){
-  if(!finales.length && !mano.length){ alert('No hay candidatas que exportar todavía.'); return; }
+//
+// Tercera hoja "ETF" (sep-2026, a pedido): el segundo listado de Explorar,
+// en el mismo orden de la pantalla (fuerza a 12 meses). Las cuatro
+// columnas "vs S&P" son RESTAS de rentabilidad (ETF menos S&P 500 en el
+// mismo plazo, ver _fuerza_vs_benchmark en explorar.py): +9,8 = le sacó
+// 9,8 puntos al índice. La pantalla solo muestra 12 meses; la planilla trae
+// además 1, 3 y 6, que el servidor ya calculaba.
+function exportarExplorarExcel(finales, mano, etfs){
+  finales = finales || []; mano = mano || []; etfs = etfs || [];
+  if(!finales.length && !mano.length && !etfs.length){ alert('No hay nada que exportar todavía.'); return; }
   const hojas = [];
   if(finales.length){
     const filas = [['Ticker', 'Nombre', 'Sector', 'Industria', 'Precio USD', 'Media 50',
                     'Cap. B', 'Crec. BPA %', 'Crec. ventas %', 'Volumen 90d M',
-                    'Fase', 'Confirmaciones', 'Score', 'Fuerza relativa subiendo', 'TradingView']];
+                    'Fase', 'Confirmaciones', 'Score', 'Fuerza relativa subiendo', 'Mansfield', 'TradingView']];
     finales.forEach(x => filas.push([
       x.t, x.n || '', x.se || '', x['in'] || '',
       typeof x.p === 'number' ? x.p : null,
@@ -8400,6 +8408,7 @@ function exportarExplorarExcel(finales, mano){
       typeof x.cf === 'number' ? x.cf : null,
       typeof x.sc === 'number' ? x.sc : null,
       x.fr === 1 ? 'si' : (x.fr === 0 ? 'no' : ''),
+      typeof x.mf === 'number' ? x.mf : null,
       `https://www.tradingview.com/symbols/${x.t}/`,
     ]));
     hojas.push({nombre: 'Candidatas', filas});
@@ -8407,7 +8416,7 @@ function exportarExplorarExcel(finales, mano){
   if(mano.length){
     const filas = [['Ticker', 'Nombre', 'Sector', 'Industria', 'Precio USD', 'Media 50',
                     'Cap. B', 'Crec. BPA %', 'Crec. ventas %', 'Volumen 90d M',
-                    'Fase', 'Confirmaciones', 'Score', 'Le falta', 'TradingView']];
+                    'Fase', 'Confirmaciones', 'Score', 'Mansfield', 'Le falta', 'TradingView']];
     mano.forEach(c => filas.push([
       c.ticker, c.nombre || '', c.sector || '', c.industria || '',
       typeof c.precio === 'number' ? c.precio : null,
@@ -8419,10 +8428,25 @@ function exportarExplorarExcel(finales, mano){
       typeof c.fase === 'number' ? c.fase : null,
       typeof c.confirmaciones === 'number' ? c.confirmaciones : null,
       typeof c.score === 'number' ? c.score : null,
+      typeof c.mansfield === 'number' ? c.mansfield : null,
       (c.faltan || []).join(', '),
       c.tradingview || `https://www.tradingview.com/symbols/${c.ticker}/`,
     ]));
     hojas.push({nombre: 'A mano', filas});
+  }
+  if(etfs.length){
+    const GRUPO = {sector: 'sector', industria: 'industria', otro: 'amplio'};
+    const f = (x, k) => (x.fuerza && typeof x.fuerza[k] === 'number') ? x.fuerza[k] : null;
+    const filas = [['ETF', 'Nombre', 'Grupo', 'Fase',
+                    'vs S&P 1 mes (pts)', 'vs S&P 3 meses (pts)', 'vs S&P 6 meses (pts)', 'vs S&P 12 meses (pts)',
+                    'TradingView']];
+    etfs.forEach(x => filas.push([
+      x.etf, x.nombre || '', GRUPO[x.grupo] || '',
+      (typeof x.fase === 'number' && x.fase > 0) ? x.fase : null,
+      f(x, 'm1'), f(x, 'm3'), f(x, 'm6'), f(x, 'm12'),
+      `https://www.tradingview.com/symbols/${x.etf}/`,
+    ]));
+    hojas.push({nombre: 'ETF', filas});
   }
   descargarXlsx(`ipsa-explorar-${_hoyArchivo()}.xlsx`, hojas);
 }
@@ -8551,7 +8575,7 @@ function renderAmbienteExplorar(){
   // lista nueva.
   const btnExplXls = viewEl.querySelector('[data-expl-excel]');
   if(btnExplXls) btnExplXls.addEventListener('click',
-    () => exportarExplorarExcel(_explListas.finales, _explListas.mano));
+    () => exportarExplorarExcel(_explListas.finales, _explListas.mano, _explListas.etfs));
 
   const btnReset = viewEl.querySelector('[data-accion="exp-reset"]');
   if(btnReset) btnReset.addEventListener('click', () => {
