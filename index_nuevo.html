@@ -2403,6 +2403,9 @@ const stocksUSA = [
   {ticker:'MTUM',    name:"Factor momentum · ETF",                            dec:2, currency:'USD'},
   {ticker:'QUAL',    name:"Factor calidad · ETF",                             dec:2, currency:'USD'},
   {ticker:'USMV',    name:"Factor mínima volatilidad · ETF",                  dec:2, currency:'USD'},
+  // Agregada a pedido (1-oct-2026). Mismo símbolo que el bloque nuevo de
+  // TICKERS_USA en backend/main.py. Acción normal (no ETF).
+  {ticker:'TEVA',    name:"Teva Pharmaceutical",                              dec:2, currency:'USD'},
   // -----------------------------------------------------------------------
   // ETF DE SECTOR E INDUSTRIA (27-ago-2026)
   // -----------------------------------------------------------------------
@@ -9633,6 +9636,8 @@ const GICS = {
   'TLT':['Renta fija','Bonos largos EE.UU.'], 'VIG':['Diversificado','Dividendos EE.UU.'],
   'MTUM':['Diversificado','Factor momentum EE.UU.'], 'QUAL':['Diversificado','Factor calidad EE.UU.'],
   'USMV':['Diversificado','Factor mínima volatilidad EE.UU.'],
+  // Agregada a pedido (1-oct-2026).
+  'TEVA':['Salud','Farmacéuticas'],
 };
 const SIN_CLASIFICAR = 'Sin clasificar';
 // Los ETF que NO son de un sector puntual: se marcan para poder decir en
