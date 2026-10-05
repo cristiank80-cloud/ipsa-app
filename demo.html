@@ -2866,6 +2866,10 @@ const stocksUSA = [
   // Agregada a pedido (1-oct-2026). Mismo símbolo que el bloque nuevo de
   // TICKERS_USA en backend/main.py. Acción normal (no ETF).
   {ticker:'TEVA',    name:"Teva Pharmaceutical",                              dec:2, currency:'USD'},
+  // Agregada a pedido (5-oct-2026). Mismo símbolo que el bloque nuevo de
+  // TICKERS_USA en backend/main.py. Acción normal (no ETF); ya estaba en
+  // el embudo de Explorar por ser del S&P 500, ahora además tiene tarjeta.
+  {ticker:'KEYS',    name:"Keysight Technologies",                            dec:2, currency:'USD'},
   // -----------------------------------------------------------------------
   // ETF DE SECTOR E INDUSTRIA (27-ago-2026)
   // -----------------------------------------------------------------------
@@ -10098,6 +10102,8 @@ const GICS = {
   'USMV':['Diversificado','Factor mínima volatilidad EE.UU.'],
   // Agregada a pedido (1-oct-2026).
   'TEVA':['Salud','Farmacéuticas'],
+  // Agregada a pedido (5-oct-2026).
+  'KEYS':['Tecnología','Instrumentos electrónicos'],
 };
 const SIN_CLASIFICAR = 'Sin clasificar';
 // Los ETF que NO son de un sector puntual: se marcan para poder decir en
