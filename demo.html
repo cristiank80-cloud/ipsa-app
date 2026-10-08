@@ -9157,17 +9157,36 @@ function platformasHTML(portClp, portUsd, oculto, cambioOk){
   });
   let hayPrecioIncompleto = false;
 
-  // El valor de una posicion se reparte entre plataformas segun de donde vino
-  // cada titulo comprado, en proporcion a la cantidad neta. Es una
-  // aproximacion honesta: si compraste 10 en Racional y 5 en IBKR, el valor de
-  // hoy se parte 2/3 - 1/3. No hay forma de hacerlo exacto sin llevar lotes
-  // por plataforma, y eso es mucho aparato para lo que resuelve.
+  // El valor de una posicion se reparte entre plataformas segun DONDE QUEDAN
+  // los titulos hoy: compras menos ventas de cada corredora. Si compraste 10
+  // en Racional y 5 en IBKR y no vendiste nada, el valor se parte 2/3 - 1/3.
+  //
+  // CORREGIDO EL 8-oct-2026 ("no me cuadra"). Antes esto repartia por las
+  // COMPRAS A SECAS, sin descontar las ventas. Bastaba haber comprado y
+  // vendido un papel en IBKR y despues recomprarlo en Racional para que la
+  // tarjeta de IBKR siguiera llevandose una tajada de una posicion que ya no
+  // estaba ahi: la tarjeta decia US$921 en acciones y la corredora US$859,
+  // mientras la tabla "Mi cartera, de una" -- que agrupa con
+  // platsDePosicion(), o sea por el neto -- si cuadraba. Dos reglas para la
+  // misma pregunta. Ahora las dos usan platsDePosicion() y no pueden volver
+  // a decir cosas distintas.
+  //
+  // El reparto por compras queda SOLO como respaldo, para cuando el neto por
+  // corredora no suma el neto de la posicion (una venta cargada a una
+  // corredora distinta de la compra): ahi platsDePosicion() devuelve las
+  // corredoras sin cantidad, y antes que inventar un numero se usa la
+  // aproximacion de siempre.
   //
   // Vive en su propia funcion desde que existe el bloque "Resultado": el valor
   // y la ganancia sin realizar TIENEN que repartirse con la misma regla. Si
   // cada uno usara la suya, la tarjeta mostraria el valor de una corredora y
   // la ganancia de otra.
-  function repartoCompras(pos){
+  function repartoPosicion(pos){
+    const netos = platsDePosicion(pos);
+    if(netos.length && netos.every(p => p.q !== null)){
+      const quedan = netos.reduce((a, p) => a + p.q, 0);
+      if(quedan > 0) return netos.map(p => [p.id || 'null', p.q / quedan]);
+    }
     const comprado = {};
     CLAVES.forEach(k => { comprado[k] = 0; });
     let total = 0;
@@ -9184,7 +9203,7 @@ function platformasHTML(portClp, portUsd, oculto, cambioOk){
     Object.values(a.port).forEach(pos => {
       if(pos.netoQ <= 0) return;
 
-      const reparto = repartoCompras(pos);
+      const reparto = repartoPosicion(pos);
 
       // SIN PRECIO ≠ SIN NADA. Antes, una posición sin precio se descartaba
       // en silencio y la tarjeta terminaba diciendo "Sin nada registrado
@@ -9214,8 +9233,8 @@ function platformasHTML(portClp, portUsd, oculto, cambioOk){
   // contestaba "cuanto tengo aca"; le faltaba "y como me ha ido aca".
   //
   // SE REPARTEN CON REGLAS DISTINTAS, Y ESO ES A PROPOSITO:
-  //  * La NO realizada sigue el reparto de las COMPRAS, igual que el valor
-  //    (repartoCompras). Es ganancia sobre titulos que todavia estan ahi.
+  //  * La NO realizada sigue el mismo reparto que el valor (repartoPosicion:
+  //    donde quedan los titulos). Es ganancia sobre titulos que siguen ahi.
   //  * La REALIZADA sigue el reparto de las VENTAS: esa plata entro por la
   //    corredora donde se vendio. Repartirla por compras pondria la ganancia
   //    en una cuenta donde nunca aterrizo el dinero.
@@ -9231,7 +9250,7 @@ function platformasHTML(portClp, portUsd, oculto, cambioOk){
   AMBITOS.forEach(a => {
     Object.values(a.port).forEach(pos => {
       if(pos.netoQ > 0 && pos.utilidadNoRealizada !== null){
-        repartoCompras(pos).forEach(([k, f]) => {
+        repartoPosicion(pos).forEach(([k, f]) => {
           const clp = enClp(pos.utilidadNoRealizada * f, a.moneda);
           if(clp !== null) noRealizada[k] += clp;
         });
