@@ -2312,6 +2312,7 @@
 const stocks = [
   // ---------------------------------------------------------------------
   // Ambiente 1 (Chile) -- REDUCIDO A 5 NOMBRES en agosto 2026.
+  // Desde el 8-oct-2026 son 7: volvieron ANDINA-B y CHILE.
   // ---------------------------------------------------------------------
   // Cristian esta cerrando su exposicion a Chile; estas cinco son las
   // unicas posiciones que le quedan. Las otras 45 no se borraron: quedan
@@ -2323,13 +2324,16 @@ const stocks = [
   // "Calculando..." para siempre). Si esta alla y no aca, el backend gasta
   // una peticion por algo que la app no muestra.
   // {ticker:'AGUAS-A', name:'Aguas Andinas',       base:339,   dec:0, currency:'CLP'},
-  // {ticker:'ANDINA-B', name:'Embotelladora Andina', base:2350, dec:0, currency:'CLP'},
+  // Reactivada a pedido (8-oct-2026). `base` es solo la semilla del primer
+  // dibujo: se puso el precio de la cotizacion de ese dia (~$4.912).
+  {ticker:'ANDINA-B', name:'Embotelladora Andina', base:4912, dec:0, currency:'CLP'},
   // {ticker:'BCI',     name:'Banco de Crédito e Inversiones', base:38500, dec:0, currency:'CLP'},
   // {ticker:'BSANTANDER', name:'Banco Santander Chile', base:79.5, dec:2, currency:'CLP'},
   // {ticker:'CAP',     name:'Minería',             base:6900,  dec:0, currency:'CLP'},
   // {ticker:'CCU',     name:'Bebidas',             base:6950,  dec:0, currency:'CLP'},
   // {ticker:'CENCOSUD', name:'Retail',             base:2580,  dec:0, currency:'CLP'},
-  // {ticker:'CHILE',   name:'Banco de Chile',      base:129,   dec:2, currency:'CLP'},
+  // Reactivada a pedido (8-oct-2026). Semilla al precio de ese dia (~$186).
+  {ticker:'CHILE',   name:'Banco de Chile',      base:186,   dec:2, currency:'CLP'},
   // {ticker:'CMPC',    name:'Forestal/Celulosa',   base:1210,  dec:0, currency:'CLP'},
   // {ticker:'COLBUN',  name:'Electricidad',        base:145,   dec:2, currency:'CLP'},
   // {ticker:'CONCHATORO', name:'Viña Concha y Toro', base:1090, dec:0, currency:'CLP'},
@@ -2870,6 +2874,13 @@ const stocksUSA = [
   // TICKERS_USA en backend/main.py. Acción normal (no ETF); ya estaba en
   // el embudo de Explorar por ser del S&P 500, ahora además tiene tarjeta.
   {ticker:'KEYS',    name:"Keysight Technologies",                            dec:2, currency:'USD'},
+  // Agregadas a pedido (8-oct-2026). Mismos símbolos y mismo orden que el
+  // bloque nuevo de TICKERS_USA en backend/main.py. EXPD y BE son acciones
+  // normales; EWJ es ETF (también va en ETFS_USA_SET, más abajo). FAST y
+  // DELL, que venían en el mismo pedido, ya tenían tarjeta.
+  {ticker:'EXPD',    name:"Expeditors International",                         dec:2, currency:'USD'},
+  {ticker:'BE',      name:"Bloom Energy",                                     dec:2, currency:'USD'},
+  {ticker:'EWJ',     name:"Japón · ETF",                                      dec:2, currency:'USD'},
   // -----------------------------------------------------------------------
   // ETF DE SECTOR E INDUSTRIA (27-ago-2026)
   // -----------------------------------------------------------------------
@@ -2917,9 +2928,9 @@ const ETFS_USA_SET = new Set([
   'XLK','XLV','XLF','XLY','XLP','XLE','XLI','XLB','XLU','XLRE','XLC',
   // Industria (12)
   'SMH','IGV','CIBR','XBI','ITA','KRE','XRT','XOP','GDX','IYT','PAVE','URA',
-  // Amplios, renta fija, metales y factores (19)
+  // Amplios, renta fija, metales, factores y países (20)
   'VOO','VTI','VT','VXUS','QQQM','QQQ','URSP','SCHD','VIG','BND','TLT',
-  'GLD','SLV','DBC','ARKK','VLUE','MTUM','QUAL','USMV',
+  'GLD','SLV','DBC','ARKK','VLUE','MTUM','QUAL','USMV','EWJ',
 ]);
 
 const stateUSA = stocksUSA.map(s => ({
@@ -10104,12 +10115,17 @@ const GICS = {
   'TEVA':['Salud','Farmacéuticas'],
   // Agregada a pedido (5-oct-2026).
   'KEYS':['Tecnología','Instrumentos electrónicos'],
+  // Agregadas a pedido (8-oct-2026).
+  'EXPD':['Industriales','Logística y carga'], 'BE':['Industriales','Equipos eléctricos'],
+  'EWJ':['Diversificado','Acciones de Japón'],
+  // Venían en el mismo pedido y ya tenían tarjeta, pero no clasificación.
+  'FAST':['Industriales','Distribución industrial'], 'DELL':['Tecnología','Hardware y servidores'],
 };
 const SIN_CLASIFICAR = 'Sin clasificar';
 // Los ETF que NO son de un sector puntual: se marcan para poder decir en
 // pantalla que su peso no está repartido por sector.
 const ETF_AMPLIOS = ['VOO','VTI','VT','VXUS','SPY','IVV','QQQ','QQQM','SCHD','VIG','ARKK','BND','AGG','TLT','VLUE',
-                     'MTUM','QUAL','USMV'];
+                     'MTUM','QUAL','USMV','EWJ'];
 function sectorDe(t){ return (GICS[t] || [SIN_CLASIFICAR, SIN_CLASIFICAR])[0]; }
 function industriaDe(t){ return (GICS[t] || [SIN_CLASIFICAR, SIN_CLASIFICAR])[1]; }
 function esEtfAmplio(t){ return ETF_AMPLIOS.indexOf(t) !== -1; }
