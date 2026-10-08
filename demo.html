@@ -6955,13 +6955,66 @@ function calcularPortafolio(moneda, ambito){
     // no solo cantidad×precio.
     const totalCompradoQ = compras.reduce((a,m)=>a+m.cantidad,0);
     const totalCompradoCosto = compras.reduce((a,m)=>a+m.cantidad*m.precio+(m.comision||0),0);
-    const costoPromedio = totalCompradoQ > 0 ? totalCompradoCosto/totalCompradoQ : 0;
     const totalVendidoQ = ventas.reduce((a,m)=>a+m.cantidad,0);
     const totalVendidoIngreso = ventas.reduce((a,m)=>a+m.cantidad*m.precio-(m.comision||0),0);
     const netoQ = totalCompradoQ - totalVendidoQ;
-    // Costo promedio ponderado (no es FIFO estricto, es un metodo estandar y simple)
-    const costoDeLoVendido = costoPromedio * totalVendidoQ;
-    const utilidadRealizada = totalVendidoIngreso - costoDeLoVendido;
+
+    // ---- COSTO PROMEDIO MOVIL, EN ORDEN DE FECHAS (8-oct-2026) -----------
+    // Antes el costo promedio era UNO SOLO para toda la historia del papel:
+    // todo lo comprado alguna vez, dividido por todos los titulos comprados
+    // alguna vez. Funciona mientras la posicion nunca se cierre. Pero DELL
+    // se compro a 458,30 y se vendio entera en septiembre, y el 8-oct se
+    // recompro a 571,50: la app mostraba "compra US$513,80" -- el promedio
+    // de una compra vieja YA VENDIDA con la de hoy -- y un +11,8% que no
+    // existia (recien comprada, iba +0,6%). Peor: un stop en 549 aparecia
+    // como "+6,9% contra tu compra" cuando en verdad es PERDER 3,9%. Y la
+    // ganancia de septiembre (US$13,48) salia como US$1,36 realizada y el
+    // resto "sin realizar".
+    //
+    // Ahora se recorren los movimientos en orden: cada compra se promedia
+    // con lo que QUEDA en ese momento, cada venta saca titulos al promedio
+    // vigente, y si la posicion llega a cero el promedio se olvida -- la
+    // proxima compra parte de su propio precio. Es el "precio medio" que
+    // muestran las corredoras.
+    //
+    // Lo que NO cambia: realizada + sin realizar suman lo mismo que antes
+    // (lo vendido + lo que vale hoy - todo lo comprado). Solo cambia como se
+    // reparte entre las dos, y el precio de compra que se muestra.
+    //
+    // Mismo dia: las compras van antes que las ventas (comprar y vender en
+    // el dia es lo normal; vender algo que todavia no compraste no existe).
+    // Si aun asi una venta saca mas titulos de los que habia -- fechas mal
+    // puestas -- el orden no es confiable y se vuelve al promedio de toda la
+    // historia, que no depende del orden: antes un numero aproximado que uno
+    // inventado.
+    const enOrden = compras.concat(ventas).sort((x, y) =>
+      String(x.fecha || '').localeCompare(String(y.fecha || ''))
+      || ((x.tipo === 'compra' ? 0 : 1) - (y.tipo === 'compra' ? 0 : 1))
+      || ((x.id || 0) - (y.id || 0)));
+    let qMovil = 0, costoMovil = 0, promAlCerrar = 0, realizadaMovil = 0, ordenConfiable = true;
+    enOrden.forEach(m => {
+      if(!ordenConfiable) return;
+      if(m.tipo === 'compra'){
+        costoMovil += m.cantidad * m.precio + (m.comision || 0);
+        qMovil += m.cantidad;
+        return;
+      }
+      const holgura = Math.max(1e-9, qMovil * 0.001);
+      if(m.cantidad > qMovil + holgura){ ordenConfiable = false; return; }
+      const prom = qMovil > 0 ? costoMovil / qMovil : 0;
+      realizadaMovil += m.cantidad * m.precio - (m.comision || 0) - prom * m.cantidad;
+      costoMovil -= prom * m.cantidad;
+      qMovil -= m.cantidad;
+      if(qMovil <= holgura){ promAlCerrar = prom; qMovil = 0; costoMovil = 0; }
+    });
+    const promHistorico = totalCompradoQ > 0 ? totalCompradoCosto / totalCompradoQ : 0;
+    // Con la posicion cerrada se deja el promedio que tenia al cerrarse: es
+    // el que explica la utilidad realizada que se muestra al lado.
+    const costoPromedio = !ordenConfiable ? promHistorico
+      : (qMovil > 0 ? costoMovil / qMovil : promAlCerrar);
+    const utilidadRealizada = !ordenConfiable
+      ? totalVendidoIngreso - promHistorico * totalVendidoQ
+      : realizadaMovil;
     // Dividendos recibidos: aparte de la utilidad realizada/no realizada a
     // propósito -- son plata que ya entró a la caja, no una ganancia de
     // precio. Se muestran solos en la tarjeta de la posición.
