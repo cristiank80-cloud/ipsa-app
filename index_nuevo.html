@@ -2421,6 +2421,11 @@ const stocksUSA = [
   {ticker:'EXPD',    name:"Expeditors International",                         dec:2, currency:'USD'},
   {ticker:'BE',      name:"Bloom Energy",                                     dec:2, currency:'USD'},
   {ticker:'EWJ',     name:"Japón · ETF",                                      dec:2, currency:'USD'},
+  // Agregadas a pedido (9-oct-2026). Mismos símbolos y mismo orden que el
+  // bloque nuevo de TICKERS_USA en backend/main.py. Acciones normales (no
+  // ETF). Se pidió "OIT"; se asumió IOT (Samsara).
+  {ticker:'APH',     name:"Amphenol",                                         dec:2, currency:'USD'},
+  {ticker:'IOT',     name:"Samsara",                                          dec:2, currency:'USD'},
   // -----------------------------------------------------------------------
   // ETF DE SECTOR E INDUSTRIA (27-ago-2026)
   // -----------------------------------------------------------------------
@@ -9730,6 +9735,8 @@ const GICS = {
   // Agregadas a pedido (8-oct-2026).
   'EXPD':['Industriales','Logística y carga'], 'BE':['Industriales','Equipos eléctricos'],
   'EWJ':['Diversificado','Acciones de Japón'],
+  // Agregadas a pedido (9-oct-2026).
+  'APH':['Tecnología','Instrumentos electrónicos'], 'IOT':['Tecnología','Software'],
   // Venían en el mismo pedido y ya tenían tarjeta, pero no clasificación.
   'FAST':['Industriales','Distribución industrial'], 'DELL':['Tecnología','Hardware y servidores'],
 };
