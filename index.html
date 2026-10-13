@@ -187,6 +187,26 @@
      posicion a ese precio. Antes solo el de baja necesitaba columna. */
   .cartera-campo-sube-wrap{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
   .cartera-campo-sube-wrap .cartera-campo.sube{flex:none; width:100%;}
+  /* Check "Con stop +/-" (13-oct-2026): ¿la orden ya esta puesta en la
+     corredora donde se compro? El campo y el check van en la misma fila;
+     el label del campo sigue envolviendo SOLO su input, para que tocar la
+     etiqueta "Vta si sube" no marque el check. */
+  .cartera-campo-fila{display:flex; align-items:center; gap:6px; width:100%;}
+  /* Especificidad: tiene que ganarle a .cartera-campo-baja-wrap .cartera-campo.baja
+     {flex:none; width:100%}, que si no empuja el check fuera de la tarjeta. */
+  .cartera-alertas .cartera-campo-fila .cartera-campo.sube,
+  .cartera-alertas .cartera-campo-fila .cartera-campo.baja{flex:1 1 auto; width:auto; min-width:0;}
+  .cartera-check-stop{display:flex; align-items:center; gap:3px; flex-shrink:0; cursor:pointer;
+                      font-size:10px; font-weight:600; white-space:nowrap; color:var(--ink-faint);
+                      padding:2px 6px; border:1px solid var(--hairline); border-radius:5px;}
+  .cartera-check-stop input{margin:0; cursor:pointer;}
+  .cartera-check-stop.is-on{color:var(--verdigris); border-color:var(--verdigris);}
+  .cartera-check-stop.is-falta{color:var(--copper); border-color:var(--copper);}
+  .cartera-check-stop.is-off{opacity:.45; cursor:default;}
+  .cartera-check-stop.is-off input{cursor:default;}
+  /* En el telefono "Con stop" se come el campo: queda solo el check y el
+     signo (+/−). El title sigue diciendo de que se trata. */
+  @media (max-width: 600px){ .cartera-check-stop .ccs-txt{display:none;} .cartera-check-stop{padding:2px 4px;} }
   /* "Si se cumple este precio, tu posicion vale X, que es +Y% de lo que
      pagaste." Tenue como .cartera-riesgo: es contexto del campo de arriba,
      no un dato que compita con el. El % va en color (verde/cobre) porque es
@@ -10535,6 +10555,38 @@ function renderAmbienteCartera(){
         : '';
       return `<span class="cartera-pxq-obj" title="Si se cumple ${fmtMoneda2(precioObj, currency)}, tus ${fmtCantidad(pos.netoQ, currency, s.ticker)} título(s) valen ${fmtMoneda2(valor, currency)}.${detalle}">${cuerpo}</span>`;
     };
+    // ---- Check "Con stop +/-": ¿la orden esta puesta en la corredora? ----
+    // Se guarda el PRECIO confirmado, no un si/no. El check queda marcado
+    // solo mientras ese precio sea el mismo del campo: si mueves el objetivo
+    // (a mano o con el boton de la media 50) el check se apaga solo, porque
+    // en la corredora la orden sigue en el precio viejo hasta que la cambies.
+    // Sin posicion o sin precio en el campo no hay nada que confirmar.
+    const checkStopHTML = (campo, etiqueta) => {
+      const k = campo === 'sube' ? 'puestoSube' : 'puestoBaja';
+      const v = obj[campo];
+      const hay = held && v !== null && v !== undefined && v !== '' && isFinite(v);
+      const conf = obj[k];
+      const on = hay && conf !== null && conf !== undefined && Number(conf) === Number(v);
+      const corredora = (typeof platsDePosicion === 'function')
+        ? (platsDePosicion(pos) || []).map(p => p && p.id ? nombrePlat(p.id) : '').filter(Boolean).join(' / ') : '';
+      const donde = corredora ? ` en ${corredora}` : ' en la corredora';
+      let title, clase;
+      if(!hay){
+        title = held ? `Escribe primero el precio de "${campo === 'sube' ? 'Vta si sube' : 'Vta si baja'}"` : 'Sin posición: no hay orden que poner';
+        clase = 'is-off';
+      } else if(on){
+        title = `Marcaste que la orden a ${fmtMoneda2(Number(v), currency)} está puesta${donde}.`;
+        clase = 'is-on';
+      } else {
+        const antes = (conf !== null && conf !== undefined && conf !== '')
+          ? ` Antes la habías marcado a ${fmtMoneda2(Number(conf), currency)}: cámbiala${donde} y vuelve a marcar.` : '';
+        title = `¿Ya pusiste la orden a ${fmtMoneda2(Number(v), currency)}${donde}?${antes}`;
+        clase = 'is-falta';
+      }
+      return `<label class="cartera-check-stop ${clase}" title="${title}">
+                <input type="checkbox" data-ticker="${s.ticker}" data-check-stop="${campo}" ${on ? 'checked' : ''} ${hay ? '' : 'disabled'}>${etiqueta}
+              </label>`;
+    };
     const pxqHTML = (held && !estaOcultoPxQ())
       ? ` · <span class="cartera-plat-q mono" title="Cantidad × precio de compra, y cantidad × precio de hoy">PxQ compra ${fmtMoneda(pxqCompra, oculto, currency)} · hoy ${fmtMoneda(valorPos, oculto, currency)}</span>`
       : '';
@@ -10555,19 +10607,25 @@ function renderAmbienteCartera(){
           : 'Sin posición registrada (se calcula sola desde "Mis movimientos")'}</div>
         <div class="cartera-alertas">
           <div class="cartera-campo-sube-wrap">
+            <div class="cartera-campo-fila">
             <label class="cartera-campo sube" title="${distancia(obj.sube) || 'Avisar si sube a (venta)'}">
               <span>Vta si sube</span>
               <input type="number" step="any" min="0" inputmode="decimal" class="mono" data-ticker="${s.ticker}" data-campo="sube"
                      value="${(obj.sube !== null && obj.sube !== undefined) ? obj.sube : ''}" placeholder="—">
             </label>
+            ${held ? checkStopHTML('sube', '<span class="ccs-txt">Con stop </span>+') : ''}
+            </div>
             ${pxqObjetivoHTML(subeNum)}
           </div>
           <div class="cartera-campo-baja-wrap">
+            <div class="cartera-campo-fila">
             <label class="cartera-campo baja" title="${distancia(obj.baja) || 'Avisar si baja a'}">
               <span>Vta si baja</span>
               <input type="number" step="any" min="0" inputmode="decimal" class="mono" data-ticker="${s.ticker}" data-campo="baja"
                      value="${(obj.baja !== null && obj.baja !== undefined) ? obj.baja : ''}" placeholder="—">
             </label>
+            ${held ? checkStopHTML('baja', '<span class="ccs-txt">Con stop </span>−') : ''}
+            </div>
             ${riesgoHTML}
             ${pxqObjetivoHTML(bajaNum)}
           </div>
@@ -10791,6 +10849,22 @@ function renderAmbienteCartera(){
       alertasPrecio[ticker].baja = v;
       guardarAlertasPrecio();
       sincronizarAlertasPrecio();
+      renderAmbienteCartera();
+    });
+  });
+  // Check "Con stop +/-": guarda el precio confirmado. NO llama a
+  // sincronizarAlertasPrecio(): al servidor solo le importan sube/baja (manda
+  // los avisos), y esto es una marca personal. Viaja a los otros
+  // dispositivos igual, porque va dentro de alertasPrecio.
+  viewEl.querySelectorAll('[data-check-stop]').forEach(chk => {
+    chk.addEventListener('change', () => {
+      const ticker = chk.dataset.ticker, campo = chk.dataset.checkStop;
+      const o = alertasPrecio[ticker];
+      if(!o) return;
+      const k = campo === 'sube' ? 'puestoSube' : 'puestoBaja';
+      if(chk.checked && o[campo] !== null && o[campo] !== undefined) o[k] = Number(o[campo]);
+      else delete o[k];
+      guardarAlertasPrecio();
       renderAmbienteCartera();
     });
   });
