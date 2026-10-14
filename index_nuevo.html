@@ -6927,7 +6927,7 @@ const MARGEN_STOP = 0.98;
 // implica perder más de esto (en %) contra el precio de hoy, se marca en
 // rojo -- ver riesgoActualPct en filaCartera(), dentro de renderAmbienteCartera().
 // No bloquea el campo, solo avisa (mismo criterio que el resto de la app).
-const RIESGO_MAX_PCT = 8;
+const RIESGO_MAX_PCT = 7;
 
 function estadoDeAccion(ticker){
   const s = todosLosStocks().find(x => x.ticker === ticker);
