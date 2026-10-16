@@ -7017,9 +7017,14 @@ function calcularPortafolio(moneda, ambito){
       || ((x.tipo === 'compra' ? 0 : 1) - (y.tipo === 'compra' ? 0 : 1))
       || ((x.id || 0) - (y.id || 0)));
     let qMovil = 0, costoMovil = 0, promAlCerrar = 0, realizadaMovil = 0, ordenConfiable = true;
+    // Fecha de la PRIMERA compra de la posición que sigue abierta (si se
+    // cerró y se recompró, cuenta la recompra). La usa el stop móvil del 7%
+    // para saber desde cuándo buscar el precio máximo.
+    let fechaInicioMovil = null;
     enOrden.forEach(m => {
       if(!ordenConfiable) return;
       if(m.tipo === 'compra'){
+        if(qMovil <= 0) fechaInicioMovil = m.fecha || null;
         costoMovil += m.cantidad * m.precio + (m.comision || 0);
         qMovil += m.cantidad;
         return;
@@ -7030,8 +7035,10 @@ function calcularPortafolio(moneda, ambito){
       realizadaMovil += m.cantidad * m.precio - (m.comision || 0) - prom * m.cantidad;
       costoMovil -= prom * m.cantidad;
       qMovil -= m.cantidad;
-      if(qMovil <= holgura){ promAlCerrar = prom; qMovil = 0; costoMovil = 0; }
+      if(qMovil <= holgura){ promAlCerrar = prom; qMovil = 0; costoMovil = 0; fechaInicioMovil = null; }
     });
+    const fechaInicio = ordenConfiable ? fechaInicioMovil
+      : (compras.map(m => m.fecha).filter(Boolean).sort()[0] || null);
     const promHistorico = totalCompradoQ > 0 ? totalCompradoCosto / totalCompradoQ : 0;
     // Con la posicion cerrada se deja el promedio que tenia al cerrarse: es
     // el que explica la utilidad realizada que se muestra al lado.
@@ -7054,7 +7061,7 @@ function calcularPortafolio(moneda, ambito){
     resultado[ticker] = {
       ticker, nombre: s ? s.name : ticker, dec: s ? s.dec : (moneda==='USD'?2:0), moneda,
       compras, ventas, dividendos, totalDividendos,
-      totalCompradoQ, totalCompradoCosto, costoPromedio,
+      totalCompradoQ, totalCompradoCosto, costoPromedio, fechaInicio,
       totalVendidoQ, totalVendidoIngreso, netoQ, utilidadRealizada,
       precioActual, costoDeLoQueQueda, valorActual, utilidadNoRealizada,
     };
@@ -7388,6 +7395,71 @@ const MARGEN_STOP = 0.98;
 // rojo -- ver riesgoActualPct en filaCartera(), dentro de renderAmbienteCartera().
 // No bloquea el campo, solo avisa (mismo criterio que el resto de la app).
 const RIESGO_MAX_PCT = 7;
+
+// ---- STOP MÓVIL DEL 7% (16-oct-2026, regla de Cristian) -------------------
+// stop = 7% bajo el MAYOR entre tu precio de compra y el cierre más alto
+// desde que abriste la posición. O sea:
+//   * al comprar parte 7% bajo la compra;
+//   * si el precio sube, el stop sube con el máximo;
+//   * si baja, no se mueve (el máximo nunca baja);
+//   * el stop llega a tu precio de compra recién cuando la acción subió
+//     más de 7,5% (7% bajo ese máximo = la compra). No antes: un +2% no
+//     arrastra el stop a cero ganancia (decisión de Cristian, alternativa
+//     del "día 3").
+// La app solo PROPONE (botón "subir stop"); el stop guardado cambia cuando
+// Cristian lo toca. Y nunca propone uno más bajo que el que ya tiene.
+//
+// El máximo sale de los cierres diarios de /history desde fechaInicio, se
+// guarda por ticker y se refresca una vez al día. Encima se compara con el
+// precio de hoy, así que una subida de hoy cuenta aunque el cache sea de
+// ayer. Cripto queda fuera del historial: BTC-USD cotiza en dólares y la
+// posición está en pesos -- ahí el máximo es max(compra, precio de hoy).
+const MAX_DESDE_COMPRA_KEY = 'ipsa_max_desde_compra';
+let maxDesdeCompra = {};
+try { maxDesdeCompra = JSON.parse(localStorage.getItem(MAX_DESDE_COMPRA_KEY) || '{}') || {}; } catch(e){ maxDesdeCompra = {}; }
+let cargandoMaximos = false, ultimoIntentoMaximos = 0;
+function maxHistDesdeCompra(ticker, desde){
+  const c = maxDesdeCompra[ticker];
+  return (c && desde && c.desde === desde && typeof c.max === 'number') ? c.max : null;
+}
+async function refrescarMaximosDesdeCompra(){
+  if(cargandoMaximos) return;
+  if(Date.now() - ultimoIntentoMaximos < 10 * 60 * 1000) return;
+  cargandoMaximos = true; ultimoIntentoMaximos = Date.now();
+  let cambio = false;
+  try {
+    const hoy = hoyISO();
+    const pend = [];
+    [['CLP','chile'], ['USD','usa']].forEach(([mon, amb]) => {
+      Object.values(calcularPortafolio(mon, amb)).forEach(p => {
+        if(p.netoQ <= 0 || !p.fechaInicio) return;
+        const c = maxDesdeCompra[p.ticker];
+        if(!c || c.desde !== p.fechaInicio || c.consultado !== hoy) pend.push(p);
+      });
+    });
+    for(const p of pend){
+      try {
+        const dias = (Date.now() - new Date(p.fechaInicio + 'T00:00:00').getTime()) / 86400000;
+        const period = dias <= 355 ? '1y' : (dias <= 1810 ? '5y' : '10y');
+        const resp = await fetch(`${BACKEND_URL}/history?ticker=${encodeURIComponent(p.ticker)}&period=${period}`);
+        if(!resp.ok) continue;
+        const body = await resp.json();
+        const cierres = (body.points || [])
+          .filter(x => x && typeof x.close === 'number' && isFinite(x.close) && String(x.date) >= p.fechaInicio)
+          .map(x => x.close);
+        maxDesdeCompra[p.ticker] = {desde: p.fechaInicio, max: cierres.length ? Math.max(...cierres) : null, consultado: hoy};
+        cambio = true;
+      } catch(e){ /* sin red: se reintenta en 10 minutos */ }
+      await new Promise(r => setTimeout(r, 400));
+    }
+  } finally {
+    cargandoMaximos = false;
+    if(cambio){
+      try { localStorage.setItem(MAX_DESDE_COMPRA_KEY, JSON.stringify(maxDesdeCompra)); } catch(e){}
+      if(ambienteActivo === 'cartera' && typeof renderAmbienteCartera === 'function') renderAmbienteCartera();
+    }
+  }
+}
 
 function estadoDeAccion(ticker){
   const s = todosLosStocks().find(x => x.ticker === ticker);
@@ -10565,8 +10637,8 @@ function datosTablaCartera(){
     peso:   (a,b) => b.f.expClp - a.f.expClp,
     juego:  (a,b) => b.f.perdidaClp - a.f.perdidaClp,
     gana:   (a,b) => (b.delta === null ? -Infinity : b.delta) - (a.delta === null ? -Infinity : a.delta),
-    riesgo: (a,b) => (b.f.riesgoPct === null ? Infinity : b.f.riesgoPct)
-                   - (a.f.riesgoPct === null ? Infinity : a.f.riesgoPct),
+    riesgo: (a,b) => (b.f.riesgoCompraPct === null ? Infinity : b.f.riesgoCompraPct)
+                   - (a.f.riesgoCompraPct === null ? Infinity : a.f.riesgoCompraPct),
     // Por corredora: agrupa por el NOMBRE que tenga hoy la plataforma (si le
     // cambias "Interactive Broker" por otra cosa, el orden cambia con él), y
     // dentro de cada una manda el peso -- una lista de una corredora ordenada
@@ -10598,7 +10670,7 @@ function exportarCarteraExcel(){
   const cab = [
     'Accion', 'Nombre', 'Corredora', 'Ambito', 'Moneda', 'Titulos',
     'Precio compra', 'Precio hoy', 'Gana %', 'Valor moneda', 'Valor CLP', 'Peso %',
-    'Sobre tope ' + tope + '%', 'Stop', 'Riesgo %', 'Sobre tu ' + RIESGO_MAX_PCT + '%',
+    'Sobre tope ' + tope + '%', 'Stop', 'Riesgo % vs compra', 'Sobre tu ' + RIESGO_MAX_PCT + '%',
     'En juego CLP', 'Estado', 'Pendiente',
   ];
   const filasXls = [cab];
@@ -10619,8 +10691,8 @@ function exportarCarteraExcel(){
       Math.round(x.peso * 10) / 10,
       x.peso > tope ? 'SI' : '',
       f.stop === null ? null : f.stop,
-      f.riesgoPct === null ? null : Math.round(f.riesgoPct * 10) / 10,
-      f.riesgoPct === null ? 'sin stop' : (f.riesgoPct > RIESGO_MAX_PCT ? 'SI' : ''),
+      f.riesgoCompraPct === null ? null : Math.round(f.riesgoCompraPct * 10) / 10,
+      f.riesgoCompraPct === null ? 'sin stop' : (f.riesgoCompraPct > RIESGO_MAX_PCT ? 'SI' : ''),
       Math.round(f.perdidaClp),
       x.urgencia === 'alta' ? 'Salida' : (x.urgencia === 'media' ? 'Revisar el stop' : 'En orden'),
       x.pendiente || '',
@@ -10659,7 +10731,7 @@ function tablaCarteraHTML(){
   const pct = (v) => fmtNum(v, 1) + '%';
 
   const salidas = filas.filter(x => x.urgencia === 'alta');
-  const sobre8  = filas.filter(x => x.urgencia !== 'alta' && x.f.riesgoPct !== null && x.f.riesgoPct > RIESGO_MAX_PCT);
+  const sobre8  = filas.filter(x => x.urgencia !== 'alta' && x.f.riesgoCompraPct !== null && x.f.riesgoCompraPct > RIESGO_MAX_PCT);
   const sinStop = filas.filter(x => x.f.stop === null);
   const corredoras = new Set();
   filas.forEach(x => x.plats.forEach(p => corredoras.add(p.id || 'sin')));
@@ -10679,8 +10751,8 @@ function tablaCarteraHTML(){
       <td>${fmtMoneda(f.expClp, oculto, 'CLP')}</td>
       <td class="${x.peso > tope ? 'tc-alto' : ''}">${pct(x.peso)}</td>
       <td>${f.stop === null ? '—' : fmtMoneda2(f.stop, f.mon)}</td>
-      <td class="${(f.riesgoPct === null || f.riesgoPct > RIESGO_MAX_PCT) ? 'tc-alto' : ''}">${
-        f.riesgoPct === null ? 'sin stop' : pct(f.riesgoPct)}</td>
+      <td class="${(f.riesgoCompraPct === null || f.riesgoCompraPct > RIESGO_MAX_PCT) ? 'tc-alto' : (f.riesgoCompraPct < 0 ? 'tc-up' : '')}">${
+        f.riesgoCompraPct === null ? 'sin stop' : (f.riesgoCompraPct < 0 ? 'asegura +' + pct(-f.riesgoCompraPct) : pct(f.riesgoCompraPct))}</td>
       <td>${fmtMoneda(f.perdidaClp, oculto, 'CLP')}</td>
     </tr>`;
   }).join('');
@@ -10732,7 +10804,7 @@ function tablaCarteraHTML(){
       <span><i style="background:var(--verdigris);"></i>en orden</span>
     </p>
     <p class="tc-pie">Valor, peso y "en juego" en pesos para poder sumarlos; títulos, compra, hoy y stop
-    en la moneda de cada papel. Rojo = sobre tus topes (${tope}% por posición, ${RIESGO_MAX_PCT}% de riesgo).
+    en la moneda de cada papel. Rojo = sobre tus topes (${tope}% por posición, ${RIESGO_MAX_PCT}% de riesgo sobre tu precio de compra).
     Toca una fila para bajar a su tarjeta.</p>
     ${pieSinPrecio}`;
 }
@@ -10766,6 +10838,9 @@ function irAFilaCartera(ticker){
 function renderAmbienteCartera(){
   const viewEl = document.getElementById('viewCartera');
   if(!viewEl) return;
+  // Diferido: BACKEND_URL se declara más abajo en el script; así nunca se
+  // llama antes de que exista.
+  setTimeout(refrescarMaximosDesdeCompra, 0);
 
   // Patrimonio (la tarjeta consolidada) y "Dónde está tu plata" (el
   // desglose por plataforma) vivían en "A seguir"; se movieron los dos acá
@@ -10861,9 +10936,11 @@ function renderAmbienteCartera(){
         : `Media 50 en ${fmtMoneda2(ma, currency)} — queda bajo tu stop, así que se mantiene.
            El stop sube o se queda, nunca baja.`}</div>`;
     }
-    const riesgoSugeridoPct = (precio !== null && precio > 0) ? (precio - redondeado) / precio * 100 : null;
-    const riesgo = riesgoSugeridoPct !== null
-      ? ` · arriesgas ${fmtNum(riesgoSugeridoPct, 1)}%${riesgoSugeridoPct > RIESGO_MAX_PCT ? ` ⚠ supera ${RIESGO_MAX_PCT}%` : ''}` : '';
+    // Contra el precio de COMPRA (16-oct-2026), igual que el resto del riesgo.
+    const riesgoSugeridoPct = (pos.costoPromedio > 0) ? (pos.costoPromedio - redondeado) / pos.costoPromedio * 100 : null;
+    const riesgo = riesgoSugeridoPct === null ? '' : (riesgoSugeridoPct < 0
+      ? ` · asegura +${fmtNum(-riesgoSugeridoPct, 1)}% sobre tu compra`
+      : ` · arriesgas ${fmtNum(riesgoSugeridoPct, 1)}% de tu compra${riesgoSugeridoPct > RIESGO_MAX_PCT ? ` ⚠ supera ${RIESGO_MAX_PCT}%` : ''}`);
     return `<div class="cartera-sug">
       <button type="button" class="stop-sug" data-accion="usar-sma" data-ticker="${s.ticker}"
               data-valor="${redondeado}"
@@ -10905,13 +10982,22 @@ function renderAmbienteCartera(){
     // puso por posición; sobre eso se marca en rojo, pero no se bloquea el
     // campo -- el mismo criterio que el resto de la app con los avisos.
     const bajaNum = (obj.baja !== null && obj.baja !== undefined && obj.baja !== '') ? Number(obj.baja) : null;
-    const riesgoActualPct = (held && precioActual !== null && precioActual > 0 && bajaNum !== null && bajaNum > 0)
+    // 16-oct-2026: el % de riesgo se mide contra TU PRECIO DE COMPRA (costo
+    // promedio), no contra el precio de hoy. riesgoHoyPct se mantiene solo
+    // para la plata "en juego" (que sí es desde el valor de hoy).
+    const riesgoHoyPct = (held && precioActual !== null && precioActual > 0 && bajaNum !== null && bajaNum > 0)
       ? (precioActual - bajaNum) / precioActual * 100
       : null;
+    const costoCompra = (held && pos.costoPromedio > 0) ? pos.costoPromedio : null;
+    const riesgoActualPct = (costoCompra !== null && bajaNum !== null && bajaNum > 0)
+      ? (costoCompra - bajaNum) / costoCompra * 100
+      : null;
     const riesgoExcedido = riesgoActualPct !== null && riesgoActualPct > RIESGO_MAX_PCT;
-    const riesgoHTML = riesgoActualPct === null ? '' : (riesgoActualPct >= 0
-      ? `<span class="cartera-riesgo${riesgoExcedido ? ' cartera-riesgo--alto' : ''}">arriesgas ${fmtNum(riesgoActualPct, 1)}%${riesgoExcedido ? ` ⚠ supera tu máximo de ${RIESGO_MAX_PCT}%` : ''}</span>`
-      : `<span class="cartera-riesgo">tu stop ya quedó sobre el precio de hoy</span>`);
+    const riesgoHTML = riesgoActualPct === null ? '' : (riesgoHoyPct !== null && riesgoHoyPct < 0
+      ? `<span class="cartera-riesgo">tu stop ya quedó sobre el precio de hoy</span>`
+      : (riesgoActualPct >= 0
+        ? `<span class="cartera-riesgo${riesgoExcedido ? ' cartera-riesgo--alto' : ''}">arriesgas ${fmtNum(riesgoActualPct, 1)}% de tu compra${riesgoExcedido ? ` ⚠ supera tu máximo de ${RIESGO_MAX_PCT}%` : ''}</span>`
+        : `<span class="cartera-riesgo">tu stop asegura +${fmtNum(-riesgoActualPct, 1)}% sobre tu compra</span>`));
 
     // ---- LA PLATA, no solo el porcentaje (septiembre 2026, a pedido) ----
     // Un 58,5% no dice si son mil pesos o un millón, y saber que superas tu
@@ -10939,20 +11025,41 @@ function renderAmbienteCartera(){
     // precio del stop no, porque es un precio de mercado y ya se muestran
     // en claro en el resto de la fila.
     const valorPos = (held && precioActual !== null && pos.netoQ > 0) ? precioActual * pos.netoQ : null;
-    const perdidaHoy = (valorPos !== null && riesgoActualPct !== null && riesgoActualPct > 0)
+    const perdidaHoy = (valorPos !== null && riesgoHoyPct !== null && riesgoHoyPct > 0)
       ? (precioActual - bajaNum) * pos.netoQ : null;
-    const stop8crudo = (valorPos !== null && precioActual > 0) ? precioActual * (1 - RIESGO_MAX_PCT / 100) : null;
+    // 16-oct-2026: el stop del tope sale del PRECIO DE COMPRA, no del de hoy.
+    // "arriesgas $X" es lo que perderías sobre lo que pagaste. Si el precio
+    // de hoy ya está bajo ese stop, no se propone un número: es una salida.
+    // Stop móvil: 7% bajo max(compra, cierre más alto desde la compra, hoy).
+    const maxHist = (held && pos.fechaInicio) ? maxHistDesdeCompra(s.ticker, pos.fechaInicio) : null;
+    const refStop = (valorPos !== null && costoCompra !== null)
+      ? Math.max(costoCompra, ...[maxHist, precioActual].filter(v => typeof v === 'number' && v > 0)) : null;
+    const refEsCompra = refStop !== null && refStop <= costoCompra;
+    const stop8crudo = refStop !== null ? refStop * (1 - RIESGO_MAX_PCT / 100) : null;
     const stop8bruto = stop8crudo === null ? null
       : (currency === 'CLP' ? Math.ceil(stop8crudo) : Math.ceil(stop8crudo * 100) / 100);
+    const stop8bajoHoy = stop8bruto !== null && stop8bruto >= precioActual;
     const stop8 = (stop8bruto !== null && stop8bruto > 0 && stop8bruto < precioActual) ? stop8bruto : null;
-    const perdida8 = stop8 !== null ? (precioActual - stop8) * pos.netoQ : null;
+    const perdida8 = stop8 !== null ? (costoCompra - stop8) * pos.netoQ : null;
+    // ¿Ya está puesto? El stop nunca baja: si el guardado es igual o mayor,
+    // no hay nada que proponer.
+    const stop8yaPuesto = stop8 !== null && bajaNum !== null && bajaNum >= stop8 - 1e-9;
+    const baseStopTxt = refEsCompra ? `tu compra (${fmtMoneda2(costoCompra, currency)})`
+      : `el máximo desde tu compra (${fmtMoneda2(refStop, currency)})`;
+    const stopMovilHTML = stop8 === null ? '' : `<div class="cartera-sug">${stop8yaPuesto
+      ? `<div class="cartera-sug-nota">Stop móvil ${RIESGO_MAX_PCT}%: ${fmtMoneda2(stop8, currency)}, 7% bajo ${baseStopTxt}. Tu stop ya está ahí o más arriba.</div>`
+      : `<button type="button" class="stop-sug" data-accion="usar-sma" data-ticker="${s.ticker}" data-valor="${stop8}"
+              title="Pone ${fmtMoneda2(stop8, currency)} en 'Vta si baja' (${RIESGO_MAX_PCT}% bajo ${refEsCompra ? 'tu compra' : 'el máximo desde tu compra'})">
+          <span>Stop móvil ${RIESGO_MAX_PCT}% · <span class="ss-val">${fmtMoneda2(stop8, currency)}</span> · 7% bajo ${baseStopTxt}${
+            perdida8 > 0 ? ` · arriesgas ${fmtMoneda(perdida8, oculto, currency)}`
+                         : ` · asegura +${fmtNum((stop8 / costoCompra - 1) * 100, 1)}% sobre tu compra`}</span>
+          <span class="ss-cta">${bajaNum === null ? 'poner stop' : 'subir stop'}</span>
+        </button>`}</div>`;
     const montoRiesgoHTML = valorPos === null ? '' : `<div class="cartera-riesgo-monto">${
       perdidaHoy !== null
         ? `Pones en juego <b>${fmtMoneda(perdidaHoy, oculto, currency)}</b> de ${fmtMoneda(valorPos, oculto, currency)}`
         : `Tu posición vale <b>${fmtMoneda(valorPos, oculto, currency)}</b>`
-      }${perdida8 !== null
-        ? ` · para no pasar del ${RIESGO_MAX_PCT}%, stop en <b class="crm-stop">${fmtMoneda2(stop8, currency)}</b> (arriesgas ${fmtMoneda(perdida8, oculto, currency)})`
-        : ''}</div>`;
+      }${stop8bajoHoy ? ` · el precio ya cayó bajo tu stop móvil del ${RIESGO_MAX_PCT}% (${fmtMoneda2(stop8bruto, currency)}): es una salida` : ''}</div>${stopMovilHTML}`;
 
     // Dónde está comprada: el chip de la corredora al final de la línea de
     // la posición. Con una sola plataforma va el chip pelado; con dos o más
@@ -11409,7 +11516,14 @@ function calcularRiesgo(){
         riesgoPct = (p.precioActual - stop) / p.precioActual * 100;
         perdidaClp = Math.max(0, aClp((p.precioActual - stop) * p.netoQ, mon) || 0);
       }
-      filas.push({ticker:p.ticker, mon, expClp, stop, riesgoPct, perdidaClp,
+      // Riesgo CONTRA TU PRECIO DE COMPRA (16-oct-2026, a pedido): cuánto
+      // perderías sobre lo que pagaste si se gatilla el stop. Es el número
+      // que se compara con RIESGO_MAX_PCT. Negativo = el stop ya asegura
+      // ganancia. riesgoPct (contra hoy) se queda solo para detectar stops
+      // tan lejos del precio que no protegen.
+      const riesgoCompraPct = (stop !== null && stop > 0 && p.costoPromedio > 0)
+        ? (p.costoPromedio - stop) / p.costoPromedio * 100 : null;
+      filas.push({ticker:p.ticker, mon, expClp, stop, riesgoPct, riesgoCompraPct, perdidaClp,
                   precio:p.precioActual, cantidad:p.netoQ,
                   // costo y pos los agrega la tabla de Mi Cartera (necesita
                   // el precio de compra y las plataformas). La pestaña Riesgo
@@ -11569,12 +11683,12 @@ function renderAmbienteRiesgo(){
   const porRiesgo = r.filas.slice().sort((a,b) => b.perdidaClp - a.perdidaClp);
   const filasRiesgo = porRiesgo.map(f => {
     const aporte = r.perdidaTotal > 0 ? f.perdidaClp / r.perdidaTotal * 100 : 0;
-    const alto = f.riesgoPct !== null && f.riesgoPct > RIESGO_MAX_PCT;
+    const alto = f.riesgoCompraPct !== null && f.riesgoCompraPct > RIESGO_MAX_PCT;
     return `<tr>
       <td><b>${f.ticker}</b></td>
       <td>${fmtMoneda(f.expClp, oculto, 'CLP')}</td>
       <td>${pct(pctExp(f.expClp))}</td>
-      <td class="${alto ? 'riesgo-alto' : ''}">${f.riesgoPct === null ? 'sin stop' : pct(f.riesgoPct)}</td>
+      <td class="${alto ? 'riesgo-alto' : ''}">${f.riesgoCompraPct === null ? 'sin stop' : (f.riesgoCompraPct < 0 ? 'asegura +' + pct(-f.riesgoCompraPct) : pct(f.riesgoCompraPct))}</td>
       <td>${fmtMoneda(f.perdidaClp, oculto, 'CLP')}</td>
       <td>${pct(aporte)}</td>
     </tr>`;
@@ -11631,7 +11745,7 @@ function renderAmbienteRiesgo(){
     <p class="section-title">Quién aporta el riesgo</p>
     <div class="riesgo-tabla-wrap">
       <table class="riesgo-tabla">
-        <thead><tr><th>Acción</th><th>Expuesto</th><th>% cartera</th><th>Riesgo al stop</th><th>Perdería</th><th>% del riesgo</th></tr></thead>
+        <thead><tr><th>Acción</th><th>Expuesto</th><th>% cartera</th><th>Riesgo vs compra</th><th>Perdería</th><th>% del riesgo</th></tr></thead>
         <tbody>${filasRiesgo}</tbody>
         <tfoot><tr>
           <td><b>Total</b></td>
