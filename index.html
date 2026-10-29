@@ -3209,7 +3209,9 @@ async function vaciarColaDiagnostico(){
   lote.forEach(t => diagTarjetaPedidos.add(t));
   diagLoteEnVuelo = true;
   try {
-    const resp = await fetch(`${BACKEND_URL}/diagnostico-lote?tickers=${encodeURIComponent(lote.join(','))}`);
+    // Con plazo: como hay UNA sola peticion en vuelo, un lote colgado (servidor
+    // dormido) dejaba congelados los veredictos de TODAS las tarjetas.
+    const resp = await fetchConPlazo(`${BACKEND_URL}/diagnostico-lote?tickers=${encodeURIComponent(lote.join(','))}`, {}, 90000);
     if(resp.ok){
       const data = await resp.json();
       const diags = (data && data.diagnosticos) || {};
@@ -4436,23 +4438,60 @@ function etfReferenciaSector(ticker){
   return ETF_DE_INDUSTRIA[g[1]] || ETF_DE_SECTOR[g[0]] || null;
 }
 const diagFuerzaEnCurso = new Set();
+// Un error o una respuesta sin datos YA NO se guardan para toda la sesion.
+// Antes, un solo 400/503 (o un servidor dormido) dejaba "Fuerza" y
+// "Weinstein" en "cargando…" hasta cerrar la app, aunque el servidor se
+// recuperara un minuto despues. Ahora se reintenta solo, pasado este plazo,
+// la proxima vez que se abra el detalle o se toque uno de esos botones.
+const DIAG_REINTENTO_ERROR_MS = 30 * 1000;
+const DIAG_REINTENTO_SIN_DATOS_MS = 5 * 60 * 1000;
+// 70 s: alcanza para que Render despierte (~50 s) y baje los 5 años de la
+// accion; mas que eso es un cuelgue, y sin plazo la carga no terminaba nunca.
+const DIAG_PLAZO_MS = 70 * 1000;
+const diagFuerzaReintentos = {};   // ticker -> reintentos automaticos hechos
+function diagFuerzaSinDatos(d){
+  return !!d && !d.error && !(d.diario && d.diario.disponible) && !(d.semanal && d.semanal.disponible);
+}
+function diagFuerzaVencido(d){
+  if(!d) return true;
+  const edad = Date.now() - (d._recibido || 0);
+  if(d.error) return edad > DIAG_REINTENTO_ERROR_MS;
+  if(diagFuerzaSinDatos(d)) return edad > DIAG_REINTENTO_SIN_DATOS_MS;
+  return false;
+}
 async function cargarDiagnosticoFuerza(ticker){
-  if(diagFuerzaCache[ticker]){ renderDiagnosticoFuerza(ticker); return; }
+  if(diagFuerzaCache[ticker] && !diagFuerzaVencido(diagFuerzaCache[ticker])){ renderDiagnosticoFuerza(ticker); return; }
   if(diagFuerzaEnCurso.has(ticker)) return;
   diagFuerzaEnCurso.add(ticker);
   try {
     const etfSec = etfReferenciaSector(ticker);
-    const resp = await fetch(`${BACKEND_URL}/diagnostico?ticker=${encodeURIComponent(ticker)}`
-                             + (etfSec ? `&sector=${etfSec}` : ''));
+    const resp = await fetchConPlazo(`${BACKEND_URL}/diagnostico?ticker=${encodeURIComponent(ticker)}`
+                             + (etfSec ? `&sector=${etfSec}` : ''), {}, DIAG_PLAZO_MS);
     if(resp.ok){
       diagFuerzaCache[ticker] = await resp.json();
     } else {
-      diagFuerzaCache[ticker] = {error: `HTTP ${resp.status}`};
+      // El backend explica el motivo en el cuerpo ("ticker 'X' no
+      // reconocido"); mostrarlo es lo que permite saber que pasa.
+      let motivo = `HTTP ${resp.status}`;
+      try { const j = await resp.json(); if(j && j.error) motivo += ' — ' + j.error; } catch(_){}
+      // 4xx = el servidor no conoce el ticker: reintentar solo no lo arregla.
+      // 5xx = servidor ocupado o despertando: eso si se arregla solo.
+      diagFuerzaCache[ticker] = {error: motivo, _reintentable: resp.status >= 500};
     }
   } catch(e){
     console.warn('No se pudo obtener /diagnostico para', ticker, e);
-    diagFuerzaCache[ticker] = {error: 'sin conexión con el backend'};
+    diagFuerzaCache[ticker] = {error: (e && e.name === 'AbortError')
+      ? 'el servidor no respondió a tiempo' : 'sin conexión con el backend', _reintentable: true};
   } finally {
+    const d = diagFuerzaCache[ticker];
+    if(d) d._recibido = Date.now();
+    if(d && !d.error) diagFuerzaReintentos[ticker] = 0;
+    // Reintento automatico, con tope de 3 por ticker y sesion para no
+    // martillar a un servidor que esta caido.
+    if(d && d.error && d._reintentable && (diagFuerzaReintentos[ticker] || 0) < 3){
+      diagFuerzaReintentos[ticker] = (diagFuerzaReintentos[ticker] || 0) + 1;
+      setTimeout(() => { if(openTicker === ticker) cargarDiagnosticoFuerza(ticker); }, DIAG_REINTENTO_ERROR_MS + 1000);
+    }
     diagFuerzaEnCurso.delete(ticker);
   }
   if(openTicker === ticker){
@@ -4813,16 +4852,26 @@ function renderHistoryChart(){
   let zonaSvg = '';
   let zonaLeyendaTexto = '';
   const diag = diagFuerzaCache[ticker];
-  if((overlaysActivos.fuerza || overlaysActivos.weinstein) && !diag){
-    cargarDiagnosticoFuerza(ticker); // dispara la carga; este render se repite solo cuando llegue (ver el finally de esa funcion)
+  if((overlaysActivos.fuerza || overlaysActivos.weinstein) && diagFuerzaVencido(diag)){
+    cargarDiagnosticoFuerza(ticker); // dispara la carga (o el reintento); este render se repite solo cuando llegue (ver el finally de esa funcion)
   }
+  // "cargando…" SOLO mientras de verdad hay una peticion en vuelo. Si ya
+  // volvio con error o sin datos, se dice eso -- antes se mostraba
+  // "cargando…" en los tres casos y no habia forma de distinguirlos.
+  const motivoSinFondo = (parte) => {
+    if(diagFuerzaEnCurso.has(ticker) || !diag) return 'cargando…';
+    if(diag.error) return `no se pudo cargar (${diag.error}).` +
+      (diag._reintentable ? ' Se vuelve a intentar sola en unos segundos.' : '');
+    if(parte && parte.disponible === false) return parte.motivo || 'sin datos suficientes.';
+    return 'sin datos para este período.';
+  };
   const fechasGrafico = points.map(p => p.date);
   if(overlaysActivos.fuerza && diag && diag.diario && diag.diario.serieCasos && diag.diario.serieCasos.length){
     const valores = alinearZonasPorFecha(fechasGrafico, diag.diario.serieCasos, 'caso');
     zonaSvg += construirBandasFondo(valores, colorFondoCaso, x, plotW, 0, h);
     zonaLeyendaTexto = 'Fondo = caso diario: verde = oportunidad, celeste = recuperando, amarillo = sobreextendida, rojo = divergencia/declive.';
   } else if(overlaysActivos.fuerza){
-    zonaLeyendaTexto = 'Fondo por caso diario: cargando…';
+    zonaLeyendaTexto = 'Fondo por caso diario: ' + motivoSinFondo(diag && diag.diario);
   }
   if(overlaysActivos.weinstein && diag && diag.semanal && diag.semanal.serieFases && diag.semanal.serieFases.length){
     const valores = alinearZonasPorFecha(fechasGrafico, diag.semanal.serieFases, 'fase');
@@ -4830,7 +4879,7 @@ function renderHistoryChart(){
     zonaLeyendaTexto = (zonaLeyendaTexto ? zonaLeyendaTexto + ' ' : '') +
       'Fondo = fase semanal (Weinstein): gris = fase 1, verde = fase 2, naranjo = fase 3, rojo = fase 4.';
   } else if(overlaysActivos.weinstein){
-    zonaLeyendaTexto = (zonaLeyendaTexto ? zonaLeyendaTexto + ' ' : '') + 'Fondo por fase semanal: cargando…';
+    zonaLeyendaTexto = (zonaLeyendaTexto ? zonaLeyendaTexto + ' ' : '') + 'Fondo por fase semanal: ' + motivoSinFondo(diag && diag.semanal);
   }
   const zonaLeyendaEl = document.getElementById('zonaFondoLeyenda');
   if(zonaLeyendaEl) zonaLeyendaEl.textContent = zonaLeyendaTexto;
