@@ -2446,6 +2446,9 @@ const stocksUSA = [
   // ETF). Se pidió "OIT"; se asumió IOT (Samsara).
   {ticker:'APH',     name:"Amphenol",                                         dec:2, currency:'USD'},
   {ticker:'IOT',     name:"Samsara",                                          dec:2, currency:'USD'},
+  // Agregada a pedido (29-oct-2026). Mismo lugar que en TICKERS_USA de
+  // backend/main.py. Acción normal (no ETF).
+  {ticker:'CNC',     name:"Centene",                                          dec:2, currency:'USD'},
   // -----------------------------------------------------------------------
   // ETF DE SECTOR E INDUSTRIA (27-ago-2026)
   // -----------------------------------------------------------------------
@@ -9878,6 +9881,8 @@ const GICS = {
   'EWJ':['Diversificado','Acciones de Japón'],
   // Agregadas a pedido (9-oct-2026).
   'APH':['Tecnología','Instrumentos electrónicos'], 'IOT':['Tecnología','Software'],
+  // Agregada a pedido (29-oct-2026). Misma industria que UNH.
+  'CNC':['Salud','Seguros de salud'],
   // Venían en el mismo pedido y ya tenían tarjeta, pero no clasificación.
   'FAST':['Industriales','Distribución industrial'], 'DELL':['Tecnología','Hardware y servidores'],
 };
