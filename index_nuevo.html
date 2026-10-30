@@ -674,6 +674,36 @@
   .mercado-franja.mf-debil{border-color:var(--copper); background:var(--copper-soft);}
   .mercado-franja.mf-debil .mf-punto{background:var(--copper);}
   .mercado-franja.mf-debil .mf-titulo{color:var(--copper);}
+  /* Zona de compra y cinco condiciones (Clases Acciones USA, 30-oct-2026). */
+  .esp-sobre{background:rgba(144,111,55,0.14); color:var(--gold);}
+  .zona-barra{position:relative; height:48px; margin:8px 0 2px;}
+  .zona-pista{position:absolute; left:0; right:0; top:17px; height:10px; display:flex; border-radius:5px; overflow:hidden;}
+  .zona-pista span{display:block; height:100%;}
+  .zona-pista .zp-bajo{width:30%; background:var(--bg-field);}
+  .zona-pista .zp-zona{width:40%; background:rgba(47,135,121,0.28);}
+  .zona-pista .zp-sobre{width:30%; background:rgba(144,111,55,0.20);}
+  .zona-marca{position:absolute; top:12px; width:3px; height:20px; margin-left:-1px; background:var(--ink); border-radius:2px;}
+  .zona-et{position:absolute; top:0; transform:translateX(-50%); font-size:10px; font-weight:600; white-space:nowrap; font-family:'IBM Plex Mono',monospace;}
+  .zona-lim{position:absolute; top:31px; transform:translateX(-50%); font-size:10px; color:var(--ink-dim); font-family:'IBM Plex Mono',monospace;}
+  .zona-leyenda{display:flex; justify-content:space-between; font-size:10px; color:var(--ink-dim); margin-bottom:6px;}
+  .zona-datos{display:grid; grid-template-columns:1fr auto; gap:5px 10px; align-items:center; font-size:11.5px;
+              background:var(--bg-panel-alt); border-radius:8px; padding:8px 10px; margin:6px 0;}
+  .zona-datos .zd-v{font-family:'IBM Plex Mono',monospace; font-weight:600; text-align:right;}
+  .zona-datos input{width:96px; font-family:'IBM Plex Mono',monospace;}
+  .zona-datos .esp-usar{grid-column:1 / -1; justify-self:start;}
+  .c5-titulo{font-size:12px; font-weight:700; margin:8px 0 2px;}
+  .c5{list-style:none; margin:0; padding:0;}
+  .c5 li{display:grid; grid-template-columns:16px 1fr auto; gap:8px; padding:6px 0; border-top:1px solid var(--hairline);
+         font-size:11.5px; align-items:start;}
+  .c5 .c5-n{font-weight:700; color:var(--gold); font-family:'IBM Plex Mono',monospace;}
+  .c5 .c5-det{display:block; color:var(--ink-dim); font-size:10.5px; margin-top:1px;}
+  .c5-chip{font-size:10.5px; font-weight:700; border-radius:20px; padding:2px 8px; white-space:nowrap;}
+  .c5-si{background:var(--verdigris-soft); color:var(--verdigris);}
+  .c5-no{background:var(--copper-soft); color:var(--copper);}
+  .c5-sd{background:var(--bg-field); color:var(--ink-dim);}
+  .c5-veredicto{margin-top:6px; padding:8px 10px; border-radius:8px; font-size:12px; font-weight:600; line-height:1.4;}
+  .c5-veredicto.ok{background:var(--verdigris-soft); color:var(--verdigris);}
+  .c5-veredicto.espera{background:var(--bg-field); color:var(--ink-dim);}
   /* Sizing de posiciones (planilla de riesgo por operación, portada a la
      ficha de cada acción). Mismo patrón visual que asig-box: un <details>
      con inputs numéricos chicos y un resultado abajo. */
@@ -2678,6 +2708,7 @@ function agregarAWatchlist(ticker, nombre){
     nuevo.history = (ficha.history || []).slice();
     nuevo.marketTime = ficha.marketTime || null;
     CAMPOS_QUOTE.forEach(k => { nuevo[k] = (typeof ficha[k] === 'number') ? ficha[k] : null; });
+    copiarCamposClase(nuevo, ficha);
   }
   stateWatch.push(nuevo);
   // Tarjeta al tiro: sin esto aparecería en la grilla recién al recargar la
@@ -3041,6 +3072,10 @@ function camposCacheables(s){
     // siempre: si se agrega un campo a la cotizacion, va tambien aca.
     sma100: s.sma100 ?? null, ema21: s.ema21 ?? null,
     previousClose: s.previousClose ?? null,
+    // Clases Acciones USA (30-oct-2026): sin esto, al abrir con caché fría la
+    // zona de compra y el stop de la clase quedarían sin datos un ciclo.
+    max30sem: s.max30sem ?? null, min10: s.min10 ?? null,
+    volUlt: s.volUlt ?? null, volPen: s.volPen ?? null, proximoReporte: s.proximoReporte ?? null,
   };
 }
 function saveCache(){
@@ -4033,11 +4068,26 @@ const CAMPOS_QUOTE = ['dayHigh','dayLow','volume','montoTransado','ret3m','ret1y
                       'rsi14','sma20','sma50','sma100','sma200','ema21','zscore','staleSeconds',
                       'previousClose'];
 
+// ---- Campos de la clase (Clases Acciones USA, 30-oct-2026) ----------------
+// max30sem (máximo intradía de 30 semanas: el máximo previo que se propone),
+// min10 (mínimo intradía de 10 sesiones: la mitad "soporte" del stop),
+// volUlt/volPen (volumen de la última sesión y la anterior, con su promedio
+// de 50) y proximoReporte. Dos son objetos, por eso no van en CAMPOS_QUOTE
+// (que solo copia números). Las listas van ADENTRO de la función y no en un
+// const de módulo: aplicarCacheado corre al arrancar, y un const declarado
+// más abajo estaría todavía en zona muerta.
+function copiarCamposClase(s, q){
+  if(!s || !q) return;
+  ['max30sem', 'min10'].forEach(k => { s[k] = (typeof q[k] === 'number' && isFinite(q[k]) && q[k] > 0) ? q[k] : null; });
+  ['volUlt', 'volPen', 'proximoReporte'].forEach(k => { s[k] = (q[k] && typeof q[k] === 'object') ? q[k] : null; });
+}
+
 function aplicarQuoteAStock(s, q){
   if(!s || !q || typeof q.price !== 'number') return false;
   s.price = q.price;
   if(typeof q.avg === 'number' && q.avg > 0) s.avg = q.avg;
   CAMPOS_QUOTE.forEach(k => { s[k] = (typeof q[k] === 'number') ? q[k] : null; });
+  copiarCamposClase(s, q);
   s.marketTime = q.marketTime || null;
   s.bid = null; s.ask = null; s.bidSize = null; s.askSize = null;
   pushHistory(s.history, s.price);
@@ -6967,6 +7017,10 @@ function diasRestantes(reg){
 // null = no hay precio objetivo, o todavia no hay precio real de la accion.
 // NUNCA devuelve true por falta de datos.
 function esperaCumplida(ticker, reg){
+  if(esRuptura(reg)){
+    const z = estadoZona(reg, todosLosStocks().find(x => x.ticker === ticker));
+    return z.estado === null ? null : z.estado === 'dentro';
+  }
   if(!reg || typeof reg.precio !== 'number') return null;
   const s = todosLosStocks().find(x => x.ticker === ticker);
   if(!s || typeof s.price !== 'number') return null;
@@ -7040,12 +7094,13 @@ async function refrescarMaximosDesdeCompra(){
       Object.values(calcularPortafolio(mon, amb)).forEach(p => {
         if(p.netoQ <= 0 || !p.fechaInicio) return;
         const c = maxDesdeCompra[p.ticker];
-        if(!c || c.desde !== p.fechaInicio || c.consultado !== hoy) pend.push(p);
+        if(!c || c.desde !== p.fechaInicio || c.consultado !== hoy || c.v !== 2) pend.push(p);
       });
     });
     for(const p of pend){
       try {
-        const dias = (Date.now() - new Date(p.fechaInicio + 'T00:00:00').getTime()) / 86400000;
+        // +30 días: hace falta el tramo ANTERIOR a la compra para el mínimo de 10 sesiones.
+        const dias = (Date.now() - new Date(p.fechaInicio + 'T00:00:00').getTime()) / 86400000 + 30;
         const period = dias <= 355 ? '1y' : (dias <= 1810 ? '5y' : '10y');
         const resp = await fetch(`${BACKEND_URL}/history?ticker=${encodeURIComponent(p.ticker)}&period=${period}`);
         if(!resp.ok) continue;
@@ -7053,7 +7108,15 @@ async function refrescarMaximosDesdeCompra(){
         const cierres = (body.points || [])
           .filter(x => x && typeof x.close === 'number' && isFinite(x.close) && String(x.date) >= p.fechaInicio)
           .map(x => x.close);
-        maxDesdeCompra[p.ticker] = {desde: p.fechaInicio, max: cierres.length ? Math.max(...cierres) : null, consultado: hoy};
+        // Mínimo INTRADÍA de las 10 sesiones que terminan el día de la compra
+        // (stop inicial de la clase). Si el servidor todavía no manda `low`,
+        // cae al cierre de esos días; se recalcula cada día.
+        const previos = (body.points || []).filter(x => x && typeof x.close === 'number' && String(x.date) <= p.fechaInicio);
+        const ult10 = previos.slice(-10);
+        const min10 = ult10.length === 10
+          ? Math.min(...ult10.map(x => (typeof x.low === 'number' && x.low > 0) ? x.low : x.close)) : null;
+        maxDesdeCompra[p.ticker] = {desde: p.fechaInicio, max: cierres.length ? Math.max(...cierres) : null,
+                                    min10, v: 2, consultado: hoy};
         cambio = true;
       } catch(e){ /* sin red: se reintenta en 10 minutos */ }
       await new Promise(r => setTimeout(r, 400));
@@ -7065,6 +7128,44 @@ async function refrescarMaximosDesdeCompra(){
       if(ambienteActivo === 'cartera' && typeof renderAmbienteCartera === 'function') renderAmbienteCartera();
     }
   }
+}
+
+// ---- STOP DE LA CLASE (Clases Acciones USA, 30-oct-2026) -------------------
+// "Stop = el más alto entre el mínimo de 2 semanas y la entrada − 7 %."
+// Decisiones de Cristian: 2 semanas = 10 sesiones, mínimo INTRADÍA; se usa
+// en "¿Cuánto compro?" Y en Mi Cartera, combinado con su stop móvil del 7 %:
+//   propuesto = el más alto entre
+//     · stop inicial  = máx(mín. de las 10 sesiones hasta el día de la compra, compra − 7 %)
+//     · stop móvil    = 7 % bajo el mayor entre compra, cierre más alto desde la compra y hoy
+// Hacia ARRIBA (entero en CLP, 2 decimales en USD) y nunca baja (eso lo
+// controla quien compara contra el stop guardado). MISMA cuenta que
+// stop_propuesto_clase() en server.py -- si cambia una, cambia la otra.
+function stopPropuestoPosicion(s, pos, moneda){
+  if(!s || !pos || !(pos.netoQ > 0) || !(pos.costoPromedio > 0)) return null;
+  const compra = pos.costoPromedio;
+  const precio = (typeof s.price === 'number' && s.price > 0) ? s.price : null;
+  const c = pos.fechaInicio ? maxDesdeCompra[s.ticker] : null;
+  const vale = !!(c && c.desde === pos.fechaInicio);
+  const maxHist = (vale && typeof c.max === 'number') ? c.max : null;
+  const min10 = (vale && typeof c.min10 === 'number' && c.min10 > 0) ? c.min10 : null;
+  const factor = 1 - RIESGO_MAX_PCT / 100;
+  const ref = Math.max(compra, ...[maxHist, precio].filter(v => typeof v === 'number' && v > 0));
+  const movil = ref * factor;
+  const inicial = Math.max(min10 !== null ? min10 : 0, compra * factor);
+  const bruto = Math.max(inicial, movil);
+  const valor = moneda === 'CLP' ? Math.ceil(bruto) : Math.ceil(bruto * 100) / 100;
+  return {valor, ref, refEsCompra: ref <= compra, min10Compra: min10, inicial, movil,
+          manda: (min10 !== null && inicial > movil + 1e-9) ? 'soporte' : 'movil'};
+}
+// El stop de la clase para COMPRAR HOY: máx(mínimo de las últimas 10
+// sesiones, precio − 7 %). Sin mínimo todavía, manda el 7 %.
+function stopClaseHoy(s, moneda){
+  if(!s || typeof s.price !== 'number' || !(s.price > 0)) return null;
+  const tope = s.price * (1 - RIESGO_MAX_PCT / 100);
+  const min10 = (typeof s.min10 === 'number' && s.min10 > 0 && s.min10 < s.price) ? s.min10 : null;
+  const bruto = Math.max(min10 !== null ? min10 : 0, tope);
+  const valor = moneda === 'CLP' ? Math.ceil(bruto) : Math.ceil(bruto * 100) / 100;
+  return {valor, min10, tope, manda: (min10 !== null && min10 > tope) ? 'soporte' : 'siete'};
 }
 
 function estadoDeAccion(ticker){
@@ -7084,21 +7185,24 @@ function estadoDeAccion(ticker){
     if(precio !== null && stop !== null && precio <= stop){
       pendiente = `El precio (${fmtMoneda2(precio, moneda)}) ya tocó tu stop de ${fmtMoneda2(stop, moneda)}. Esto es una salida.`;
       urgencia = 'alta';
-    } else if(sma50 !== null && precio !== null && precio < sma50){
-      pendiente = `Cerró bajo su media 50 (${fmtMoneda2(sma50, moneda)}). Acá no hay stop que mover: es una salida.`;
-      urgencia = 'alta';
-    } else if(stop === null){
-      pendiente = sma50 !== null
-        ? `No tiene stop definido. La regla que elegiste lo pone en la media 50 — hoy sería ${fmtMoneda2(redondearStop(sma50 * MARGEN_STOP, moneda), moneda)}.`
-        : 'No tiene stop definido, y todavía no hay media 50 para proponerte uno.';
-      urgencia = 'media';
-    } else if(sma50 !== null && redondearStop(sma50 * MARGEN_STOP, moneda) > stop){
-      pendiente = `Tu stop está en ${fmtMoneda2(stop, moneda)} y la media 50 ya manda ${fmtMoneda2(redondearStop(sma50 * MARGEN_STOP, moneda), moneda)}. Súbelo en Mi Cartera.`;
-      urgencia = 'media';
     } else {
-      pendiente = stop !== null
-        ? `Nada pendiente. Tu stop está en ${fmtMoneda2(stop, moneda)}, donde manda la media 50.`
-        : 'Nada pendiente.';
+      // 30-oct-2026: el stop propuesto es el de la clase o el móvil del 7 %;
+      // la media 50 ya no manda, queda como dato.
+      const pr = stopPropuestoPosicion(s, pos, moneda);
+      const motivo = pr ? (pr.manda === 'soporte' ? 'mínimo de las 2 semanas antes de tu compra'
+                           : (pr.refEsCompra ? '7 % bajo tu compra' : '7 % bajo el máximo desde tu compra')) : '';
+      const datoMa = (sma50 !== null && precio !== null && precio < sma50)
+        ? ` Dato: está bajo su media 50 (${fmtMoneda2(sma50, moneda)}).` : '';
+      if(stop === null){
+        pendiente = pr ? `No tiene stop definido. Te propongo ${fmtMoneda2(pr.valor, moneda)} (${motivo}). Ponlo en Mi Cartera.`
+                       : 'No tiene stop definido.';
+        urgencia = 'media';
+      } else if(pr && pr.valor > stop + 1e-9 && precio !== null && pr.valor < precio){
+        pendiente = `Tu stop está en ${fmtMoneda2(stop, moneda)} y puede subir a ${fmtMoneda2(pr.valor, moneda)} (${motivo}). Súbelo en Mi Cartera.`;
+        urgencia = 'media';
+      } else {
+        pendiente = `Nada pendiente. Tu stop está en ${fmtMoneda2(stop, moneda)}.` + datoMa;
+      }
     }
     const costo = (typeof pos.costoPromedio === 'number') ? pos.costoPromedio : null;
     const gan = (costo !== null && precio !== null && costo > 0) ? (precio / costo - 1) * 100 : null;
@@ -7123,6 +7227,12 @@ function estadoDeAccion(ticker){
     } else if(restantes !== null && restantes <= 0){
       pendiente = `Caducó hace ${Math.abs(restantes)} días sin cumplirse. Renuévala o sácala de la lista.`;
       urgencia = 'media';
+    } else if(esRuptura(reg)){
+      const z = estadoZona(reg, s);
+      if(!z.zona){ pendiente = 'Esperando la ruptura, pero falta el máximo previo: complétalo en A seguir.'; urgencia = 'media'; }
+      else if(z.estado === 'sobre') pendiente = `Cerró ${fmtNum(z.distPct, 1)}% sobre su máximo previo (${fmtMoneda2(z.zona.desde, moneda)}), fuera de la zona: espera un retroceso.`;
+      else if(z.estado === 'bajo') pendiente = `Nada pendiente: esperar la ruptura. Está a ${fmtNum(-z.distPct, 1)}% de su máximo previo (${fmtMoneda2(z.zona.desde, moneda)}).`;
+      else pendiente = 'Nada pendiente: esperar la ruptura.';
     } else if(typeof reg.precio === 'number' && precio !== null){
       const dist = fmtNum((precio / reg.precio - 1) * 100, 1);
       pendiente = `Nada pendiente: esperar. Está a ${dist}% de tu precio de entrada (${fmtMoneda2(reg.precio, moneda)})`
@@ -7388,10 +7498,28 @@ function sizingHTML(ticker){
   const s = todosLosStocks().find(x => x.ticker === ticker);
   if(!s || typeof s.price !== 'number') return '';
   const moneda = s.currency === 'USD' ? 'USD' : 'CLP';
-  const sma50 = (typeof s.sma50 === 'number' && isFinite(s.sma50) && s.sma50 > 0) ? s.sma50 : null;
-  const stop = sma50 !== null ? redondearStop(sma50 * MARGEN_STOP, moneda) : null;
   const pos = calcularPortafolio(moneda)[ticker];
   const held = !!(pos && pos.netoQ > 0);
+  // Stop del cálculo (30-oct-2026, Clases Acciones USA). Antes: media 50 − 2 %.
+  //  * Para comprar: el de la clase, máx(mínimo de 10 sesiones, precio − 7 %).
+  //  * Si ya la tienes: tu stop guardado ("Vta si baja"), que es el riesgo
+  //    real; si no tiene, el propuesto para tu posición.
+  const sc = stopClaseHoy(s, moneda);
+  const obj0 = (typeof alertasPrecio !== 'undefined' && alertasPrecio[ticker]) || {};
+  const bajaG = (obj0.baja !== null && obj0.baja !== undefined && obj0.baja !== '' && isFinite(obj0.baja)) ? Number(obj0.baja) : null;
+  const prPos = held ? stopPropuestoPosicion(s, pos, moneda) : null;
+  let stop = null, motivoStop = '';
+  if(held && bajaG !== null && bajaG > 0 && bajaG < s.price){
+    stop = bajaG; motivoStop = 'tu stop guardado (Vta si baja)';
+  } else if(held && prPos && prPos.valor < s.price){
+    stop = prPos.valor; motivoStop = 'el stop propuesto para tu posición (todavía no tienes uno guardado)';
+  } else if(!held && sc){
+    stop = sc.valor;
+    motivoStop = sc.manda === 'soporte'
+      ? `el mínimo de las últimas 2 semanas (${fmtMoneda2(sc.min10, moneda)}), más alto que precio − 7 %`
+      : (sc.min10 !== null ? `precio − 7 % (el mínimo de 2 semanas, ${fmtMoneda2(sc.min10, moneda)}, queda más lejos)`
+                           : 'precio − 7 % (todavía sin el mínimo de 2 semanas)');
+  }
   const glob = sizingGlobal(sizing);
 
   const inputsHTML = `
@@ -7418,8 +7546,8 @@ function sizingHTML(ticker){
   `;
 
   let resultadoHTML;
-  if(sma50 === null){
-    resultadoHTML = `<div class="siz-vacio">Todavía no hay media 50 para ${ticker}: sin eso no hay stop, y sin stop no hay cálculo.</div>`;
+  if(stop === null){
+    resultadoHTML = `<div class="siz-vacio">Todavía no hay stop para ${ticker}${held ? ' (o tu stop guardado ya quedó sobre el precio)' : ''}: sin stop no hay cálculo.</div>`;
   } else if(held){
     const costoInvertido = (typeof pos.costoPromedio === 'number') ? pos.costoPromedio * pos.netoQ : null;
     const r = (costoInvertido !== null) ? sizingAumentar(pos.netoQ, costoInvertido, stop, s.price, sizing, glob, decSizing(ticker)) : null;
@@ -7432,6 +7560,7 @@ function sizingHTML(ticker){
   return `<details class="siz-box" id="sizDetails" ${sizingPanelAbierto ? 'open' : ''}>
     <summary class="section-title" style="cursor:pointer; margin:0;">¿Cuánto ${held ? 'aumento' : 'compro'}? · sizing de posiciones</summary>
     ${inputsHTML}
+    ${stop !== null ? `<div class="siz-guia-nota" style="margin:8px 0 0; font-size:10.5px; color:var(--ink-dim);">Stop del cálculo: <b>${fmtMoneda2(stop, moneda)}</b> — ${motivoStop}.</div>` : ''}
     ${resultadoHTML}
   </details>`;
 }
@@ -8969,12 +9098,16 @@ function renderAmbienteExplorar(){
           + `(${watchlist.length} de ${WATCHLIST_MAX}). Desde el próximo ciclo empieza a recibir precio.`;
       }
 
-      const precioRef = (c && typeof c.sma50 === 'number') ? c.sma50 : null;
-      guardarCondicion(tk, 'baja', precioRef,
-        'Candidata de Explorar — revisar entrada en TradingView antes de comprar', ESPERA_DIAS_DEFAULT);
-      alert(`${tk} agregada a "A seguir ▸ Esperando entrada"`
-        + (precioRef ? ` con aviso si baja a ${fmtMoneda2(precioRef, 'USD')} (su media 50).` : ', sin precio de aviso (no se pudo calcular la media 50).')
-        + '\n\nAjusta la condición ahí si prefieres otro precio.'
+      // Desde el 30-oct-2026 entra en modo RUPTURA (la clase compra en la
+      // ruptura de su máximo previo, no en el retroceso a la media 50).
+      guardarRuptura(tk, null,
+        'Candidata de Explorar — esperar la ruptura y revisar en TradingView antes de comprar', ESPERA_DIAS_DEFAULT);
+      const reg = espera[tk];
+      const zz = reg ? zonaDeRegistro(reg, 'USD') : null;
+      alert(`${tk} agregada a "A seguir ▸ Esperando entrada", esperando la ruptura`
+        + (zz ? ` de su máximo previo (${fmtMoneda2(zz.desde, 'USD')}): zona de compra hasta ${fmtMoneda2(zz.hasta, 'USD')}.`
+              : '. El máximo previo se completa solo apenas llegue su historial.')
+        + '\n\nAjústalo ahí si en TradingView ves otro máximo.'
         + avisoWatch);
     });
   });
@@ -9197,6 +9330,291 @@ function platformasHTML(portClp, portUsd, oculto, cambioOk){
 
 // Panel "Esperando entrada". Vive en el ambiente "A seguir", que pasa de ser
 // una lista pasiva a ser la sala de espera entre "es candidata" y "la compre".
+// =========================================================================
+// ZONA DE COMPRA  (Clases Acciones USA, 30-oct-2026)
+// =========================================================================
+// La clase: se compra en la RUPTURA. Zona = del máximo previo a +4 %, y solo
+// cuenta si el precio CIERRA dentro ("el precio intradía no cuenta").
+//
+// DECISIONES DE CRISTIAN
+//  * Modo "ruptura" por defecto; el modo "precio de entrada" (media 50) sigue.
+//  * El máximo previo que se propone es el máximo INTRADÍA de las 30 semanas
+//    cerradas anteriores (max30sem, mismo criterio que la confirmación 3 de
+//    Weinstein). Manda lo que él escribe; el propuesto entra solo si el campo
+//    va en blanco. Una vez guardado queda FIJO: una subida no arrastra la zona.
+//  * Las cinco condiciones INFORMAN, no bloquean (igual que la franja de
+//    mercado). "Espacio en la cartera" = riesgo total; sin límite por sector.
+//  * El volumen de la ruptura es un dato, no una condición.
+//  * Resultados próximos: ventana de 5 días hábiles.
+//
+// El aviso "cerró dentro de su zona" lo manda el SERVIDOR al cierre de Nueva
+// York (ver _tareas_al_cierre en server.py); la app le manda la zona en
+// sincronizarAlertasPrecio(). Por eso este modo NO usa alertasPrecio: la
+// alerta de precio de siempre suena intradía, y aquí eso es justo lo que no
+// cuenta.
+const ZONA_PCT = 4;
+const VENTANA_REPORTE_DIAS = 5;
+
+function esRuptura(reg){ return !!(reg && reg.modo === 'ruptura'); }
+
+function maxPrevioPropuesto(s){
+  if(!s || typeof s.max30sem !== 'number' || !(s.max30sem > 0)) return null;
+  return redondearStop(s.max30sem, s.currency === 'USD' ? 'USD' : 'CLP');
+}
+
+function zonaDeRegistro(reg, moneda){
+  const mp = (reg && typeof reg.maxPrevio === 'number' && reg.maxPrevio > 0) ? reg.maxPrevio : null;
+  if(mp === null) return null;
+  return {desde: mp, hasta: redondearStop(mp * (1 + ZONA_PCT / 100), moneda)};
+}
+
+function bolsaSantiagoAbierta(){
+  try {
+    const partes = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Santiago', weekday: 'short', year: 'numeric', month: '2-digit',
+      day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(new Date());
+    const m = {};
+    partes.forEach(p => { m[p.type] = p.value; });
+    if(m.weekday === 'Sat' || m.weekday === 'Sun') return false;
+    if(typeof esFeriado === 'function' && esFeriado(`${m.year}-${m.month}-${m.day}`)) return false;
+    const min = (parseInt(m.hour, 10) % 24) * 60 + parseInt(m.minute, 10);
+    return min >= 9 * 60 + 30 && min < 16 * 60;
+  } catch(e){ return false; }
+}
+
+// El último CIERRE de la acción: con su bolsa abierta, el cierre anterior;
+// fuera de horario el precio que llega ya es el cierre. `ahora` va aparte,
+// solo para mostrarlo -- nunca decide nada.
+function ultimoCierreDe(s){
+  if(!s || typeof s.price !== 'number') return null;
+  const abierta = s.currency === 'USD' ? bolsaNYAbierta() : bolsaSantiagoAbierta();
+  const prev = (typeof s.previousClose === 'number' && s.previousClose > 0) ? s.previousClose : null;
+  if(!abierta) return {valor: s.price, esCierre: true, ahora: null};
+  return prev !== null ? {valor: prev, esCierre: true, ahora: s.price}
+                       : {valor: s.price, esCierre: false, ahora: s.price};
+}
+
+function estadoZona(reg, s){
+  const moneda = (s && s.currency === 'USD') ? 'USD' : 'CLP';
+  const zona = zonaDeRegistro(reg, moneda);
+  const cierre = ultimoCierreDe(s);
+  if(!zona || !cierre) return {zona, cierre, estado: null, distPct: null};
+  const v = cierre.valor;
+  const estado = v < zona.desde ? 'bajo' : (v <= zona.hasta ? 'dentro' : 'sobre');
+  return {zona, cierre, estado, distPct: (v / zona.desde - 1) * 100};
+}
+
+// Volumen de la última sesión CERRADA contra su promedio de 50 días. Con la
+// bolsa abierta la última sesión está a medio hacer: se usa la anterior.
+function volumenCierre(s){
+  if(!s) return null;
+  const abierta = s.currency === 'USD' ? bolsaNYAbierta() : bolsaSantiagoAbierta();
+  const hoy = new Date().toLocaleDateString('en-CA', {timeZone: s.currency === 'USD' ? 'America/New_York' : 'America/Santiago'});
+  const v = (abierta && s.volUlt && s.volUlt.fecha === hoy) ? s.volPen : s.volUlt;
+  if(!v || !(v.vol > 0) || !(v.prom50 > 0)) return null;
+  return {veces: v.vol / v.prom50, fecha: v.fecha};
+}
+
+function fmtFechaCorta(iso){
+  try { return new Date(iso + 'T12:00:00').toLocaleDateString('es-CL', {day:'numeric', month:'short'}); }
+  catch(e){ return iso; }
+}
+// Días hábiles (lunes a viernes) desde hoy hasta `iso`. 0 = hoy, -1 = ya pasó.
+function diasHabilesHasta(iso){
+  const hoy = new Date(hoyISO() + 'T12:00:00'), f = new Date(String(iso).slice(0, 10) + 'T12:00:00');
+  if(isNaN(f.getTime())) return null;
+  if(f < hoy && f.toDateString() !== hoy.toDateString()) return -1;
+  let n = 0;
+  const d = new Date(hoy);
+  while(d < f && d.toDateString() !== f.toDateString()){
+    d.setDate(d.getDate() + 1);
+    if(d.getDay() !== 0 && d.getDay() !== 6) n++;
+  }
+  return n;
+}
+
+// Condición 5: riesgo total. Lo que tienes en juego hoy (de tu precio al
+// stop, ver calcularRiesgo) más el riesgo de una posición nueva, contra la
+// pérdida total que aceptas ("¿Cuánto compro?": 6,4 % = 0,64 % x 10).
+function espacioRiesgoTotal(){
+  try {
+    const r = calcularRiesgo();
+    const d = calcularPatrimonioConsolidado();
+    const porPatrimonio = d && typeof d.patrimonioTotalClp === 'number' && d.patrimonioTotalClp > 0;
+    const base = porPatrimonio ? d.patrimonioTotalClp : (r.expTotal > 0 ? r.expTotal : null);
+    if(base === null || !(sizing.nPosiciones > 0)) return null;
+    const actual = r.perdidaTotal / base * 100;
+    const nuevo = sizing.perdidaTotal / sizing.nPosiciones * 100;
+    const limite = sizing.perdidaTotal * 100;
+    return {actual, nuevo, limite, ok: actual + nuevo <= limite + 1e-9,
+            sinStop: (r.sinStop || []).length, base: porPatrimonio ? 'tu patrimonio' : 'tu exposición'};
+  } catch(e){ return null; }
+}
+
+function condicionesCompra(tk, reg, s){
+  const moneda = (s && s.currency === 'USD') ? 'USD' : 'CLP';
+  const z = estadoZona(reg, s);
+  const out = [];
+  // 1 · cierra dentro de la zona
+  out.push({titulo: 'El precio cierra dentro de la zona',
+    ok: z.estado === null ? null : z.estado === 'dentro',
+    detalle: !z.zona ? 'Falta el máximo previo.'
+      : !z.cierre ? 'Todavía sin precio.'
+      : `${z.cierre.esCierre ? 'Último cierre' : 'Precio de ahora (sin cierre todavía)'} ${fmtMoneda2(z.cierre.valor, moneda)} · zona ${fmtMoneda2(z.zona.desde, moneda)} – ${fmtMoneda2(z.zona.hasta, moneda)}`});
+  // 2 · fase 2: sobre la media de 50 y la de 200 días
+  const c = z.cierre ? z.cierre.valor : null;
+  const ma50 = (s && typeof s.sma50 === 'number') ? s.sma50 : null;
+  const ma200 = (s && typeof s.sma200 === 'number') ? s.sma200 : null;
+  out.push({titulo: 'Sigue en fase 2',
+    ok: (c === null || ma50 === null || ma200 === null) ? null : (c > ma50 && c > ma200),
+    detalle: (ma50 === null || ma200 === null) ? 'Falta la media de 50 o de 200 días.'
+      : `Media 50 ${fmtMoneda2(ma50, moneda)} · media 200 ${fmtMoneda2(ma200, moneda)}`});
+  // 3 · mercado sano
+  const m = (typeof estadoMercado === 'function') ? estadoMercado() : null;
+  out.push({titulo: 'El mercado está sano', ok: m ? m.sano : null,
+    detalle: m ? `S&P 500 (VOO) ${m.sano ? 'sobre' : 'bajo'} su media de 200 días` : 'Sin dato de VOO todavía.'});
+  // 4 · resultados próximos
+  const rep = s ? s.proximoReporte : null;
+  let ok4 = null, det4 = 'Sin fecha de resultados todavía (Yahoo, TradingView y Nasdaq no contestaron).';
+  if(rep && rep.fecha){
+    const n = diasHabilesHasta(rep.fecha);
+    if(n !== null && n >= 0){
+      ok4 = n > VENTANA_REPORTE_DIAS;
+      det4 = ok4 ? `Próximo reporte: ${fmtFechaCorta(rep.fecha)}`
+                 : `Reporta el ${fmtFechaCorta(rep.fecha)} (${n === 0 ? 'hoy' : 'en ' + n + ' día' + (n === 1 ? '' : 's') + ' hábil' + (n === 1 ? '' : 'es')}): espera el dato`;
+    }
+  } else if(rep && rep.sinReporteHasta){
+    const n = diasHabilesHasta(rep.sinReporteHasta);
+    if(n !== null && n >= VENTANA_REPORTE_DIAS){ ok4 = true; det4 = `No reporta antes del ${fmtFechaCorta(rep.sinReporteHasta)}`; }
+  }
+  out.push({titulo: 'No reporta resultados en los próximos días', ok: ok4, detalle: det4});
+  // 5 · espacio en la cartera (riesgo total)
+  const e = espacioRiesgoTotal();
+  out.push({titulo: 'Hay espacio en la cartera', ok: e ? e.ok : null,
+    detalle: e ? `En juego hoy ${fmtNum(e.actual, 1)}% de ${e.base}; con esta compra ${fmtNum(e.actual + e.nuevo, 1)}% de ${fmtNum(e.limite, 1)}%`
+                 + (e.sinStop ? ` · ojo: ${e.sinStop} posición${e.sinStop === 1 ? '' : 'es'} sin stop no entra${e.sinStop === 1 ? '' : 'n'} en la cuenta` : '')
+               : 'Falta el tipo de cambio o el sizing para calcularlo.'});
+  return out;
+}
+
+function condicionesHTML(conds){
+  const si = conds.filter(c => c.ok === true).length;
+  const sd = conds.filter(c => c.ok === null).length;
+  const items = conds.map((c, i) => `<li><span class="c5-n">${i + 1}</span>
+      <span>${c.titulo}<span class="c5-det">${String(c.detalle).replace(/</g, '&lt;')}</span></span>
+      <span class="c5-chip ${c.ok === true ? 'c5-si' : c.ok === false ? 'c5-no' : 'c5-sd'}">${c.ok === true ? 'Sí' : c.ok === false ? 'No' : 'sin dato'}</span></li>`).join('');
+  const ver = si === conds.length
+    ? `<div class="c5-veredicto ok">5 de 5 · compra al cierre. Es informativo: la decisión es tuya.</div>`
+    : `<div class="c5-veredicto espera">${si} de ${conds.length}${sd ? ` (${sd} sin dato)` : ''} · la orden espera.</div>`;
+  return `<div class="c5-titulo">Cinco condiciones antes de comprar</div><ol class="c5">${items}</ol>${ver}`;
+}
+
+// La barra: 30 % bajo la zona, 40 % la zona, 30 % sobre. La marca es el
+// último cierre; fuera de la zona se ubica en escala (8 % bajo el máximo
+// previo y 8 % sobre el techo de la zona son los bordes).
+function barraZonaHTML(z, moneda){
+  if(!z || !z.zona || !z.cierre) return '';
+  const {desde, hasta} = z.zona, v = z.cierre.valor;
+  let pos;
+  if(v < desde) pos = 30 * Math.max(0, 1 - (desde - v) / (desde * 0.08));
+  else if(v <= hasta) pos = 30 + 40 * ((v - desde) / ((hasta - desde) || 1));
+  else pos = 70 + 30 * Math.min(1, (v - hasta) / (hasta * 0.08));
+  pos = Math.max(1, Math.min(99, pos));
+  return `<div class="zona-barra" role="img" aria-label="Cierre ${fmtMoneda2(v, moneda)}, zona de ${fmtMoneda2(desde, moneda)} a ${fmtMoneda2(hasta, moneda)}">
+      <span class="zona-et" style="left:${pos}%;">${z.cierre.esCierre ? 'cierre' : 'ahora'} ${fmtNum(v, moneda === 'USD' ? 2 : 0)}</span>
+      <div class="zona-pista"><span class="zp-bajo"></span><span class="zp-zona"></span><span class="zp-sobre"></span></div>
+      <div class="zona-marca" style="left:${pos}%;"></div>
+      <span class="zona-lim" style="left:30%;">${fmtNum(desde, moneda === 'USD' ? 2 : 0)}</span>
+      <span class="zona-lim" style="left:70%;">${fmtNum(hasta, moneda === 'USD' ? 2 : 0)}</span>
+    </div>
+    <div class="zona-leyenda"><span>bajo: no rompe</span><span>zona de compra</span><span>sobre: persigues</span></div>`;
+}
+
+function esperaRupturaHTML(tk, reg, s, moneda, restantes, vencida, conPos, enWatch){
+  const z = estadoZona(reg, s);
+  const prop = maxPrevioPropuesto(s);
+  let clase = '', pill = ['esp-esperando', 'esperando ruptura'];
+  if(z.estado === 'dentro'){ clase = 'esp-lista'; pill = ['esp-ok', 'dentro de la zona']; }
+  else if(z.estado === 'sobre'){ pill = ['esp-sobre', 'sobre la zona']; }
+  else if(vencida){ clase = 'esp-caducada'; pill = ['esp-vencida', `caducó hace ${Math.abs(restantes)} d`]; }
+  const dec = moneda === 'USD' ? 2 : 0;
+  const estadoTxt = z.estado === 'dentro' ? 'Dentro de la zona: compra válida al cierre, si se cumplen las condiciones.'
+    : z.estado === 'sobre' ? `Cerró ${fmtNum(z.distPct, 1)}% sobre el máximo previo, fuera de la zona: persigues el precio. Espera un retroceso a la zona.`
+    : z.estado === 'bajo' ? `A ${fmtNum(-z.distPct, 1)}% de su máximo previo: todavía no rompe. No te anticipes.`
+    : '';
+  const vol = volumenCierre(s);
+  return `<div class="esp-row ${clase}" data-esp="${tk}">
+      <div class="esp-head">
+        <span class="esp-tk" data-accion="esp-abrir" data-ticker="${tk}">${tk}</span>
+        <span style="font-size:10.5px;color:var(--ink-faint);">${s ? s.name : ''}</span>
+        ${enWatch ? '<span class="esp-watch" title="No está en tu grilla: la app le pide precio aparte, gracias a tu watchlist personal">watchlist</span>' : ''}
+        <span class="esp-estado ${pill[0]}">${pill[1]}</span>
+      </div>
+      <div class="esp-cond">
+        ${reg.condicion ? reg.condicion.replace(/</g,'&lt;') : 'Esperando la ruptura de su máximo previo.'}
+        ${estadoTxt ? `<br><b>${estadoTxt}</b>` : ''}
+        ${z.cierre && z.cierre.ahora !== null && z.cierre.ahora !== undefined ? `<br><span style="color:var(--ink-faint);">Ahora: ${fmtMoneda2(z.cierre.ahora, moneda)} (intradía, no cuenta).</span>` : ''}
+        ${restantes !== null && !vencida ? `<br><span style="color:var(--ink-faint);">Quedan ${restantes} días de los ${reg.dias || ESPERA_DIAS_DEFAULT}.</span>` : ''}
+        ${conPos ? `<br><span style="color:var(--copper);">Ya tienes esta acción — sácala de esta lista; su stop vive en Mi Cartera.</span>` : ''}
+      </div>
+      ${barraZonaHTML(z, moneda)}
+      <div class="zona-datos">
+        <label for="espMax-${tk}">Máximo previo${reg.maxPrevioOrigen === 'propuesto' ? ' <span style="color:var(--ink-faint);">(propuesto: máx. de 30 semanas)</span>' : ''}</label>
+        <input type="number" step="any" min="0" id="espMax-${tk}" data-esp-maxprevio="${tk}"
+               value="${typeof reg.maxPrevio === 'number' ? reg.maxPrevio : ''}" placeholder="${prop !== null ? prop : 'sin dato'}"
+               title="Queda fijo hasta que lo cambies. Vacío = sin zona.">
+        ${(prop !== null && reg.maxPrevio !== prop)
+          ? `<button type="button" class="esp-usar" data-esp-usar-max="${tk}" data-valor="${prop}">usar máx. de 30 semanas · ${fmtMoneda2(prop, moneda)}</button>` : ''}
+        ${z.zona ? `<span>Zona de compra (+${ZONA_PCT}%)</span><span class="zd-v">${fmtNum(z.zona.desde, dec)} – ${fmtNum(z.zona.hasta, dec)}</span>` : ''}
+        ${vol ? `<span>Volumen del último cierre <span style="color:var(--ink-faint);">(dato)</span></span><span class="zd-v">${fmtNum(vol.veces, 1)}× su prom. 50 días</span>` : ''}
+      </div>
+      ${condicionesHTML(condicionesCompra(tk, reg, s))}
+      <div class="esp-btns">
+        ${vencida ? `<button data-accion="esp-renovar" data-ticker="${tk}">Renovar ${ESPERA_DIAS_DEFAULT} días</button>` : ''}
+        <button data-accion="esp-editar" data-ticker="${tk}">Cambiar condición</button>
+        <button data-accion="esp-sacar" data-ticker="${tk}">Sacar de la lista</button>
+      </div>
+    </div>`;
+}
+
+// Crea (o reemplaza) una espera en modo ruptura. Manda lo escrito; si va en
+// blanco entra el propuesto, y si todavía no hay propuesto queda pendiente
+// hasta que llegue el historial (fijarMaxPreviosPendientes).
+function guardarRuptura(tk, maxPrevio, cond, dias){
+  const s = todosLosStocks().find(x => x.ticker === tk);
+  const escrito = (typeof maxPrevio === 'number' && isFinite(maxPrevio) && maxPrevio > 0) ? maxPrevio : null;
+  const prop = maxPrevioPropuesto(s);
+  espera[tk] = {
+    modo: 'ruptura',
+    maxPrevio: escrito !== null ? escrito : prop,
+    maxPrevioOrigen: escrito !== null ? 'escrito' : (prop !== null ? 'propuesto' : 'pendiente'),
+    condicion: cond || '',
+    desde: hoyISO(),
+    dias: dias || ESPERA_DIAS_DEFAULT,
+  };
+  guardarEspera();
+  sincronizarAlertasPrecio();
+  if(ambienteActivo === 'seguir' && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir();
+  if(ambienteActivo === 'explorar' && typeof renderAmbienteExplorar === 'function') renderAmbienteExplorar();
+}
+
+// Una ruptura agregada antes de que llegara el historial (candidata recién
+// mandada a la watchlist) queda con el máximo "pendiente". Apenas hay
+// propuesto se fija UNA vez; después ya no se mueve solo. Si Cristian vació
+// el campo a propósito ('vacio'), no se rellena.
+function fijarMaxPreviosPendientes(){
+  let cambio = false;
+  Object.entries(espera).forEach(([tk, reg]) => {
+    if(!esRuptura(reg) || reg.maxPrevio !== null || reg.maxPrevioOrigen !== 'pendiente') return;
+    const prop = maxPrevioPropuesto(todosLosStocks().find(x => x.ticker === tk));
+    if(prop === null) return;
+    reg.maxPrevio = prop; reg.maxPrevioOrigen = 'propuesto'; cambio = true;
+  });
+  if(cambio){ guardarEspera(); sincronizarAlertasPrecio(); }
+  return cambio;
+}
+
 function esperaHTML(){
   const tickers = Object.keys(espera).sort();
   const filas = tickers.map(tk => {
@@ -9217,6 +9635,7 @@ function esperaHTML(){
       ? `${fmtNum((precioHoy / reg.precio - 1) * 100, 1)}%` : null;
 
     const enWatch = estaEnWatchlist(tk);
+    if(esRuptura(reg)) return esperaRupturaHTML(tk, reg, s, moneda, restantes, vencida, conPos, enWatch);
     const prop = precioPropuestoEntrada(tk);
     return `<div class="esp-row ${clase}" data-esp="${tk}">
       <div class="esp-head">
@@ -9258,9 +9677,10 @@ function esperaHTML(){
 
   return `<div class="plat-block">
     <div class="esp-form">
+      <select id="espModo" title="Ruptura: espera que cierre en la zona (máximo previo a +4 %). Precio: avisa cuando cruza un precio, a cualquier hora."><option value="ruptura">esperar ruptura</option><option value="precio">precio de entrada</option></select>
       <select id="espTicker" style="flex:1; min-width:150px;"><option value="">Elige una acción…</option>${opciones}</select>
-      <select id="espDir"><option value="baja">cuando baje a</option><option value="sube">cuando suba a</option></select>
-      <input type="number" id="espPrecio" placeholder="Precio" step="any" min="0" style="width:100px;">
+      <select id="espDir" style="display:none;"><option value="baja">cuando baje a</option><option value="sube">cuando suba a</option></select>
+      <input type="number" id="espPrecio" placeholder="Máximo previo" step="any" min="0" style="width:110px;">
       <input type="text" id="espCond" placeholder="¿Qué esperas? (ej: vuelva a su media 50)" style="flex:1; min-width:170px;">
       <button class="mov-btn" id="espAgregar">Agregar</button>
     </div>
@@ -9308,6 +9728,19 @@ function refrescarSugerenciaEspera(){
   const sel = document.getElementById('espTicker');
   const inp = document.getElementById('espPrecio');
   if(!sel || !inp) return;
+  const modoEl = document.getElementById('espModo');
+  const dirEl = document.getElementById('espDir');
+  const ruptura = !modoEl || modoEl.value === 'ruptura';
+  if(dirEl) dirEl.style.display = ruptura ? 'none' : '';
+  if(ruptura){
+    const s = todosLosStocks().find(x => x.ticker === sel.value);
+    const p = maxPrevioPropuesto(s);
+    inp.placeholder = p !== null ? String(p) : 'Máximo previo';
+    inp.title = p !== null
+      ? `Si lo dejas en blanco se usa ${fmtMoneda2(p, s.currency === 'USD' ? 'USD' : 'CLP')}, el máximo intradía de las 30 semanas anteriores.`
+      : 'El máximo previo: el techo de la base que tiene que romper.';
+    return;
+  }
   const p = precioPropuestoEntrada(sel.value);
   // El placeholder muestra el número propuesto sin escribirlo: el campo sigue
   // vacío, que es justo lo que activa la regla de arriba.
@@ -9723,6 +10156,7 @@ function planInversionHTML(){
 function renderAmbienteSeguir(){
   const viewEl = document.getElementById('viewSeguir');
   if(!viewEl) return;
+  fijarMaxPreviosPendientes();
   const d = calcularPatrimonioConsolidado();
   const { oculto, cambioOk, portClp, portUsd, valorClp, cajaClp, cajaUsd, totalCompleto, rentaVariableClp, patrimonioTotalClp } = d;
 
@@ -9741,6 +10175,8 @@ function renderAmbienteSeguir(){
   // función) -- Explorar la reusa tal cual.
   const selEsp = document.getElementById('espTicker');
   if(selEsp) selEsp.addEventListener('change', refrescarSugerenciaEspera);
+  const selModo = document.getElementById('espModo');
+  if(selModo) selModo.addEventListener('change', refrescarSugerenciaEspera);
   refrescarSugerenciaEspera();
 
   const btnAgregar = document.getElementById('espAgregar');
@@ -9752,6 +10188,13 @@ function renderAmbienteSeguir(){
         alert(`Ya tienes ${tk} comprada.\n\n`
             + 'En una acción que ya tienes, la alerta de precio es tu STOP (la media 50). '
             + 'Ponerle acá un precio de entrada te borraría el stop sin avisar, así que no se puede.');
+        return;
+      }
+      // Modo ruptura: el número del campo es el MÁXIMO PREVIO (manda lo
+      // escrito; en blanco, el máximo intradía de 30 semanas).
+      if((document.getElementById('espModo') || {}).value === 'ruptura'){
+        const mp = parseFloat(document.getElementById('espPrecio').value);
+        guardarRuptura(tk, (isFinite(mp) && mp > 0) ? mp : null, document.getElementById('espCond').value.trim());
         return;
       }
       // LA REGLA: manda lo escrito; si el campo va en blanco, entra el
@@ -9803,6 +10246,31 @@ function renderAmbienteSeguir(){
       renderAmbienteSeguir();
     });
   });
+  // Máximo previo de una espera en modo ruptura. Igual que el precio: se
+  // guarda al salir del campo. Vaciarlo deja la acción sin zona a propósito.
+  viewEl.querySelectorAll('[data-esp-maxprevio]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const tk = inp.dataset.espMaxprevio, reg = espera[tk];
+      if(!reg) return;
+      const v = parseFloat(inp.value);
+      reg.maxPrevio = (isFinite(v) && v > 0) ? v : null;
+      reg.maxPrevioOrigen = reg.maxPrevio === null ? 'vacio' : 'escrito';
+      guardarEspera();
+      sincronizarAlertasPrecio();
+      renderAmbienteSeguir();
+    });
+  });
+  viewEl.querySelectorAll('[data-esp-usar-max]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const reg = espera[btn.dataset.espUsarMax];
+      if(!reg) return;
+      reg.maxPrevio = parseFloat(btn.dataset.valor);
+      reg.maxPrevioOrigen = 'propuesto';
+      guardarEspera();
+      sincronizarAlertasPrecio();
+      renderAmbienteSeguir();
+    });
+  });
   viewEl.querySelectorAll('[data-esp-media]').forEach(btn => {
     btn.addEventListener('click', () => {
       const inp = viewEl.querySelector(`[data-esp-precio="${btn.dataset.espMedia}"]`);
@@ -9850,6 +10318,12 @@ function renderAmbienteSeguir(){
       const tk = btn.dataset.ticker, reg = espera[tk] || {};
       const cond = prompt(`¿Qué estás esperando que pase con ${tk}?`, reg.condicion || '');
       if(cond === null) return;
+      if(esRuptura(reg)){   // en ruptura el número es el máximo previo, y se edita en la fila
+        reg.condicion = cond.trim();
+        guardarEspera();
+        renderAmbienteSeguir();
+        return;
+      }
       const pStr = prompt(`Precio objetivo para ${tk} (deja vacío si no quieres alerta):`,
                           reg.precio !== null && reg.precio !== undefined ? String(reg.precio) : '');
       if(pStr === null) return;
@@ -10252,6 +10726,26 @@ function sincronizarAlertasPrecio(inmediato){
       const s = todosLosStocks().find(x => x.ticker === ticker);
       objetivos[ticker] = { sube, baja, mercado: (s && s.currency === 'USD') ? 'USD' : 'CLP' };
     });
+    // Clases Acciones USA (30-oct-2026): la zona de cada espera en modo
+    // ruptura (el servidor avisa al cierre si cerró dentro) y la posición de
+    // cada acción que tienes -- costo promedio y fecha de inicio -- para que
+    // avise al cierre si el stop puede subir. Cripto queda fuera: su
+    // historial va en dólares y la posición en pesos.
+    Object.entries(espera).forEach(([ticker, reg]) => {
+      if(!esRuptura(reg) || tienePosicion(ticker)) return;
+      const s = todosLosStocks().find(x => x.ticker === ticker);
+      const mon = (s && s.currency === 'USD') ? 'USD' : 'CLP';
+      const zona = zonaDeRegistro(reg, mon);
+      if(!zona) return;
+      objetivos[ticker] = Object.assign(objetivos[ticker] || {sube: null, baja: null, mercado: mon}, {zona});
+    });
+    [['CLP', 'chile'], ['USD', undefined]].forEach(([mon, amb]) => {
+      Object.values(calcularPortafolio(mon, amb)).forEach(p => {
+        if(!(p.netoQ > 0) || !(p.costoPromedio > 0) || !p.fechaInicio || esTickerCripto(p.ticker)) return;
+        objetivos[p.ticker] = Object.assign(objetivos[p.ticker] || {sube: null, baja: null, mercado: mon},
+                                            {pos: {compra: p.costoPromedio, desde: p.fechaInicio}});
+      });
+    });
     fetch(BACKEND_URL + '/alertas-precio', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -10627,44 +11121,18 @@ function renderAmbienteCartera(){
   // porque la línea de estado del detalle propone el MISMO stop. Dos
   // constantes con el mismo valor en dos lados es exactamente cómo se
   // termina con la app sugiriendo 2% bajo la media en un lado y 3% en otro.
+  // 30-oct-2026 (Clases Acciones USA): la media 50 queda SOLO COMO DATO, a
+  // pedido de Cristian. El stop que se propone es uno solo -- el de la clase
+  // o el móvil del 7 %, ver stopPropuestoPosicion() --; acá ya no hay botón.
   function sugerenciaStopHTML(s, pos, obj, currency){
     const held = pos && pos.netoQ > 0;
     if(!held) return '';
     const ma = (typeof s.sma50 === 'number' && isFinite(s.sma50) && s.sma50 > 0) ? s.sma50 : null;
     if(ma === null) return '';
     const precio = (typeof s.price === 'number') ? s.price : null;
-
-    if(precio !== null && precio < ma){
-      return `<div class="cartera-sug-nota">Cerró bajo su media 50 (${fmtMoneda2(ma, currency)}).
-              Acá no hay stop que mover: es una salida.</div>`;
-    }
-    // Se redondea ANTES de comparar. Si se compara el valor crudo contra el
-    // stop ya guardado, la sugerencia nunca se apaga: despues de tocar el
-    // boton quedan 184.63 guardados contra 184.632 propuestos, y el boton
-    // seguiria diciendo "subir stop" para siempre por tres milesimas.
-    const propuesto = ma * MARGEN_STOP;
-    const redondeado = currency === 'CLP' ? Math.round(propuesto) : Math.round(propuesto * 100) / 100;
-    const actual = (obj.baja !== null && obj.baja !== undefined && obj.baja !== '')
-      ? Number(obj.baja) : null;
-    if(actual !== null && redondeado <= actual){
-      const yaEsta = Math.abs(redondeado - actual) < 1e-9;
-      return `<div class="cartera-sug-nota">${yaEsta
-        ? `Tu stop ya está donde manda la media 50 (${fmtMoneda2(ma, currency)}). Cuando la media suba, acá te aviso.`
-        : `Media 50 en ${fmtMoneda2(ma, currency)} — queda bajo tu stop, así que se mantiene.
-           El stop sube o se queda, nunca baja.`}</div>`;
-    }
-    // Contra el precio de COMPRA (16-oct-2026), igual que el resto del riesgo.
-    const riesgoSugeridoPct = (pos.costoPromedio > 0) ? (pos.costoPromedio - redondeado) / pos.costoPromedio * 100 : null;
-    const riesgo = riesgoSugeridoPct === null ? '' : (riesgoSugeridoPct < 0
-      ? ` · asegura +${fmtNum(-riesgoSugeridoPct, 1)}% sobre tu compra`
-      : ` · arriesgas ${fmtNum(riesgoSugeridoPct, 1)}% de tu compra${riesgoSugeridoPct > RIESGO_MAX_PCT ? ` ⚠ supera ${RIESGO_MAX_PCT}%` : ''}`);
-    return `<div class="cartera-sug">
-      <button type="button" class="stop-sug" data-accion="usar-sma" data-ticker="${s.ticker}"
-              data-valor="${redondeado}"
-              title="Pone ${fmtMoneda2(redondeado, currency)} en 'Vta si baja' (2% bajo la media 50 de ${fmtMoneda2(ma, currency)})">
-        <span>Media 50 · <span class="ss-val">${fmtMoneda2(redondeado, currency)}</span>${riesgo}</span>
-        <span class="ss-cta">${actual === null ? 'poner stop' : 'subir stop'}</span>
-      </button></div>`;
+    const dist = precio !== null ? (precio / ma - 1) * 100 : null;
+    return `<div class="cartera-sug-nota">Media 50: ${fmtMoneda2(ma, currency)} · dato${
+      dist !== null ? ` (el precio está ${fmtNum(Math.abs(dist), 1)}% ${dist >= 0 ? 'sobre' : 'bajo'} ella)` : ''}.</div>`;
   }
 
   const filaCartera = (s, pos, currency) => {
@@ -10747,27 +11215,29 @@ function renderAmbienteCartera(){
     // 16-oct-2026: el stop del tope sale del PRECIO DE COMPRA, no del de hoy.
     // "arriesgas $X" es lo que perderías sobre lo que pagaste. Si el precio
     // de hoy ya está bajo ese stop, no se propone un número: es una salida.
-    // Stop móvil: 7% bajo max(compra, cierre más alto desde la compra, hoy).
-    const maxHist = (held && pos.fechaInicio) ? maxHistDesdeCompra(s.ticker, pos.fechaInicio) : null;
-    const refStop = (valorPos !== null && costoCompra !== null)
-      ? Math.max(costoCompra, ...[maxHist, precioActual].filter(v => typeof v === 'number' && v > 0)) : null;
-    const refEsCompra = refStop !== null && refStop <= costoCompra;
-    const stop8crudo = refStop !== null ? refStop * (1 - RIESGO_MAX_PCT / 100) : null;
-    const stop8bruto = stop8crudo === null ? null
-      : (currency === 'CLP' ? Math.ceil(stop8crudo) : Math.ceil(stop8crudo * 100) / 100);
+    // Stop propuesto (30-oct-2026): el más alto entre el stop inicial de la
+    // clase y el stop móvil del 7 %. Ver stopPropuestoPosicion().
+    const propPos = (valorPos !== null && costoCompra !== null) ? stopPropuestoPosicion(s, pos, currency) : null;
+    const refStop = propPos ? propPos.ref : null;
+    const refEsCompra = !!(propPos && propPos.refEsCompra);
+    const stop8bruto = propPos ? propPos.valor : null;
+    const mandaSoporte = !!(propPos && propPos.manda === 'soporte');
+    const etiquetaStop = mandaSoporte ? 'Stop de la clase' : `Stop móvil ${RIESGO_MAX_PCT}%`;
     const stop8bajoHoy = stop8bruto !== null && stop8bruto >= precioActual;
     const stop8 = (stop8bruto !== null && stop8bruto > 0 && stop8bruto < precioActual) ? stop8bruto : null;
     const perdida8 = stop8 !== null ? (costoCompra - stop8) * pos.netoQ : null;
     // ¿Ya está puesto? El stop nunca baja: si el guardado es igual o mayor,
     // no hay nada que proponer.
     const stop8yaPuesto = stop8 !== null && bajaNum !== null && bajaNum >= stop8 - 1e-9;
-    const baseStopTxt = refEsCompra ? `tu compra (${fmtMoneda2(costoCompra, currency)})`
-      : `el máximo desde tu compra (${fmtMoneda2(refStop, currency)})`;
+    const baseStopTxt = mandaSoporte
+      ? `mínimo de las 2 semanas antes de tu compra (${fmtMoneda2(propPos.min10Compra, currency)})`
+      : '7% bajo ' + (refEsCompra ? `tu compra (${fmtMoneda2(costoCompra, currency)})`
+                                  : `el máximo desde tu compra (${fmtMoneda2(refStop, currency)})`);
     const stopMovilHTML = stop8 === null ? '' : `<div class="cartera-sug">${stop8yaPuesto
-      ? `<div class="cartera-sug-nota">Stop móvil ${RIESGO_MAX_PCT}%: ${fmtMoneda2(stop8, currency)}, 7% bajo ${baseStopTxt}. Tu stop ya está ahí o más arriba.</div>`
+      ? `<div class="cartera-sug-nota">${etiquetaStop}: ${fmtMoneda2(stop8, currency)}, ${baseStopTxt}. Tu stop ya está ahí o más arriba.</div>`
       : `<button type="button" class="stop-sug" data-accion="usar-sma" data-ticker="${s.ticker}" data-valor="${stop8}"
-              title="Pone ${fmtMoneda2(stop8, currency)} en 'Vta si baja' (${RIESGO_MAX_PCT}% bajo ${refEsCompra ? 'tu compra' : 'el máximo desde tu compra'})">
-          <span>Stop móvil ${RIESGO_MAX_PCT}% · <span class="ss-val">${fmtMoneda2(stop8, currency)}</span> · 7% bajo ${baseStopTxt}${
+              title="Pone ${fmtMoneda2(stop8, currency)} en 'Vta si baja' (${baseStopTxt})">
+          <span>${etiquetaStop} · <span class="ss-val">${fmtMoneda2(stop8, currency)}</span> · ${baseStopTxt}${
             perdida8 > 0 ? ` · arriesgas ${fmtMoneda(perdida8, oculto, currency)}`
                          : ` · asegura +${fmtNum((stop8 / costoCompra - 1) * 100, 1)}% sobre tu compra`}</span>
           <span class="ss-cta">${bajaNum === null ? 'poner stop' : 'subir stop'}</span>
@@ -10776,7 +11246,7 @@ function renderAmbienteCartera(){
       perdidaHoy !== null
         ? `Pones en juego <b>${fmtMoneda(perdidaHoy, oculto, currency)}</b> de ${fmtMoneda(valorPos, oculto, currency)}`
         : `Tu posición vale <b>${fmtMoneda(valorPos, oculto, currency)}</b>`
-      }${stop8bajoHoy ? ` · el precio ya cayó bajo tu stop móvil del ${RIESGO_MAX_PCT}% (${fmtMoneda2(stop8bruto, currency)}): es una salida` : ''}</div>${stopMovilHTML}`;
+      }${stop8bajoHoy ? ` · el precio ya cayó bajo el stop propuesto (${fmtMoneda2(stop8bruto, currency)}): es una salida` : ''}</div>${stopMovilHTML}`;
 
     // Dónde está comprada: el chip de la corredora al final de la línea de
     // la posición. Con una sola plataforma va el chip pelado; con dos o más
@@ -13362,6 +13832,7 @@ function hydrateFromCache(){
     s.previousClose = q.previousClose ?? null;
     s.ema21 = q.ema21 ?? null;
     s.sma200 = q.sma200 ?? null;
+    copiarCamposClase(s, q);
     s.zscore = q.zscore ?? null;
     s.marketTime = q.marketTime || null;
     s.bid = null; s.ask = null; s.bidSize = null; s.askSize = null;
@@ -13448,6 +13919,7 @@ async function fetchRealQuotes(){
         s.previousClose = (typeof q.previousClose === 'number') ? q.previousClose : null;
         s.ema21 = (typeof q.ema21 === 'number') ? q.ema21 : null;
         s.sma200 = (typeof q.sma200 === 'number') ? q.sma200 : null;
+        copiarCamposClase(s, q);
         s.zscore = (typeof q.zscore === 'number') ? q.zscore : null;
         s.staleSeconds = (typeof q.staleSeconds === 'number') ? q.staleSeconds : null;
         s.marketTime = q.marketTime || null;
@@ -13552,6 +14024,7 @@ async function fetchRealQuotesUsa(){
       }
       s.ema21 = (typeof q.ema21 === 'number') ? q.ema21 : null;
       s.sma200 = (typeof q.sma200 === 'number') ? q.sma200 : null;
+      copiarCamposClase(s, q);
       s.zscore = (typeof q.zscore === 'number') ? q.zscore : null;
       s.staleSeconds = (typeof q.staleSeconds === 'number') ? q.staleSeconds : null;
       s.marketTime = q.marketTime || null;
@@ -13664,6 +14137,7 @@ async function fetchRealQuotesUsa(){
       renderAnalysis();
       renderResumenPortafolio();
       refrescarFranjasMercado();
+      if(fijarMaxPreviosPendientes() && ambienteActivo === 'seguir') renderAmbienteSeguir();
     }
   } catch(e){
     console.warn('No se pudo obtener /quotes-usa real:', e);
