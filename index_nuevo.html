@@ -660,6 +660,20 @@
   .asig-bar-objetivo{position:absolute; top:-2px; width:2px; height:12px; background:var(--ink);}
   .asig-tesis{width:100%; margin-top:6px; font-size:11.5px; padding:6px 8px; border-radius:6px; border:1px solid var(--hairline); background:var(--bg-field); color:var(--ink); resize:vertical; min-height:36px; font-family:inherit;}
   .asig-fuera{color:var(--copper);}
+  /* Semáforo de mercado (Clases Acciones USA, 29-oct-2026): VOO contra su
+     media de 200 días al último cierre. Solo informa, no bloquea nada. */
+  .mercado-franja{display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border-radius:10px;
+                  margin:0 0 12px; font-size:12px; line-height:1.45; border:1px solid var(--hairline);
+                  background:var(--bg-panel);}
+  .mercado-franja .mf-punto{width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:4px; background:var(--ink-faint);}
+  .mercado-franja .mf-titulo{font-weight:600;}
+  .mercado-franja .mf-det{color:var(--ink-dim);}
+  .mercado-franja.mf-sano{border-color:var(--verdigris); background:var(--verdigris-soft);}
+  .mercado-franja.mf-sano .mf-punto{background:var(--verdigris);}
+  .mercado-franja.mf-sano .mf-titulo{color:var(--verdigris);}
+  .mercado-franja.mf-debil{border-color:var(--copper); background:var(--copper-soft);}
+  .mercado-franja.mf-debil .mf-punto{background:var(--copper);}
+  .mercado-franja.mf-debil .mf-titulo{color:var(--copper);}
   /* Sizing de posiciones (planilla de riesgo por operación, portada a la
      ficha de cada acción). Mismo patrón visual que asig-box: un <details>
      con inputs numéricos chicos y un resultado abajo. */
@@ -1799,9 +1813,9 @@
           <div class="glos-item">
             <b>Peso objetivo y tope por posición</b>
             <p>Cuánto <i>debería</i> pesar cada posición dentro del total, y el máximo que
-            aceptas que pese una sola (por defecto 15 %). Se mide siempre sobre el
+            aceptas que pese una sola (10 % por defecto; se cambia en la pestaña Riesgo). Se mide siempre sobre el
             <b>total</b>, nunca por plataforma: una posición que pesa 24 % dentro de Racional
-            pero 15 % del total es una posición de 15 %. El riesgo es tuyo, no de la corredora.</p>
+            pero 8 % del total es una posición de 8 %. El riesgo es tuyo, no de la corredora.</p>
           </div>
 
           <div class="glos-item">
@@ -6763,7 +6777,7 @@ let caja = cargarCaja();
 //
 // DECISION DE DISEÑO, la mas importante de este bloque
 // =====================================================
-// Los PESOS y el TOPE del 15% se calculan sobre el patrimonio TOTAL, no por
+// Los PESOS y el TOPE por posicion se calculan sobre el patrimonio TOTAL, no por
 // plataforma. El riesgo es de Cristian, no de la plataforma: una posicion
 // que pesa 24% dentro de Racional pero 15% del total es una posicion de 15%,
 // y medirla por plataforma daria una alarma falsa (o taparia una real).
@@ -7225,18 +7239,47 @@ let sizingPanelAbierto = false;
 // Paso 2 de la planilla: lo que sale solo, sin que Cristian tenga que
 // decidir nada más. R = cuánto arriesgas POR posición si el plan es que
 // TODAS las posiciones toquen el stop a la vez.
+//
+// TOPE ÚNICO POR POSICIÓN (Clases Acciones USA, 29-oct-2026). El techo del
+// sizing es el MISMO "Máx. por posición %" de la pestaña Riesgo
+// (asignacion.maxPorPosicion, 10 % por defecto), ya no 1 ÷ Nº de posiciones:
+// un solo número de "cuánto es demasiado" en toda la app. El Nº de
+// posiciones queda solo para repartir la pérdida total (R).
+// try/catch y no typeof: `asignacion` es un `let` declarado más abajo, y
+// typeof sobre un let en zona muerta revienta igual.
+function topePorPosicionPct(){
+  try { const v = Number(asignacion.maxPorPosicion); return (isFinite(v) && v > 0) ? v : 0; }
+  catch(e){ return 0; }
+}
 function sizingGlobal(cfg){
   const R_pct = cfg.nPosiciones > 0 ? cfg.perdidaTotal / cfg.nPosiciones : null;
   const R_usd = (R_pct !== null && typeof cfg.carteraValor === 'number' && cfg.carteraValor > 0)
     ? cfg.carteraValor * R_pct : null;
-  const pesoObjetivo = cfg.nPosiciones > 0 ? 1 / cfg.nPosiciones : null;
+  const tope = topePorPosicionPct();
+  const topePos = tope > 0 ? tope / 100 : (cfg.nPosiciones > 0 ? 1 / cfg.nPosiciones : null);
   const techoPorGap = cfg.gapEsperado > 0 ? cfg.paramGap / cfg.gapEsperado : null;
-  const techoEfectivo = (pesoObjetivo !== null && techoPorGap !== null) ? Math.min(pesoObjetivo, techoPorGap) : null;
-  return { R_pct, R_usd, pesoObjetivo, techoPorGap, techoEfectivo };
+  const techoEfectivo = (topePos !== null && techoPorGap !== null) ? Math.min(topePos, techoPorGap) : topePos;
+  return { R_pct, R_usd, topePos, techoPorGap, techoEfectivo };
+}
+
+// FRACCIONES (Clases Acciones USA, 29-oct-2026). Antes el sizing redondeaba
+// a acciones enteras: con US$1.000 para una acción de US$604 decía "1" (6 %
+// de la cartera) en vez de 1,66 (10 %). Racional e Interactive Brokers
+// compran fracciones, así que en dólares y cripto se calcula con hasta
+// SIZING_MAX_DEC decimales; Chile sigue en enteras (decCantidadDeTicker da
+// 0). Siempre HACIA ABAJO: el sizing nunca propone arriesgar más de lo que
+// permite el cálculo.
+const SIZING_MAX_DEC = 6;
+function decSizing(ticker){ return Math.min(SIZING_MAX_DEC, decCantidadDeTicker(ticker)); }
+function bajarCantidad(v, decs){
+  if(!(v > 0)) return 0;
+  const f = Math.pow(10, decs || 0);
+  // El 1e-6 solo absorbe el error de coma flotante (2,9999999999996 -> 3).
+  return Math.floor(v * f + 1e-6) / f;
 }
 
 // Paso 3: ¿cuánto compro de una candidata que todavía no tengo?
-function sizingNueva(precio, stop, cfg, glob){
+function sizingNueva(precio, stop, cfg, glob, decs){
   if(typeof precio !== 'number' || precio <= 0 || typeof stop !== 'number' || glob.R_pct === null) return null;
   const distancia = (precio - stop) / precio;
   if(distancia <= 0){
@@ -7247,12 +7290,13 @@ function sizingNueva(precio, stop, cfg, glob){
   const compra = pesoFinal >= cfg.pisoOperativo;
   const sinCartera = !(typeof cfg.carteraValor === 'number' && cfg.carteraValor > 0);
   const monto = (compra && !sinCartera) ? cfg.carteraValor * pesoFinal : 0;
-  const nAcciones = monto > 0 ? Math.floor(monto / precio) : 0;
+  const nAcciones = monto > 0 ? bajarCantidad(monto / precio, decs) : 0;
   const riesgoUsd = nAcciones > 0 ? nAcciones * (precio - stop) : 0;
   const riesgoPct = (!sinCartera && riesgoUsd > 0) ? riesgoUsd / cfg.carteraValor : 0;
   const invertidoReal = nAcciones * precio;
   return {
     distancia, rd, pesoFinal, monto, nAcciones, riesgoUsd, riesgoPct, invertidoReal, sinCartera,
+    topePos: glob.topePos,
     veredicto: !compra ? 'NO_COMPRAS' : (sinCartera ? 'FALTA_CARTERA' : 'COMPRA'),
     mensaje: !compra
       ? 'Muy lejos de la media: el peso que le tocaría es menor que tu piso operativo.'
@@ -7261,7 +7305,7 @@ function sizingNueva(precio, stop, cfg, glob){
 }
 
 // Paso 4: ¿cuánto puedo aumentar en una que ya tengo?
-function sizingAumentar(nAcciones, costoInvertido, stop, precioHoy, cfg, glob){
+function sizingAumentar(nAcciones, costoInvertido, stop, precioHoy, cfg, glob, decs){
   if(typeof precioHoy !== 'number' || precioHoy <= 0 || typeof stop !== 'number'
      || typeof nAcciones !== 'number' || typeof costoInvertido !== 'number' || glob.R_usd === null) return null;
   if(precioHoy <= stop){
@@ -7270,9 +7314,9 @@ function sizingAumentar(nAcciones, costoInvertido, stop, precioHoy, cfg, glob){
   const riesgoActualUsd = Math.max(0, costoInvertido - nAcciones * stop);
   const riesgoActualPct = riesgoActualUsd / cfg.carteraValor;
   const espacioQueQueda = Math.max(0, glob.R_usd - riesgoActualUsd);
-  const porRiesgo = Math.floor(espacioQueQueda / (precioHoy - stop));
+  const porRiesgo = bajarCantidad(espacioQueQueda / (precioHoy - stop), decs);
   const techoPeso = glob.techoEfectivo !== null ? glob.techoEfectivo * cfg.carteraValor : 0;
-  const porPeso = Math.floor(Math.max(0, techoPeso - nAcciones * precioHoy) / precioHoy);
+  const porPeso = bajarCantidad(Math.max(0, techoPeso - nAcciones * precioHoy) / precioHoy, decs);
   const maxAcciones = Math.min(porRiesgo, porPeso);
   const monto = maxAcciones > 0 ? maxAcciones * precioHoy : 0;
   return {
@@ -7282,17 +7326,22 @@ function sizingAumentar(nAcciones, costoInvertido, stop, precioHoy, cfg, glob){
   };
 }
 
+function pctInputSiz(v){
+  // Para el value de un <input type="number">: punto decimal, hasta 2 decimales, sin ceros de más.
+  return (typeof v === 'number' && isFinite(v)) ? String(Math.round(v * 10000) / 100) : '';
+}
 function pct1Siz(v){ return fmtNum(v*100, 1) + '%'; }
 function filaSiz(pares){
   return pares.map(([k,v]) => `<div class="siz-fila"><span>${k}</span><span class="mono">${v}</span></div>`).join('');
 }
 
-function sizingNuevaHTML(r, moneda){
+function sizingNuevaHTML(r, moneda, ticker){
   if(!r) return `<div class="siz-vacio">Completa "Nº posiciones objetivo" y "pérdida total" para ver el cálculo.</div>`;
   if(r.veredicto === 'REVISA') return `<div class="siz-resultado siz-v-revisa">${r.mensaje}</div>`;
   const filas = [
     ['Distancia al stop', pct1Siz(r.distancia)],
     ['Peso que da R ÷ D', pct1Siz(r.rd)],
+    ['Tope por posición', r.topePos ? pct1Siz(r.topePos) : '—'],
     ['Peso final (el menor techo)', pct1Siz(r.pesoFinal)],
   ];
   if(r.veredicto === 'NO_COMPRAS'){
@@ -7305,7 +7354,7 @@ function sizingNuevaHTML(r, moneda){
     ${filaSiz(filas)}
     ${filaSiz([
       ['Monto a comprar', fmtMoneda2(r.monto, moneda)],
-      ['Nº de acciones', String(r.nAcciones)],
+      ['Nº de acciones', fmtCantidad(r.nAcciones, moneda, ticker)],
       ['Riesgo $', fmtMoneda2(r.riesgoUsd, moneda)],
       ['Riesgo % de tu cartera', pct1Siz(r.riesgoPct)],
       ['Invertido real', fmtMoneda2(r.invertidoReal, moneda)],
@@ -7314,7 +7363,7 @@ function sizingNuevaHTML(r, moneda){
   </div>`;
 }
 
-function sizingAumentarHTML(r, moneda){
+function sizingAumentarHTML(r, moneda, ticker){
   if(!r) return `<div class="siz-vacio">Escribe el valor de tu cartera para ver esto.</div>`;
   if(r.veredicto === 'REVISA') return `<div class="siz-resultado siz-v-revisa">${r.mensaje}</div>`;
   const filas = [
@@ -7328,7 +7377,7 @@ function sizingAumentarHTML(r, moneda){
   return `<div class="siz-resultado siz-v-compra">
     ${filaSiz(filas)}
     ${filaSiz([
-      ['Máx. acciones a comprar', String(r.maxAcciones)],
+      ['Máx. acciones a comprar', fmtCantidad(r.maxAcciones, moneda, ticker)],
       ['Monto', fmtMoneda2(r.monto, moneda)],
     ])}
     <div class="siz-veredicto siz-veredicto-ok">PUEDES AUMENTAR</div>
@@ -7348,12 +7397,15 @@ function sizingHTML(ticker){
   const inputsHTML = `
     <div class="siz-cfg">
       <label>Cartera (${moneda === 'USD' ? 'USD' : 'CLP'})<input type="number" id="sizCartera" class="mono" min="0" value="${sizing.carteraValor !== null ? sizing.carteraValor : ''}" placeholder="—"></label>
-      <label>Pérdida total si TODAS tocan el stop (%)<input type="number" id="sizPerdida" class="mono" min="0" max="100" value="${(sizing.perdidaTotal*100).toFixed(0)}"></label>
+      <label>Pérdida total si TODAS tocan el stop (%)<input type="number" id="sizPerdida" class="mono" min="0" max="100" step="any" inputmode="decimal" value="${pctInputSiz(sizing.perdidaTotal)}"></label>
       <label>Nº posiciones objetivo<input type="number" id="sizNPos" class="mono" min="1" value="${sizing.nPosiciones}"></label>
-      <label>Gap de desastre esperado (%)<input type="number" id="sizGap" class="mono" min="1" max="100" value="${(sizing.gapEsperado*100).toFixed(0)}"></label>
-      <label>Piso operativo (%)<input type="number" id="sizPiso" class="mono" min="0" max="100" value="${(sizing.pisoOperativo*100).toFixed(0)}"></label>
-      <label>Pérdida máx. tolerada en el gap (%)<input type="number" id="sizParamGap" class="mono" min="0" max="100" value="${(sizing.paramGap*100).toFixed(0)}"></label>
+      <label>Gap de desastre esperado (%)<input type="number" id="sizGap" class="mono" min="1" max="100" step="any" inputmode="decimal" value="${pctInputSiz(sizing.gapEsperado)}"></label>
+      <label>Piso operativo (%)<input type="number" id="sizPiso" class="mono" min="0" max="100" step="any" inputmode="decimal" value="${pctInputSiz(sizing.pisoOperativo)}"></label>
+      <label>Pérdida máx. tolerada en el gap (%)<input type="number" id="sizParamGap" class="mono" min="0" max="100" step="any" inputmode="decimal" value="${pctInputSiz(sizing.paramGap)}"></label>
     </div>
+    <div class="siz-guia-nota" style="margin:8px 0 0; font-size:10.5px; color:var(--ink-dim);">Tope por posición: <b>${topePorPosicionPct() > 0
+      ? fmtNum(topePorPosicionPct(), 0) + ' %' : 'sin configurar (se usa 1 ÷ Nº de posiciones)'}</b> — el mismo
+      "Máx. por posición" de la pestaña Riesgo; se cambia allá.</div>
     <div class="siz-guia">
       <table><tbody>
         <tr><td>Mega-cap diversificada (Apple, Microsoft, J&amp;J)</td><td>−20 a −25%</td></tr>
@@ -7370,11 +7422,11 @@ function sizingHTML(ticker){
     resultadoHTML = `<div class="siz-vacio">Todavía no hay media 50 para ${ticker}: sin eso no hay stop, y sin stop no hay cálculo.</div>`;
   } else if(held){
     const costoInvertido = (typeof pos.costoPromedio === 'number') ? pos.costoPromedio * pos.netoQ : null;
-    const r = (costoInvertido !== null) ? sizingAumentar(pos.netoQ, costoInvertido, stop, s.price, sizing, glob) : null;
-    resultadoHTML = sizingAumentarHTML(r, moneda);
+    const r = (costoInvertido !== null) ? sizingAumentar(pos.netoQ, costoInvertido, stop, s.price, sizing, glob, decSizing(ticker)) : null;
+    resultadoHTML = sizingAumentarHTML(r, moneda, ticker);
   } else {
-    const r = sizingNueva(s.price, stop, sizing, glob);
-    resultadoHTML = sizingNuevaHTML(r, moneda);
+    const r = sizingNueva(s.price, stop, sizing, glob, decSizing(ticker));
+    resultadoHTML = sizingNuevaHTML(r, moneda, ticker);
   }
 
   return `<details class="siz-box" id="sizDetails" ${sizingPanelAbierto ? 'open' : ''}>
@@ -8671,6 +8723,75 @@ function exportarExplorarExcel(finales, mano, etfs){
   descargarXlsx(`ipsa-explorar-${_hoyArchivo()}.xlsx`, hojas);
 }
 
+// ---- SEMÁFORO DE MERCADO (Clases Acciones USA, condición 3 · 29-oct-2026) ----
+// La clase: "si el S&P 500 está bajo su media de 200 días, no hay compras
+// nuevas". Acá SOLO INFORMA (decisión de Cristian): no bloquea Explorar, ni
+// el sizing, ni ninguna otra cosa.
+//
+// Se mira VOO y no SPY: siguen el mismo índice, y VOO ya está en la grilla
+// con su media 200 (SPY se dejó fuera a propósito, ver main.py). No cuesta
+// ninguna petición nueva.
+//
+// Se compara el ÚLTIMO CIERRE, no el precio del momento: con la rueda
+// abierta la franja cambiaría de color varias veces en el día. Con la NYSE
+// abierta (mismo horario y feriados que updateMarketStatusUsa) se usa el
+// cierre anterior; fuera de horario el precio que llega YA es el cierre.
+const MERCADO_REF = 'VOO';
+function bolsaNYAbierta(){
+  try {
+    const partes = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York', weekday: 'short', year: 'numeric', month: '2-digit',
+      day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(new Date());
+    const m = {};
+    partes.forEach(p => { m[p.type] = p.value; });
+    if(m.weekday === 'Sat' || m.weekday === 'Sun') return false;
+    if(typeof esFeriadoNyse === 'function' && esFeriadoNyse(`${m.year}-${m.month}-${m.day}`)) return false;
+    const min = (parseInt(m.hour, 10) % 24) * 60 + parseInt(m.minute, 10);
+    return min >= 9 * 60 + 30 && min < 16 * 60;
+  } catch(e){ return false; }
+}
+function estadoMercado(){
+  const s = todosLosStocks().find(x => x.ticker === MERCADO_REF);
+  if(!s) return null;
+  const sma = (typeof s.sma200 === 'number' && isFinite(s.sma200) && s.sma200 > 0) ? s.sma200 : null;
+  const precio = (typeof s.price === 'number' && isFinite(s.price) && s.price > 0) ? s.price : null;
+  const prev = (typeof s.previousClose === 'number' && isFinite(s.previousClose) && s.previousClose > 0) ? s.previousClose : null;
+  if(sma === null) return null;
+  const abierta = bolsaNYAbierta();
+  // Abierta y sin cierre anterior: se usa el precio del momento, pero la
+  // franja lo dice ("está", no "cerró") -- nunca se presenta como cierre.
+  const ref = abierta ? (prev !== null ? prev : precio) : precio;
+  if(ref === null) return null;
+  return { sano: ref > sma, ref, sma, distPct: (ref / sma - 1) * 100, esCierre: !abierta || prev !== null };
+}
+function mercadoFranjaHTML(){
+  const m = estadoMercado();
+  if(!m){
+    return `<div class="mercado-franja"><span class="mf-punto" aria-hidden="true"></span><div>
+      <span class="mf-titulo">Mercado: todavía sin dato.</span>
+      <span class="mf-det">Falta el precio o la media de 200 días de ${MERCADO_REF}; aparece con el próximo refresco de precios.</span></div></div>`;
+  }
+  const verbo = m.esCierre ? 'cerró' : 'está';
+  const det = `${MERCADO_REF} ${verbo} en ${fmtMoneda2(m.ref, 'USD')}; su media de 200 días va en ${fmtMoneda2(m.sma, 'USD')} (${m.distPct >= 0 ? '+' : ''}${fmtNum(m.distPct, 1)}%).`;
+  return m.sano
+    ? `<div class="mercado-franja mf-sano"><span class="mf-punto" aria-hidden="true"></span><div>
+        <span class="mf-titulo">Mercado sano</span>
+        <span class="mf-det">· el S&amp;P 500 ${verbo} sobre su media de 200 días. ${det}</span></div></div>`
+    : `<div class="mercado-franja mf-debil"><span class="mf-punto" aria-hidden="true"></span><div>
+        <span class="mf-titulo">Mercado débil</span>
+        <span class="mf-det">· el S&amp;P 500 ${verbo} bajo su media de 200 días: según la clase, así no se abren compras nuevas. ${det}</span></div></div>`;
+}
+// Repinta solo la franja (no el ambiente entero) cuando llegan precios de
+// EE.UU.: redibujar Explorar completo en cada refresco cerraría lo que
+// tengas desplegado.
+function refrescarFranjasMercado(){
+  ['mercadoFranjaExpl', 'mercadoFranjaSeguir'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = mercadoFranjaHTML();
+  });
+}
+
 function renderAmbienteExplorar(){
   const viewEl = document.getElementById('viewExplorar');
   if(!viewEl) return;
@@ -8717,6 +8838,7 @@ function renderAmbienteExplorar(){
 
   viewEl.innerHTML = `
     <p class="section-title" style="margin-top:0;">Explorar — primera alerta</p>
+    <div id="mercadoFranjaExpl">${mercadoFranjaHTML()}</div>
     <p class="expl-run-nota" style="margin-bottom:10px;">
       Barre el mercado de EE.UU. completo con el screener de TradingView (si no responde, el S&amp;P 500 + el Nasdaq-100 + tu grilla, 536 acciones), aplica el método completo
       — precio, tendencia, capitalización, crecimiento, fase de Weinstein y fuerza relativa — y te deja
@@ -9068,7 +9190,7 @@ function platformasHTML(portClp, portUsd, oculto, cambioOk){
     <p style="font-size:10.5px; color:var(--ink-faint); margin:10px 0 0; line-height:1.55;">
       Todo convertido a pesos con el tipo de cambio de arriba, solo para poder sumarlo.
       ${hayPrecioIncompleto ? '<b style="color:var(--copper);">Falta el precio real de alguna posición, así que estos totales están incompletos.</b>' : ''}
-      Los pesos objetivo y el tope del 15 % NO se miden por plataforma: se miden sobre el total,
+      Los pesos objetivo y el tope por posición NO se miden por plataforma: se miden sobre el total,
       porque el riesgo es tuyo y no de la corredora.</p>
   </div>`;
 }
@@ -9610,6 +9732,7 @@ function renderAmbienteSeguir(){
   // inversión.
   viewEl.innerHTML = `
     <p class="section-title" style="margin-top:0;">Esperando entrada — qué miro y qué espero que pase</p>
+    <div id="mercadoFranjaSeguir">${mercadoFranjaHTML()}</div>
     ${esperaHTML()}
   `;
 
@@ -10175,7 +10298,7 @@ let carteraListadoVisible = { chile: true, usa: true, etf: true, cripto: true };
 //  * UNA sola tabla, con Chile / EE.UU. / Cripto mezclados y la corredora
 //    como columna. El peso de una posicion se mide sobre el TOTAL (esa regla
 //    ya esta peleada en otra parte), asi que separar por pais obligaria a
-//    sumar tres tablas para saber si algo excede el tope del 15 %.
+//    sumar tres tablas para saber si algo excede el tope por posicion.
 //  * Valor, peso y "en juego" en PESOS, para poder sumarlos y compararlos;
 //    titulos, compra, hoy y stop en la moneda de cada papel. El stop de NVDA
 //    se escribe en dolares: verlo convertido a pesos no sirve para nada.
@@ -12410,7 +12533,7 @@ function cargarAsignacion(){
       chile:         (a && typeof a.chile === 'number') ? a.chile : 35,
       global:        (a && typeof a.global === 'number') ? a.global : 65,
       banda:         (a && typeof a.banda === 'number') ? a.banda : 5,
-      maxPorPosicion:(a && typeof a.maxPorPosicion === 'number') ? a.maxPorPosicion : 7,
+      maxPorPosicion:(a && typeof a.maxPorPosicion === 'number') ? a.maxPorPosicion : 10,
       // Extensión propia (no viene en el ejemplo de la spec): umbral de
       // caja ociosa por moneda para la regla "revisar para compra" del
       // ambiente 3. null = desactivado, nunca se inventa un umbral.
@@ -12418,7 +12541,7 @@ function cargarAsignacion(){
       umbralCajaUsd: (a && typeof a.umbralCajaUsd === 'number') ? a.umbralCajaUsd : null,
     };
   } catch(e){
-    return { rentaVariable:65, liquidez:35, chile:35, global:65, banda:5, maxPorPosicion:7, umbralCajaClp:null, umbralCajaUsd:null };
+    return { rentaVariable:65, liquidez:35, chile:35, global:65, banda:5, maxPorPosicion:10, umbralCajaClp:null, umbralCajaUsd:null };
   }
 }
 function guardarAsignacion(){
@@ -13026,7 +13149,7 @@ function aplicarRespaldo(nuevo, opciones){
   stateWatch = watchlist.map(w => nuevoStockWatch(w.ticker, w.name));
   sincronizarWatchlist();
 
-  const asigDefault = { rentaVariable:65, liquidez:35, chile:35, global:65, banda:5, maxPorPosicion:7, umbralCajaClp:null, umbralCajaUsd:null };
+  const asigDefault = { rentaVariable:65, liquidez:35, chile:35, global:65, banda:5, maxPorPosicion:10, umbralCajaClp:null, umbralCajaUsd:null };
   asignacion = (nuevo.asignacion && typeof nuevo.asignacion === 'object') ? Object.assign({}, asigDefault, nuevo.asignacion) : asigDefault;
   guardarAsignacion();
 
@@ -13540,6 +13663,7 @@ async function fetchRealQuotesUsa(){
       }
       renderAnalysis();
       renderResumenPortafolio();
+      refrescarFranjasMercado();
     }
   } catch(e){
     console.warn('No se pudo obtener /quotes-usa real:', e);
