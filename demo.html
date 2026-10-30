@@ -2243,6 +2243,11 @@
         sc: gana ? GANADORAS[t] : Math.round(r()*7),
         fr: gana ? 1 : (r() < 0.5 ? 1 : 0),
         se: se, in: ind, dg: 1, sf: esCripto ? 1 : 0,
+        // Clases USA (inventado, como todo): máximo de 30 semanas, mínimo de
+        // 10 sesiones y próximo reporte.
+        x30: esCripto ? null : Math.round(p * (gana ? 0.98 : 1.04) * 100) / 100,
+        m10: esCripto ? null : Math.round(p * 0.95 * 100) / 100,
+        rp: (!esCripto && r() < 0.3) ? '2026-11-0' + (3 + Math.floor(r() * 6)) : null,
       };
     });
   }
@@ -8668,7 +8673,7 @@ let explPaso = 0;                        // 0 = la alerta (el resultado), ver PA
 // compila igual y revienta recien al tocarlo, que es la peor forma de
 // fallar. Se guardan aca, junto al paso activo, que es el otro estado de
 // pantalla de este ambiente.
-let _explListas = {finales: [], mano: [], etfs: []};
+let _explListas = {finales: [], mano: [], etfs: [], fuera: [], meta: {}};
 let explCaidosAbiertos = {};             // qué etapas del embudo están desplegadas
 let explVerTodo = {};                    // '<etapa>|pasan' / '<etapa>|caen' -> mostrar la lista completa
 let explGrupoAbierto = null;             // 'sector|Tecnología' | 'industria|Semiconductores' | null
@@ -9245,10 +9250,10 @@ function explorarResultadoHTML(analisis){
              : `Se cortó por tiempo antes de terminar el núcleo: faltaron ${embudo.nucleoSaltadoPorTiempo} por revisar. Las candidatas salen solo de la parte que alcanzó, así que este número no significa nada todavía — vuelve a ejecutar.`;
            return `<span title="${tit.replace(/"/g,'&quot;')}">Núcleo: <b style="color:${embudo.nucleoCompleto ? 'var(--verdigris)' : 'var(--copper)'};">${embudo.nucleoRevisado}/${embudo.nucleoTotal}</b>${(embudo.nucleoCompleto && sinDatos.length) ? ` <span style="color:var(--ink-faint);">(${sinDatos.length} sin datos en Yahoo)</span>` : ''}</span>`;
          })() : ''}
-         ${embudo.rotacionMercado ? `<span title="El resto del mercado (fuera del núcleo) se cubre de a poco, corrida tras corrida: hoy le tocó desde este punto de esa lista, y mañana empieza en otro. No queda guardado en ningún lado -- se calcula solo con la fecha de hoy, así que no depende de que el servidor siga prendido entre corridas. Con el paso de hoy, una vuelta completa toma ~${embudo.rotacionMercado.periodoDias} días.">Resto del mercado hoy: <b>desde el ${embudo.rotacionMercado.offsetHoy}/${embudo.rotacionMercado.totalResto}</b> · vuelta en ~${embudo.rotacionMercado.periodoDias}d</span>` : ''}
+         ${(embudo.rotacionMercado && typeof embudo.bajoPisoTV !== 'number') ? `<span title="El resto del mercado (fuera del núcleo) se cubre de a poco, corrida tras corrida: hoy le tocó desde este punto de esa lista, y mañana empieza en otro. No queda guardado en ningún lado -- se calcula solo con la fecha de hoy, así que no depende de que el servidor siga prendido entre corridas. Con el paso de hoy, una vuelta completa toma ~${embudo.rotacionMercado.periodoDias} días.">Resto del mercado hoy: <b>desde el ${embudo.rotacionMercado.offsetHoy}/${embudo.rotacionMercado.totalResto}</b> · vuelta en ~${embudo.rotacionMercado.periodoDias}d</span>` : ''}
        </div>
        ${(a.sectoresFuertes && a.sectoresFuertes.length) ? `<div class="expl-tags">${a.sectoresFuertes.map(s=>`<span class="expl-tag">${s.replace(/</g,'&lt;')}</span>`).join('')}</div>` : ''}
-       ${(finales.length || mano.length || etfsFuerza.length) ? `<button type="button" class="expl-xls" data-expl-excel
+       ${(finales.length || mano.length || etfsFuerza.length || fueraFicha.length) ? `<button type="button" class="expl-xls" data-expl-excel
           title="Descarga estas mismas listas como planilla de Excel (.xlsx), con los umbrales que tienes puestos ahora">⬇ Excel</button>` : ''}
      </div>
      ${explFichaProgresoHTML(sobreviven.map(x => x.t))}
@@ -9312,9 +9317,11 @@ function explorarResultadoHTML(analisis){
 
   // Lo que quedo en pantalla, para que "⬇ Excel" exporte exactamente esto.
   _explListas = {finales: finales.reduce((acc, x) => acc.concat([Object.assign({}, x, {_estado:'candidata'})],
-                    (x._reservas || []).map(r => Object.assign({}, r, {_estado:'reserva de ' + x.t}))), [])
-                    .concat(fueraFicha.map(x => Object.assign({}, x, {_estado:'fuera por la ficha'}))),
-                  mano, etfs: etfsFuerza};
+                    (x._reservas || []).map(r => Object.assign({}, r, {_estado:'reserva de ' + x.t}))), []),
+                  fuera: fueraFicha.map(x => Object.assign({}, x, {_estado:'fuera por la ficha'})),
+                  mano, etfs: etfsFuerza,
+                  meta: {generado: analisis.generado, umbrales: Object.assign({}, explUmbrales),
+                         filtros: Object.assign({}, explFiltros)}};
 
   return `
     ${avisoDatos}
@@ -9325,6 +9332,8 @@ function explorarResultadoHTML(analisis){
       <summary class="expl-section-title" style="cursor:pointer; display:inline-block;">Datos de la corrida</summary>
       <div class="expl-embudo-pasos">
         Universo: <b>${embudo.universoTotal ?? '—'}</b> · Revisadas: <b>${embudo.revisadas ?? '—'}</b> (${embudo.cobertura ?? '—'}%) · Ya en caché al empezar: <b>${embudo.veniaEnCache ?? '—'}</b>
+        ${embudo.bajoPisoTV ? `<br><span style="color:var(--ink-faint);">Bajo el piso de TradingView, sin revisar a propósito: <b>${embudo.bajoPisoTV}</b>
+          (precio, capitalización o volumen bajo el mínimo del screener; no pueden pasar el embudo del método). La cobertura se mide contra el resto.</span>` : ''}
         ${ff ? `<br><span style="color:var(--ink-faint);">Fundamentales: <b>${ff.conCapitalizacion}</b> de ${ff.pedidos} con capitalización
           (${ff.porLote ?? 0} por lote) · crecimiento: <b>${ff.conCrecimientoTTM ?? 0}</b> en TTM, <b>${ff.conCrecimientoTrimestral ?? 0}</b> en trimestral.</span>` : ''}
         ${ff && ff.tradingview ? `<br><span style="color:var(--ink-faint);">Fuente principal: ${ff.tradingview.ok
@@ -9356,56 +9365,136 @@ function explorarResultadoHTML(analisis){
 // mismo plazo, ver _fuerza_vs_benchmark en explorar.py): +9,8 = le sacó
 // 9,8 puntos al índice. La pantalla solo muestra 12 meses; la planilla trae
 // además 1, 3 y 6, que el servidor ya calculaba.
-function exportarExplorarExcel(finales, mano, etfs){
-  finales = finales || []; mano = mano || []; etfs = etfs || [];
-  if(!finales.length && !mano.length && !etfs.length){ alert('No hay nada que exportar todavía.'); return; }
-  const hojas = [];
-  if(finales.length){
-    const filas = [['Ticker', 'Estado', 'Motor', 'Ficha (de 5)', 'Ficha con dato', 'Veredicto ficha', 'Firma de caja',
-                    'Nombre', 'Sector', 'Industria', 'Precio USD', 'Media 50',
-                    'Cap. B', 'Crec. BPA %', 'Crec. ventas %', 'Volumen 90d M',
-                    'Fase', 'Confirmaciones', 'Score', 'Fuerza relativa subiendo', 'Mansfield', 'TradingView']];
-    finales.forEach(x => { const fi = fichaDe(x.t), mo = motorDe(x.t, x['in']);
-      const ve = fichaVeredicto(x.t, fi, x.se, x['in']); filas.push([
-      x.t, x._estado || '', mo ? mo.nombre : '',
-      (fi && fi.disponible) ? fi.puntaje : null, (fi && fi.disponible) ? fi.respondidas : null,
+function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
+  // Clases Acciones USA, punto 3 (30-oct-2026). El Excel es el insumo del
+  // prompt maestro, así que lleva todo lo que la app ya sabe y el prompt
+  // necesita para fijar entrada y stop: la ficha con sus números, la zona de
+  // compra, el stop de la clase y la fecha de resultados. Y una hoja "Notas"
+  // con las fechas, los umbrales y las reglas, para que nadie tenga que
+  // adivinar de cuándo son los datos ni con qué filtros salieron.
+  finales = finales || []; mano = mano || []; etfs = etfs || []; fuera = fuera || []; meta = meta || {};
+  if(!finales.length && !mano.length && !etfs.length && !fuera.length){ alert('No hay nada que exportar todavía.'); return; }
+  const num = v => (typeof v === 'number' && isFinite(v)) ? v : null;
+  const r2 = v => num(v) === null ? null : Math.round(v * 100) / 100;
+
+  // Una fila de acción, venga de la corrida (claves cortas) o de una
+  // tarjeta "A mano" (claves largas).
+  const norm = x => {
+    if(x.t){
+      return {t:x.t, n:x.n, se:x.se, ind:x['in'], p:x.p, c50:x.c50, cB:x.cB, gB:x.gB, gV:x.gV, v:x.v,
+              f:x.f, cf:x.cf, sc:x.sc, fr:x.fr, mf:x.mf, x30:x.x30, m10:x.m10, rp:x.rp, rpS:x.rpS, estado:x._estado};
+    }
+    const fr = x.fuerzaRelativa || {}, pr = x.proximoReporte || {};
+    return {t:x.ticker, n:x.nombre, se:x.sector, ind:x.industria, p:x.precio, c50:x.sma50, cB:x.capB,
+            gB:x.crecBpa, gV:x.crecVentas, v:x.volM, f:x.fase, cf:x.confirmaciones, sc:x.score,
+            fr: fr.disponible ? (fr.pendientePositiva ? 1 : 0) : null, mf:x.mansfield,
+            x30:x.maximo30sem, m10:x.min10, rp:pr.fecha || null, rpS:pr.sinReporteHasta || null,
+            faltan:x.faltan, estado:'a mano'};
+  };
+
+  const CAB = ['Ticker', 'Estado', 'Motor', 'Qué hace', 'Nombre', 'Sector', 'Industria',
+    'Precio USD (corrida)', 'Media 50', 'Máx. 30 semanas', 'Zona de compra hasta (+4 %)', 'Precio vs máx. 30 sem. %',
+    'Mín. 10 sesiones', 'Stop clase entrando en el máx. 30 sem.', 'Próximos resultados', 'Días hábiles a resultados',
+    'Cap. B', 'Crec. BPA %', 'Crec. ventas %', 'Volumen 90d M',
+    'Fase', 'Confirmaciones', 'Score', 'Fuerza relativa subiendo', 'Mansfield',
+    'Ficha (de 5)', 'Ficha con dato (de 5)', 'Veredicto ficha', 'Firma de caja',
+    'Ventas vs año anterior % (ficha)', 'BPA vs año anterior % (ficha)',
+    'Margen bruto %', 'Margen bruto hace 3 años %', 'Margen operacional %', 'Margen operacional hace 3 años %',
+    'Flujo libre / utilidad %', 'Deuda en años de flujo libre', 'ROIC %', 'Estados hasta', 'Fuente ficha'];
+
+  // El stop de la clase si la entrada fuera justo el máximo de 30 semanas.
+  // Si el mínimo de 10 sesiones ya quedó sobre ese máximo (la acción se fue
+  // lejos), entrar ahí no tiene sentido: se deja vacío.
+  const stopClase = (x30, m10) => {
+    if(x30 === null) return null;
+    const st = Math.max(m10 !== null ? m10 : 0, x30 * 0.93);
+    return st < x30 ? r2(st) : null;
+  };
+
+  const filaDe = (x0, conFalta) => {
+    const x = norm(x0);
+    // Lo de la grilla es más fresco que lo de la corrida, cuando existe.
+    const s = todosLosStocks().find(k => k.ticker === x.t);
+    const x30 = num(s && s.max30sem) !== null ? s.max30sem : num(x.x30);
+    const m10 = num(s && s.min10) !== null ? s.min10 : num(x.m10);
+    const pr = (s && s.proximoReporte) || null;
+    const rp = pr ? pr.fecha : x.rp;
+    const rpS = pr ? pr.sinReporteHasta : x.rpS;
+    const fi = fichaDe(x.t), mo = motorDe(x.t, x.ind), pf = FICHA_PERFILES[x.t];
+    const ve = fichaVeredicto(x.t, fi, x.se, x.ind);
+    const ok = fi && fi.disponible;
+    const dato = (n, k) => { if(!ok) return null; const q = (fi.preguntas || [])[n - 1]; return q && q.datos ? num(q.datos[k]) : null; };
+    const fte = ok ? ({sec:'SEC', 'sec+tradingview':'SEC + TradingView', tradingview:'TradingView'}[fi.fuente] || fi.fuente) : '';
+    const queHace = pf ? pf[1] : (fi && fi.perfil && fi.perfil.resumen ? fi.perfil.resumen + ' (Yahoo, en inglés)' : '');
+    const dh = rp ? diasHabilesHasta(rp) : null;
+    const fila = [
+      x.t, x.estado || '', mo ? mo.nombre : '', queHace, x.n || '', x.se || '', x.ind || '',
+      num(x.p), num(x.c50), r2(x30), x30 !== null ? r2(x30 * (1 + ZONA_PCT / 100)) : null,
+      (x30 !== null && num(x.p) !== null) ? r2((x.p / x30 - 1) * 100) : null,
+      r2(m10), stopClase(x30, m10),
+      rp ? rp : (rpS ? 'ninguno hasta ' + rpS : ''), (dh !== null && dh >= 0) ? dh : null,
+      num(x.cB), num(x.gB), num(x.gV), num(x.v),
+      num(x.f), num(x.cf), num(x.sc), x.fr === 1 ? 'si' : (x.fr === 0 ? 'no' : ''), num(x.mf),
+      ok ? fi.puntaje : null, ok ? fi.respondidas : null,
       ve ? FICHA_VEREDICTO[ve][0] : (fi ? 'sin datos' : 'sin calcular'),
       (fi && fi.firma) ? fi.firma.signos.replace(/−/g, '-') + (fi.firma.mala ? ' (mala)' : '') : '',
-      x.n || '', x.se || '', x['in'] || '',
-      typeof x.p === 'number' ? x.p : null,
-      typeof x.c50 === 'number' ? x.c50 : null,
-      typeof x.cB === 'number' ? x.cB : null,
-      typeof x.gB === 'number' ? x.gB : null,
-      typeof x.gV === 'number' ? x.gV : null,
-      typeof x.v === 'number' ? x.v : null,
-      typeof x.f === 'number' ? x.f : null,
-      typeof x.cf === 'number' ? x.cf : null,
-      typeof x.sc === 'number' ? x.sc : null,
-      x.fr === 1 ? 'si' : (x.fr === 0 ? 'no' : ''),
-      typeof x.mf === 'number' ? x.mf : null,
-      `https://www.tradingview.com/symbols/${x.t}/`,
-    ]); });
+      dato(1, 'ventas'), dato(1, 'bpa'),
+      dato(2, 'bruto'), dato(2, 'brutoAntes'), dato(2, 'operacional'), dato(2, 'operacionalAntes'),
+      dato(3, 'relacion'), dato(4, 'años'), dato(5, 'roic'),
+      ok && fi.hasta ? fi.hasta : '', fte,
+    ];
+    if(conFalta) fila.push((x.faltan || []).join(', '));
+    fila.push(`https://www.tradingview.com/symbols/${x.t}/`);
+    return fila;
+  };
+
+  // ---- Notas -------------------------------------------------------------
+  const ahoraCL = d => d.toLocaleString('es-CL', {timeZone:'America/Santiago', day:'2-digit', month:'2-digit',
+                                                 year:'numeric', hour:'2-digit', minute:'2-digit'}) + ' (hora Chile)';
+  const u = meta.umbrales || {}, fl = meta.filtros || {};
+  const onOff = v => v ? 'encendido' : 'apagado';
+  const m = estadoMercado();
+  const pend = finales.concat(fuera).map(x => norm(x).t).filter(t => fichaAplica(t) && !fichaDe(t));
+  const perd = (sizing && num(sizing.perdidaTotal) !== null) ? sizing.perdidaTotal * 100 : null;
+  const nPos = sizing && num(sizing.nPosiciones);
+  const notas = [
+    ['Campo', 'Valor'],
+    ['Archivo', 'Exportado de IPSA Monitor · Explorar'],
+    ['Exportado', ahoraCL(new Date())],
+    ['Corrida de Explorar', meta.generado ? ahoraCL(new Date(meta.generado)) : 'sin fecha'],
+    ['Mercado (S&P 500 vs su media de 200 días, vía ' + MERCADO_REF + ')', m
+      ? `${m.sano ? 'Sano' : 'Débil'}: ${MERCADO_REF} ${m.esCierre ? 'cerró' : 'está'} en ${fmtNum(m.ref, 2)} USD; media 200 = ${fmtNum(m.sma, 2)} (${m.distPct >= 0 ? '+' : ''}${fmtNum(m.distPct, 1)} %)`
+      : 'sin dato'],
+    ['Umbrales usados', `Precio ≥ ${u.precio} USD · Volumen 90 d ≥ ${fmtNum(u.volM, 2)} M · Capitalización ≥ ${fmtNum(u.capB, 1)} B · Crecimiento BPA y ventas ≥ ${u.crecimiento} % · Score ≥ ${u.score}/8`],
+    ['Filtros', `Fase 2 con ≥ 4 confirmaciones: ${onOff(fl.weinstein)} · Score y fuerza relativa subiendo: ${onOff(fl.fuerza)} · Una por motor de negocio: ${onOff(fl.dedup)}`],
+    ['Hoja Candidatas', 'Pasaron todo el embudo y la ficha no las deja fuera. Estado "candidata" = encabeza su motor; "reserva de X" = mismo motor que X, con menor score.'],
+    ['Hoja Fuera por la ficha', 'Pasaron el embudo técnico, pero la ficha fundamental suma menos de 3 de 5 (o con lo que le falta ya no llega a 3).'],
+    ['Hoja A mano', 'Técnicamente sanas, pero les faltó un dato del embudo (columna "Le falta").'],
+    ['Hoja ETF', 'Fuerza contra el S&P 500 en puntos porcentuales a 1, 3, 6 y 12 meses.'],
+    ['Ficha fundamental', 'Las 5 preguntas de la clase con estados de la SEC (10-K/10-Q), TradingView de respaldo. Sí = 1, A medias = ½, No = 0. 4 o más: calidad · 3 a 3,5: vigilar · menos de 3: fuera. En bancos, aseguradoras y financieras es orientativa.'],
+    ['Zona de compra', `Hasta ${ZONA_PCT} % sobre el máximo intradía de las 30 semanas anteriores; la compra vale al cierre.`],
+    ['Stop de la clase', 'El mayor entre el mínimo intradía de las últimas 10 sesiones y la entrada −7 %. La columna lo calcula entrando justo en el máximo de 30 semanas.'],
+    ['Stop móvil', '7 % bajo el mayor entre la compra y el cierre más alto desde la compra; nunca baja.'],
+    ['Riesgo', `Pérdida total aceptada ${perd !== null ? fmtNum(perd, 1) : '—'} % en ${nPos || '—'} posiciones = ${perd !== null && nPos ? fmtNum(perd / nPos, 2) : '—'} % por posición · tope por posición ${fmtNum(topePorPosicionPct(), 0)} % · fracciones hasta 6 decimales.`],
+    ['Resultados', 'No se compra si la empresa reporta resultados en los próximos 5 días hábiles.'],
+    ['Fichas sin calcular al exportar', pend.length ? pend.length + ': ' + pend.join(', ') : 'ninguna'],
+    ['Celdas vacías', 'La app no tiene ese dato. Máx. 30 semanas, mín. 10 sesiones y próximos resultados salen de la corrida (o de la grilla si la acción está ahí); una acción sin diagnóstico en la corrida los trae vacíos.'],
+  ];
+  const hojas = [{nombre: 'Notas', filas: notas}];
+
+  if(finales.length){
+    const filas = [CAB.concat(['TradingView'])];
+    finales.forEach(x => filas.push(filaDe(x, false)));
     hojas.push({nombre: 'Candidatas', filas});
   }
+  if(fuera.length){
+    const filas = [CAB.concat(['TradingView'])];
+    fuera.forEach(x => filas.push(filaDe(x, false)));
+    hojas.push({nombre: 'Fuera por la ficha', filas});
+  }
   if(mano.length){
-    const filas = [['Ticker', 'Nombre', 'Sector', 'Industria', 'Precio USD', 'Media 50',
-                    'Cap. B', 'Crec. BPA %', 'Crec. ventas %', 'Volumen 90d M',
-                    'Fase', 'Confirmaciones', 'Score', 'Mansfield', 'Le falta', 'TradingView']];
-    mano.forEach(c => filas.push([
-      c.ticker, c.nombre || '', c.sector || '', c.industria || '',
-      typeof c.precio === 'number' ? c.precio : null,
-      typeof c.sma50 === 'number' ? c.sma50 : null,
-      typeof c.capB === 'number' ? c.capB : null,
-      typeof c.crecBpa === 'number' ? c.crecBpa : null,
-      typeof c.crecVentas === 'number' ? c.crecVentas : null,
-      typeof c.volM === 'number' ? c.volM : null,
-      typeof c.fase === 'number' ? c.fase : null,
-      typeof c.confirmaciones === 'number' ? c.confirmaciones : null,
-      typeof c.score === 'number' ? c.score : null,
-      typeof c.mansfield === 'number' ? c.mansfield : null,
-      (c.faltan || []).join(', '),
-      c.tradingview || `https://www.tradingview.com/symbols/${c.ticker}/`,
-    ]));
+    const filas = [CAB.concat(['Le falta', 'TradingView'])];
+    mano.forEach(c => filas.push(filaDe(c, true)));
     hojas.push({nombre: 'A mano', filas});
   }
   if(etfs.length){
@@ -9619,7 +9708,7 @@ function renderAmbienteExplorar(){
   // lista nueva.
   const btnExplXls = viewEl.querySelector('[data-expl-excel]');
   if(btnExplXls) btnExplXls.addEventListener('click',
-    () => exportarExplorarExcel(_explListas.finales, _explListas.mano, _explListas.etfs));
+    () => exportarExplorarExcel(_explListas.finales, _explListas.mano, _explListas.etfs, _explListas.fuera, _explListas.meta));
 
   const btnReset = viewEl.querySelector('[data-accion="exp-reset"]');
   if(btnReset) btnReset.addEventListener('click', () => {
