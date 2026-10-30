@@ -468,6 +468,52 @@
   .expl-card-nombre{font-size:10.5px; color:var(--ink-faint);}
   .expl-card-score{margin-left:auto; font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:20px; background:var(--verdigris-soft); color:var(--verdigris);}
   .expl-card-meta{font-size:11px; color:var(--ink-dim); margin-top:6px; line-height:1.6;}
+  /* Ficha fundamental y motor (Clases Acciones USA, punto 3) */
+  .fch-wrap{display:inline-flex; align-items:center; gap:4px; flex-wrap:wrap; vertical-align:middle;}
+  .fch{font-size:10px; font-weight:600; padding:1px 7px; border-radius:20px; white-space:nowrap;
+       border:1px solid var(--hairline); color:var(--ink-dim); background:var(--bg-field);}
+  .fch-calidad{color:var(--verdigris); border-color:var(--verdigris); background:var(--verdigris-soft);}
+  .fch-vigilar{color:var(--gold); border-color:rgba(144,111,55,0.45);}
+  .fch-fuera{color:var(--copper); border-color:var(--copper); background:var(--copper-soft);}
+  .fch-incompleta, .fch-financiera{color:var(--ink-dim);}
+  .fch-calc, .fch-nd{font-weight:400; color:var(--ink-faint); font-style:italic;}
+  .fch-caja{font-size:10px; font-family:ui-monospace, monospace; color:var(--ink-dim); white-space:nowrap;}
+  .fch-caja.mala{color:var(--copper); font-weight:700;}
+  .fch-fte{font-size:9px; color:var(--ink-faint); border:1px dashed var(--hairline); border-radius:4px; padding:0 3px;}
+  .card-ficha{margin-top:3px; min-height:0;}
+  .card-ficha:empty{display:none;}
+  .qh{font-size:11px; color:var(--ink-dim); line-height:1.5; margin-top:5px;}
+  .qh-motor{display:inline-block; font-size:9.5px; font-weight:600; letter-spacing:.02em; color:var(--gold);
+            border:1px solid rgba(144,111,55,0.35); border-radius:4px; padding:0 5px; margin-right:3px;}
+  .qh-fte{font-size:9.5px; color:var(--ink-faint);}
+  .expl-card-ficha{margin-top:6px;}
+  .expl-reservas{font-size:10.5px; color:var(--ink-dim); margin-top:7px; padding-top:6px; border-top:1px dashed var(--hairline); line-height:1.9;}
+  .expl-reservas b{cursor:pointer; color:var(--ink);}
+  .expl-reservas .er-sc{color:var(--ink-faint);}
+  .fich-prog{font-size:10.5px; color:var(--ink-faint); margin:4px 0 10px;}
+  .fich-box{border:1px solid var(--hairline); border-radius:10px; padding:12px 13px; margin:0 0 16px; background:var(--bg-field);}
+  .fich-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
+  .fich-pts{font-size:26px; font-weight:700; line-height:1;}
+  .fich-pts small{font-size:13px; color:var(--ink-faint); font-weight:400;}
+  .fich-vtxt{font-size:11px; color:var(--ink-dim); flex:1 1 180px;}
+  .fich-tabla{width:100%; border-collapse:collapse; font-size:11.5px;}
+  .fich-tabla td{padding:6px 4px; border-top:1px solid var(--hairline); vertical-align:top;}
+  .fq-n{width:16px; color:var(--ink-faint);}
+  .fq-p{font-weight:600;}
+  .fq-d{color:var(--ink-dim); margin-top:2px;}
+  .fq-nota{color:var(--ink-faint); font-size:10.5px; font-style:italic; margin-top:2px;}
+  .fq-r{text-align:right; white-space:nowrap; width:70px;}
+  .fq-fte{font-size:9px; color:var(--ink-faint);}
+  .fr-si{color:var(--verdigris); font-weight:700; cursor:help;}
+  .fr-med{color:var(--gold); font-weight:700; cursor:help;}
+  .fr-no{color:var(--copper); font-weight:700; cursor:help;}
+  .fr-nd{color:var(--ink-faint); font-style:italic; cursor:help;}
+  .fd-sub{color:var(--ink-faint); font-size:10.5px;}
+  .fich-firma{font-size:11px; color:var(--ink-dim); margin-top:10px; padding:8px 10px; border-radius:8px; border:1px solid var(--hairline);}
+  .fich-firma.mala{border-color:var(--copper); color:var(--copper); background:var(--copper-soft);}
+  .fich-fte{font-size:10.5px; color:var(--ink-faint); margin:10px 0 0;}
+  .fich-fte a{color:var(--gold);}
+  .fich-nota{font-size:10.5px; color:var(--ink-faint); margin:6px 0 0; line-height:1.5;}
   .expl-card-falta{font-size:10.5px; color:var(--copper); margin-top:6px; line-height:1.6;
                    padding:7px 9px; background:rgba(179,74,50,0.05);
                    border-left:2px solid var(--copper); border-radius:0 6px 6px 0;}
@@ -2337,6 +2383,37 @@
       return json({hayResultado:true, analisis: analisisDemo()});
     }
 
+    // Ficha fundamental (punto 3 de la clase): INVENTADA para la demo, igual
+    // que todo lo demás. La primera vez que se pide, la mitad queda
+    // "pendiente", para que se vea el "calculando…" y la segunda vuelta.
+    if(ruta.indexOf('/ficha-lote') === 0){
+      var qf = new URLSearchParams(ruta.split('?')[1] || '');
+      var tks = (qf.get('t') || '').split(',').filter(Boolean);
+      var fichas = {}, pend = [], noAp = {};
+      window.__demoFichaVistas = window.__demoFichaVistas || {};
+      tks.forEach(function(t){
+        var h = 0; for(var i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) >>> 0;
+        var vez = (window.__demoFichaVistas[t] = (window.__demoFichaVistas[t] || 0) + 1);
+        if(vez === 1 && h % 2) { pend.push(t); return; }
+        var PAT = [['si','si','si','si','si'], ['si','medias','si','si','medias'], ['no','si','medias','no','no'],
+                   ['si','si',null,'si','medias'], ['medias','no','no','medias','no'], ['si','si','medias','si','si']];
+        var pat = PAT[h % PAT.length], pts = {si:1, medias:0.5, no:0}, punt = 0, resp = 0;
+        var D = [{ventas:31.2, bpa:44.0, ventasTrim:[38, 34, 31.2]}, {bruto:61.0, brutoAntes:58.2, operacional:29.4, operacionalAntes:26.0, 'años':3},
+                 {relacion:94, flujoLibre:1, utilidad:1}, {deuda:1, 'años':1.4}, {roic:18.3}];
+        var preg = pat.map(function(r, i){ if(r){ punt += pts[r]; resp++; }
+          return {n:i+1, resultado:r, puntos:r ? pts[r] : null, datos:r ? D[i] : {}, nota:r ? null : 'Sin dato en la demo.', fuente:r ? 'sec' : null}; });
+        var maximo = punt + (5 - resp);
+        var ver = resp === 5 ? (punt >= 4 ? 'calidad' : punt >= 3 ? 'vigilar' : 'fuera') : (maximo < 3 ? 'fuera' : 'incompleta');
+        var mala = h % 7 === 0;
+        fichas[t] = {ticker:t, disponible:true, fuente:'sec', preguntas:preg, puntaje:punt, respondidas:resp, maximo:maximo,
+          veredicto:ver, periodo:'ttm', hasta:'2026-09-30', calculado:'2026-10-30T12:00:00Z', cik:1, edgar:'https://www.sec.gov/edgar/browse/?CIK=1',
+          firma:{signos: mala ? '−−+' : '+−−', mala: mala, texto: mala ? 'El negocio no se paga solo: lo sostienen bancos y accionistas.'
+                 : 'Genera, invierte y devuelve plata a accionistas o bancos. Es la que se busca.'},
+          perfil:{resumen:'Demo company that makes demo things.', industria:'Demo Industry', fuente:'yahoo'}};
+      });
+      return json({fichas:fichas, pendientes:pend, noAplica:noAp, secIdentificado:true});
+    }
+
     if(ruta.indexOf('/rango5y') === 0) return json({rangos:{}});
     if(ruta.indexOf('/signals') === 0) return json({evaluadas_detalle:[], generado:'2026-08-24T20:00:00Z'});
     if(ruta.indexOf('/vapid-public-key') === 0) return json({key:null});
@@ -3763,6 +3840,7 @@ const observadorTarjetas = ('IntersectionObserver' in window)
         if(!e.isIntersecting) return;
         const t = e.target.dataset.ticker;
         if(t) pedirDiagnosticoTarjeta(t);
+        if(t) pedirFichas([t]);   // ficha fundamental (punto 3 de la clase)
         observadorTarjetas.unobserve(e.target);
       });
     }, {rootMargin: '150px 0px'})
@@ -3780,6 +3858,7 @@ function crearTarjetaStock(s){
         <div class="ticker mono">${s.ticker} <button class="fav-btn" data-el="fav" title="Marcar como favorita">☆</button></div>
         <div class="company">${s.name}${s.esWatchlist
           ? ' <span class="card-watch" title="No viene en la grilla fija: la sigues tú desde tu watchlist personal">watchlist</span>' : ''}</div>
+        <div class="card-ficha" data-el="ficha"></div>
       </div>
       <div class="price-block">
         <div class="price mono" data-el="price">···</div>
@@ -4663,6 +4742,7 @@ function renderDetail(ticker){
         <div>
           <div class="detail-name">${s.name}</div>
           <div class="detail-sub mono">${s.ticker} · ${bolsaTexto}</div>
+        ${queHaceHTML(s.ticker)}
         </div>
         <div style="display:flex; align-items:center; gap:6px;">
           <button class="detail-fav-btn ${favoritos.has(s.ticker) ? 'active' : ''}" id="detailFavBtn" title="Marcar como favorita">${favoritos.has(s.ticker) ? '★' : '☆'}</button>
@@ -4671,6 +4751,7 @@ function renderDetail(ticker){
       </div>
       ${detailShortcutsHTML()}
       ${lineaEstadoHTML(s.ticker)}
+      ${fichaDetalleHTML(s.ticker)}
       <p style="padding:26px 0 8px; text-align:center; color:var(--ink-faint);">
         ${estaEnWatchlist(s.ticker) || s.esFichaSuelta
           ? 'Todavía sin precio. Esta acción no está en la grilla que se refresca sola, así que hay que pedírsela a Yahoo.'
@@ -4780,6 +4861,7 @@ function renderDetail(ticker){
       <div>
         <div class="detail-name">${s.name}</div>
         <div class="detail-sub mono">${s.ticker} · ${bolsaTexto}</div>
+        ${queHaceHTML(s.ticker)}
         <span class="sim-badge" style="${liveMode ? 'color:var(--gold); border-color:rgba(201,166,107,0.35);' : ''}">
           <span class="dot" style="${liveMode ? 'background:var(--gold);' : ''}"></span>${liveMode ? 'Precio y promedio reales (Yahoo Finance)' : 'Datos simulados'}
         </span>
@@ -4816,6 +4898,8 @@ function renderDetail(ticker){
     <button id="btnRegistrarMov" class="mov-btn" style="width:100%; margin-bottom:16px;">📝 Registrar compra/venta de ${s.ticker}</button>
 
     ${sizingHTML(s.ticker)}
+
+    ${fichaDetalleHTML(s.ticker)}
 
     <div class="detail-chart">
       <svg viewBox="0 0 600 160" width="100%" height="160" preserveAspectRatio="none" id="detailSvg"></svg>
@@ -5791,6 +5875,7 @@ function renderCard(s){
   // cualquier acción que se abra), así que el guardia va acá y no en cada
   // sitio que llama.
   if(!card) return;
+  pintarFichaCard(card, s.ticker);
   const priceEl = card.querySelector('[data-el="price"]');
   const deltaEl = card.querySelector('[data-el="delta"]');
   const deltaDiaEl = card.querySelector('[data-el="deltaDia"]');
@@ -8533,6 +8618,8 @@ function explorarTarjetaHTML(c, tipo){
       <span class="expl-card-nombre">${(c.nombre || '').replace(/</g,'&lt;')}${c.sector ? ' · ' + c.sector.replace(/</g,'&lt;') : ''}</span>
       ${score ? `<span class="expl-card-score">${score}</span>` : ''}
     </div>
+    ${queHaceHTML(c.ticker, {industria: c.industria})}
+    <div class="expl-card-ficha">${fichaChipHTML(c.ticker, {prio:true, sector:c.sector, industria:c.industria})}</div>
     <div class="expl-card-meta">
       ${fase}${conf ? ' · ' + conf : ''} · ${frTxt}${mfTxt}<br>
       Precio: <b>US$${typeof c.precio === 'number' ? c.precio.toLocaleString('es-CL') : '—'}</b>
@@ -8540,6 +8627,10 @@ function explorarTarjetaHTML(c, tipo){
       ${c.sinFundamentales ? ' · <span style="color:var(--ink-dim);">sin datos de empresa (cripto) — pasó solo con precio/tendencia/fase/fuerza</span>' : ''}
     </div>
     ${tipo === 'mano' && c.faltan && c.faltan.length ? explFaltaHTML(c) : ''}
+    ${(c.reservas && c.reservas.length) ? `<div class="expl-reservas">Mismo motor${c.motor ? ` (<b style="cursor:default;">${fichaEsc(c.motor.nombre)}</b>${c.motor.tipo === 'industria' ? ', industria' : ''})` : ''}, de reserva:
+      ${c.reservas.map(r => `<span style="white-space:nowrap;"><b data-accion="expl-abrir" data-ticker="${r.t}">${r.t}</b>
+        <span class="er-sc">${typeof r.sc === 'number' ? 'score ' + r.sc : ''}</span>
+        ${fichaChipHTML(r.t, {corto:true, prio:true, sector:r.se, industria:r['in']})}</span>`).join(' · ')}</div>` : ''}
     <div class="expl-card-btns">
       ${tvAnclaHTML(c.ticker, 'Abrir en TradingView ↗')}
       ${otrasFuentesHTML(c.ticker)}
@@ -8922,7 +9013,13 @@ function explorarResultadoHTML(analisis){
   }
 
   const {filas, sobreviven} = explCorrerEmbudo(acciones);
-  const {finales, repetidas} = explFiltros.dedup ? explDedup(sobreviven) : {finales:sobreviven, repetidas:[]};
+  // Punto 3 de la clase: la ficha fundamental se pide para todas las que
+  // pasaron el embudo, y se agrupan por motor de negocio (ver
+  // explAgruparPorMotor). Ninguna se descarta: las de puntaje bajo van a
+  // "Fuera por la ficha", al final, y las del mismo motor quedan de reserva.
+  _fichaExplVista = new Set(sobreviven.map(x => x.t).concat((analisis.revisarAMano || []).map(c => c.ticker)));
+  pedirFichas(Array.from(_fichaExplVista), true);
+  const {finales, fueraFicha} = explAgruparPorMotor(sobreviven, explFiltros.dedup);
 
   // ---- Riel de pasos -----------------------------------------------------
   // EL RESULTADO VA PRIMERO, no el paso 1. Esto es una primera alerta: se
@@ -9006,8 +9103,10 @@ function explorarResultadoHTML(analisis){
     </label>
     <label class="exp-toggle">
       <input type="checkbox" data-filtro="dedup" ${explFiltros.dedup?'checked':''}>
-      <span class="exp-toggle-txt"><b>Una sola por industria</b>
-      Evita terminar con cinco versiones de la misma apuesta. Se queda la de mejor score.</span>
+      <span class="exp-toggle-txt"><b>Una por motor de negocio</b>
+      Evita terminar con cinco versiones de la misma apuesta (por ejemplo, cinco de chips para IA). Encabeza la de
+      mejor score y las demás quedan debajo como reserva: no se esconden. Las que no están en tu tabla de motores
+      se agrupan por su industria.</span>
     </label>
     ${nSinDiag ? `<p class="exp-limite"><b>Ojo con el alcance.</b> La fase y la fuerza se calcularon para
       ${nDiag} acciones — las más líquidas de las que pasaron la tendencia. Quedaron ${nSinDiag} sin
@@ -9031,6 +9130,7 @@ function explorarResultadoHTML(analisis){
 
   // ---- Finalistas como tarjetas ------------------------------------------
   const tarjetaDe = x => explorarTarjetaHTML({
+    reservas:x._reservas || [], motor:x._motor || null,
     ticker:x.t, nombre:x.n, sector:x.se, industria:x['in'], precio:x.p, sma50:x.c50,
     capB:x.cB, crecBpa:x.gB, crecVentas:x.gV, volM:x.v, fase:x.f, confirmaciones:x.cf,
     score:x.sc, fuerzaRelativa:{disponible:x.fr!==null, pendientePositiva:x.fr===1},
@@ -9126,7 +9226,7 @@ function explorarResultadoHTML(analisis){
   // El panel del resultado. Se define aparte porque va PRIMERO en el riel
   // (ver la nota de PASOS), pero se arma con todo lo calculado más arriba.
   const RESULTADO_HTML =     `<div class="expl-alert">
-       <div class="expl-alert-frase">${finales.length} candidata(s) sobre ${acciones.length} acciones revisadas${mano.length?`, más ${mano.length} para mirar a mano`:''}.</div>
+       <div class="expl-alert-frase">${finales.length} candidata(s) sobre ${acciones.length} acciones revisadas${mano.length?`, más ${mano.length} para mirar a mano`:''}${fueraFicha.length?` · ${fueraFicha.length} fuera por la ficha`:''}.</div>
        <div class="expl-alert-meta">
          <span>Cobertura: <b>${a.cobertura != null ? a.cobertura + '%' : '—'}</b></span>
          <span>Generado: <b>${explorarFechaHTML(analisis)}</b></span>
@@ -9151,12 +9251,16 @@ function explorarResultadoHTML(analisis){
        ${(finales.length || mano.length || etfsFuerza.length) ? `<button type="button" class="expl-xls" data-expl-excel
           title="Descarga estas mismas listas como planilla de Excel (.xlsx), con los umbrales que tienes puestos ahora">⬇ Excel</button>` : ''}
      </div>
+     ${explFichaProgresoHTML(sobreviven.map(x => x.t))}
      ${finales.length ? finales.map(tarjetaDe).join('')
        : embudoCortado
          ? '<p class="expl-empty" style="color:var(--copper);">No se puede saber todavía: el embudo se cortó antes de llegar acá, por lo que dice el aviso de arriba.</p>'
          : '<p class="expl-empty">Ninguna con estos umbrales. Puedes aflojarlos en el paso 2 o apagar los dos filtros del paso 3 y ver qué aparece.</p>'}
-     ${repetidas.length ? `<p class="expl-section-title">Descartadas por repetir industria (${repetidas.length})</p>
-       <div class="exp-caidos">${repetidas.map(x=>`<div class="exp-caido"><b>${x.t}</b><span class="ec-val">repite con ${x.repiteCon}</span></div>`).join('')}</div>` : ''}
+     ${fueraFicha.length ? `<p class="expl-section-title">Fuera por la ficha (${fueraFicha.length})</p>
+       <p class="expl-section-nota">Pasaron el embudo técnico, pero su ficha fundamental suma menos de 3 de 5 (o con lo
+       que le falta ya no llega a 3). No se esconden: ábrelas para ver qué pregunta reprobaron.</p>
+       <div class="exp-caidos">${fueraFicha.map(x=>`<div class="exp-caido"><b data-accion="expl-abrir" data-ticker="${x.t}" style="cursor:pointer;">${x.t}</b><span class="ec-val">${
+         fichaChipHTML(x.t, {pedir:false, sector:x.se, industria:x['in']})}${typeof x.sc === 'number' ? ' · score ' + x.sc : ''}</span></div>`).join('')}</div>` : ''}
      ${ETF_LISTA_HTML}`;
 
   // ---- Los cinco pasos, uno visible a la vez -----------------------------
@@ -9207,7 +9311,10 @@ function explorarResultadoHTML(analisis){
   ];
 
   // Lo que quedo en pantalla, para que "⬇ Excel" exporte exactamente esto.
-  _explListas = {finales, mano, etfs: etfsFuerza};
+  _explListas = {finales: finales.reduce((acc, x) => acc.concat([Object.assign({}, x, {_estado:'candidata'})],
+                    (x._reservas || []).map(r => Object.assign({}, r, {_estado:'reserva de ' + x.t}))), [])
+                    .concat(fueraFicha.map(x => Object.assign({}, x, {_estado:'fuera por la ficha'}))),
+                  mano, etfs: etfsFuerza};
 
   return `
     ${avisoDatos}
@@ -9254,11 +9361,17 @@ function exportarExplorarExcel(finales, mano, etfs){
   if(!finales.length && !mano.length && !etfs.length){ alert('No hay nada que exportar todavía.'); return; }
   const hojas = [];
   if(finales.length){
-    const filas = [['Ticker', 'Nombre', 'Sector', 'Industria', 'Precio USD', 'Media 50',
+    const filas = [['Ticker', 'Estado', 'Motor', 'Ficha (de 5)', 'Ficha con dato', 'Veredicto ficha', 'Firma de caja',
+                    'Nombre', 'Sector', 'Industria', 'Precio USD', 'Media 50',
                     'Cap. B', 'Crec. BPA %', 'Crec. ventas %', 'Volumen 90d M',
                     'Fase', 'Confirmaciones', 'Score', 'Fuerza relativa subiendo', 'Mansfield', 'TradingView']];
-    finales.forEach(x => filas.push([
-      x.t, x.n || '', x.se || '', x['in'] || '',
+    finales.forEach(x => { const fi = fichaDe(x.t), mo = motorDe(x.t, x['in']);
+      const ve = fichaVeredicto(x.t, fi, x.se, x['in']); filas.push([
+      x.t, x._estado || '', mo ? mo.nombre : '',
+      (fi && fi.disponible) ? fi.puntaje : null, (fi && fi.disponible) ? fi.respondidas : null,
+      ve ? FICHA_VEREDICTO[ve][0] : (fi ? 'sin datos' : 'sin calcular'),
+      (fi && fi.firma) ? fi.firma.signos.replace(/−/g, '-') + (fi.firma.mala ? ' (mala)' : '') : '',
+      x.n || '', x.se || '', x['in'] || '',
       typeof x.p === 'number' ? x.p : null,
       typeof x.c50 === 'number' ? x.c50 : null,
       typeof x.cB === 'number' ? x.cB : null,
@@ -9271,7 +9384,7 @@ function exportarExplorarExcel(finales, mano, etfs){
       x.fr === 1 ? 'si' : (x.fr === 0 ? 'no' : ''),
       typeof x.mf === 'number' ? x.mf : null,
       `https://www.tradingview.com/symbols/${x.t}/`,
-    ]));
+    ]); });
     hojas.push({nombre: 'Candidatas', filas});
   }
   if(mano.length){
@@ -10008,6 +10121,7 @@ function esperaRupturaHTML(tk, reg, s, moneda, restantes, vencida, conPos, enWat
       <div class="esp-head">
         <span class="esp-tk" data-accion="esp-abrir" data-ticker="${tk}">${tk}</span>
         <span style="font-size:10.5px;color:var(--ink-faint);">${s ? s.name : ''}</span>
+        ${fichaChipHTML(tk, {prio:true})}
         ${enWatch ? '<span class="esp-watch" title="No está en tu grilla: la app le pide precio aparte, gracias a tu watchlist personal">watchlist</span>' : ''}
         <span class="esp-estado ${pill[0]}">${pill[1]}</span>
       </div>
@@ -10101,6 +10215,7 @@ function esperaHTML(){
       <div class="esp-head">
         <span class="esp-tk" data-accion="esp-abrir" data-ticker="${tk}">${tk}</span>
         <span style="font-size:10.5px;color:var(--ink-faint);">${s ? s.name : ''}</span>
+        ${fichaChipHTML(tk, {prio:true})}
         ${enWatch ? '<span class="esp-watch" title="No está en tu grilla: la app le pide precio aparte, gracias a tu watchlist personal">watchlist</span>' : ''}
         <span class="esp-estado ${pill[0]}">${pill[1]}</span>
       </div>
@@ -10950,6 +11065,605 @@ const ETF_AMPLIOS = ['VOO','VTI','VT','VXUS','SPY','IVV','QQQ','QQQM','SCHD','VI
                      'MTUM','QUAL','USMV','EWJ'];
 function sectorDe(t){ return (GICS[t] || [SIN_CLASIFICAR, SIN_CLASIFICAR])[0]; }
 function industriaDe(t){ return (GICS[t] || [SIN_CLASIFICAR, SIN_CLASIFICAR])[1]; }
+
+// ============================================================================
+// FICHA FUNDAMENTAL Y MOTOR DE NEGOCIO  (Clases Acciones USA, punto 3 --
+// 30-oct-2026)
+// ============================================================================
+// LO QUE MUESTRA
+//   * La ficha: las 5 preguntas de la clase (¿crece de verdad?, ¿gana plata
+//     con lo que vende?, ¿la utilidad se convierte en caja?, ¿aguanta un mal
+//     año?, ¿usa bien el capital?), la firma de caja y el puntaje. La calcula
+//     el servidor (/ficha-lote) con los estados que la empresa entrega a la
+//     SEC, y TradingView de respaldo para lo que la SEC no trae.
+//   * El motor de negocio y "qué hace" cada empresa, escritos a mano para
+//     las 186 que sigues. Para una que no esté en la tabla, la industria y la
+//     primera frase de la descripción de Yahoo (en inglés).
+//
+// LO QUE DECIDIÓ CRISTIAN
+//   * Se ve en todos lados: grilla, ficha de cada acción, A seguir, Mi
+//     Cartera y Explorar.
+//   * Puntaje < 3 (o que ya no puede llegar a 3) -> "Fuera por la ficha" en
+//     Explorar. Se sigue viendo, abajo, con su puntaje: en una primera
+//     alerta lo peor es esconder un nombre.
+//   * Firma de caja mala (la operación no genera caja) SOLO MARCA.
+//   * Bancos, aseguradoras y financieras: la ficha de la clase no se pensó
+//     para ellas (no tienen margen bruto ni "deuda" en el mismo sentido). Se
+//     muestra como orientativa y no saca a nadie.
+//
+// CÓMO LLEGA
+//   El servidor calcula en segundo plano (tiene un solo worker y cada ficha
+//   son ~20 consultas a la SEC). La app pide, recibe lo que ya está y vuelve a
+//   preguntar cada pocos segundos por lo pendiente. Lo que llega se guarda en
+//   este teléfono 7 días (los estados cambian una vez por trimestre), así que
+//   un reinicio del servidor no obliga a esperar de nuevo.
+//
+// OJO: todo con `var` y funciones declaradas. Partes de la app que corren al
+// cargar (la grilla) existen ANTES que este bloque en el archivo; con `let`
+// o `const` tocar estas variables desde ahí revienta (zona muerta temporal).
+var FICHA_MOTORES = { "ia_chips": "Chips para IA", "fundicion": "Fabricación de chips", "equipos_chips": "Máquinas para fabricar chips", "memoria": "Memoria", "chips_analog": "Chips analógicos (autos e industria)", "chips_movil": "Chips para celulares", "diseno_chips": "Software para diseñar chips", "infra_dc": "Hardware para centros de datos", "energia_dc": "Electricidad para centros de datos", "nube_ia": "Nube para IA", "plataformas": "Grandes plataformas (nube, publicidad, equipos)", "software": "Software para empresas", "datos_ia": "Datos e IA para empresas", "ciber": "Ciberseguridad", "serv_ti": "Servicios de TI y consultoría", "nomina": "Nómina y RR.HH.", "pagos": "Pagos y tarjetas", "cripto": "Bitcoin y cripto", "bancos": "Bancos grandes", "banca_inv": "Banca de inversión y corretaje", "bancos_reg": "Bancos regionales", "credito": "Crédito al consumo", "gestoras": "Gestoras de inversiones", "datos_fin": "Datos y calificaciones", "seguros": "Seguros", "berkshire": "Conglomerado (Berkshire)", "seguros_salud": "Seguros de salud", "obesidad": "Fármacos contra la obesidad", "farma": "Farmacéuticas grandes", "biotec": "Biotecnología", "dispositivos": "Equipos médicos", "laboratorio": "Laboratorio y diagnóstico", "salud_digital": "Salud digital", "supermercados": "Supermercados y grandes tiendas", "hogar": "Mejoramiento del hogar", "descuento": "Tiendas de descuento", "ropa_dep": "Ropa deportiva", "restaurantes": "Restaurantes", "bebidas": "Bebidas", "consumo": "Productos de consumo", "tabaco": "Tabaco", "autos_serv": "Servicios para autos", "autos_ev": "Autos eléctricos", "viajes": "Viajes y hoteles", "reparto": "Transporte y reparto por app", "ecommerce": "Comercio electrónico", "streaming": "Streaming y entretenimiento", "videojuegos": "Videojuegos", "telecom": "Telecomunicaciones", "publicidad": "Publicidad digital", "petroleo": "Petróleo y gas", "equipos_energia": "Equipos y servicios de energía", "navieras": "Transporte de petróleo", "electricas": "Eléctricas reguladas", "gases": "Gases industriales", "fertilizantes": "Fertilizantes", "cobre": "Cobre y minería", "maquinaria": "Maquinaria pesada y camiones", "aviacion": "Aviación comercial", "defensa": "Defensa y seguridad", "industria_div": "Industria diversificada", "trenes": "Ferrocarriles", "carga": "Carga y logística", "serv_empresas": "Servicios a empresas", "espacio": "Espacio y satélites", "instrumentos": "Instrumentos de medición", "cl_energia": "Energía y forestal (Chile)", "cl_retail": "Retail (Chile)", "cl_aerolinea": "Aerolínea (Chile)", "cl_inmobiliaria": "Inmobiliaria (Chile)", "cl_bebidas": "Bebidas (Chile)", "cl_bancos": "Bancos (Chile)" };
+var FICHA_PERFILES = {
+  "AAPL": ["plataformas", "iPhone, Mac, iPad y servicios (App Store, iCloud, Apple Music); el iPhone es más de la mitad de las ventas."],
+  "MSFT": ["plataformas", "Nube Azure, Office/Microsoft 365, Windows y LinkedIn; socio principal de OpenAI."],
+  "NVDA": ["ia_chips", "Diseña las GPU que entrenan y corren casi toda la IA en centros de datos; también chips para videojuegos."],
+  "AMZN": ["plataformas", "La mayor tienda en línea de Occidente y AWS, la nube más grande; además publicidad y Prime."],
+  "GOOGL": ["plataformas", "Buscador Google, YouTube y Google Cloud; vive de la publicidad. Acción clase A, con voto."],
+  "GOOG": ["plataformas", "Misma empresa que GOOGL (Alphabet): acción clase C, sin derecho a voto."],
+  "META": ["plataformas", "Facebook, Instagram, WhatsApp y Threads; casi todo el ingreso es publicidad."],
+  "TSLA": ["autos_ev", "Autos eléctricos y baterías para la red eléctrica; apuesta a la conducción autónoma y a robots."],
+  "AVGO": ["ia_chips", "Chips a medida para IA (Google, Meta y otros), chips de redes y software de infraestructura (VMware)."],
+  "TSM": ["fundicion", "Fabrica por encargo los chips más avanzados del mundo (para Apple, NVIDIA, AMD); Taiwán."],
+  "ORCL": ["nube_ia", "Bases de datos y software empresarial; hoy crece por su nube para IA (contratos con OpenAI y otros)."],
+  "NFLX": ["streaming", "El mayor servicio de streaming por suscripción del mundo; suma planes con publicidad y eventos en vivo."],
+  "AMD": ["ia_chips", "Procesadores para PC y servidores (EPYC) y aceleradores de IA (Instinct) que compiten con NVIDIA."],
+  "CRM": ["software", "Salesforce: software en la nube para ventas y atención a clientes; agentes de IA (Agentforce)."],
+  "ADBE": ["software", "Photoshop, Illustrator, Acrobat y Premiere por suscripción, con IA generativa (Firefly)."],
+  "INTC": ["fundicion", "Procesadores para PC y servidores, y fabricación de chips para terceros (Intel Foundry)."],
+  "QCOM": ["chips_movil", "Chips y módems para celulares (Snapdragon) y licencias de patentes 5G; se expande a autos y PC."],
+  "TXN": ["chips_analog", "Chips analógicos y procesadores integrados para industria y autos, hechos en sus propias plantas en EE.UU."],
+  "AMAT": ["equipos_chips", "El mayor fabricante de máquinas para producir chips (depósito y grabado de materiales)."],
+  "LRCX": ["equipos_chips", "Máquinas de grabado y depósito para fabricar chips, muy usadas en memoria."],
+  "KLAC": ["equipos_chips", "Máquinas de inspección y medición que detectan defectos al fabricar chips."],
+  "MU": ["memoria", "Memoria DRAM y NAND, y memoria de alto ancho de banda (HBM) para servidores de IA."],
+  "ASML": ["equipos_chips", "Único fabricante de las máquinas de litografía EUV, indispensables para los chips más avanzados; Países Bajos."],
+  "ARM": ["ia_chips", "Diseña la arquitectura de procesadores que usan casi todos los celulares; cobra licencias y regalías."],
+  "PLTR": ["datos_ia", "Software de análisis de datos e IA para gobiernos (defensa, inteligencia) y empresas."],
+  "NOW": ["software", "ServiceNow: plataforma en la nube para automatizar procesos internos (TI, RR.HH., atención)."],
+  "INTU": ["software", "TurboTax, QuickBooks, Credit Karma y Mailchimp: software financiero para personas y pymes."],
+  "IBM": ["serv_ti", "Software de nube híbrida (Red Hat), consultoría y mainframes; apuesta a la computación cuántica."],
+  "CSCO": ["infra_dc", "Equipos de redes (switches, routers) para empresas y centros de datos, más seguridad (Splunk)."],
+  "ACN": ["serv_ti", "Accenture: la mayor consultora de tecnología y servicios de TI del mundo; Irlanda."],
+  "UBER": ["reparto", "Viajes en auto y reparto de comida (Uber Eats) por aplicación, en más de 70 países."],
+  "SHOP": ["ecommerce", "Plataforma para que los comercios armen su tienda en línea y cobren (Shopify Payments); Canadá."],
+  "PANW": ["ciber", "Ciberseguridad: firewalls, seguridad en la nube y centros de operaciones con IA."],
+  "CRWD": ["ciber", "Ciberseguridad en la nube para computadores y servidores (plataforma Falcon)."],
+  "SNOW": ["datos_ia", "Snowflake: almacén de datos en la nube donde las empresas guardan y analizan su información."],
+  "ANET": ["infra_dc", "Switches de red de alta velocidad para centros de datos de nube e IA (Microsoft y Meta, grandes clientes)."],
+  "MRVL": ["ia_chips", "Chips a medida para IA y chips de conexión óptica para centros de datos."],
+  "DELL": ["infra_dc", "PC y servidores, hoy impulsada por los servidores para IA; también almacenamiento."],
+  "SMCI": ["infra_dc", "Super Micro: arma servidores para IA con chips de NVIDIA y refrigeración líquida."],
+  "COIN": ["cripto", "Coinbase: la mayor casa de cambio de criptomonedas de EE.UU.; vive de comisiones y del precio del bitcoin."],
+  "SPOT": ["streaming", "Spotify: música y podcasts por streaming, gratis con publicidad o premium; Suecia."],
+  "ABNB": ["viajes", "Airbnb: plataforma de arriendo de alojamientos por días y de experiencias."],
+  "BKNG": ["viajes", "Booking.com, Priceline, Kayak y OpenTable: reservas de hoteles y viajes en línea."],
+  "MELI": ["ecommerce", "MercadoLibre: comercio electrónico y pagos (Mercado Pago) en América Latina."],
+  "XYZ": ["pagos", "Block: Square (pagos para comercios), Cash App (billetera) y Afterpay (compra ahora, paga después)."],
+  "PYPL": ["pagos", "PayPal y Venmo: pagos en línea y entre personas."],
+  "BRK-B": ["berkshire", "Berkshire Hathaway: seguros (GEICO), el ferrocarril BNSF, energía y una gran cartera de acciones."],
+  "JPM": ["bancos", "JPMorgan Chase: el mayor banco de EE.UU.; banca minorista, de inversión y gestión de patrimonios."],
+  "V": ["pagos", "Visa: la mayor red de pagos con tarjeta del mundo; cobra por cada transacción, no presta dinero."],
+  "MA": ["pagos", "Mastercard: la segunda red de pagos con tarjeta; cobra por transacción, no presta dinero."],
+  "BAC": ["bancos", "Bank of America: segundo banco de EE.UU.; banca minorista, Merrill (patrimonios) y banca de inversión."],
+  "WFC": ["bancos", "Wells Fargo: banco minorista e hipotecario de EE.UU.; en 2025 le levantaron el tope de activos."],
+  "GS": ["banca_inv", "Goldman Sachs: banca de inversión, compraventa de valores y gestión de patrimonios."],
+  "MS": ["banca_inv", "Morgan Stanley: gestión de patrimonios (con E*Trade) y banca de inversión."],
+  "C": ["bancos", "Citigroup: banco global; servicios a multinacionales, tarjetas y banca de inversión."],
+  "BLK": ["gestoras", "BlackRock: la mayor gestora de inversiones del mundo (ETF iShares)."],
+  "AXP": ["pagos", "American Express: emite tarjetas premium y opera su propia red; gana con comisiones y cuotas."],
+  "SCHW": ["banca_inv", "Charles Schwab: la mayor corredora para inversionistas particulares de EE.UU."],
+  "SPGI": ["datos_fin", "S&P Global: calificaciones de crédito, índices (S&P 500) y datos financieros."],
+  "KKR": ["gestoras", "Capital privado, infraestructura, crédito y seguros (Global Atlantic)."],
+  "BX": ["gestoras", "Blackstone: la mayor gestora de inversiones alternativas (inmobiliario, capital privado, crédito)."],
+  "LLY": ["obesidad", "Eli Lilly: fármacos para diabetes y obesidad (Mounjaro, Zepbound) y para el Alzheimer."],
+  "JNJ": ["farma", "Johnson & Johnson: fármacos (oncología, inmunología) y dispositivos médicos."],
+  "UNH": ["seguros_salud", "UnitedHealth: la mayor aseguradora de salud de EE.UU. y servicios de salud (Optum)."],
+  "ABBV": ["farma", "AbbVie: Skyrizi y Rinvoq (inmunología), Botox y oncología."],
+  "MRK": ["farma", "Merck: Keytruda (inmunoterapia contra el cáncer) y vacunas."],
+  "TMO": ["laboratorio", "Thermo Fisher: equipos, reactivos y servicios para laboratorios y fabricación de fármacos."],
+  "ABT": ["dispositivos", "Abbott: dispositivos médicos (monitor de glucosa FreeStyle Libre), diagnóstico y nutrición."],
+  "PFE": ["farma", "Pfizer: fármacos y vacunas, con foco en oncología; busca reponer ventas que pierden patente."],
+  "AMGN": ["farma", "Amgen: biotecnológica grande; huesos, oncología, inflamación y un fármaco contra la obesidad en desarrollo."],
+  "DHR": ["laboratorio", "Danaher: herramientas para producir fármacos biológicos, diagnóstico (Cepheid) y ciencias de la vida."],
+  "ISRG": ["dispositivos", "Intuitive Surgical: el robot quirúrgico da Vinci; gana con cada cirugía (instrumentos de un solo uso)."],
+  "NVO": ["obesidad", "Novo Nordisk: insulina y fármacos para diabetes y obesidad (Ozempic, Wegovy); Dinamarca."],
+  "VRTX": ["biotec", "Vertex: fármacos para la fibrosis quística (casi un monopolio) y un analgésico no opioide."],
+  "BMY": ["farma", "Bristol Myers Squibb: oncología (Opdivo), el anticoagulante Eliquis y neurociencia."],
+  "MDT": ["dispositivos", "Medtronic: la mayor empresa de dispositivos médicos (corazón, diabetes, neurocirugía); Irlanda."],
+  "WMT": ["supermercados", "Walmart: el mayor minorista del mundo; supermercados, Sam's Club, venta en línea y publicidad."],
+  "COST": ["supermercados", "Costco: bodegas mayoristas por membresía; gana sobre todo con las cuotas anuales."],
+  "PG": ["consumo", "Procter & Gamble: Pampers, Gillette, Tide, Pantene y otros productos de uso diario."],
+  "HD": ["hogar", "Home Depot: la mayor cadena de materiales y mejoramiento del hogar de EE.UU."],
+  "KO": ["bebidas", "Coca-Cola: vende concentrado y marcas de bebidas a embotelladoras de todo el mundo."],
+  "PEP": ["bebidas", "PepsiCo: bebidas (Pepsi, Gatorade) y snacks (Lay's, Doritos, Quaker)."],
+  "MCD": ["restaurantes", "McDonald's: la mayor cadena de comida rápida; casi todos los locales son franquicias."],
+  "NKE": ["ropa_dep", "Nike: la mayor marca de calzado y ropa deportiva."],
+  "SBUX": ["restaurantes", "Starbucks: la mayor cadena de cafeterías del mundo."],
+  "DIS": ["streaming", "Disney: parques temáticos, streaming (Disney+, Hulu), ESPN y estudios de cine."],
+  "PM": ["tabaco", "Philip Morris International: cigarrillos fuera de EE.UU. y productos sin humo (IQOS, ZYN)."],
+  "TGT": ["supermercados", "Target: grandes tiendas de descuento en EE.UU. (hogar, ropa, alimentos)."],
+  "LOW": ["hogar", "Lowe's: segunda cadena de mejoramiento del hogar de EE.UU."],
+  "TJX": ["descuento", "TJ Maxx, Marshalls y HomeGoods: ropa y hogar de marca a precio rebajado."],
+  "XOM": ["petroleo", "Exxon Mobil: la mayor petrolera de EE.UU.; extracción, refinación y química."],
+  "CVX": ["petroleo", "Chevron: petrolera integrada; extracción (Permian, Kazajistán, Guyana) y refinación."],
+  "COP": ["petroleo", "ConocoPhillips: la mayor productora independiente de petróleo y gas (solo extracción)."],
+  "CAT": ["maquinaria", "Caterpillar: maquinaria de construcción y minería, motores y generadores (también para centros de datos)."],
+  "BA": ["aviacion", "Boeing: aviones comerciales y defensa; recuperando la producción tras problemas de calidad."],
+  "GE": ["aviacion", "GE Aerospace: motores de avión (también vía CFM) y su mantenimiento."],
+  "RTX": ["defensa", "RTX: motores Pratt & Whitney, sistemas Collins y misiles Raytheon (Patriot)."],
+  "UNP": ["trenes", "Union Pacific: ferrocarril de carga del oeste de EE.UU."],
+  "LMT": ["defensa", "Lockheed Martin: el mayor contratista de defensa (caza F-35, misiles, espacio)."],
+  "DE": ["maquinaria", "Deere: tractores y maquinaria agrícola y de construcción (John Deere)."],
+  "LIN": ["gases", "Linde: la mayor productora de gases industriales (oxígeno, nitrógeno, hidrógeno)."],
+  "SKWD": ["seguros", "Skyward Specialty: seguros especializados para riesgos de nicho que las grandes no cubren."],
+  "ERO": ["cobre", "Ero Copper: minas de cobre (y algo de oro) en Brasil; con sede en Canadá."],
+  "ENVA": ["credito", "Enova: préstamos en línea a personas y pymes (CashNetUSA, NetCredit, OnDeck)."],
+  "PAYS": ["pagos", "Paysign: tarjetas prepagadas para pagar a donantes de plasma y programas de copago de fármacos."],
+  "WT": ["gestoras", "WisdomTree: gestora de ETF (acciones, materias primas) y de fondos tokenizados."],
+  "ADI": ["chips_analog", "Analog Devices: chips analógicos y de señal mixta para industria, autos y comunicaciones."],
+  "ADP": ["nomina", "ADP: procesa nóminas y RR.HH. para más de un millón de empresas."],
+  "ADSK": ["software", "Autodesk: software de diseño (AutoCAD, Revit) para arquitectura, ingeniería y cine."],
+  "AEP": ["electricas", "American Electric Power: eléctrica regulada en 11 estados, con fuerte demanda de centros de datos."],
+  "AXON": ["defensa", "Axon: pistolas Taser, cámaras corporales y software en la nube para policías."],
+  "AZN": ["farma", "AstraZeneca: oncología, cardiología y enfermedades raras; Reino Unido."],
+  "BIIB": ["biotec", "Biogen: fármacos para esclerosis múltiple, Alzheimer (Leqembi) y atrofia muscular espinal."],
+  "BKR": ["equipos_energia", "Baker Hughes: servicios petroleros y equipos para gas natural licuado y generación (turbinas)."],
+  "CCEP": ["bebidas", "Coca-Cola Europacific Partners: embotelladora de Coca-Cola en Europa y Asia-Pacífico."],
+  "CDNS": ["diseno_chips", "Cadence: software para diseñar chips y sistemas electrónicos."],
+  "CDW": ["serv_ti", "CDW: revende y administra tecnología (PC, servidores, software) para empresas y gobierno."],
+  "CEG": ["energia_dc", "Constellation: el mayor operador de centrales nucleares de EE.UU.; vende energía a centros de datos."],
+  "CHTR": ["telecom", "Charter (Spectrum): internet por cable y TV en EE.UU."],
+  "CMCSA": ["telecom", "Comcast: internet por cable (Xfinity), NBCUniversal y parques Universal."],
+  "CPRT": ["autos_serv", "Copart: subastas en línea de autos siniestrados, para aseguradoras."],
+  "CSGP": ["datos_fin", "CoStar: datos de bienes raíces comerciales y portales Apartments.com y Homes.com."],
+  "CSX": ["trenes", "CSX: ferrocarril de carga del este de EE.UU."],
+  "CTAS": ["serv_empresas", "Cintas: uniformes en arriendo e insumos de baño y seguridad para empresas."],
+  "CTSH": ["serv_ti", "Cognizant: servicios de TI y desarrollo de software por encargo."],
+  "DASH": ["reparto", "DoorDash: reparto de comida y supermercado por aplicación."],
+  "DDOG": ["datos_ia", "Datadog: monitoreo en la nube de aplicaciones e infraestructura."],
+  "DXCM": ["dispositivos", "Dexcom: monitores continuos de glucosa para diabéticos."],
+  "EA": ["videojuegos", "Electronic Arts: videojuegos (EA Sports FC, Madden, Battlefield)."],
+  "EXC": ["electricas", "Exelon: distribuidora eléctrica regulada (Chicago, Filadelfia, Baltimore)."],
+  "FANG": ["petroleo", "Diamondback Energy: productora de petróleo en la cuenca Permian."],
+  "FAST": ["serv_empresas", "Fastenal: distribuye pernos y suministros industriales, con máquinas dispensadoras en la planta del cliente."],
+  "FTNT": ["ciber", "Fortinet: firewalls y seguridad de redes, con chips propios."],
+  "GEHC": ["dispositivos", "GE HealthCare: equipos de imágenes médicas (resonancia, escáner) y monitoreo de pacientes."],
+  "GFS": ["fundicion", "GlobalFoundries: fabrica chips por encargo con tecnologías maduras (autos, IoT, comunicaciones)."],
+  "GILD": ["farma", "Gilead: tratamientos para el VIH (Biktarvy) y la hepatitis, y un preventivo del VIH semestral."],
+  "HON": ["industria_div", "Honeywell: aeroespacial, automatización de edificios e industria."],
+  "IDXX": ["laboratorio", "IDEXX: diagnóstico veterinario (laboratorios y equipos para clínicas)."],
+  "KDP": ["bebidas", "Keurig Dr Pepper: café en cápsulas Keurig y bebidas (Dr Pepper, Canada Dry)."],
+  "KHC": ["consumo", "Kraft Heinz: alimentos envasados (ketchup Heinz, Kraft, Oscar Mayer)."],
+  "LULU": ["ropa_dep", "Lululemon: ropa deportiva premium (yoga, running)."],
+  "MAR": ["viajes", "Marriott: la mayor cadena hotelera; cobra por franquiciar y administrar hoteles."],
+  "MCHP": ["chips_analog", "Microchip: microcontroladores y chips analógicos para industria y autos."],
+  "MNST": ["bebidas", "Monster Beverage: bebidas energéticas."],
+  "MSTR": ["cripto", "Strategy (ex MicroStrategy): compra bitcoin con deuda y acciones; su valor sigue al bitcoin."],
+  "NXPI": ["chips_analog", "NXP: chips para autos, industria y pagos sin contacto (NFC); Países Bajos."],
+  "ODFL": ["carga", "Old Dominion: transporte de carga fraccionada por camión (LTL) en EE.UU."],
+  "ON": ["chips_analog", "onsemi: chips de potencia (carburo de silicio) y sensores de imagen para autos e industria."],
+  "ORLY": ["autos_serv", "O'Reilly: tiendas de repuestos de autos para talleres y particulares."],
+  "PAYX": ["nomina", "Paychex: nómina y RR.HH. para pymes."],
+  "PCAR": ["maquinaria", "Paccar: camiones Kenworth, Peterbilt y DAF, y sus repuestos."],
+  "PDD": ["ecommerce", "PDD Holdings: Pinduoduo (China) y Temu, comercio electrónico de precios bajos."],
+  "REGN": ["biotec", "Regeneron: Dupixent (con Sanofi), Eylea (enfermedades de la retina) y anticuerpos."],
+  "ROP": ["software", "Roper: compra y opera software de nicho para industrias (salud, seguros, gobierno)."],
+  "ROST": ["descuento", "Ross Stores: ropa y hogar de marca con descuento."],
+  "SNPS": ["diseno_chips", "Synopsys: software para diseñar chips; compró Ansys (simulación)."],
+  "TEAM": ["software", "Atlassian: Jira y Confluence, software para equipos de desarrollo."],
+  "TMUS": ["telecom", "T-Mobile US: una de las dos mayores compañías de telefonía móvil de EE.UU."],
+  "TTD": ["publicidad", "The Trade Desk: plataforma para comprar publicidad digital (TV por internet, web, audio)."],
+  "TTWO": ["videojuegos", "Take-Two: videojuegos (Grand Theft Auto, NBA 2K, Red Dead)."],
+  "VRSK": ["datos_fin", "Verisk: datos y análisis de riesgo para aseguradoras."],
+  "WDAY": ["software", "Workday: software en la nube de RR.HH. y finanzas para grandes empresas."],
+  "XEL": ["electricas", "Xcel Energy: eléctrica regulada del Medio Oeste, fuerte en energía eólica."],
+  "ZS": ["ciber", "Zscaler: seguridad en la nube para el acceso a internet y a aplicaciones (zero trust)."],
+  "BUSE": ["bancos_reg", "First Busey: banco regional de Illinois y el Medio Oeste."],
+  "HNGE": ["salud_digital", "Hinge Health: fisioterapia digital para dolor de espalda y articulaciones, pagada por empleadores."],
+  "UBS": ["bancos", "UBS: el mayor gestor de patrimonios del mundo y banco suizo (absorbió a Credit Suisse)."],
+  "CDNA": ["laboratorio", "CareDx: exámenes que detectan el rechazo de órganos trasplantados."],
+  "CF": ["fertilizantes", "CF Industries: el mayor productor de fertilizantes nitrogenados (amoníaco) de Norteamérica."],
+  "DHT": ["navieras", "DHT Holdings: buques petroleros gigantes (VLCC) que arrienda para transportar crudo."],
+  "TECK": ["cobre", "Teck Resources: minería de cobre y zinc (incluida Quebrada Blanca, en Chile); Canadá."],
+  "SPCX": ["espacio", "SpaceX: cohetes reutilizables (Falcon 9, Starship) e internet satelital Starlink."],
+  "TEVA": ["farma", "Teva: el mayor fabricante de genéricos; crece con fármacos propios (Austedo, Ajovy); Israel."],
+  "KEYS": ["instrumentos", "Keysight: instrumentos de medición electrónica para diseñar y probar chips, redes y equipos."],
+  "EXPD": ["carga", "Expeditors: logística internacional y agencia de aduanas, sin aviones ni barcos propios."],
+  "BE": ["energia_dc", "Bloom Energy: celdas de combustible que generan electricidad en el lugar, cada vez más en centros de datos."],
+  "APH": ["infra_dc", "Amphenol: conectores, cables y sensores; crece fuerte con los centros de datos de IA."],
+  "IOT": ["software", "Samsara: sensores y software en la nube para flotas, maquinaria y operaciones en terreno."],
+  "CNC": ["seguros_salud", "Centene: seguros de salud de Medicaid y del mercado de la ley de salud (ACA)."],
+  "COPEC": ["cl_energia", "Empresas Copec: distribución de combustibles (Copec, Terpel) y celulosa y forestal (Arauco)."],
+  "FALABELLA": ["cl_retail", "Falabella: tiendas por departamento, Sodimac, Tottus, banco y venta en línea; Chile y la región."],
+  "RIPLEY": ["cl_retail", "Ripley: tiendas por departamento, banco y centros comerciales; Chile y Perú."],
+  "LTM": ["cl_aerolinea", "LATAM Airlines: la mayor aerolínea de Sudamérica (pasajeros y carga)."],
+  "SOCOVESA": ["cl_inmobiliaria", "Socovesa: desarrolla y vende viviendas y oficinas en Chile."],
+  "ANDINA-B": ["cl_bebidas", "Embotelladora Andina: embotelladora de Coca-Cola en Chile, Argentina, Brasil y Paraguay."],
+  "CHILE": ["cl_bancos", "Banco de Chile: uno de los dos mayores bancos privados del país."]
+};
+var FICHA_TTL_OK = 7 * 864e5, FICHA_TTL_FALLO = 6 * 36e5, FICHA_POLL_MS = 8000;
+var FICHA_MOTORES_FINANCIEROS = {bancos:1, banca_inv:1, bancos_reg:1, credito:1, seguros:1, berkshire:1};
+var _fichaEst = null;
+
+function fichaEst(){
+  if(!_fichaEst){
+    var cache = {};
+    try { cache = JSON.parse(localStorage.getItem('ipsa_fichas') || '{}') || {}; } catch(e){ cache = {}; }
+    _fichaEst = {cache: cache, pend: new Set(), noAplica: {}, cola: new Set(), prio: new Set(), yaPrio: new Set(),
+                 timer: null, poll: null, fallos: 0, sinSec: false, error: null};
+  }
+  return _fichaEst;
+}
+function guardarFichas(){
+  try { localStorage.setItem('ipsa_fichas', JSON.stringify(fichaEst().cache)); } catch(e){}
+}
+function fichaEsc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+
+// Lo que se guarda en el teléfono: sin los textos fijos (pregunta, regla) ni
+// las etiquetas contables, que solo sirven para el diagnóstico.
+function fichaCompacta(f){
+  var c = Object.assign({}, f);
+  delete c.etiquetas;
+  if(Array.isArray(c.preguntas)) c.preguntas = c.preguntas.map(function(p){
+    var q = Object.assign({}, p); delete q.pregunta; delete q.regla; return q;
+  });
+  return c;
+}
+
+// Solo empresas de EE.UU.: las chilenas reportan a la CMF, y un ETF o una
+// cripto no tienen estados financieros.
+function fichaAplica(t){
+  if(!t || /-USD$/.test(t)) return false;
+  if(ETFS_USA_SET.has(t)) return false;
+  var p = FICHA_PERFILES[t];
+  if(p && /^cl_/.test(p[0])) return false;
+  var s = todosLosStocks().find(function(x){ return x.ticker === t; });
+  if(s && (s.currency !== 'USD' || s.esCripto || s.esEtf)) return false;
+  return true;
+}
+function fichaDe(t){
+  var c = fichaEst().cache[t];
+  return (c && c.f) ? c.f : null;
+}
+function fichaFresca(t){
+  var c = fichaEst().cache[t];
+  if(!c || !c.f) return false;
+  return Date.now() - c.ts <= (c.f.disponible ? FICHA_TTL_OK : FICHA_TTL_FALLO);
+}
+
+// Pide al servidor las que falten. `prio`: pasan adelante en la cola del
+// servidor (lo que estás mirando) por sobre lo que pide la grilla.
+function pedirFichas(tks, prio){
+  if(!FICHA_LISTO) return;
+  var E = fichaEst();
+  (tks || []).forEach(function(t){
+    if(!t || E.noAplica[t] || !fichaAplica(t) || fichaFresca(t)) return;
+    // Ya pendiente: no se vuelve a pedir en cada redibujo (Explorar se
+    // redibuja cada vez que llega una ficha). Solo pasa adelante una vez.
+    if(E.pend.has(t) && (!prio || E.yaPrio.has(t))) return;
+    (prio ? E.prio : E.cola).add(t);
+  });
+  if((E.cola.size || E.prio.size) && !E.timer) E.timer = setTimeout(enviarFichas, 300);
+}
+
+async function enviarFichas(){
+  var E = fichaEst();
+  E.timer = null;
+  var prio = Array.from(E.prio); E.prio.clear();
+  var norm = Array.from(E.cola).filter(function(t){ return prio.indexOf(t) < 0; }); E.cola.clear();
+  var lotes = [];
+  for(var i = 0; i < prio.length; i += 60) lotes.push([prio.slice(i, i + 60), true]);
+  for(var k = 0; k < norm.length; k += 60) lotes.push([norm.slice(k, k + 60), false]);
+  var llegaron = [], fallo = false;
+  for(var n = 0; n < lotes.length; n++){
+    var l = lotes[n][0], p = lotes[n][1];
+    l.forEach(function(t){ E.pend.add(t); if(p) E.yaPrio.add(t); });
+    try {
+      var r = await fetch(BACKEND_URL + '/ficha-lote?t=' + encodeURIComponent(l.join(',')) + (p ? '&prio=1' : ''));
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      var j = await r.json();
+      E.sinSec = j.secIdentificado === false;
+      Object.keys(j.fichas || {}).forEach(function(t){
+        E.cache[t] = {f: fichaCompacta(j.fichas[t]), ts: Date.now()};
+        E.pend.delete(t); E.yaPrio.delete(t); llegaron.push(t);
+      });
+      Object.keys(j.noAplica || {}).forEach(function(t){
+        E.noAplica[t] = j.noAplica[t]; E.pend.delete(t); llegaron.push(t);
+      });
+      E.error = null;
+    } catch(e){
+      fallo = true;
+      E.error = String((e && e.message) || e);
+    }
+  }
+  E.fallos = fallo ? Math.min(E.fallos + 1, 6) : 0;
+  if(llegaron.length){ guardarFichas(); alLlegarFichas(llegaron); }
+  if(E.pend.size && !E.poll){
+    // Sin red o con el servidor dormido: se espera cada vez más (hasta ~8 min).
+    E.poll = setTimeout(function(){ E.poll = null; sondearFichas(); }, FICHA_POLL_MS * Math.pow(2, E.fallos));
+  }
+}
+function sondearFichas(){
+  var E = fichaEst();
+  if(!E.pend.size) return;
+  if(document.hidden){
+    E.poll = setTimeout(function(){ E.poll = null; sondearFichas(); }, FICHA_POLL_MS);
+    return;
+  }
+  E.pend.forEach(function(t){ E.cola.add(t); });
+  enviarFichas();
+}
+
+// Lo que llegó se pinta donde ya está en pantalla, sin redibujar todo (en Mi
+// Cartera podrías estar escribiendo un objetivo). Explorar sí se redibuja:
+// una ficha nueva puede cambiar quién encabeza un motor o mandarla a "Fuera
+// por la ficha".
+var _fichaExplVista = new Set();
+function alLlegarFichas(tks){
+  var set = new Set(tks);
+  document.querySelectorAll('[data-ficha-chip]').forEach(function(el){
+    var t = el.dataset.fichaChip;
+    if(set.has(t)) el.outerHTML = fichaChipHTML(t, {corto: el.dataset.corto === '1', pedir: false});
+  });
+  document.querySelectorAll('[data-ficha-det]').forEach(function(el){
+    var t = el.dataset.fichaDet;
+    if(set.has(t)) el.outerHTML = fichaDetalleHTML(t);
+  });
+  document.querySelectorAll('[data-ficha-qh]').forEach(function(el){
+    var t = el.dataset.fichaQh;
+    if(set.has(t)) el.outerHTML = queHaceHTML(t, {industria: el.dataset.industria});
+  });
+  if(ambienteActivo === 'explorar' && tks.some(function(t){ return _fichaExplVista.has(t); })
+     && typeof renderAmbienteExplorar === 'function') renderAmbienteExplorar();
+}
+
+// ---- piezas de pantalla -------------------------------------------------
+var FICHA_RES = {si: ['Sí', 'fr-si'], medias: ['A medias', 'fr-med'], no: ['No', 'fr-no']};
+var FICHA_VEREDICTO = {
+  calidad: ['calidad', 'Calidad: 4 o más de 5.'],
+  vigilar: ['vigilar', 'Vigilar: 3 a 3,5 de 5.'],
+  fuera: ['fuera', 'Menos de 3 de 5: fuera por la ficha.'],
+  incompleta: ['incompleta', 'Faltan datos: no alcanza para decidir, y con lo que falta todavía podría llegar a 3.'],
+  financiera: ['orientativa', 'Financiera: la ficha de la clase no se pensó para bancos ni aseguradoras. Se muestra, pero no saca a nadie de la lista.'],
+};
+function fichaPts(v){ return fmtNum(v, (v % 1) ? 1 : 0); }
+
+function esFinanciera(t, sector, industria){
+  var p = FICHA_PERFILES[t];
+  if(p) return !!FICHA_MOTORES_FINANCIEROS[p[0]];
+  return /financ/i.test(sector || '') && /bank|insur|credit|savings|thrift|broker|mortgage|lending|leasing|capital markets/i.test(industria || '');
+}
+function fichaVeredicto(t, f, sector, industria){
+  if(!f || !f.disponible) return null;
+  if(esFinanciera(t, sector, industria)) return 'financiera';
+  return f.veredicto;
+}
+// "Fuera por la ficha" en Explorar.
+function fichaFuera(t, sector, industria){
+  return fichaVeredicto(t, fichaDe(t), sector, industria) === 'fuera';
+}
+
+function fichaChipHTML(t, o){
+  o = o || {};
+  if(!FICHA_LISTO || !fichaAplica(t)) return '';
+  var E = fichaEst();
+  if(E.noAplica[t]) return '';
+  if(o.pedir !== false && !fichaFresca(t)) pedirFichas([t], !!o.prio);
+  var f = fichaDe(t), cuerpo;
+  var attrs = 'data-ficha-chip="' + t + '"' + (o.corto ? ' data-corto="1"' : '');
+  if(!f){
+    // Sin pedir todavía (una tarjeta de la grilla que no ha asomado): nada.
+    // El contenedor queda igual, para pintarla cuando llegue.
+    var enCurso = E.pend.has(t) || E.cola.has(t) || E.prio.has(t);
+    cuerpo = enCurso ? '<span class="fch fch-calc" title="La ficha se calcula con los estados que la empresa entrega a la SEC. La primera vez toma unos segundos por acción.">ficha: calculando…</span>' : '';
+  } else if(!f.disponible){
+    cuerpo = '<span class="fch fch-nd" title="' + fichaEsc(f.motivo || 'ni la SEC ni TradingView entregaron datos') + '">ficha: sin datos</span>';
+  } else {
+    var v = fichaVeredicto(t, f, o.sector, o.industria) || 'incompleta';
+    var lin = (f.preguntas || []).map(function(p){
+      return p.n + '. ' + (p.resultado ? FICHA_RES[p.resultado][0] : 'sin dato');
+    }).join(' · ');
+    var faltan = 5 - (f.respondidas || 0);
+    cuerpo = '<span class="fch fch-' + v + '" title="' + fichaEsc(FICHA_VEREDICTO[v][1] + ' ' + lin) + '">'
+      + (o.corto ? 'F ' : 'Ficha ') + fichaPts(f.puntaje) + '/5'
+      + (faltan ? (o.corto ? '*' : ' · ' + faltan + ' sin dato') : '')
+      + (!o.corto ? ' · ' + FICHA_VEREDICTO[v][0] : '') + '</span>';
+    if(f.firma){
+      cuerpo += ' <span class="fch-caja' + (f.firma.mala ? ' mala' : '') + '" title="'
+        + fichaEsc('Firma de caja (operación, inversión, financiamiento): ' + f.firma.texto) + '">'
+        + (o.corto ? '' : 'caja ') + f.firma.signos + '</span>';
+    }
+    if(f.fuente && f.fuente !== 'sec' && !o.corto) cuerpo += ' <span class="fch-fte" title="Parte o todo vino de TradingView, sin historia">TV</span>';
+  }
+  return '<span class="fch-wrap" ' + attrs + '>' + cuerpo + '</span>';
+}
+
+function pintarFichaCard(card, t){
+  if(!FICHA_LISTO || !card) return;
+  var el = card.querySelector('[data-el="ficha"]');
+  if(!el) return;
+  var h = fichaChipHTML(t, {corto: true, pedir: false});
+  if(el.innerHTML !== h) el.innerHTML = h;
+}
+
+// Motor de negocio para agrupar en Explorar: el de la tabla escrita a mano,
+// o si la empresa no está, su industria tal como viene.
+function motorDe(t, industria){
+  var p = FICHA_PERFILES[t];
+  if(p) return {clave: 'm:' + p[0], nombre: FICHA_MOTORES[p[0]], tipo: 'motor'};
+  if(industria) return {clave: 'i:' + explNorm(industria), nombre: industria, tipo: 'industria'};
+  return null;
+}
+
+function queHaceHTML(t, o){
+  o = o || {};
+  var attrs = 'data-ficha-qh="' + t + '"' + (o.industria ? ' data-industria="' + fichaEsc(o.industria) + '"' : '');
+  var p = FICHA_PERFILES[t];
+  if(p) return '<div class="qh" ' + attrs + '><span class="qh-motor">' + fichaEsc(FICHA_MOTORES[p[0]]) + '</span> ' + fichaEsc(p[1]) + '</div>';
+  var f = fichaDe(t), pf = f && f.perfil;
+  if(pf && (pf.resumen || pf.industria)){
+    return '<div class="qh" ' + attrs + '>' + (pf.industria ? '<span class="qh-motor">' + fichaEsc(pf.industria) + '</span> ' : '')
+      + fichaEsc(pf.resumen || '') + ' <span class="qh-fte">(Yahoo, en inglés)</span></div>';
+  }
+  if(o.industria) return '<div class="qh" ' + attrs + '><span class="qh-motor">' + fichaEsc(o.industria) + '</span></div>';
+  return '<span ' + attrs + '></span>';
+}
+
+function fichaPct(v, signo){
+  if(typeof v !== 'number') return '—';
+  return (signo && v > 0 ? '+' : '') + fmtNum(v, 1) + ' %';
+}
+function fichaDatoTxt(p){
+  var d = p.datos || {};
+  switch(p.n){
+    case 1: {
+      var s = [];
+      if(typeof d.ventas === 'number') s.push('Ventas ' + fichaPct(d.ventas, true));
+      if(typeof d.bpa === 'number') s.push('BPA ' + fichaPct(d.bpa, true));
+      var t = s.join(' · ');
+      if(Array.isArray(d.ventasTrim) && d.ventasTrim.filter(function(x){ return typeof x === 'number'; }).length === 3)
+        t += ' <span class="fd-sub">(ventas, 3 últimos trim.: ' + d.ventasTrim.map(function(x){ return fmtNum(x, 0); }).join(' → ') + ' %)</span>';
+      return t;
+    }
+    case 2: {
+      var a = d['años'] ? 'hace ' + d['años'] + ' años ' : 'antes ';
+      var r = [];
+      if(typeof d.bruto === 'number') r.push('Margen bruto ' + fichaPct(d.bruto) + (typeof d.brutoAntes === 'number' ? ' <span class="fd-sub">(' + a + fichaPct(d.brutoAntes) + ')</span>' : ''));
+      if(typeof d.operacional === 'number') r.push('operacional ' + fichaPct(d.operacional) + (typeof d.operacionalAntes === 'number' ? ' <span class="fd-sub">(' + fichaPct(d.operacionalAntes) + ')</span>' : ''));
+      return r.join(' · ');
+    }
+    case 3:
+      if(typeof d.relacion === 'number') return 'Flujo libre = ' + fmtNum(d.relacion, 0) + ' % de la utilidad';
+      if(typeof d.flujoLibre === 'number' && d.flujoLibre <= 0) return 'Flujo libre negativo';
+      if(typeof d.utilidad === 'number' && d.utilidad <= 0) return 'Utilidad negativa, con flujo libre positivo';
+      return '';
+    case 4:
+      if(d.deuda === 0 || d['años'] === 0) return 'Sin deuda financiera';
+      if(typeof d['años'] === 'number') return 'Deuda = ' + fmtNum(d['años'], 1) + ' años de flujo libre';
+      return '';
+    case 5:
+      return typeof d.roic === 'number' ? 'ROIC ' + fichaPct(d.roic) : '';
+  }
+  return '';
+}
+var FICHA_PREG = ['¿Crece de verdad?', '¿Gana plata con lo que vende?', '¿La utilidad se convierte en caja?',
+                  '¿Aguanta un mal año?', '¿Usa bien el capital?'];
+var FICHA_REGLA = ['Ventas y BPA sobre 25 % contra el mismo trimestre del año anterior, sin frenar dos trimestres seguidos.',
+                   'Margen bruto y operacional estables (±2 puntos) o subiendo contra 3 años atrás.',
+                   'Flujo libre (operación − inversión en activos, 12 meses) ≥ 80 % de la utilidad.',
+                   'Deuda total menor que 3 años de flujo libre (3 a 5: a medias).',
+                   'ROIC (utilidad operacional después de impuestos / capital invertido) sobre 15 % (10 a 15: a medias).'];
+
+function fichaFecha(iso){
+  if(!iso) return '';
+  var m = String(iso).slice(0, 10).split('-');
+  var MES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return m.length === 3 ? (+m[2]) + '-' + MES[+m[1] - 1] + '-' + m[0] : iso;
+}
+
+function fichaDetalleHTML(t, o){
+  o = o || {};
+  var abre = '<div class="fich-box" data-ficha-det="' + t + '"><p class="section-title" style="margin-top:0;">Ficha fundamental · las 5 preguntas de la clase</p>';
+  if(!FICHA_LISTO) return abre + '</div>';
+  var p = FICHA_PERFILES[t];
+  if(p && /^cl_/.test(p[0])) return abre + '<p class="fich-nota">Las chilenas reportan a la CMF, no a la SEC: esta ficha no aplica.</p></div>';
+  if(!fichaAplica(t)) return '<div data-ficha-det="' + t + '"></div>';
+  var E = fichaEst();
+  if(E.noAplica[t]) return abre + '<p class="fich-nota">' + fichaEsc(E.noAplica[t]) + '</p></div>';
+  if(!fichaFresca(t)) pedirFichas([t], true);
+  var f = fichaDe(t);
+  if(!f){
+    return abre + '<p class="fich-nota">Calculando con los estados financieros que la empresa entrega a la SEC… '
+      + 'La primera vez toma unos segundos (más si hay varias en cola). Después queda guardada 7 días en este teléfono.'
+      + (E.error ? '<br><span style="color:var(--copper);">Último intento: ' + fichaEsc(E.error) + '. Se reintenta solo.</span>' : '')
+      + '</p></div>';
+  }
+  if(!f.disponible){
+    return abre + '<p class="fich-nota">Sin datos: ' + fichaEsc(f.motivo || 'ni la SEC ni TradingView entregaron estados de esta empresa') + '.</p></div>';
+  }
+  var s = todosLosStocks().find(function(x){ return x.ticker === t; });
+  var v = fichaVeredicto(t, f, o.sector, o.industria) || 'incompleta';
+  var filas = (f.preguntas || []).map(function(q){
+    var r = q.resultado ? FICHA_RES[q.resultado] : ['sin dato', 'fr-nd'];
+    var dato = fichaDatoTxt(q);
+    return '<tr><td class="fq-n">' + q.n + '</td><td><div class="fq-p">' + FICHA_PREG[q.n - 1] + '</div>'
+      + (dato ? '<div class="fq-d">' + dato + '</div>' : '')
+      + (q.nota ? '<div class="fq-nota">' + fichaEsc(q.nota) + '</div>' : '')
+      + '</td><td class="fq-r"><span class="' + r[1] + '" title="' + fichaEsc(FICHA_REGLA[q.n - 1]) + '">' + r[0] + '</span>'
+      + (q.fuente === 'tradingview' ? '<div class="fq-fte">TradingView</div>' : '') + '</td></tr>';
+  }).join('');
+  var firma = '';
+  if(f.firma){
+    firma = '<div class="fich-firma' + (f.firma.mala ? ' mala' : '') + '"><b>Firma de caja ' + f.firma.signos + '</b>'
+      + ' <span class="fd-sub">(operación · inversión · financiamiento, 12 meses)</span><br>' + fichaEsc(f.firma.texto)
+      + (f.firma.mala ? '<br><b>Ojo:</b> la operación no genera caja. Solo se marca: no la saca de ninguna lista.' : '') + '</div>';
+  }
+  var fte = {sec: 'SEC (estados 10-K y 10-Q)', 'sec+tradingview': 'SEC, y TradingView para lo que la SEC no trajo',
+             tradingview: 'TradingView (sin historia: la 1 no puede ver si frena y la 2 queda sin dato)'}[f.fuente] || f.fuente;
+  var periodo = f.periodo === 'anual' ? 'último año fiscal (la empresa no reporta trimestres a la SEC)' : 'últimos 12 meses';
+  return abre
+    + '<div class="fich-head"><span class="fich-pts">' + fichaPts(f.puntaje) + '<small>/5</small></span>'
+    + '<span class="fch fch-' + v + '">' + FICHA_VEREDICTO[v][0] + '</span>'
+    + '<span class="fich-vtxt">' + FICHA_VEREDICTO[v][1]
+    + (f.respondidas < 5 ? ' Con dato: ' + f.respondidas + ' de 5; como máximo llegaría a ' + fichaPts(f.maximo) + '.' : '') + '</span></div>'
+    + '<table class="fich-tabla">' + filas + '</table>'
+    + firma
+    + '<p class="fich-fte">Fuente: ' + fichaEsc(fte) + ' · ' + periodo + (f.hasta ? ' hasta el ' + fichaFecha(f.hasta) : '')
+    + ' · calculada el ' + fichaFecha(f.calculado)
+    + (f.edgar ? ' · <a href="' + f.edgar + '" target="_blank" rel="noopener">ver los reportes en la SEC ↗</a>' : '') + '</p>'
+    + (E.sinSec ? '<p class="fich-nota" style="color:var(--copper);">El servidor todavía no tiene la variable SEC_USER_AGENT: por eso todo viene de TradingView.</p>' : '')
+    + '<p class="fich-nota">Sí = 1 · A medias = ½ · No = 0. 4 o más: calidad · 3 a 3,5: vigilar · menos de 3: fuera. '
+    + 'Toca un resultado para ver la regla. No es una recomendación de compra.</p>'
+    + '</div>';
+}
+
+// ---- Explorar: agrupar por motor ---------------------------------------
+// Reemplaza "una sola por industria". Ninguna se descarta: la de mejor score
+// (y Mansfield en empate) encabeza su motor, y las demás quedan debajo como
+// reserva. Las que la ficha deja fuera van aparte, al final.
+function explAgruparPorMotor(lista, agrupar){
+  var mfOrden = function(a){ return (typeof a.mf === 'number') ? a.mf : -1e9; };
+  var orden = lista.slice().sort(function(a, b){
+    return (b.sc || 0) - (a.sc || 0) || mfOrden(b) - mfOrden(a) || a.t.localeCompare(b.t);
+  });
+  var lideres = [], fueraFicha = [], porMotor = {};
+  orden.forEach(function(a){
+    if(fichaFuera(a.t, a.se, a['in'])){ fueraFicha.push(a); return; }
+    var m = motorDe(a.t, a['in']);
+    var x = Object.assign({}, a, {_motor: m, _reservas: []});
+    if(agrupar && m && porMotor[m.clave]){ porMotor[m.clave]._reservas.push(x); return; }
+    if(m) porMotor[m.clave] = x;
+    lideres.push(x);
+  });
+  return {finales: lideres, fueraFicha: fueraFicha};
+}
+
+function explFichaProgresoHTML(tks){
+  var E = fichaEst();
+  var aplican = tks.filter(function(t){ return fichaAplica(t) && !E.noAplica[t]; });
+  if(!aplican.length) return '';
+  var listas = aplican.filter(function(t){ return !!fichaDe(t); }).length;
+  if(listas === aplican.length) return '';
+  return '<div class="fich-prog">Ficha fundamental: ' + listas + ' de ' + aplican.length + ' calculadas. '
+    + 'Las demás llegan solas en los próximos minutos'
+    + (E.error ? ' <span style="color:var(--copper);">(último intento: ' + fichaEsc(E.error) + ')</span>' : '') + '.</div>';
+}
+
+var FICHA_LISTO = true;
+// La grilla se dibujó antes de que existiera este bloque: se le pinta la ficha
+// que ya esté guardada en el teléfono.
+setTimeout(function(){
+  try { Object.keys(cardEls).forEach(function(t){ pintarFichaCard(cardEls[t], t); }); } catch(e){}
+}, 0);
 function esEtfAmplio(t){ return ETF_AMPLIOS.indexOf(t) !== -1; }
 
 // ---- Ambiente 4 · "Mi Cartera" (bloque 8) ----
@@ -11811,6 +12525,7 @@ function renderAmbienteCartera(){
           <button type="button" class="fav-btn ${esFav ? 'active' : ''}" data-accion="fav" data-ticker="${s.ticker}" title="Marcar como favorita">${esFav ? '★' : '☆'}</button>
           <span class="cartera-ticker mono" data-accion="abrir" data-ticker="${s.ticker}">${s.ticker}</span>
           <span class="cartera-name" data-accion="abrir" data-ticker="${s.ticker}">${s.name}</span>
+          ${fichaChipHTML(s.ticker, {prio:true})}
           <span class="cartera-price-wrap" data-accion="abrir" data-ticker="${s.ticker}">
             <span class="cartera-price mono">${precioActual !== null ? fmtMoneda2(precioActual, currency) : ''}</span>
             ${pctVsCompra !== null ? `<span class="cartera-price-pct mono" style="color:${pctVsCompra >= 0 ? 'var(--verdigris)' : 'var(--copper)'};" title="Precio de hoy respecto de tu precio de compra (${fmtMoneda2(pos.costoPromedio, currency)})">${pctVsCompra >= 0 ? '+' : ''}${fmtNum(pctVsCompra, 1)}%</span>` : ''}
