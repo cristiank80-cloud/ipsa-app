@@ -1343,6 +1343,61 @@
   .glos-item b{color:var(--ink);}
   .glos-lista{margin:0 0 7px; padding-left:18px; font-size:12.5px; color:var(--ink-dim); line-height:1.65;}
   .glos-lista li{margin-bottom:4px;}
+  /* Glosario completo (31-oct-2026): buscador, índice y temas que se abren */
+  .glos-buscar{position:sticky; top:-1px; z-index:3; background:var(--bg-panel); padding:4px 0 10px;
+               margin-bottom:10px; border-bottom:1px solid var(--hairline);}
+  .glos-buscar-fila{display:flex; gap:8px; flex-wrap:wrap;}
+  .glos-buscar-in{position:relative; flex:1 1 240px;}
+  .glos-buscar-in input{width:100%; box-sizing:border-box; padding:9px 30px 9px 11px; font-size:13.5px;
+               border:1px solid var(--hairline); border-radius:8px; background:var(--bg-field); color:var(--ink);}
+  .glos-buscar-in input:focus{outline:none; border-color:var(--gold);}
+  .glos-buscar-x{position:absolute; right:6px; top:50%; transform:translateY(-50%); border:none; background:none;
+               color:var(--ink-faint); cursor:pointer; font-size:14px; padding:2px 5px;}
+  .glos-buscar select{flex:0 1 220px; padding:8px; font-size:12.5px; border:1px solid var(--hairline);
+               border-radius:8px; background:var(--bg-field); color:var(--ink);}
+  .glos-sug{display:none; position:absolute; left:0; right:0; top:100%; margin-top:4px; max-height:320px; overflow:auto;
+               background:var(--bg-panel); border:1px solid var(--hairline); border-radius:8px;
+               box-shadow:0 8px 24px rgba(0,0,0,0.12); z-index:5;}
+  .glos-sug-op{display:block; width:100%; text-align:left; background:none; border:none; border-bottom:1px solid var(--hairline);
+               padding:8px 11px; cursor:pointer; color:var(--ink);}
+  .glos-sug-op:hover, .glos-sug-op.activa{background:rgba(144,111,55,0.10);}
+  .glos-sug-op .gs-t{display:block; font-size:12.5px; font-weight:600;}
+  .glos-sug-op .gs-d{display:block; font-size:10.5px; color:var(--ink-faint); margin-top:1px;}
+  .glos-sug-todos{font-size:11.5px; color:var(--gold); font-weight:600;}
+  .glos-sug-nada{padding:9px 11px; font-size:12px; color:var(--ink-faint);}
+  .glos-ayuda{font-size:10.5px; color:var(--ink-faint); margin:6px 0 0;}
+  .glos-indice{margin:0 0 14px; padding:10px 12px; border:1px solid var(--hairline); border-radius:10px; background:var(--bg-field);}
+  .glos-indice summary{cursor:pointer; font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--gold); font-weight:600;}
+  .glos-indice ol{margin:8px 0 0; padding-left:18px; font-size:12.5px;}
+  .glos-indice li{margin-bottom:7px;}
+  .glos-indice li > a{font-weight:600; color:var(--ink); text-decoration:none;}
+  .glos-indice-items{font-size:11.5px; line-height:1.7; margin-top:1px;}
+  .glos-indice-items a{color:var(--ink-dim); text-decoration:none; margin-right:12px; display:inline-block;}
+  .glos-indice a:hover{color:var(--gold); text-decoration:underline;}
+  .glos-tema{border:1px solid var(--hairline); border-radius:10px; margin-bottom:8px; padding:0 12px;}
+  .glos-tema summary{cursor:pointer; display:flex; justify-content:space-between; align-items:center; gap:8px;
+               padding:11px 0; font-size:13.5px; font-weight:700; color:var(--ink);}
+  .glos-tema[open] summary{border-bottom:1px solid var(--hairline); margin-bottom:10px;}
+  .glos-tema-n{font-size:10.5px; font-weight:600; color:var(--ink-faint); background:var(--bg-field);
+               border-radius:10px; padding:1px 8px;}
+  .glos-tema-intro{font-size:12px; color:var(--ink-faint); margin:0 0 12px; font-style:italic;}
+  .glos-donde{font-size:11px; color:var(--ink-dim); margin:0 0 6px; padding:3px 8px; border-left:2px solid var(--gold);
+               background:rgba(144,111,55,0.06); border-radius:0 6px 6px 0;}
+  .glos-donde span{color:var(--gold); font-weight:700;}
+  .glos-item-tema{display:inline-block; font-size:10px; color:var(--gold); border:1px solid rgba(144,111,55,0.35);
+               border-radius:4px; padding:0 5px; margin:0 0 5px; cursor:pointer;}
+  .glos-res-tit{font-size:12px; color:var(--ink-dim); margin:0 0 12px;}
+  .glos-res-tit a{color:var(--gold);}
+  .glos-vacio{font-size:12.5px; color:var(--ink-faint);}
+  .glos-item mark{background:rgba(201,166,107,0.35); color:inherit; border-radius:2px; padding:0 1px;}
+  .glos-sug mark{background:rgba(201,166,107,0.35); color:inherit; border-radius:2px;}
+  .glos-item, .glos-tema{scroll-margin-top:160px;}
+  /* El buscador queda fijo arriba al desplazarse. El fondo oscuro tenía 20 px
+     de margen arriba y por ese hueco se asomaba el texto: se mueve al recuadro. */
+  #helpOverlay{padding-top:0;}
+  #helpOverlay .detail{margin-top:20px;}
+  .glos-flash{animation:glosFlash 1.8s ease-out;}
+  @keyframes glosFlash{0%{background:rgba(201,166,107,0.35);} 100%{background:transparent;}}
   .glos-nota{
     font-size:11.5px !important; color:var(--ink-faint) !important;
     border-left:2px solid var(--hairline); padding-left:9px; margin-top:8px !important;
@@ -1716,7 +1771,7 @@
        indicador_fuerza_fase.py y explorar.py, no inventados para el texto.
        Si algún día se cambian allá, hay que cambiarlos acá. -->
   <div class="overlay" id="helpOverlay" style="z-index:60;">
-    <div class="detail" style="max-width:560px;">
+    <div class="detail" style="max-width:640px;">
       <div class="detail-top">
         <div>
           <div class="detail-name">¿Qué significa cada cosa?</div>
@@ -1725,233 +1780,25 @@
         <button class="close-btn" id="btnCerrarAyuda">✕</button>
       </div>
 
-      <div class="glos-nav" id="glosNav">
-        <button type="button" class="glos-nav-btn" data-glos="fase">Fase y fuerza</button>
-        <button type="button" class="glos-nav-btn" data-glos="promedio">Promedios y RSI</button>
-        <button type="button" class="glos-nav-btn" data-glos="embudo">El embudo</button>
-        <button type="button" class="glos-nav-btn" data-glos="cartera">Tu cartera</button>
-        <button type="button" class="glos-nav-btn" data-glos="grafico">El gráfico</button>
+      <div class="glos-buscar">
+        <div class="glos-buscar-fila">
+          <div class="glos-buscar-in">
+            <input id="glosBuscar" type="text" autocomplete="off" spellcheck="false"
+                   placeholder="Busca una palabra: stop, fase, caja, ficha, zona…" aria-label="Buscar en el glosario">
+            <button type="button" class="glos-buscar-x" id="glosBuscarX" title="Borrar" aria-label="Borrar búsqueda">✕</button>
+            <div class="glos-sug" id="glosSugerencias" role="listbox"></div>
+          </div>
+          <select id="glosTema" aria-label="Tema"></select>
+        </div>
+        <p class="glos-ayuda">Escribe y elige una de las opciones, o Enter para ver todos los resultados. El selector deja un solo tema. Cada tema se abre y se cierra tocando su título.</p>
       </div>
 
       <div class="glos-body">
-
-        <div class="glos-sec" id="glos-fase">
-          <p class="glos-sec-title">Fase y fuerza — el "cuándo"</p>
-
-          <div class="glos-item">
-            <b>Fase de Weinstein (1 a 4)</b>
-            <p>Se calcula sobre velas <b>semanales</b>, comparando el precio con su media de
-            30 semanas y con la inclinación de esa media. Las cuatro fases son un ciclo:</p>
-            <ul class="glos-lista">
-              <li><b>Fase 1 — Base.</b> Terminó de caer y está plana. Ni sube ni baja. No es
-              momento de entrar: puede quedarse ahí meses.</li>
-              <li><b>Fase 2 — Avance.</b> Rompió hacia arriba y la media va subiendo. Es la
-              única fase en la que este método compra.</li>
-              <li><b>Fase 3 — Techo.</b> Dejó de hacer máximos nuevos, la media se aplanó.
-              Es zona de tomar utilidades, no de agregar.</li>
-              <li><b>Fase 4 — Caída.</b> Bajo su media, con la media cayendo. Acá no se compra
-              "porque está barata": puede seguir bajando mucho más.</li>
-            </ul>
-          </div>
-
-          <div class="glos-item">
-            <b>Confirmaciones (X de 5)</b>
-            <p>Estar en fase 2 no basta. La app cuenta cinco cosas que deberían pasar al mismo
-            tiempo, y el método exige al menos <b>4 de 5</b>:</p>
-            <ul class="glos-lista">
-              <li>El precio está sobre su media de 30 semanas.</li>
-              <li>Esa media va subiendo (no plana).</li>
-              <li>Rompió su máximo de las últimas 30 semanas hace poco (8 semanas o menos).</li>
-              <li>Le está ganando al S&amp;P 500 (fuerza relativa subiendo).</li>
-              <li>El volumen del último tramo es más alto que su promedio (30 % más).</li>
-            </ul>
-            <p>Con 3 dice "no entra todavía". Con menos, "esperar".</p>
-          </div>
-
-          <div class="glos-item">
-            <b>Score de fuerza (0 a 8)</b>
-            <p>Distinto de lo anterior: este se calcula sobre velas <b>diarias</b> y suma ocho
-            señales de que la acción va bien por dentro — precio sobre su media de 150 días,
-            media de 50 sobre la de 150, las dos medias subiendo, máximos y mínimos de 10 días
-            más altos que hace 10 días, RSI más alto que hace 20 días, y precio sobre su media
-            de 50. El embudo pide <b>6 o más</b>.</p>
-            <p class="glos-nota">Fase = ¿en qué parte del ciclo está? · Score = ¿cómo se ve por
-            dentro hoy? Los dos tienen que estar bien.</p>
-          </div>
-
-          <div class="glos-item">
-            <b>Fuerza relativa</b>
-            <p>No es lo mismo que el RSI, aunque en inglés compartan iniciales. Acá significa:
-            <b>comparada con el S&amp;P 500, ¿va ganando o perdiendo?</b> Una acción que sube
-            10 % en un año donde el mercado subió 25 % no es fuerte: es lenta. El método pide
-            que esa línea vaya <b>subiendo</b>, no solo que el precio suba.</p>
-          </div>
-        </div>
-
-        <div class="glos-sec" id="glos-promedio">
-          <p class="glos-sec-title">Promedios y RSI — el ruido de todos los días</p>
-
-          <div class="glos-item">
-            <b>SMA — Media móvil simple</b>
-            <p>El precio promedio de los últimos N días, sin darle más peso a ninguno. Sirve
-            para ver la tendencia "suavizada", sin el ruido del día a día. La app usa varias:
-            <b>SMA 20</b> (muy corto plazo), <b>SMA 50</b> (la que se usa como stop en tu
-            cartera) y <b>SMA 200</b> (la tendencia de fondo).</p>
-          </div>
-
-          <div class="glos-item">
-            <b>SMA 200 — la línea de agua</b>
-            <p>Es la media de los últimos 200 días de bolsa (unos 10 meses). La lectura simple:
-            <b>por encima</b>, la tendencia larga es alcista; <b>por debajo</b>, es bajista.
-            Casi todo el daño grande de una acción ocurre bajo su SMA 200. Por eso el embudo
-            pide que la SMA 50 esté <i>sobre</i> la SMA 200: es la forma corta de decir "la
-            tendencia de fondo ya se dio vuelta hacia arriba".</p>
-            <p class="glos-nota">Si una acción tiene menos de 200 días de historial, este dato
-            aparece como "no disponible" — nunca aproximado.</p>
-          </div>
-
-          <div class="glos-item">
-            <b>RSI (14 días)</b>
-            <p>Un número de 0 a 100 que compara cuánto subió contra cuánto bajó en las últimas
-            14 sesiones. Sobre <b>70</b> se lee como "subió mucho y rápido"; bajo <b>30</b>,
-            "cayó mucho y rápido". No es una garantía de nada: una acción fuerte puede pasar
-            semanas sobre 70, y una en caída libre puede pasar meses bajo 30.</p>
-          </div>
-
-          <div class="glos-item">
-            <b>Distancia a su promedio (z-score)</b>
-            <p>Mide cuánto se separó el precio de su propio promedio de 90 días, medido en
-            "desviaciones" — o sea, comparado con lo que es normal <i>para esa acción</i>.
-            Un z de −2σ significa "está más abajo de lo que suele estar".</p>
-            <p class="glos-nota"><b>Ojo con la trampa de este dato:</b> una acción que va
-            cayendo aparece "lejos bajo su promedio" durante <i>toda</i> la caída, y no deja de
-            estarlo nunca. Por eso este panel describe y no opina: quién decide <b>qué</b> mirar
-            es el embudo, y quién decide <b>cuándo</b> es la fase.</p>
-          </div>
-
-          <div class="glos-item">
-            <b>Volumen</b>
-            <p>Cuántos títulos se transaron. Un movimiento de precio con volumen alto suele ser
-            más confiable que el mismo movimiento con poco volumen. El embudo pide al menos
-            <b>2 millones de acciones al día</b> (promedio de 90 días) para que puedas entrar y
-            salir sin mover el precio tú mismo.</p>
-          </div>
-        </div>
-
-        <div class="glos-sec" id="glos-embudo">
-          <p class="glos-sec-title">El embudo — el "qué"</p>
-
-          <div class="glos-item">
-            <b>Los siete filtros</b>
-            <p>Explorar recorre el S&amp;P 500 + el Nasdaq-100 + tu grilla y va descartando en
-            este orden:</p>
-            <ul class="glos-lista">
-              <li><b>Precio ≥ 10 USD</b> — descarta chatarra.</li>
-              <li><b>Volumen 90 d ≥ 2 M</b> — que se pueda comprar y vender de verdad.</li>
-              <li><b>Precio &gt; SMA 50</b> — el precio va adelante de su propia media.</li>
-              <li><b>SMA 50 &gt; SMA 200</b> — la tendencia de fondo es alcista.</li>
-              <li><b>Capitalización ≥ 2 mil millones USD</b> — empresas de tamaño real.</li>
-              <li><b>Crecimiento de utilidades ≥ 25 %</b> — gana más que hace un año.</li>
-              <li><b>Crecimiento de ventas ≥ 25 %</b> — y además vende más.</li>
-            </ul>
-            <p>Lo que sobrevive pasa por fase de Weinstein y fuerza, y al final se deja
-            <b>una por industria</b> para no terminar con cinco versiones de la misma apuesta.</p>
-          </div>
-
-          <div class="glos-item">
-            <b>Capitalización bursátil</b>
-            <p>Lo que vale la empresa entera en bolsa: precio de la acción × número de acciones.
-            Se mide en miles de millones de dólares ("B", por <i>billion</i>). Sirve para no
-            terminar comprando una empresa tan chica que cualquier noticia la mueve 30 %.</p>
-          </div>
-
-          <div class="glos-item">
-            <b>"Para revisar a mano"</b>
-            <p>Acciones que pasaron todo lo que <i>se pudo medir</i> y están técnicamente sanas,
-            pero a las que Yahoo no le entregó algún dato (casi siempre la capitalización).
-            No desaparecen: salen aparte, diciendo qué dato faltó. Ese número se ve en
-            TradingView en dos segundos.</p>
-          </div>
-
-          <div class="glos-item">
-            <b>Cobertura</b>
-            <p>De cuántas acciones del universo alcanzó a decidir esa corrida. Yahoo limita las
-            peticiones cuando le llegan cientos seguidas, así que cada corrida tiene un
-            presupuesto de tiempo y va acumulando en caché. Una cobertura de 60 % con 4 nombres
-            buenos <b>sirve igual</b>: esto es una primera alerta, no un informe que tenga que
-            estar completo para valer.</p>
-          </div>
-        </div>
-
-        <div class="glos-sec" id="glos-cartera">
-          <p class="glos-sec-title">Tu cartera — las cinco reglas</p>
-
-          <div class="glos-item">
-            <b>Peso objetivo y tope por posición</b>
-            <p>Cuánto <i>debería</i> pesar cada posición dentro del total, y el máximo que
-            aceptas que pese una sola (10 % por defecto; se cambia en la pestaña Riesgo). Se mide siempre sobre el
-            <b>total</b>, nunca por plataforma: una posición que pesa 24 % dentro de Racional
-            pero 8 % del total es una posición de 8 %. El riesgo es tuyo, no de la corredora.</p>
-          </div>
-
-          <div class="glos-item">
-            <b>Stop en la media 50</b>
-            <p>El precio al que sales si la cosa se da vuelta. La regla que elegiste: ponerlo en
-            la <b>SMA 50</b>. La app te sugiere subirlo cuando la media sube — pero
-            <b>nunca lo baja sola</b>, y nunca lo cambia sin que toques el botón. Un stop que
-            baja no es un stop.</p>
-          </div>
-
-          <div class="glos-item">
-            <b>Esperando entrada</b>
-            <p>La sala de espera entre "me interesa" y "la compré". Una acción entra con dos
-            cosas obligatorias: <b>qué esperas que pase</b> y <b>hasta cuándo</b> (90 días).
-            Cumplido el plazo, la app te pregunta si la renuevas o la sacas — sin eso, la lista
-            se llena de nombres que se te arrancaron hace meses.</p>
-            <p class="glos-nota">Una acción que ya tienes comprada no puede tener condición de
-            entrada: en esa, la alerta de precio es tu <b>stop</b>, y ponerle un precio de
-            entrada te lo borraría sin avisar.</p>
-          </div>
-
-          <div class="glos-item">
-            <b>Aporte y caja</b>
-            <p>El recordatorio principal de la app no es "una acción cayó": es <b>"es día 25 y
-            todavía no registras tu aporte de este mes"</b>. La caja se ajusta sola con cada
-            compra y venta, y se separa por plataforma porque la plata no se teletransporta
-            entre corredoras.</p>
-          </div>
-        </div>
-
-        <div class="glos-sec" id="glos-grafico">
-          <p class="glos-sec-title">El gráfico — los trazados que puedes encender</p>
-
-          <div class="glos-item">
-            <b>EMA — Media móvil exponencial</b>
-            <p>Parecida a la SMA, pero le da más importancia a los precios recientes. Reacciona
-            más rápido a cambios nuevos.</p>
-          </div>
-          <div class="glos-item">
-            <b>BBands — Bandas de Bollinger</b>
-            <p>Una franja arriba y abajo del promedio que se ensancha cuando la acción se mueve
-            mucho y se angosta cuando está tranquila. Si el precio toca un borde, se movió
-            bastante más de lo habitual <i>para esa acción</i>.</p>
-          </div>
-          <div class="glos-item">
-            <b>MACD</b>
-            <p>Compara un promedio rápido con uno lento para mostrar si el impulso está
-            acelerando hacia arriba o hacia abajo. No es un precio: es la fuerza del movimiento.</p>
-          </div>
-          <div class="glos-item">
-            <b>Fondo "Fuerza" y fondo "Weinstein"</b>
-            <p>Pintan el fondo del gráfico con el estado de cada día o semana, para que veas
-            <i>cuándo</i> cambió de fase en vez de solo saber en cuál está hoy.
-            Weinstein: gris = fase 1, verde = fase 2, naranjo = fase 3, rojo = fase 4.</p>
-          </div>
-        </div>
+        <div id="glosContenido"></div>
 
         <p class="glos-cierre">
-          Todos estos son datos históricos, no predicciones, y vienen de Yahoo Finance con
-          rezago. Ninguno te dice qué hacer — la decisión de comprar o vender siempre es tuya.
+          Todos estos son datos históricos, no predicciones, y vienen de Yahoo Finance,
+          TradingView y la SEC, con rezago. Ninguno te dice qué hacer — la decisión de comprar o vender siempre es tuya.
           Esta app no es asesoría financiera.
         </p>
       </div>
@@ -2986,10 +2833,11 @@ function cambiarAmbiente(nuevo){
   // ticker, no por ambiente).
   if(typeof renderOrdenRow === 'function'){
     renderOrdenRow();
-    if(GRID_ORDENES[gridOrden] && GRID_ORDENES[gridOrden].caro
+    if(necesitaDiagnostico()
        && (nuevo === 'chile' || nuevo === 'usa' || nuevo === 'etf' || nuevo === 'cripto')){
       pedirDiagnosticoDeTodoElAmbiente();
     }
+    if(necesitaFichas() && FICHA_LISTO) pedirFichas(stocksDelAmbiente(nuevo).map(s => s.ticker));
   }
   if(typeof renderGridOrder === 'function') renderGridOrder();
   if(typeof renderIndexDisplay === 'function') renderIndexDisplay();
@@ -3322,7 +3170,7 @@ async function vaciarColaDiagnostico(){
       // Si se está ordenando por un criterio que depende de estos datos, el
       // orden y la barra de progreso tienen que moverse con cada lote: si no,
       // la lista se quedaría quieta hasta el final y parecería colgada.
-      if(typeof GRID_ORDENES !== 'undefined' && GRID_ORDENES[gridOrden] && GRID_ORDENES[gridOrden].caro){
+      if(typeof GRID_ORDENES !== 'undefined' && GRID_ORDENES[gridOrden] && necesitaDiagnostico()){
         if(typeof renderOrdenRow === 'function') renderOrdenRow();
         if(typeof renderGridOrder === 'function') renderGridOrder();
       }
@@ -3519,6 +3367,21 @@ function veredictoGrid(t){
   const f = fichaGrid(t);
   return f ? fichaVeredicto(t, f) : null;
 }
+// FILTROS COMBINADOS (30-oct-2026). Ordenar y filtrar ya son cosas
+// separadas: el orden elige cómo se ordena, y cada filtro activo (caso,
+// fase, ficha) se suma a los otros. Lo que pidió Cristian: "busco las
+// oportunidades y de esas las fichas". Para que ningún filtro esconda
+// tarjetas por una razón que no está en pantalla, cada filtro activo deja
+// su fila visible aunque se ordene por otra cosa.
+function necesitaDiagnostico(){
+  return !!((GRID_ORDENES[gridOrden] && GRID_ORDENES[gridOrden].caro) || gridFiltroCaso || gridFiltroFase);
+}
+function necesitaFichas(){
+  return gridOrden === 'ficha' || !!gridFiltroFicha;
+}
+function ambienteConFicha(){
+  return !!FICHA_LISTO && stocksDelAmbiente(ambienteActivo).some(s => fichaAplica(s.ticker));
+}
 let diagDescargaActiva = false;
 
 function diagDe(ticker){ return diagTarjetaCache[ticker] || null; }
@@ -3556,14 +3419,10 @@ function cambiarGridOrden(nuevo){
   if(!GRID_ORDENES[nuevo]) return;
   gridOrden = nuevo;
   try { localStorage.setItem('ipsa_grid_orden', nuevo); } catch(e){}
-  // Cambiar de orden limpia el filtro del otro: dejar activo un filtro de
-  // fase mientras ordenas por oportunidad escondería tarjetas por una razón
-  // que ya no está en pantalla.
-  if(nuevo !== 'oportunidad') gridFiltroCaso = null;
-  if(nuevo !== 'fase') gridFiltroFase = null;
-  if(nuevo !== 'ficha') gridFiltroFicha = null;
-  if(nuevo === 'ficha' && FICHA_LISTO) pedirFichas(stocksDelAmbiente(ambienteActivo).map(s => s.ticker));
-  if(GRID_ORDENES[nuevo].caro) pedirDiagnosticoDeTodoElAmbiente();
+  // Cambiar de orden YA NO borra los filtros (ver necesitaDiagnostico): se
+  // combinan. Cada filtro activo sigue con su fila a la vista.
+  if(necesitaFichas() && FICHA_LISTO) pedirFichas(stocksDelAmbiente(ambienteActivo).map(s => s.ticker));
+  if(necesitaDiagnostico()) pedirDiagnosticoDeTodoElAmbiente();
   else diagDescargaActiva = false;
   renderOrdenRow();
   renderGridOrder();
@@ -3575,30 +3434,39 @@ function renderOrdenRow(){
   const pill = (txt, activa, attrs) => `<button type="button" class="orden-pill${activa ? ' activa' : ''}" ${attrs}>${txt}</button>`;
 
   // "Ficha" solo donde hay empresas de EE.UU. (en Chile, ETF y cripto no aplica).
-  const conFicha = !!FICHA_LISTO && stocksDelAmbiente(ambienteActivo).some(s => fichaAplica(s.ticker));
+  const conFicha = ambienteConFicha();
   let html = `<div class="orden-linea"><span class="orden-lab">Ordenar por</span>`
     + Object.entries(GRID_ORDENES).filter(([k]) => k !== 'ficha' || conFicha || gridOrden === 'ficha').map(([k, v]) =>
         pill(v.lab, gridOrden === k, `data-orden="${k}"`)).join('')
     + `</div>`;
 
-  if(gridOrden === 'oportunidad'){
-    html += `<div class="orden-linea"><span class="orden-lab">Mostrar</span>`
+  const hayAlgunFiltro = !!(gridFiltroCaso || gridFiltroFase || (gridFiltroFicha && conFicha));
+  if(gridOrden === 'oportunidad' || gridFiltroCaso){
+    html += `<div class="orden-linea"><span class="orden-lab">Filtrar oportunidad</span>`
       + pill('Todas', gridFiltroCaso === null, 'data-fcaso=""')
       + CASOS_FILTRO.map(c => pill(c.charAt(0) + c.slice(1).toLowerCase(), gridFiltroCaso === c, `data-fcaso="${c}"`)).join('')
       + `</div>`;
   }
-  if(gridOrden === 'fase'){
-    html += `<div class="orden-linea"><span class="orden-lab">Mostrar</span>`
+  if(gridOrden === 'fase' || gridFiltroFase){
+    html += `<div class="orden-linea"><span class="orden-lab">Filtrar fase</span>`
       + pill('Todas', gridFiltroFase === null, 'data-ffase=""')
       + [2,1,3,4].map(f => pill('Fase ' + f, gridFiltroFase === f, `data-ffase="${f}"`)).join('')
       + `</div>`;
   }
 
-  if(gridOrden === 'ficha' && conFicha){
-    html += `<div class="orden-linea"><span class="orden-lab">Mostrar</span>`
+  if((gridOrden === 'ficha' || gridFiltroFicha) && conFicha){
+    html += `<div class="orden-linea"><span class="orden-lab">Filtrar ficha</span>`
       + pill('Todas', gridFiltroFicha === null, 'data-fficha=""')
       + FICHA_FILTROS.map(([k, lab]) => pill(lab, gridFiltroFicha === k, `data-fficha="${k}"`)).join('')
       + `</div>`;
+  }
+  if(hayAlgunFiltro){
+    html += `<div class="orden-linea"><span class="orden-lab"></span>`
+      + pill('✕ Quitar filtros', false, 'data-fquitar="1"')
+      + `<span class="orden-lab" style="text-transform:none; letter-spacing:0;">Los filtros se suman: elige uno, cambia el orden y agrega otro.</span>`
+      + `</div>`;
+  }
+  if(necesitaFichas() && conFicha){
     const aplican = stocksDelAmbiente(ambienteActivo).filter(s => fichaAplica(s.ticker));
     const listas = aplican.filter(s => fichaDe(s.ticker)).length;
     if(listas < aplican.length){
@@ -3607,7 +3475,7 @@ function renderOrdenRow(){
         después quedan guardadas 7 días en este teléfono. Las que faltan quedan al final de la lista mientras tanto.</p>`;
     }
   }
-  if(GRID_ORDENES[gridOrden].caro){
+  if(necesitaDiagnostico()){
     const {listas, total} = progresoDiagnostico();
     if(listas < total){
       html += `<p class="orden-progreso">Calculando veredictos… ${listas} de ${total}.
@@ -3629,6 +3497,11 @@ function renderOrdenRow(){
       gridFiltroFicha = b.dataset.fficha || null;
       renderOrdenRow(); renderGridOrder();
     }));
+  cont.querySelectorAll('[data-fquitar]').forEach(b =>
+    b.addEventListener('click', () => {
+      gridFiltroCaso = null; gridFiltroFase = null; gridFiltroFicha = null;
+      renderOrdenRow(); renderGridOrder();
+    }));
   cont.querySelectorAll('[data-ffase]').forEach(b =>
     b.addEventListener('click', () => {
       gridFiltroFase = b.dataset.ffase ? Number(b.dataset.ffase) : null;
@@ -3640,21 +3513,25 @@ function renderGridOrder(){
   const query = document.getElementById('searchInput').value.trim().toLowerCase();
   const universo = stocksDelAmbiente(ambienteActivo);
 
+  // En un ambiente sin empresas de EE.UU. (Chile, ETF, cripto) el filtro de
+  // ficha no aplica: si quedó puesto desde otra pestaña, se ignora en vez de
+  // esconder toda la grilla.
+  const conFichaAmb = ambienteConFicha();
   const visibles = universo.filter(s => {
     if(query && !s.ticker.toLowerCase().includes(query) && !s.name.toLowerCase().includes(query)) return false;
     // Los filtros solo aplican con su orden activo (ver renderOrdenRow). Una
     // tarjeta SIN veredicto todavía no se esconde: que la caché aún no haya
     // llegado no es lo mismo que "no cumple", y esconderla sería afirmar
     // algo que la app no sabe.
-    if(gridOrden === 'oportunidad' && gridFiltroCaso){
+    if(gridFiltroCaso){
       const c = casoDe(s.ticker);
       if(c !== null && c !== gridFiltroCaso) return false;
     }
-    if(gridOrden === 'fase' && gridFiltroFase){
+    if(gridFiltroFase){
       const f = faseDe(s.ticker);
       if(f !== null && f !== gridFiltroFase) return false;
     }
-    if(gridOrden === 'ficha' && gridFiltroFicha){
+    if(gridFiltroFicha && conFichaAmb){
       // Sin ficha todavía no se esconde (igual que arriba); una que no
       // aplica (chilena, ETF) sí, porque nunca va a tener una.
       if(FICHA_LISTO && !fichaAplica(s.ticker)) return false;
@@ -3671,6 +3548,11 @@ function renderGridOrder(){
   // "bailaría" sola cada 60 segundos.
   const idx = new Map(universo.map((s, i) => [s.ticker, i]));
   const desempate = (a, b) => idx.get(a.ticker) - idx.get(b.ticker);
+  // Desempates cruzados: ordenando por oportunidad, entre dos con el mismo
+  // puntaje va primero la de mejor ficha; ordenando por ficha, la de mejor
+  // puntaje de oportunidad. Lo que no se sabe todavía va después.
+  const porScore = (a, b) => (scoreDe(b.ticker) ?? -1) - (scoreDe(a.ticker) ?? -1);
+  const porFicha = (a, b) => ((fichaGrid(b.ticker) || {}).puntaje ?? -1) - ((fichaGrid(a.ticker) || {}).puntaje ?? -1);
   let ordenFinal;
   if(gridOrden === 'nombre'){
     ordenFinal = [...visibles].sort((a, b) =>
@@ -3682,7 +3564,7 @@ function renderGridOrder(){
       if(sa === null && sb === null) return desempate(a, b);
       if(sa === null) return 1;
       if(sb === null) return -1;
-      return (sb - sa) || desempate(a, b);
+      return (sb - sa) || porFicha(a, b) || desempate(a, b);
     });
   } else if(gridOrden === 'fase'){
     // Por utilidad, no por número: ver FASE_PRIORIDAD. Dentro de la misma
@@ -3698,7 +3580,7 @@ function renderGridOrder(){
       if(fa === null) return 1;
       if(fb === null) return -1;
       const pa = FASE_PRIORIDAD[fa] ?? 9, pb = FASE_PRIORIDAD[fb] ?? 9;
-      return (pa - pb) || (conf(b.ticker) - conf(a.ticker)) || desempate(a, b);
+      return (pa - pb) || (conf(b.ticker) - conf(a.ticker)) || porScore(a, b) || porFicha(a, b) || desempate(a, b);
     });
   } else if(gridOrden === 'ficha'){
     // Puntaje alto primero. Empate: la que tiene más preguntas con dato,
@@ -3711,7 +3593,7 @@ function renderGridOrder(){
     ordenFinal = [...visibles].sort((a, b) => {
       const ka = clave(a), kb = clave(b);
       for(let i = 0; i < ka.length; i++){ if(ka[i] !== kb[i]) return ka[i] - kb[i]; }
-      return desempate(a, b);
+      return porScore(a, b) || desempate(a, b);
     });
   } else {
     // 'favoritas' -- el de siempre: las marcadas arriba, y dentro de cada
@@ -3740,9 +3622,7 @@ function renderGridOrder(){
   });
 
   const hint = document.getElementById('searchHint');
-  const hayFiltro = (gridOrden === 'oportunidad' && gridFiltroCaso)
-                 || (gridOrden === 'fase' && gridFiltroFase)
-                 || (gridOrden === 'ficha' && gridFiltroFicha);
+  const hayFiltro = gridFiltroCaso || gridFiltroFase || (gridFiltroFicha && conFichaAmb);
   if(query || hayFiltro){
     // "acciones" era correcto cuando la grilla gringa eran solo empresas;
     // en la pestaña de ETF decía "11 de 40 acciones" sobre una lista de
@@ -5214,32 +5094,679 @@ function wireOverlayButtons(){
 // Se abre desde dos lados: el botón "📖 Glosario" de la barra superior (que
 // entra por "Fase y fuerza", lo primero que hay que entender del método) y
 // el "❓ Ayuda" de la fila del gráfico (que entra por "El gráfico").
+// ============================================================================
+// GLOSARIO COMPLETO (31-oct-2026)
+// ============================================================================
+// Toda la app explicada en castellano, con DÓNDE está cada cosa. Lo pidió
+// Cristian: "la explicación de todo y en qué parte se encuentra de la app",
+// con buscador, temas que se abren y un índice.
+//
+// CÓMO AGREGAR UNA ENTRADA: un objeto más en el tema que corresponda.
+//   id     único, sin espacios (lo usan el índice y los enlaces)
+//   t      título
+//   donde  ruta en la app, con " › " entre los pasos
+//   k      palabras extra para el buscador (sinónimos, siglas, cómo lo dirías)
+//   html   el texto (párrafos <p> y listas <ul class="glos-lista">)
+//
+// Los números (30 semanas, 150/50 días, 8 señales, 5 confirmaciones, 7 %,
+// 0,64 %, 4 %, 5 días hábiles) son los REALES de la app y del servidor. Si
+// cambian allá, hay que cambiarlos acá.
+var GLOSARIO_TEMAS = [
+{id:'mapa', titulo:'Cómo está organizada la app', intro:'Las pestañas, la barra de botones de arriba y lo que se ve en todas las pantallas.', items:[
+  {id:'pestanas', t:'Las ocho pestañas', donde:'Bajo el encabezado, en dos filas', k:'pestaña menu navegacion ambiente vistas secciones',
+   html:`<p>Arriba, las cuatro vistas que miran <b>tu</b> plata y el mercado completo: <b>Explorar</b> (busca candidatas), <b>Mi Cartera</b> (tus posiciones), <b>A seguir</b> (las que esperas comprar) y <b>Riesgo</b> (cuánto puedes perder y tu plan).</p>
+   <p>Abajo, las cuatro grillas con precios: <b>EE.UU.</b>, <b>ETF</b>, <b>Chile</b> y <b>Cripto</b>. La pestaña que elegiste queda guardada para la próxima vez.</p>`},
+  {id:'barra', t:'La fila de botones de arriba', donde:'Encabezado, debajo de las pestañas', k:'botones actualizar notificaciones datos reales reloj',
+   html:`<ul class="glos-lista">
+   <li><b>🔔 Activar notificaciones:</b> pide permiso a este teléfono o computador para mandarte avisos (ver el tema Avisos).</li>
+   <li><b>Datos reales (X/Y):</b> cuántas acciones ya recibieron su precio de verdad. Si el número de la izquierda es menor, falta que lleguen precios.</li>
+   <li><b>🔄 Actualizar:</b> pide los precios de nuevo sin esperar el próximo refresco automático.</li>
+   <li><b>👁️</b> y <b>PxQ 👁️:</b> esconden cifras (ver la entrada siguiente).</li>
+   <li><b>📖 Glosario:</b> esta ayuda.</li>
+   <li>El <b>reloj</b> muestra la hora de Santiago.</li></ul>`},
+  {id:'ocultar', t:'Ocultar cifras (👁️) y ocultar el PxQ', donde:'Encabezado › botones 👁️ y PxQ 👁️', k:'ojo ojito privacidad esconder montos plata pxq',
+   html:`<p><b>👁️</b> tapa con "••••••" los montos de tu plata (caja, valor de la cartera, utilidades, posiciones) en todas las pestañas. Los precios de mercado siguen a la vista porque no dicen nada de ti.</p>
+   <p><b>PxQ 👁️</b> es otro interruptor, separado: muestra u oculta la frase "PxQ compra … · hoy …" de cada posición en Mi Cartera. Los dos se combinan: uno decide si el número se ve, el otro si la frase existe.</p>`},
+  {id:'franja-mercado', t:'Franja "Mercado sano / Mercado débil"', donde:'Arriba de Explorar y de A seguir', k:'mercado sano debil voo sp500 s&p media 200 semaforo',
+   html:`<p>Dice si el S&amp;P 500 (medido con el ETF VOO) cerró <b>sobre</b> su media de 200 días (sano, verde) o <b>bajo</b> ella (débil). Con la bolsa abierta usa el cierre anterior.</p>
+   <p>Es la condición 3 de las cinco antes de comprar. <b>Solo informa: no bloquea nada.</b> Decidiste que la franja avise, no que impida.</p>`},
+  {id:'indices', t:'Índice, dólar, UF y estado de la bolsa', donde:'Encabezado, arriba de las pestañas', k:'ipsa sp500 s&p dolar usd clp uf utm bolsa abierta cerrada horario',
+   html:`<p>En Chile se muestra el <b>IPSA</b>; en EE.UU. y ETF, el <b>S&amp;P 500</b>, con su variación del día y la hora del dato. También el <b>dólar</b> que usa la app para pasar todo a pesos, y la <b>UF y UTM</b>.</p>
+   <p>El indicador de bolsa dice si la de Santiago o la de Nueva York está abierta. Fuera de horario, los precios son los del último cierre.</p>`},
+  {id:'recordatorio-aporte', t:'Recordatorio del aporte mensual (día 25)', donde:'Bajo el encabezado, cuando corresponde', k:'aporte mensual dia 25 plan ya lo hice recordatorio',
+   html:`<p>Desde el día 25, si todavía no registras un aporte este mes (ni compra ni ingreso de caja), aparece este aviso. Es el recordatorio principal de la app: antes de mirar qué subió o bajó, cumple tu plan. <b>"Ya lo hice este mes"</b> lo cierra hasta el mes siguiente.</p>`},
+]},
+
+{id:'grilla', titulo:'Grillas de mercado: EE.UU., ETF, Chile y Cripto', intro:'Cada acción es una tarjeta. Qué significa cada número y cómo ordenar y filtrar.', items:[
+  {id:'tarjeta-precio', t:'Precio, "% hoy" y "% vs prom. 90d"', donde:'EE.UU. / ETF / Chile / Cripto › cada tarjeta, arriba a la derecha', k:'precio variacion dia promedio 90 dias borde rojo bajo promedio clp equivalente',
+   html:`<ul class="glos-lista">
+   <li><b>"+1,2 % hoy":</b> contra el cierre del día anterior. Es la variación del día.</li>
+   <li><b>"+7,9 % vs prom. 90d":</b> qué tan lejos está de su propio promedio de 90 días. No es la variación del día: cambia aunque el precio no se mueva, porque el promedio se recalcula.</li>
+   <li><b>"≈ $343.736":</b> el precio en pesos, al dólar de hoy (en Cripto es al revés: el precio va en pesos y abajo el dólar de referencia).</li>
+   <li>Si la acción cae bastante bajo su promedio (más de 1,5 veces lo normal para ella), la tarjeta se marca en rojo con <b>"Bajo promedio"</b>.</li></ul>`},
+  {id:'tarjeta-hora', t:'Fecha y hora del dato', donde:'Cada tarjeta › al pie', k:'hora fecha dato viejo rezago hace segundos',
+   html:`<p>Es la hora de la bolsa a la que corresponde el precio, no la hora en que la app lo pidió. A la derecha, hace cuánto. Si tiene varias horas aparece ⚠: con la bolsa abierta, ese no es el precio actual.</p>`},
+  {id:'chip-oportunidad', t:'Recuadro "Oportunidad 8/8"', donde:'Cada tarjeta › recuadro de la izquierda', k:'oportunidad score caso recuperando sobreextendida divergencia declive veredicto diario',
+   html:`<p>Arriba, el <b>caso</b> del día (Oportunidad, Recuperando, Sobreextendida, Divergencia, Declive o sin caso) y a la derecha el <b>score de fuerza</b> de 0 a 8. Debajo, la frase corta ("sana y con fuerza"). Ver los temas Fase y fuerza.</p>
+   <p>Se calcula con 5 años de historial, por eso se pide solo cuando la tarjeta aparece en pantalla; mientras tanto dice "calculando…".</p>`},
+  {id:'chip-fase', t:'Recuadro "Fase 2 · Avance 4/5"', donde:'Cada tarjeta › recuadro de la derecha', k:'fase weinstein confirmaciones semanal candidata valida',
+   html:`<p>La fase de Weinstein de la acción (1 a 4) y cuántas de las 5 confirmaciones cumple. Debajo, el veredicto ("candidata válida", "no entra todavía", "esperar"). Ver Fase de Weinstein y Confirmaciones.</p>`},
+  {id:'medias-tarjeta', t:'Las seis medias de la tarjeta', donde:'Cada tarjeta › las dos filas de números', k:'rsi mm20 ema21 mm50 mm100 mm200 colores tradingview medias moviles',
+   html:`<p>RSI 14, media de 20 días, EMA de 21, media de 50, de 100 y de 200. Los colores son los de tu TradingView: <b style="color:#4CAF50;">EMA 21 verde</b>, <b style="color:#FFC107;">MM 50 amarilla</b>, <b style="color:#2196F3;">MM 100 azul</b> y <b style="color:#F44336;">MM 200 roja</b>. El color del número dice si el precio está sobre o bajo esa media.</p>`},
+  {id:'objetivos-tarjeta', t:'"Vta si sube" y "Vta si baja" en la tarjeta', donde:'Cada tarjeta › línea de objetivos', k:'objetivo venta stop sube baja',
+   html:`<p>Son los precios de venta que escribiste en Mi Cartera. En la tarjeta solo se leen; para cambiarlos, ve a Mi Cartera.</p>`},
+  {id:'chip-ficha-grilla', t:'Chip "F 4,5/5" y "+−−"', donde:'Tarjetas de EE.UU. › bajo el nombre', k:'ficha chip puntaje firma caja asterisco',
+   html:`<p>El puntaje de la ficha fundamental (de 0 a 5). Un <b>*</b> significa que alguna de las cinco preguntas quedó sin dato. Los signos <b>+−−</b> son la firma de caja; en rojo, si la operación no genera caja. Ver el tema Ficha fundamental.</p>`},
+  {id:'ordenar', t:'Ordenar por: Favoritas, Nombre, Oportunidad, Fase, Ficha', donde:'Grillas › sobre las tarjetas, bajo el buscador', k:'ordenar orden ranking primero arriba',
+   html:`<ul class="glos-lista">
+   <li><b>Favoritas:</b> las marcadas con ★ arriba.</li>
+   <li><b>Nombre:</b> alfabético.</li>
+   <li><b>Oportunidad:</b> score de fuerza de mayor a menor.</li>
+   <li><b>Fase:</b> en el orden en que sirven: 2, 1, 3, 4 (la 2 es la única en que se compra). Dentro de la fase, más confirmaciones primero.</li>
+   <li><b>Ficha:</b> puntaje de la ficha de mayor a menor (solo en EE.UU.).</li></ul>
+   <p>Oportunidad, Fase y Ficha necesitan el dato de todas las acciones: la primera vez del día puede tomar varios minutos, con barra de progreso. Las que faltan van al final mientras llegan. El orden elegido queda guardado.</p>`},
+  {id:'filtros', t:'Filtros combinados', donde:'Grillas › filas "Filtrar oportunidad / fase / ficha"', k:'filtrar filtro combinar sumar quitar filtros mostrar solo',
+   html:`<p>Al ordenar por Oportunidad, Fase o Ficha aparece su fila de filtro. <b>Los filtros se suman:</b> por ejemplo, filtra "Oportunidad", cambia el orden a Ficha y filtra "Calidad": quedan las que cumplen las dos cosas. Arriba del buscador ves cuántas quedan.</p>
+   <p>Cada filtro activo deja su fila a la vista. <b>✕ Quitar filtros</b> los limpia todos. Una acción cuyo dato todavía no llega no se esconde. Los filtros no se guardan: al volver a abrir la app, se ve todo.</p>`},
+  {id:'buscador', t:'Buscador y favoritas (★)', donde:'Grillas › campo "Buscar acción por ticker o nombre"', k:'buscar ticker nombre estrella favorita',
+   html:`<p>Filtra por ticker o por nombre mientras escribes. La <b>★</b> de cada tarjeta la marca como favorita (también desde la ficha de la acción); con el orden "Favoritas" quedan arriba.</p>`},
+  {id:'watchlist', t:'Watchlist personal', donde:'Grilla de EE.UU. › tarjetas con la etiqueta "watchlist"', k:'watchlist seguir fuera de la grilla agregar',
+   html:`<p>Son acciones que no están en la lista fija de la app y que sigues tú, normalmente agregadas desde Explorar con "+ A seguir". El servidor les pide precio igual que a las demás, y tienen tarjeta propia.</p>`},
+  {id:'pestana-etf', t:'Pestaña ETF', donde:'Pestaña ETF', k:'etf fondos indices voo qqq',
+   html:`<p>Los fondos, separados de las acciones. Funcionan igual que la grilla de EE.UU. pero no llevan ficha fundamental: un fondo no tiene estados financieros propios.</p>`},
+  {id:'pestana-chile', t:'Pestaña Chile', donde:'Pestaña Chile', k:'chile ipsa pesos clp bolsa de santiago',
+   html:`<p>Las acciones chilenas que sigues, en pesos, con el IPSA de referencia. No llevan ficha fundamental: reportan a la CMF, no a la SEC.</p>`},
+  {id:'pestana-cripto', t:'Pestaña Cripto (bitcoin en pesos)', donde:'Pestaña Cripto', k:'bitcoin btc cripto buda pesos dolar',
+   html:`<p>El bitcoin se muestra en <b>pesos</b>, porque lo compras en pesos (en Buda). El precio viene en dólares y se convierte con el dólar del momento; abajo se ve el valor en dólares y el dólar usado, para cruzarlo con otra fuente. Cripto no tiene caja propia: lo financias directo desde el banco.</p>`},
+]},
+
+{id:'movimientos', titulo:'Mis movimientos y la caja', intro:'Donde registras compras, ventas, dividendos y aportes. Todo lo demás se calcula desde aquí.', items:[
+  {id:'registrar', t:'Registrar una compra, venta o dividendo', donde:'EE.UU. / ETF / Chile / Cripto › "Mis movimientos", arriba de la grilla', k:'registrar compra venta dividendo movimiento comision corredora fecha cantidad',
+   html:`<p>Eliges la acción, el tipo (compra, venta o dividendo), la cantidad, el precio, la comisión, la fecha y la corredora, y tocas <b>Registrar</b>. En un dividendo el campo de precio pasa a ser el <b>monto recibido</b>.</p>
+   <p>También se puede registrar desde la ficha de cada acción (botón "📝 Registrar compra/venta"). Tus posiciones, la caja y las utilidades salen de esta lista.</p>`},
+  {id:'atajo-stop', t:'Poner el stop justo después de comprar', donde:'Mis movimientos › recuadro que aparece al registrar una compra', k:'stop despues de comprar atajo objetivo',
+   html:`<p>Al registrar una compra aparece un recuadro con esa acción para escribir de inmediato "Vta si sube" y "Vta si baja", sin ir a Mi Cartera.</p>`},
+  {id:'venta-rapida', t:'Venta rápida (100 %, 75 %, 50 %, 25 %)', donde:'Mis movimientos › venta rápida', k:'vender todo mitad parcial porcentaje',
+   html:`<p>Con una acción que tienes, los botones calculan cuántos títulos vender según el porcentaje de tu posición, sin hacer la cuenta a mano.</p>`},
+  {id:'corregir', t:'Corregir un movimiento (compra ↔ venta)', donde:'Mis movimientos › la lista', k:'corregir error editar movimiento equivocado',
+   html:`<p>Si registraste una compra que era venta (o al revés), se corrige el tipo en el mismo movimiento, sin borrarlo y volver a escribirlo. La caja se recalcula sola.</p>`},
+  {id:'costo-promedio', t:'Precio de compra (costo promedio)', donde:'Mi Cartera › "compra" de cada posición', k:'costo promedio precio de compra promedio movil comisiones',
+   html:`<p>Es el promedio de lo que pagaste por los títulos que todavía tienes, comisiones incluidas, en el orden de las fechas. Si vendiste todo y volviste a comprar, el promedio parte de nuevo: no arrastra el precio viejo.</p>`},
+  {id:'caja', t:'Caja por corredora', donde:'EE.UU. / ETF / Chile › bloque de caja, bajo Mis movimientos', k:'caja efectivo aporte retiro ingreso saldo corredora plataforma',
+   html:`<p>Cuánta plata sin invertir tienes en cada corredora. Registras <b>ingresos</b> (aportes, dividendos…) y <b>retiros</b>; las compras y ventas la mueven solas. Va separada por corredora porque la plata no se mueve sola de una a otra. Cripto no lleva caja.</p>`},
+  {id:'resumen-movs', t:'Resumen: valor, utilidades y "Cartera vs S&P 500"', donde:'Mis movimientos › resumen', k:'utilidad realizada no realizada rentabilidad benchmark tir xirr comparacion sp500 concentracion',
+   html:`<ul class="glos-lista">
+   <li><b>Valor de la cartera</b>, <b>utilidad realizada</b> (lo ganado o perdido en lo que ya vendiste) y <b>no realizada</b> (lo que va ganando o perdiendo lo que tienes).</li>
+   <li><b>Cartera vs. S&amp;P 500:</b> cuánto ganaste desde tu primer movimiento contra lo que habría hecho el índice. La TIR anualizada (XIRR) considera cuándo entró cada aporte, no solo cuánto.</li>
+   <li><b>Concentración de tu cartera:</b> el peso de cada posición; ⚠ marca las que pasan tu máximo por posición.</li></ul>`},
+  {id:'respaldo', t:'Respaldar todo, Restaurar todo y Excel', donde:'Mis movimientos › botones ⬇️ Respaldar todo, ⬆️ Restaurar todo, ⬇️ Excel', k:'respaldo backup restaurar archivo json excel copia de seguridad',
+   html:`<ul class="glos-lista">
+   <li><b>⬇️ Respaldar todo:</b> descarga un archivo con todo: movimientos, caja, plan (asignación y tesis), favoritas y W-8BEN.</li>
+   <li><b>⬆️ Restaurar todo:</b> reemplaza <b>todo</b> lo de este equipo con ese archivo. Sirve para pasar tus datos a otro teléfono a mano.</li>
+   <li><b>⬇️ Excel:</b> tus movimientos en planilla, para mirarlos fuera de la app. No sirve para restaurar.</li></ul>`},
+  {id:'sincronizar', t:'⇄ Sincronizar entre dispositivos', donde:'Mis movimientos › botón ⇄ Sincronizar (y el texto de estado debajo)', k:'sincronizar sync telefono computador tablet contraseña otro dispositivo',
+   html:`<p>Mantiene la misma cartera en el teléfono, el computador y la tablet. Se sube cifrada con tu contraseña, que tiene que ser <b>exactamente la misma</b> en todos los equipos. Revisa al abrir la app y cada 20 segundos mientras está abierta.</p>
+   <p>La primera vez pide repo, token y contraseña: hoy el repo y el token ya no se usan (basta cualquier texto), la contraseña sí. Si los dos equipos cambiaron algo, primero descarga un respaldo y después pregunta cuál versión dejar. El texto bajo el botón dice si funciona ("Sincronizado hace X min") o qué falló. Doble clic en el botón para reconfigurar.</p>`},
+]},
+
+{id:'ficha-accion', titulo:'La pantalla de cada acción', intro:'Lo que se abre al tocar una tarjeta, una fila de Mi Cartera o un ticker en Explorar o A seguir.', items:[
+  {id:'abrir-ficha', t:'Cómo se abre y qué tiene arriba', donde:'Tocar cualquier tarjeta o ticker', k:'detalle ficha abrir pantalla accion pedir datos ahora',
+   html:`<p>Arriba: nombre, ticker, la ★ y botones para ir a "A seguir" o a "Mi Cartera". Si la acción no está en la grilla, la app le pide los datos en el momento; si no llegan, el botón <b>"Pedir datos ahora"</b> vuelve a intentarlo.</p>`},
+  {id:'linea-estado', t:'Línea de estado: "Lo único pendiente"', donde:'Pantalla de la acción › franja bajo el título', k:'estado pendiente tienes esperas que hacer',
+   html:`<p>Resume qué relación tienes con esa acción (la tienes, la esperas, la vigilas) y la única cosa que queda por hacer, por ejemplo poner el stop o esperar la ruptura. Se ve aunque todavía no haya precio.</p>`},
+  {id:'que-hace', t:'Qué hace y su motor de negocio', donde:'Pantalla de la acción › bajo el ticker · Explorar › cada tarjeta', k:'que hace descripcion empresa motor negocio rubro',
+   html:`<p>Una frase en castellano de qué hace la empresa, y en dorado su <b>motor</b>: aquello de lo que depende (por ejemplo, "Chips para IA"). Las 186 que sigues lo tienen escrito en la app; para una acción nueva sale la industria y la descripción de Yahoo, en inglés.</p>`},
+  {id:'sizing', t:'¿Cuánto compro?', donde:'Pantalla de la acción › panel "¿Cuánto compro?"', k:'sizing tamaño cuanto comprar cantidad riesgo perdida total posiciones fracciones decimales tope',
+   html:`<p>Calcula cuántas acciones comprar para que, si toca el stop, pierdas solo lo que aceptaste.</p>
+   <ul class="glos-lista">
+   <li>Escribes la <b>pérdida total</b> que aceptas en toda la cartera (6,4 %) y en <b>cuántas posiciones</b> la repartes (10): queda <b>0,64 % por posición</b>.</li>
+   <li>El stop es el <b>de la clase</b> (ver Reglas de la clase). Si ya la tienes, usa tu stop guardado.</li>
+   <li>Cantidad = riesgo por posición ÷ distancia al stop, con el <b>tope por posición</b> (10 %, en Riesgo › Tu plan de inversión).</li>
+   <li>Fracciones hasta 6 decimales, siempre redondeando hacia abajo.</li></ul>
+   <p>Los valores que escribes se guardan para todas las acciones.</p>`},
+  {id:'grafico-periodos', t:'Gráfico e historial por período', donde:'Pantalla de la acción › gráfico', k:'grafico historial periodo 1d 5d 1m 3m 1a 5a fechas rango',
+   html:`<p>Elige el período (1D, 5D, 1M, 3M, 6M, YTD, 1A, 5A, 8A, 10A) o un rango de fechas con "Desde / Hasta". Los datos son cierres reales de Yahoo Finance.</p>`},
+  {id:'graf-trazados', t:'Trazados del gráfico', donde:'Pantalla de la acción › botones bajo el gráfico', k:'sma ema bbands macd rsi volumen sp500 ipsa fuerza weinstein medias tv limpiar ayuda',
+   html:`<p>Botones que se encienden y apagan: <b>SMA</b>, <b>EMA</b>, <b>BBands</b>, <b>MACD</b>, <b>RSI</b>, <b>Volumen</b>, <b>S&amp;P 500 / IPSA</b> (compara la acción con su índice en el mismo período), <b>Fuerza</b> y <b>Weinstein</b> (pintan el fondo), <b>Medias TV</b> (las 4 medias con los colores de tu TradingView), <b>Limpiar</b> y <b>❓ Ayuda</b> (abre este glosario).</p>`},
+  {id:'ema', t:'EMA — media móvil exponencial', donde:'Pantalla de la acción › trazado EMA · tarjeta › EMA 21', k:'ema exponencial media rapida',
+   html:`<p>Parecida a la media simple, pero le da más peso a los precios recientes, así que reacciona más rápido. La de 21 días es la "rápida" de tu TradingView y la que mide si una acción está sobreextendida.</p>`},
+  {id:'bbands', t:'BBands — Bandas de Bollinger', donde:'Pantalla de la acción › trazado BBands', k:'bollinger bandas volatilidad',
+   html:`<p>Una franja arriba y abajo del promedio que se ensancha cuando la acción se mueve mucho y se angosta cuando está tranquila. Si el precio toca un borde, se movió bastante más de lo habitual para esa acción.</p>`},
+  {id:'macd', t:'MACD', donde:'Pantalla de la acción › trazado MACD', k:'macd impulso momentum',
+   html:`<p>Compara un promedio rápido con uno lento para mostrar si el impulso está acelerando hacia arriba o hacia abajo. No es un precio: es la fuerza del movimiento.</p>`},
+  {id:'fondos-grafico', t:'Fondo "Fuerza" y fondo "Weinstein"', donde:'Pantalla de la acción › trazados Fuerza y Weinstein', k:'fondo colores verde rojo naranjo gris celeste amarillo',
+   html:`<p>Pintan el fondo del gráfico con el estado de cada día (Fuerza) o semana (Weinstein), para ver cuándo cambió, no solo cómo está hoy.</p>
+   <ul class="glos-lista"><li><b>Weinstein:</b> gris = fase 1, verde = fase 2, naranjo = fase 3, rojo = fase 4.</li>
+   <li><b>Fuerza:</b> verde = oportunidad, celeste = recuperando, amarillo = sobreextendida, rojo = divergencia o declive.</li></ul>`},
+  {id:'resumen-precios', t:'Resumen de precios, rentabilidad e indicadores', donde:'Pantalla de la acción › tablas bajo el gráfico', k:'resumen maximo minimo dia volumen monto transado rentabilidad 3 meses año indicadores tecnicos umbral',
+   html:`<p><b>Resumen de precios:</b> precio, hora del dato, máximo y mínimo del día, promedio de 90 días, volumen y monto transado, y tus datos (precio de compra y objetivos de Mi Cartera).</p>
+   <p><b>Rentabilidad:</b> cuánto subió o bajó en 3 meses y en un año. <b>Indicadores técnicos:</b> RSI y las medias de 20, 21, 50, 100 y 200 días, con los mismos colores de la tarjeta.</p>`},
+  {id:'otras-plataformas', t:'Mirarla en otras plataformas', donde:'Pantalla de la acción · Explorar › botones TradingView, Finviz, Seeking Alpha, IBD', k:'tradingview finviz seeking alpha ibd abrir afuera',
+   html:`<p>Abren la acción en esas páginas. En el teléfono, "Abrir en TradingView" abre la app de TradingView si la tienes instalada.</p>`},
+]},
+
+{id:'fase', titulo:'Fase y fuerza: el "cuándo"', intro:'Si conviene entrar ahora. Se calculan con 5 años de historial de precios.', items:[
+  {id:'fase-weinstein', t:'Fase de Weinstein (1 a 4)', donde:'Tarjetas › recuadro "Fase" · Explorar · pantalla de la acción', k:'fase etapa weinstein base avance techo caida stage',
+   html:`<p>Se calcula con <b>velas semanales</b>, comparando el precio con su media de 30 semanas y con la inclinación de esa media. Las cuatro fases son un ciclo:</p>
+   <ul class="glos-lista">
+   <li><b>Fase 1 — Base.</b> Terminó de caer y está plana. No es momento de entrar: puede quedarse ahí meses.</li>
+   <li><b>Fase 2 — Avance.</b> Rompió hacia arriba y la media va subiendo. Es la única fase en que este método compra.</li>
+   <li><b>Fase 3 — Techo.</b> Dejó de hacer máximos nuevos y la media se aplanó. Zona de tomar utilidades, no de agregar.</li>
+   <li><b>Fase 4 — Caída.</b> Bajo su media, con la media cayendo. No se compra "porque está barata": puede seguir bajando mucho.</li></ul>`},
+  {id:'confirmaciones', t:'Confirmaciones (X de 5)', donde:'Tarjetas › recuadro "Fase" · Explorar', k:'confirmaciones cinco 5 fase 2 candidata valida',
+   html:`<p>Estar en fase 2 no basta. La app cuenta cinco cosas que deberían pasar a la vez, y el método pide <b>al menos 4 de 5</b>:</p>
+   <ul class="glos-lista">
+   <li>El precio está sobre su media de 30 semanas.</li>
+   <li>Esa media va subiendo.</li>
+   <li>Rompió su máximo de las últimas 30 semanas hace poco (8 semanas o menos).</li>
+   <li>Le está ganando al S&amp;P 500 (fuerza relativa subiendo).</li>
+   <li>El volumen del último tramo es 30 % más alto que su promedio.</li></ul>
+   <p>Con 3 dice "no entra todavía"; con menos, "esperar".</p>`},
+  {id:'score-fuerza', t:'Score de fuerza (0 a 8)', donde:'Tarjetas › recuadro "Oportunidad" · Explorar › Score', k:'score fuerza ocho 8 señales diario',
+   html:`<p>Se calcula con <b>velas diarias</b> y suma ocho señales de que la acción va bien por dentro: precio sobre su media de 150 días, media de 50 sobre la de 150, las dos medias subiendo, máximos y mínimos de 10 días más altos que hace 10 días, RSI más alto que hace 20 días, y precio sobre su media de 50. El embudo pide <b>6 o más</b>.</p>
+   <p>Fase = en qué parte del ciclo está. Score = cómo se ve por dentro hoy. Los dos tienen que estar bien.</p>`},
+  {id:'casos', t:'Los casos: Oportunidad, Recuperando, Sobreextendida, Divergencia, Declive', donde:'Tarjetas › recuadro "Oportunidad" · filtro "Filtrar oportunidad"', k:'caso oportunidad recuperando sobreextendida divergencia declive comprar vigilar esperar',
+   html:`<ul class="glos-lista">
+   <li><b>Oportunidad (comprar):</b> score 6 o más, precio sobre sus medias de 50 y 150 días, la de 50 sobre la de 150, y sin estar estirada.</li>
+   <li><b>Recuperando (vigilar):</b> en los últimos 10 días volvió a cruzar hacia arriba su media de 50, sin que la fuerza viniera cayendo.</li>
+   <li><b>Sobreextendida (esperar):</b> está más de 5 % sobre su EMA de 21 días. Subió muy rápido; conviene esperar que respire.</li>
+   <li><b>Divergencia (esperar):</b> cayó bajo su media de 50 y su fuerza viene bajando.</li>
+   <li><b>Declive:</b> bajo su media de 150 días, fuera de la tendencia.</li></ul>
+   <p>Si ninguno aplica, dice "sin caso · en seguimiento".</p>`},
+  {id:'fuerza-relativa', t:'Fuerza relativa', donde:'Tarjetas · Explorar ("fuerza relativa subiendo") · confirmación 4', k:'fuerza relativa sp500 comparada lider ganando terreno se queda atras',
+   html:`<p>No es lo mismo que el RSI. Significa: <b>comparada con el S&amp;P 500, ¿va ganando o perdiendo?</b> Una acción que sube 10 % en un año en que el mercado subió 25 % no es fuerte: es lenta. El método pide que esa comparación vaya subiendo, no solo que el precio suba.</p>`},
+  {id:'mansfield', t:'Mansfield', donde:'Explorar › tarjeta de cada candidata', k:'mansfield fuerza relativa semanal desempate',
+   html:`<p>La fuerza relativa semanal contra el S&amp;P 500, comparada con su propio promedio de 52 semanas. Positivo (verde) = le está ganando al mercado más de lo habitual. En Explorar desempata a las candidatas con el mismo score.</p>`},
+]},
+
+{id:'promedios', titulo:'Promedios, RSI y volumen', intro:'Las medidas de todos los días que se ven en tarjetas, gráfico e indicadores.', items:[
+  {id:'sma', t:'SMA — media móvil simple', donde:'Tarjetas › MM 20/50/100/200 · pantalla de la acción', k:'sma media movil simple promedio mm',
+   html:`<p>El precio promedio de los últimos N días, sin darle más peso a ninguno. Muestra la tendencia sin el ruido del día a día. La de 20 días es muy corto plazo; la de 50, mediano; la de 200, la tendencia de fondo.</p>
+   <p>La media de 50 ya <b>no</b> es tu stop (antes lo era): hoy aparece solo como dato. El stop sale de las reglas de la clase.</p>`},
+  {id:'sma200', t:'SMA 200 — la línea de agua', donde:'Tarjetas › MM 200 · Explorar › filtro SMA 50 > SMA 200 · franja del mercado', k:'200 dias tendencia de fondo linea de agua',
+   html:`<p>La media de los últimos 200 días de bolsa (unos 10 meses). Por encima, la tendencia larga es alcista; por debajo, bajista. Casi todo el daño grande de una acción ocurre bajo su SMA 200.</p>
+   <p>Si una acción tiene menos de 200 días de historial, aparece "no disponible": nunca se aproxima.</p>`},
+  {id:'rsi', t:'RSI (14 días)', donde:'Tarjetas › RSI 14 · pantalla de la acción', k:'rsi sobrecompra sobreventa 70 30 indice fuerza relativa',
+   html:`<p>Un número de 0 a 100 que compara cuánto subió contra cuánto bajó en las últimas 14 sesiones. <b>Sobre 70</b>: subió mucho y rápido. <b>Bajo 30</b>: cayó mucho y rápido. No garantiza nada: una acción fuerte puede pasar semanas sobre 70.</p>`},
+  {id:'volumen', t:'Volumen', donde:'Explorar › filtro de volumen · A seguir › volumen de la ruptura · gráfico', k:'volumen titulos transados liquidez',
+   html:`<p>Cuántos títulos se transaron. Un movimiento con volumen alto suele ser más confiable que el mismo con poco volumen. El embudo pide al menos <b>2 millones de acciones al día</b> (promedio de 90 días), para entrar y salir sin mover el precio tú mismo.</p>`},
+  {id:'prom90', t:'Distancia a su promedio de 90 días', donde:'Tarjetas › "% vs prom. 90d" y borde rojo "Bajo promedio"', k:'promedio 90 dias distancia z-score bajo promedio',
+   html:`<p>Cuánto se separó el precio de su promedio de 90 días, comparado con lo que es normal para esa acción. <b>Ojo:</b> una acción que va cayendo aparece "lejos bajo su promedio" durante toda la caída. Por eso describe, no recomienda: qué mirar lo decide el embudo y cuándo, la fase.</p>`},
+]},
+
+{id:'ficha', titulo:'Ficha fundamental: la calidad', intro:'Las cinco preguntas de la clase, con los estados financieros que la empresa entrega a la SEC.', items:[
+  {id:'ficha-que-es', t:'Qué es la ficha y dónde se ve', donde:'Grilla de EE.UU. (chip "F") · pantalla de la acción · A seguir · Mi Cartera · Explorar', k:'ficha fundamental cinco preguntas calidad empresa estados financieros',
+   html:`<p>Responde si la empresa es buena por dentro, con sus propios estados financieros. Se ve en todos lados: un chip corto en tarjetas y listas, y la tabla completa en la pantalla de cada acción. Solo para empresas de EE.UU.</p>`},
+  {id:'p1', t:'1. ¿Crece de verdad?', donde:'Pantalla de la acción › Ficha fundamental › pregunta 1', k:'crecimiento ventas bpa utilidad por accion 25 frena trimestre',
+   html:`<p>Ventas y utilidad por acción (BPA) contra el <b>mismo trimestre del año anterior</b>.</p>
+   <ul class="glos-lista"><li><b>Sí:</b> las dos crecen 25 % o más y no vienen frenando dos trimestres seguidos.</li>
+   <li><b>A medias:</b> 25 % o más pero frenando, o una sobre 25 % y la otra entre 15 y 25 %.</li>
+   <li><b>No:</b> lo demás. Si hace un año tenía pérdidas, se mira solo ventas (máximo "a medias").</li></ul>
+   <p>"Frenar" = el crecimiento baja más de 1 punto dos trimestres seguidos.</p>`},
+  {id:'p2', t:'2. ¿Gana plata con lo que vende?', donde:'Pantalla de la acción › Ficha fundamental › pregunta 2', k:'margen bruto operacional rentabilidad 3 años',
+   html:`<p>Margen bruto y margen operacional del último año fiscal contra los de 3 años antes.</p>
+   <ul class="glos-lista"><li><b>Sí:</b> los dos estables (no caen más de 2 puntos) o subiendo.</li>
+   <li><b>A medias:</b> uno sí y el otro no.</li><li><b>No:</b> los dos cayendo.</li></ul>`},
+  {id:'p3', t:'3. ¿La utilidad se convierte en caja?', donde:'Pantalla de la acción › Ficha fundamental › pregunta 3', k:'flujo libre caja utilidad conversion fcf',
+   html:`<p><b>Flujo libre</b> (lo que genera la operación menos lo que invierte en activos, últimos 12 meses) dividido por la utilidad.</p>
+   <ul class="glos-lista"><li><b>Sí:</b> 80 % o más, con la operación generando caja.</li>
+   <li><b>A medias:</b> entre 50 y 80 %.</li><li><b>No:</b> menos de 50 % o flujo libre negativo.</li></ul>
+   <p>Una empresa que crece muy rápido suele salir "a medias": parte de lo que vende queda como cuentas por cobrar e inventario.</p>`},
+  {id:'p4', t:'4. ¿Aguanta un mal año?', donde:'Pantalla de la acción › Ficha fundamental › pregunta 4', k:'deuda años flujo libre endeudamiento',
+   html:`<p>Cuántos años de flujo libre necesitaría para pagar toda su deuda financiera.</p>
+   <ul class="glos-lista"><li><b>Sí:</b> menos de 3 años, o sin deuda.</li><li><b>A medias:</b> entre 3 y 5.</li>
+   <li><b>No:</b> más de 5, o deuda con flujo libre negativo.</li></ul>`},
+  {id:'p5', t:'5. ¿Usa bien el capital?', donde:'Pantalla de la acción › Ficha fundamental › pregunta 5', k:'roic retorno capital invertido',
+   html:`<p><b>ROIC:</b> la utilidad operacional después de impuestos dividida por el capital invertido (deuda + patrimonio − caja).</p>
+   <ul class="glos-lista"><li><b>Sí:</b> sobre 15 %.</li><li><b>A medias:</b> entre 10 y 15 %.</li><li><b>No:</b> menos de 10 %.</li></ul>`},
+  {id:'firma-caja', t:'Firma de caja (+ − −)', donde:'Ficha fundamental › Firma de caja · chips "caja"', k:'firma caja signos flujo operacion inversion financiamiento mala',
+   html:`<p>Los signos de los tres flujos de caja de 12 meses, en orden: <b>operación · inversión · financiamiento</b>.</p>
+   <ul class="glos-lista"><li><b>+ − −</b>: genera, invierte y devuelve plata a accionistas o bancos. Es la que se busca.</li>
+   <li><b>+ − +</b>: invierte más de lo que genera y se financia para crecer.</li>
+   <li><b>− − +</b>: el negocio no se paga solo; lo sostienen bancos y accionistas.</li></ul>
+   <p>Si la operación es negativa, la firma sale en rojo. <b>Solo marca:</b> no saca la acción de ninguna lista.</p>`},
+  {id:'puntaje', t:'Puntaje y veredicto', donde:'Ficha fundamental · chips "Ficha x/5" · filtro "Filtrar ficha"', k:'puntaje calidad vigilar fuera incompleta orientativa veredicto',
+   html:`<p>Sí = 1, A medias = ½, No = 0.</p>
+   <ul class="glos-lista"><li><b>Calidad:</b> 4 o más.</li><li><b>Vigilar:</b> 3 a 3,5.</li>
+   <li><b>Fuera:</b> menos de 3, o que ni con "Sí" en lo que falta llegaría a 3.</li>
+   <li><b>Incompleta:</b> falta algún dato y todavía podría llegar a 3.</li>
+   <li><b>Orientativa:</b> bancos, aseguradoras y financieras (ver más abajo).</li></ul>`},
+  {id:'ficha-fuente', t:'De dónde salen los números', donde:'Ficha fundamental › línea "Fuente"', k:'sec edgar 10-k 10-q 20-f tradingview fuente estados hasta',
+   html:`<p>De la <b>SEC</b>, el regulador de EE.UU.: los reportes trimestrales (10-Q) y anuales (10-K) que entrega la empresa. Lo que la SEC no trae se completa con <b>TradingView</b>, que no tiene historia: con TradingView, la pregunta 1 no puede ver si frena y la 2 queda sin dato. La ficha dice qué pregunta vino de dónde, hasta qué fecha llegan los estados, y enlaza a los reportes en la SEC.</p>
+   <p>Las extranjeras que reportan una vez al año (por ejemplo NVO, TSM, ASML) usan el último año fiscal. <b>Nunca se inventa un número:</b> lo que no hay dice "sin dato".</p>`},
+  {id:'ficha-calculando', t:'"ficha: calculando…" y cuánto dura', donde:'Chips de ficha · pantalla de la acción', k:'calculando espera demora guardada 7 dias cola',
+   html:`<p>Cada ficha son unas 20 consultas a la SEC, así que el servidor las calcula de a una en segundo plano y la app vuelve a preguntar sola. Lo que estás mirando pasa adelante en la cola. Una vez lista, queda guardada <b>7 días en este equipo</b>.</p>`},
+  {id:'financieras', t:'Bancos, aseguradoras y financieras', donde:'Ficha fundamental › veredicto "orientativa"', k:'banco aseguradora financiera orientativa',
+   html:`<p>Las cinco preguntas se pensaron para empresas que venden productos. Un banco no tiene margen bruto, y para él la deuda es parte del negocio. Por eso su ficha se muestra como <b>orientativa</b> y no lo saca de ninguna lista.</p>`},
+]},
+
+{id:'explorar', titulo:'Explorar: el "qué"', intro:'La primera alerta: recorre el mercado de EE.UU. y te dice qué acciones mirar.', items:[
+  {id:'explorar-que-es', t:'Qué es Explorar y "Volver a ejecutar"', donde:'Pestaña Explorar', k:'explorar primera alerta volver a ejecutar correr corrida',
+   html:`<p>Recorre el mercado completo de EE.UU. con el screener de TradingView y te deja una lista corta para analizar a fondo. Es una <b>primera alerta</b>, no un informe: el análisis de verdad lo haces en TradingView.</p>
+   <p>No corre solo: lo pides con <b>Volver a ejecutar</b> y toma unos minutos. Al lado se ve la fecha del último resultado.</p>`},
+  {id:'riel', t:'Los pasos: Alerta · Sectores · El embudo · Filtros · A mano', donde:'Explorar › fila de recuadros', k:'pasos alerta candidatas sectores embudo filtros a mano',
+   html:`<p>El resultado va primero (<b>Alerta · Candidatas</b>). Los demás recuadros muestran cómo se llegó ahí: <b>Paso 1 Sectores</b>, <b>Paso 2 El embudo</b>, <b>Paso 3 Filtros</b> y <b>Extra A mano</b>. El número de cada recuadro es cuántas quedan en ese paso.</p>`},
+  {id:'sectores', t:'Paso 1: dónde está entrando la plata', donde:'Explorar › Paso 1 Sectores', k:'sectores industrias fuerza 12 meses sp500 etf sectoriales',
+   html:`<p>Los 11 sectores y 12 industrias comparados con el S&amp;P 500 a 12 meses: positivo = le está ganando al mercado. <b>Toca uno</b> para ver qué empresas de ese grupo pasan el embudo y en qué filtro se cayó cada una de las demás.</p>`},
+  {id:'filtros7', t:'Paso 2: los siete filtros del embudo', donde:'Explorar › Paso 2 El embudo', k:'filtros embudo precio volumen sma 50 200 capitalizacion crecimiento umbrales sliders',
+   html:`<p>Va descartando en este orden:</p>
+   <ul class="glos-lista"><li><b>Precio ≥ 10 USD:</b> descarta chatarra.</li>
+   <li><b>Volumen 90 días ≥ 2 M:</b> que se pueda comprar y vender de verdad.</li>
+   <li><b>Precio > SMA 50:</b> el precio va adelante de su media.</li>
+   <li><b>SMA 50 > SMA 200:</b> la tendencia de fondo es alcista.</li>
+   <li><b>Capitalización ≥ 2 B USD:</b> empresas de tamaño real.</li>
+   <li><b>Crecimiento del BPA ≥ 25 %</b> y <b>de ventas ≥ 25 %</b>.</li></ul>
+   <p>Los umbrales se mueven con las barras y el embudo se recalcula al instante; se guardan en este equipo. "Volver a los valores del método" los repone. Toca el número de cada filtro para ver las que pasan y las que quedan fuera.</p>`},
+  {id:'filtros-extra', t:'Paso 3: los dos filtros que TradingView no tiene', donde:'Explorar › Paso 3 Filtros', k:'fase 2 confirmaciones score fuerza relativa apagar interruptor una por motor',
+   html:`<p><b>Fase 2 con 4 o más confirmaciones</b> y <b>Score 6 o más con fuerza relativa subiendo</b>. Se pueden apagar para comparar uno a uno con tu screener de TradingView. Aquí también está el interruptor <b>Una por motor de negocio</b>.</p>`},
+  {id:'capitalizacion', t:'Capitalización bursátil', donde:'Explorar › tarjetas ("Cap.") y filtro de capitalización', k:'capitalizacion bursatil tamaño empresa market cap billones',
+   html:`<p>Lo que vale la empresa entera en bolsa: precio × número de acciones. Se mide en miles de millones de dólares ("B"). Sirve para no comprar una empresa tan chica que cualquier noticia la mueva 30 %.</p>`},
+  {id:'motor-reservas', t:'Una por motor de negocio, y las reservas', donde:'Explorar › tarjeta de cada candidata › "Mismo motor… de reserva"', k:'motor reserva una por industria agrupar repetidas misma apuesta',
+   html:`<p>Para no terminar con cinco versiones de la misma apuesta (por ejemplo, cinco de chips para IA), las candidatas se agrupan por motor. Encabeza la de mejor score y las demás quedan <b>debajo como reserva</b>, a la vista. Las que no están en tu tabla de motores se agrupan por su industria.</p>`},
+  {id:'fuera-ficha', t:'Fuera por la ficha', donde:'Explorar › sección al final del resultado', k:'fuera ficha baja puntaje menos de 3',
+   html:`<p>Las que pasaron el embudo técnico pero su ficha fundamental suma menos de 3 de 5. No se esconden: salen al final con su puntaje, para que puedas abrirlas y ver qué pregunta reprobaron. Los bancos y aseguradoras nunca caen aquí.</p>`},
+  {id:'a-mano', t:'"Para revisar a mano"', donde:'Explorar › Extra A mano', k:'a mano falta dato le falta revisar',
+   html:`<p>Técnicamente sanas, pero les faltó un dato del embudo (casi siempre la capitalización o el crecimiento). No desaparecen: salen aparte diciendo qué faltó. Ese dato se ve en TradingView en dos segundos.</p>`},
+  {id:'etf-ranking', t:'ETF: fuerza contra el S&P 500', donde:'Explorar › resultado › "ETF · fuerza contra el S&P 500"', k:'etf ranking fuerza 1 3 6 12 meses fondos',
+   html:`<p>Los fondos van en una lista aparte, porque los filtros de empresa no se les aplican. Se ordenan por cuánto le ganan al S&amp;P 500 a 12 meses (también se ve a 1, 3 y 6 meses), con su fase.</p>`},
+  {id:'tarjeta-candidata', t:'La tarjeta de una candidata', donde:'Explorar › resultado', k:'candidata tarjeta score ver ficha a seguir botones',
+   html:`<p>Ticker, nombre y sector; su <b>Score x/8</b>; qué hace y su motor; el chip de la ficha; fase, confirmaciones, fuerza relativa y Mansfield; precio y capitalización. Botones: abrir en TradingView y otras páginas, <b>Ver ficha</b> (la pantalla de la acción) y <b>+ A seguir</b> (la deja esperando su ruptura).</p>`},
+  {id:'excel-explorar', t:'⬇ Excel de Explorar (para el prompt maestro)', donde:'Explorar › resultado › botón ⬇ Excel', k:'excel planilla descargar prompt maestro hojas notas',
+   html:`<p>Baja lo que estás viendo, con tus umbrales, en cinco hojas: <b>Notas</b> (fechas, mercado, filtros y tus reglas de riesgo), <b>Candidatas</b> (con su estado: candidata o reserva), <b>Fuera por la ficha</b>, <b>A mano</b> y <b>ETF</b>. Incluye la ficha con sus números, el máximo de 30 semanas, la zona de compra, el stop de la clase y la fecha de resultados. Es el insumo del prompt maestro.</p>`},
+  {id:'cobertura', t:'Cobertura, núcleo y "se cortó por tiempo"', donde:'Explorar › resultado › línea de datos (Cobertura, Núcleo)', k:'cobertura nucleo cortado tiempo bajo el piso sp500 nasdaq',
+   html:`<p>El <b>núcleo</b> es el S&amp;P 500 + el Nasdaq-100 + tu grilla. Si quedó completo, un número bajo de candidatas significa que de verdad no había. <b>Cobertura</b> = de cuántas de las revisables alcanzó a decidir. Las acciones bajo el piso del screener (precio, tamaño o volumen muy bajos) no se revisan a propósito: no pueden pasar el embudo.</p>
+   <p>"Se cortó por tiempo" quiere decir que algo del núcleo quedó sin revisar: vuelve a ejecutar.</p>`},
+  {id:'datos-corrida', t:'Datos de la corrida', donde:'Explorar › al final, "Datos de la corrida" (se abre)', k:'datos corrida universo revisadas fuente tradingview yahoo',
+   html:`<p>El detalle técnico: cuántas había en el universo, cuántas se revisaron, de dónde salieron los datos (TradingView o Yahoo) y cuántas quedaron bajo el piso.</p>`},
+]},
+
+{id:'seguir', titulo:'A seguir: esperando entrada', intro:'La sala de espera entre "me interesa" y "la compré".', items:[
+  {id:'seguir-que-es', t:'Qué es "A seguir"', donde:'Pestaña A seguir', k:'a seguir esperando entrada espera condicion plazo 90 dias caducada renovar',
+   html:`<p>Cada acción entra con dos cosas: <b>qué esperas que pase</b> y <b>hasta cuándo</b> (90 días). Cumplido el plazo, la app pregunta si la renuevas o la sacas; así la lista no se llena de nombres que se fueron hace meses.</p>
+   <p>Una acción que ya tienes no puede estar esperando entrada: en esa, la alerta de precio es tu stop.</p>`},
+  {id:'ruptura', t:'Modo ruptura y zona de compra', donde:'A seguir › cada acción (modo por defecto)', k:'ruptura zona compra maximo 30 semanas 4 por ciento cierre barra rompe',
+   html:`<p>La acción se compra cuando <b>rompe su máximo previo</b>: el máximo intradía de las 30 semanas anteriores. La <b>zona de compra</b> va de ese máximo hasta 4 % sobre él, y la compra vale <b>al cierre</b> dentro de la zona.</p>
+   <ul class="glos-lista"><li><b>Todavía no rompe:</b> está bajo el máximo. No te anticipes.</li>
+   <li><b>Dentro de la zona:</b> compra válida al cierre, si se cumplen las condiciones.</li>
+   <li><b>Fuera de la zona:</b> se pasó del 4 %: estarías persiguiendo el precio. Espera un retroceso.</li></ul>
+   <p>La barra muestra dónde cerró respecto de la zona. "usar máx. de 30 semanas" pone el máximo que calculó la app.</p>`},
+  {id:'modo-precio', t:'Modo precio de entrada', donde:'A seguir › acciones en modo precio', k:'precio entrada media 50 propuesto manda lo que escribes',
+   html:`<p>En vez de una ruptura, esperas un precio. La app propone la media de 50 días como sugerencia, pero <b>manda lo que tú escribas</b>: la propuesta solo se usa si dejas el campo en blanco. Ese precio te avisa al teléfono.</p>`},
+  {id:'cinco-condiciones', t:'Las cinco condiciones antes de comprar', donde:'A seguir › cada acción en ruptura › "Cinco condiciones antes de comprar"', k:'cinco condiciones comprar fase 2 mercado sano resultados espacio cartera riesgo',
+   html:`<ol class="glos-lista"><li><b>El precio cierra dentro de la zona.</b></li>
+   <li><b>Sigue en fase 2:</b> sobre sus medias de 50 y 200 días.</li>
+   <li><b>El mercado está sano:</b> S&amp;P 500 sobre su media de 200 días.</li>
+   <li><b>No reporta resultados en los próximos 5 días hábiles.</b></li>
+   <li><b>Hay espacio en la cartera:</b> lo que tienes en juego más esta compra no pasa tu pérdida total aceptada (6,4 %).</li></ol>
+   <p>Con 5 de 5 dice "compra al cierre". Es informativo: la decisión es tuya.</p>`},
+  {id:'resultados', t:'Próxima fecha de resultados', donde:'A seguir › condición 4 · Excel de Explorar', k:'resultados earnings reporte fecha trimestral',
+   html:`<p>Cuándo la empresa publica sus resultados. Antes de un reporte el precio puede saltar en cualquier dirección y pasar de largo tu stop, por eso no se compra si faltan 5 días hábiles o menos. La fecha sale de Yahoo, TradingView o el calendario de Nasdaq; si ninguno contesta, dice "sin dato".</p>`},
+  {id:'volumen-ruptura', t:'Volumen de la ruptura', donde:'A seguir › cada acción en ruptura', k:'volumen ruptura sesion promedio 50',
+   html:`<p>El volumen del día comparado con su promedio de 50 sesiones. Una ruptura con mucho volumen es más confiable. Es solo un dato: no es una de las cinco condiciones.</p>`},
+  {id:'agregar-seguir', t:'Cómo se agrega una acción', donde:'Explorar › "+ A seguir" · pantalla de la acción › "Ir a A seguir"', k:'agregar a seguir anadir',
+   html:`<p>Desde Explorar con <b>+ A seguir</b>: queda en modo ruptura con su máximo de 30 semanas, y entra también a tu watchlist para recibir precio.</p>`},
+]},
+
+{id:'cartera', titulo:'Mi Cartera', intro:'Tus posiciones, tus objetivos de venta y el stop que propone la app.', items:[
+  {id:'patrimonio', t:'Patrimonio: total invertido y resultado total', donde:'Mi Cartera › Patrimonio', k:'patrimonio total invertido valor hoy resultado total realizada enjoy',
+   html:`<p>Total en acciones y total en caja. Debajo: <b>Total invertido → Valor hoy</b> (solo lo que todavía tienes) y <b>Resultado total</b> (sin realizar + realizado), porque al tomar ganancias esa plata pasa a caja y la primera línea deja de mostrarla. ENJOY está excluido del resultado, como pediste. Todo en pesos, al dólar de hoy.</p>`},
+  {id:'donde-plata', t:'Dónde está tu plata (por corredora)', donde:'Mi Cartera › Dónde está tu plata', k:'corredora plataforma racional interactive brokers buda bch resultado por corredora',
+   html:`<p>Una tarjeta por corredora con lo que tienes en ella y su <b>resultado en pesos</b>: lo no realizado sigue a las compras, lo realizado a la corredora donde vendiste. El resultado no suma al total de la tarjeta.</p>`},
+  {id:'tabla-cartera', t:'"Mi cartera, de una" (la tabla)', donde:'Mi Cartera › Mi cartera, de una', k:'tabla resumen peso riesgo en juego ordenar',
+   html:`<p>Todas tus posiciones en una tabla: títulos, compra, hoy, ganancia %, valor, peso %, stop, riesgo % y en juego, con totales. Se ordena por peso, en juego, ganancia, riesgo, corredora o ticker. Es para leer: tocar una fila baja a su tarjeta para editar.</p>`},
+  {id:'posiciones', t:'Favoritas y posiciones (las tarjetas)', donde:'Mi Cartera › Favoritas y posiciones', k:'posiciones tarjetas buscador filtro corredora',
+   html:`<p>Una fila por acción que tienes o marcaste como favorita, con un buscador y píldoras para filtrar por corredora (tocar la activa apaga el filtro). Aquí se editan los objetivos de venta.</p>`},
+  {id:'fila-posicion', t:'La fila de una posición', donde:'Mi Cartera › cada posición', k:'tienes titulos pxq compra hoy porcentaje vs compra chip corredora',
+   html:`<p>Precio de hoy y su % contra tu precio de compra. "Tienes N título(s) · compra $X", con el chip de la corredora (y cuántos en cada una si están repartidos) y el <b>PxQ</b>: cantidad × precio de compra y de hoy.</p>`},
+  {id:'objetivos', t:'"Vta si sube" y "Vta si baja"', donde:'Mi Cartera › cada posición › los dos campos', k:'objetivo venta stop sube baja alerta aviso',
+   html:`<p>Los precios a los que venderías: arriba, para tomar ganancia; abajo, tu stop. <b>Son lo único que te avisa por push y correo</b> cuando el precio los cruza. Bajo cada uno, el PxQ de la posición a ese precio y su % contra tu compra.</p>`},
+  {id:'con-stop', t:'Casilla "Con stop"', donde:'Mi Cartera › junto a los objetivos', k:'con stop orden puesta corredora casilla check',
+   html:`<p>Márcala cuando la orden ya está puesta en la corredora. Recuerda el precio que confirmaste: si después cambias el objetivo, se desmarca sola, porque en la corredora la orden sigue en el precio viejo hasta que la cambies.</p>`},
+  {id:'stop-propuesto', t:'Stop propuesto: "poner stop" / "subir stop"', donde:'Mi Cartera › cada posición › botón bajo los objetivos', k:'stop propuesto subir stop clase movil 7 asegura',
+   html:`<p>La app calcula el stop según las reglas de la clase y te lo propone; <b>nunca lo mueve sola</b>. Dice cuál regla manda:</p>
+   <ul class="glos-lista"><li><b>Stop de la clase:</b> el mínimo de las 2 semanas antes de tu compra, si queda más arriba que tu compra −7 %.</li>
+   <li><b>Stop móvil 7 %:</b> 7 % bajo el mayor entre tu compra y el cierre más alto desde que compraste. Nunca baja.</li></ul>
+   <p>Muestra cuánto arriesgas o cuánta ganancia asegura. Si el precio ya cayó bajo el stop propuesto, lo dice: es una salida.</p>`},
+  {id:'en-juego', t:'"Pones en juego" y "arriesgas"', donde:'Mi Cartera › cada posición', k:'en juego arriesgas perdida si toca el stop',
+   html:`<p>Cuánta plata perderías desde el valor de hoy si el precio toca tu stop. Sin stop puesto, solo dice cuánto vale la posición.</p>`},
+]},
+
+{id:'riesgo', titulo:'Riesgo y tu plan de inversión', intro:'Cuánto puedes perder si se gatillan los stops, y las reglas de tu propia política.', items:[
+  {id:'riesgo-total', t:'Cuánto puedes perder si se gatillan los stops', donde:'Pestaña Riesgo › arriba', k:'riesgo en riesgo hoy perdida stops gatillan sin stop',
+   html:`<p>Suma lo que perderías si todos tus stops se ejecutaran a la vez. Arriba, en cifras: <b>En riesgo hoy</b>, <b>Mayor posición</b>, <b>Posiciones efectivas</b>, <b>Stops que no protegen</b> y las posiciones <b>sin "Vta si baja"</b>, que no entran en la cuenta.</p>`},
+  {id:'quien-aporta', t:'Quién aporta el riesgo', donde:'Riesgo › Quién aporta el riesgo', k:'quien aporta riesgo vs compra posiciones',
+   html:`<p>Cada posición con su parte del riesgo total, para ver cuáles concentran lo que podrías perder y cuánto queda contra tu precio de compra.</p>`},
+  {id:'diversificacion', t:'Diversificación real', donde:'Riesgo › Diversificación real', k:'diversificacion sectores posiciones efectivas concentracion',
+   html:`<p>Por sector, y las <b>posiciones efectivas</b>: no es un conteo, pondera por tamaño. Veinte posiciones donde una pesa la mitad se comportan como muy pocas.</p>`},
+  {id:'plan', t:'Tu plan de inversión', donde:'Riesgo › Tu plan de inversión (se abre)', k:'plan asignacion objetivo maximo por posicion tope 10',
+   html:`<p>Tu asignación objetivo y el <b>máximo por posición</b> (10 %), que usa también "¿Cuánto compro?". Se mide siempre sobre el total, nunca por corredora: el riesgo es tuyo, no de la corredora.</p>`},
+  {id:'que-revisar', t:'Qué revisar', donde:'Riesgo › Qué revisar', k:'que revisar reglas politica',
+   html:`<p>Avisos que salen solo de las reglas de tu propia política (pesos, topes, plan), nunca del movimiento del precio ni de indicadores.</p>`},
+]},
+
+{id:'reglas', titulo:'Reglas de la clase "Acciones USA"', intro:'Las reglas de riesgo que adoptaste y dónde las aplica la app.', items:[
+  {id:'regla-zona', t:'Zona de compra: hasta 4 % sobre el máximo previo', donde:'A seguir · Excel de Explorar · prompt maestro', k:'zona compra 4 perseguir precio maximo previo',
+   html:`<p>Se compra desde el máximo de las 30 semanas anteriores hasta 4 % sobre él, al cierre. Más arriba es perseguir el precio.</p>`},
+  {id:'regla-stop', t:'Stop inicial de la clase', donde:'¿Cuánto compro? · Mi Cartera · Excel de Explorar', k:'stop inicial minimo 10 sesiones 2 semanas 7 por ciento',
+   html:`<p>El <b>mayor</b> entre el mínimo intradía de las 10 sesiones (2 semanas) antes de la compra y la compra −7 %. Nunca pierdes más de 7 % por posición.</p>`},
+  {id:'regla-movil', t:'Stop móvil del 7 %', donde:'Mi Cartera › stop propuesto · aviso "tu stop móvil puede subir"', k:'stop movil trailing 7 nunca baja',
+   html:`<p>Después de comprar, el stop va 7 % bajo el mayor entre tu precio de compra y el cierre más alto desde entonces. Sube con el precio y nunca baja.</p>`},
+  {id:'regla-riesgo', t:'0,64 % por posición, 6,4 % en total y tope de 10 %', donde:'¿Cuánto compro? · Riesgo › Tu plan de inversión · A seguir › condición 5', k:'riesgo por posicion 0,64 6,4 total tope 10 sizing',
+   html:`<p>Aceptas perder como máximo <b>6,4 %</b> de la cartera si todos los stops se gatillan, repartido en 10 posiciones: <b>0,64 %</b> cada una. Además ninguna posición puede pasar del <b>10 %</b> del total.</p>`},
+  {id:'regla-resultados', t:'No comprar a 5 días hábiles de resultados', donde:'A seguir › condición 4', k:'resultados 5 dias habiles earnings',
+   html:`<p>Si la empresa reporta en los próximos 5 días hábiles, se espera el dato antes de comprar.</p>`},
+  {id:'regla-mercado', t:'Mercado sano: solo informa', donde:'Franja del mercado · A seguir › condición 3', k:'mercado sano debil informa no bloquea',
+   html:`<p>Con el S&amp;P 500 bajo su media de 200 días la condición 3 sale "No", pero la app no bloquea compras: tú decides.</p>`},
+]},
+
+{id:'avisos', titulo:'Avisos y notificaciones', intro:'Qué te avisa la app al teléfono y por correo, y cuándo.', items:[
+  {id:'que-avisa', t:'Qué avisa: tus precios objetivo', donde:'Mi Cartera › "Vta si sube" y "Vta si baja"', k:'aviso alerta push correo notificacion objetivo stop',
+   html:`<p>Cuando una acción cruza su "Vta si sube" o su "Vta si baja", llega un <b>push</b> al instante y un <b>correo</b> a la hora en punto siguiente (entre 9 y 18 h de Chile). También avisan los precios de entrada del modo precio de A seguir.</p>`},
+  {id:'avisos-cierre', t:'Avisos al cierre de la bolsa', donde:'Llegan solos, 15 minutos después del cierre de Nueva York', k:'aviso cierre zona mercado sano debil stop movil puede subir',
+   html:`<ul class="glos-lista"><li><b>Cerró dentro de su zona:</b> una acción de A seguir quedó en zona de compra.</li>
+   <li><b>Mercado sano ↔ débil:</b> el S&amp;P 500 cruzó su media de 200 días.</li>
+   <li><b>Tu stop móvil puede subir:</b> una posición subió lo suficiente para mover el stop (la app lo propone; tú lo cambias).</li></ul>`},
+  {id:'avisos-semana', t:'Avisos semanales (lunes)', donde:'Llegan solos los lunes en la mañana', k:'aviso semanal lunes fase 2 techo fase 4',
+   html:`<ul class="glos-lista"><li><b>Entra en fase 2 con 4 o más confirmaciones:</b> una de tus acciones pasó a ser candidata.</li>
+   <li><b>Techo confirmado o fase 4:</b> una que tienes entró en zona de salida.</li></ul>`},
+  {id:'activar-notif', t:'Activar las notificaciones', donde:'Encabezado › 🔔 Activar notificaciones', k:'activar notificaciones permiso push telefono',
+   html:`<p>Se activa en cada equipo por separado: el navegador pide permiso. Si lo negaste, hay que habilitarlo en la configuración del navegador.</p>`},
+  {id:'alertas-no-revisan', t:'"Tus alertas no se están revisando"', donde:'Aviso rojo arriba de la pantalla', k:'alertas no se revisan servidor dormido cron latido',
+   html:`<p>El servidor no revisa los precios por su cuenta: lo despierta un llamado automático cada 10 minutos en horario de bolsa. Si ese llamado no llegó, la app lo avisa en rojo: un stop cruzado no te avisaría. Los precios que ves pueden estar al día igual, porque se piden aparte.</p>`},
+]},
+
+{id:'datos', titulo:'Datos, fuentes y el servidor', intro:'De dónde viene cada número y por qué a veces tarda.', items:[
+  {id:'fuentes', t:'De dónde salen los datos', donde:'Toda la app', k:'fuente yahoo tradingview sec nasdaq datos',
+   html:`<ul class="glos-lista"><li><b>Precios e historial:</b> Yahoo Finance, con algunos minutos de rezago.</li>
+   <li><b>Explorar:</b> el screener de TradingView (todo el mercado en una consulta); Yahoo de respaldo.</li>
+   <li><b>Ficha fundamental:</b> la SEC, con TradingView de respaldo.</li>
+   <li><b>Fechas de resultados:</b> Yahoo, TradingView o Nasdaq.</li></ul>`},
+  {id:'servidor', t:'El servidor y por qué a veces tarda', donde:'Toda la app', k:'servidor render dormido lento demora primera vez',
+   html:`<p>El servidor es gratuito y se duerme cuando nadie lo usa: la primera consulta después puede tardar cerca de un minuto. Por eso lo pesado (veredictos, fichas) se pide de a poco y queda guardado.</p>`},
+  {id:'descargo', t:'Esto no es asesoría', donde:'Toda la app', k:'aviso legal asesoria recomendacion',
+   html:`<p>Todos estos son datos históricos, no predicciones. Ninguno te dice qué hacer: la decisión de comprar o vender siempre es tuya.</p>`},
+]},
+];
+
+// ---- Glosario: buscador, índice y temas que se abren (31-oct-2026) ----
+// Reemplaza las cinco pestañas fijas de antes. El contenido vive en
+// GLOSARIO_TEMAS (más arriba); aquí solo se dibuja y se busca.
+//
+//  - Buscador: mientras escribes aparecen las entradas posibles (título,
+//    tema y dónde está). Enter o "Ver todos" muestra todos los resultados.
+//    Busca sin tildes ni mayúsculas, en el título, las palabras clave, el
+//    tema, el "dónde" y el texto. Todas las palabras tienen que aparecer.
+//  - Tema: el selector deja la vista (y la búsqueda) en un solo tema.
+//  - Índice: todos los temas con sus entradas; tocar una la abre.
+//  - Temas: cada uno se abre y se cierra (<details>).
+var GLOS_ALIAS = {fase:'fase', promedio:'promedios', embudo:'explorar', cartera:'cartera', grafico:'graf-trazados'};
+var _glosIndexado = false;
+
+function glosNorm(s){
+  return String(s == null ? '' : s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9%&.,+\-\s]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+function glosIndexar(){
+  if(_glosIndexado) return;
+  GLOSARIO_TEMAS.forEach(t => {
+    t._n = glosNorm(t.titulo);
+    t.items.forEach(it => {
+      it.tema = t;
+      it._t = glosNorm(it.t);
+      it._k = glosNorm(it.k || '');
+      it._d = glosNorm(it.donde || '');
+      it._b = glosNorm(String(it.html).replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&'));
+    });
+  });
+  _glosIndexado = true;
+}
+function glosItemPorId(id){
+  for(const t of GLOSARIO_TEMAS){ for(const it of t.items){ if(it.id === id) return it; } }
+  return null;
+}
+function glosEsc(s){ return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+
+// Puntaje por palabra: título > palabras clave > tema > dónde > texto.
+function glosBuscar(q, temaId){
+  glosIndexar();
+  const palabras = glosNorm(q).split(' ').filter(Boolean);
+  if(!palabras.length) return [];
+  const res = [];
+  GLOSARIO_TEMAS.forEach(t => {
+    if(temaId && t.id !== temaId) return;
+    t.items.forEach(it => {
+      let total = 0;
+      for(const p of palabras){
+        let s = 0;
+        if(it._t.split(' ').some(w => w.startsWith(p))) s = 12;
+        else if(it._t.includes(p)) s = 9;
+        else if(it._k.split(' ').some(w => w.startsWith(p))) s = 7;
+        else if(t._n.includes(p)) s = 4;
+        else if(it._d.includes(p)) s = 3;
+        else if(it._b.includes(p)) s = 2;
+        if(!s){ total = 0; break; }
+        total += s;
+      }
+      if(total) res.push({it, total});
+    });
+  });
+  return res.sort((a, b) => b.total - a.total).map(r => r.it);
+}
+
+// Resalta las palabras buscadas SOLO en el texto, nunca dentro de una etiqueta.
+function glosResaltar(html, q){
+  const palabras = glosNorm(q).split(' ').filter(p => p.length >= 2);
+  if(!palabras.length) return html;
+  return String(html).split(/(<[^>]+>)/).map(trozo => {
+    if(trozo.startsWith('<')) return trozo;
+    let out = '', i = 0;
+    const plano = trozo.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    // Ubica cada coincidencia en el texto sin tildes y marca el original.
+    const marcas = [];
+    palabras.forEach(p => { let k = plano.indexOf(p); while(k >= 0){ marcas.push([k, k + p.length]); k = plano.indexOf(p, k + p.length); } });
+    if(!marcas.length) return trozo;
+    marcas.sort((a, b) => a[0] - b[0]);
+    // normalize('NFD') puede alargar el texto (letra + tilde): se vuelve a
+    // contar sobre el original letra por letra.
+    const mapa = []; let pos = 0;
+    for(const ch of trozo){ const n = ch.normalize('NFD').replace(/[̀-ͯ]/g, '').length; for(let r = 0; r < n; r++) mapa.push(pos); pos += ch.length; }
+    mapa.push(pos);
+    for(const [a, b] of marcas){
+      const ia = mapa[a], ib = mapa[b];
+      if(ia === undefined || ib === undefined || ia < i) continue;
+      out += trozo.slice(i, ia) + '<mark>' + trozo.slice(ia, ib) + '</mark>';
+      i = ib;
+    }
+    return out + trozo.slice(i);
+  }).join('');
+}
+
+function glosItemHTML(it, q, conTema){
+  const titulo = q ? glosResaltar(it.t, q) : it.t;
+  return `<div class="glos-item" id="glos-i-${it.id}">
+    <b>${titulo}</b>
+    ${conTema ? `<span class="glos-item-tema" data-glos-tema-ir="${it.tema.id}">${glosEsc(it.tema.titulo)}</span>` : ''}
+    <div class="glos-donde"><span>Dónde:</span> ${q ? glosResaltar(it.donde, q) : it.donde}</div>
+    ${q ? glosResaltar(it.html, q) : it.html}
+  </div>`;
+}
+
+function glosIndiceHTML(temaId){
+  const temas = GLOSARIO_TEMAS.filter(t => !temaId || t.id === temaId);
+  return `<details class="glos-indice" ${temaId ? '' : 'open'}>
+    <summary>Índice</summary>
+    <ol>${temas.map(t => `<li><a href="#" data-glos-tema-ir="${t.id}">${glosEsc(t.titulo)}</a>
+      <div class="glos-indice-items">${t.items.map(it => `<a href="#" data-glos-ir="${it.id}">${glosEsc(it.t)}</a>`).join('')}</div></li>`).join('')}</ol>
+  </details>`;
+}
+
+function glosRender(opts){
+  opts = opts || {};
+  glosIndexar();
+  const cont = document.getElementById('glosContenido');
+  const sel = document.getElementById('glosTema');
+  const inp = document.getElementById('glosBuscar');
+  if(!cont || !sel || !inp) return;
+  const temaId = sel.value || '';
+  const q = inp.value.trim();
+  let html = '';
+  if(q && opts.resultados){
+    const res = glosBuscar(q, temaId);
+    const tema = GLOSARIO_TEMAS.find(t => t.id === temaId);
+    html += `<p class="glos-res-tit">${res.length} resultado${res.length === 1 ? '' : 's'} para “${glosEsc(q)}”${tema ? ` en ${glosEsc(tema.titulo)}` : ''}
+      · <a href="#" data-glos-limpiar="1">ver todo el glosario</a></p>`;
+    html += res.length ? res.map(it => glosItemHTML(it, q, true)).join('')
+      : `<p class="glos-vacio">No encontré nada con esas palabras${tema ? ' en este tema' : ''}. Prueba con otra palabra (por ejemplo "stop", "caja", "fase") o elige "Todos los temas".</p>`;
+  } else {
+    const temas = GLOSARIO_TEMAS.filter(t => !temaId || t.id === temaId);
+    html += glosIndiceHTML(temaId);
+    html += temas.map(t => `<details class="glos-tema" id="glos-t-${t.id}" ${(temaId || opts.abrir === t.id) ? 'open' : ''}>
+        <summary><span>${glosEsc(t.titulo)}</span><span class="glos-tema-n">${t.items.length}</span></summary>
+        <p class="glos-tema-intro">${glosEsc(t.intro || '')}</p>
+        ${t.items.map(it => glosItemHTML(it, '', false)).join('')}
+      </details>`).join('');
+  }
+  cont.innerHTML = html;
+  cont.querySelectorAll('[data-glos-ir]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); glosIrA(a.dataset.glosIr); }));
+  cont.querySelectorAll('[data-glos-tema-ir]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); glosIrATema(a.dataset.glosTemaIr); }));
+  cont.querySelectorAll('[data-glos-limpiar]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); inp.value = ''; glosCerrarSug(); glosRender(); }));
+}
+
+// Lo que se desplaza es el fondo oscuro (#helpOverlay), no el recuadro.
+function glosPanel(){ return document.getElementById('helpOverlay'); }
+function glosScrollA(el){
+  // scroll-margin-top (CSS) deja espacio para el buscador fijo de arriba.
+  if(el) el.scrollIntoView({behavior: 'smooth', block: 'start'});
+}
+// Abre la entrada: limpia la búsqueda, abre su tema, la lleva a la vista y
+// la marca un momento para que se note cuál es.
+function glosIrA(id){
+  const it = glosItemPorId(id);
+  if(!it) return;
+  const inp = document.getElementById('glosBuscar');
+  const sel = document.getElementById('glosTema');
+  if(inp) inp.value = '';
+  if(sel && sel.value && sel.value !== it.tema.id) sel.value = '';
+  glosCerrarSug();
+  glosRender({abrir: it.tema.id});
+  const el = document.getElementById('glos-i-' + id);
+  if(el){
+    glosScrollA(el);
+    el.classList.add('glos-flash');
+    setTimeout(() => el.classList.remove('glos-flash'), 1800);
+  }
+}
+function glosIrATema(temaId){
+  const inp = document.getElementById('glosBuscar');
+  const sel = document.getElementById('glosTema');
+  if(inp) inp.value = '';
+  if(sel) sel.value = '';
+  glosCerrarSug();
+  glosRender({abrir: temaId});
+  glosScrollA(document.getElementById('glos-t-' + temaId));
+}
+
+// ---- Sugerencias mientras escribes ----
+var _glosSugSel = -1;
+function glosCerrarSug(){
+  const box = document.getElementById('glosSugerencias');
+  if(box){ box.innerHTML = ''; box.style.display = 'none'; }
+  _glosSugSel = -1;
+}
+function glosSugerir(){
+  const inp = document.getElementById('glosBuscar');
+  const sel = document.getElementById('glosTema');
+  const box = document.getElementById('glosSugerencias');
+  if(!inp || !box) return;
+  const q = inp.value.trim();
+  if(!q){ glosCerrarSug(); glosRender(); return; }
+  const res = glosBuscar(q, sel ? sel.value : '');
+  // Temas cuyo nombre calza: se ofrecen arriba, para "buscar por tema".
+  const nq = glosNorm(q);
+  const temas = GLOSARIO_TEMAS.filter(t => !(sel && sel.value) && glosNorm(t.titulo).includes(nq)).slice(0, 2);
+  const filas = temas.map(t => `<button type="button" class="glos-sug-op" data-glos-sug-tema="${t.id}">
+        <span class="gs-t">Tema: ${glosResaltar(glosEsc(t.titulo), q)}</span><span class="gs-d">${t.items.length} entradas</span></button>`)
+    .concat(res.slice(0, 8).map(it => `<button type="button" class="glos-sug-op" data-glos-sug="${it.id}">
+        <span class="gs-t">${glosResaltar(it.t, q)}</span><span class="gs-d">${glosEsc(it.tema.titulo)} · ${it.donde}</span></button>`));
+  box.innerHTML = (filas.length ? filas.join('') : `<div class="glos-sug-nada">Sin coincidencias.</div>`)
+    + (res.length ? `<button type="button" class="glos-sug-op glos-sug-todos" data-glos-sug-todos="1">Ver los ${res.length} resultado${res.length === 1 ? '' : 's'}</button>` : '');
+  box.style.display = 'block';
+  _glosSugSel = -1;
+  box.querySelectorAll('[data-glos-sug]').forEach(b => b.addEventListener('mousedown', e => { e.preventDefault(); glosIrA(b.dataset.glosSug); }));
+  box.querySelectorAll('[data-glos-sug-tema]').forEach(b => b.addEventListener('mousedown', e => { e.preventDefault(); glosIrATema(b.dataset.glosSugTema); }));
+  box.querySelectorAll('[data-glos-sug-todos]').forEach(b => b.addEventListener('mousedown', e => { e.preventDefault(); glosCerrarSug(); glosRender({resultados: true}); }));
+}
+function glosTeclas(e){
+  const box = document.getElementById('glosSugerencias');
+  const ops = box ? [...box.querySelectorAll('.glos-sug-op')] : [];
+  if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+    if(!ops.length) return;
+    e.preventDefault();
+    _glosSugSel = (_glosSugSel + (e.key === 'ArrowDown' ? 1 : -1) + ops.length) % ops.length;
+    ops.forEach((o, i) => o.classList.toggle('activa', i === _glosSugSel));
+    ops[_glosSugSel].scrollIntoView({block: 'nearest'});
+  } else if(e.key === 'Enter'){
+    e.preventDefault();
+    if(_glosSugSel >= 0 && ops[_glosSugSel]){
+      ops[_glosSugSel].dispatchEvent(new MouseEvent('mousedown', {bubbles: true}));
+    } else {
+      glosCerrarSug(); glosRender({resultados: true});
+    }
+  } else if(e.key === 'Escape'){
+    if(box && box.style.display === 'block'){ e.stopPropagation(); glosCerrarSug(); }
+  }
+}
+
+function glosIniciar(){
+  const sel = document.getElementById('glosTema');
+  const inp = document.getElementById('glosBuscar');
+  if(!sel || !inp || sel.dataset.listo) return;
+  sel.dataset.listo = '1';
+  sel.innerHTML = '<option value="">Todos los temas</option>'
+    + GLOSARIO_TEMAS.map(t => `<option value="${t.id}">${glosEsc(t.titulo)}</option>`).join('');
+  sel.addEventListener('change', () => {
+    if(inp.value.trim()){ glosCerrarSug(); glosRender({resultados: true}); }
+    else glosRender();
+    const panel = glosPanel(); if(panel) panel.scrollTop = 0;
+  });
+  inp.addEventListener('input', glosSugerir);
+  inp.addEventListener('keydown', glosTeclas);
+  inp.addEventListener('blur', () => setTimeout(glosCerrarSug, 150));
+  inp.addEventListener('focus', () => { if(inp.value.trim()) glosSugerir(); });
+  const x = document.getElementById('glosBuscarX');
+  if(x) x.addEventListener('mousedown', e => { e.preventDefault(); inp.value = ''; glosCerrarSug(); glosRender(); inp.focus(); });
+}
+
+// `seccion` puede ser un tema ('fase'), una entrada ('graf-trazados') o uno
+// de los nombres viejos de las cinco pestañas (ver GLOS_ALIAS). Vacío = el
+// índice con todos los temas cerrados.
 function abrirGlosario(seccion){
   const helpOverlay = document.getElementById('helpOverlay');
   if(!helpOverlay) return;
   helpOverlay.classList.add('open');
-  mostrarSeccionGlosario(seccion || 'fase');
-}
-
-function mostrarSeccionGlosario(seccion){
-  document.querySelectorAll('.glos-sec').forEach(el => {
-    el.classList.toggle('active', el.id === 'glos-' + seccion);
-  });
-  document.querySelectorAll('.glos-nav-btn').forEach(b => {
-    b.classList.toggle('active', b.dataset.glos === seccion);
-  });
-  // Al cambiar de sección, volver arriba: si venías del final de una sección
-  // larga, la siguiente arrancaba a media altura y parecía cortada.
-  const panel = document.querySelector('#helpOverlay .detail');
+  glosIniciar();
+  const destino = GLOS_ALIAS[seccion] || seccion || '';
+  const inp = document.getElementById('glosBuscar');
+  const sel = document.getElementById('glosTema');
+  if(inp) inp.value = '';
+  if(sel) sel.value = '';
+  glosCerrarSug();
+  const panel = glosPanel();
   if(panel) panel.scrollTop = 0;
+  if(destino && glosItemPorId(destino)){ glosIrA(destino); return; }
+  const esTema = GLOSARIO_TEMAS.some(t => t.id === destino);
+  glosRender({abrir: esTema ? destino : null});
+  if(esTema) glosScrollA(document.getElementById('glos-t-' + destino));
 }
+function mostrarSeccionGlosario(seccion){ abrirGlosario(seccion); }
 
 document.querySelectorAll('.glos-nav-btn').forEach(b => {
   b.addEventListener('click', () => mostrarSeccionGlosario(b.dataset.glos));
 });
 
 const btnGlosarioTop = document.getElementById('btnGlosario');
-if(btnGlosarioTop) btnGlosarioTop.addEventListener('click', () => abrirGlosario('fase'));
+// Desde arriba se entra por el índice: el glosario ya no es solo "Fase y fuerza".
+if(btnGlosarioTop) btnGlosarioTop.addEventListener('click', () => abrirGlosario(''));
 
 function closeHelpOverlay(){
   const helpOverlay = document.getElementById('helpOverlay');
@@ -11079,7 +11606,7 @@ function alLlegarFichas(tks){
     var t = el.dataset.fichaQh;
     if(set.has(t)) el.outerHTML = queHaceHTML(t, {industria: el.dataset.industria});
   });
-  if(typeof gridOrden !== 'undefined' && gridOrden === 'ficha'){ renderOrdenRow(); renderGridOrder(); }
+  if(typeof gridOrden !== 'undefined' && necesitaFichas()){ renderOrdenRow(); renderGridOrder(); }
   if(ambienteActivo === 'explorar' && tks.some(function(t){ return _fichaExplVista.has(t); })
      && typeof renderAmbienteExplorar === 'function') renderAmbienteExplorar();
 }
