@@ -1343,6 +1343,16 @@
   .glos-item b{color:var(--ink);}
   .glos-lista{margin:0 0 7px; padding-left:18px; font-size:12.5px; color:var(--ink-dim); line-height:1.65;}
   .glos-lista li{margin-bottom:4px;}
+  /* "?" del Análisis detallado: abre el glosario en la entrada que explica esa parte */
+  .ad-q{display:inline-flex; align-items:center; justify-content:center; width:18px; height:18px; margin-left:6px; padding:0;
+    border-radius:50%; border:1px solid var(--hairline); background:var(--bg-field); color:var(--ink-faint);
+    font:700 10.5px/1 system-ui, sans-serif; cursor:pointer; vertical-align:middle;}
+  .ad-q:hover, .ad-q:focus-visible{color:var(--ink); border-color:var(--ink-faint);}
+  .ad-como{margin:6px 0 0; background:var(--bg-field); border-radius:6px; padding:6px 10px; font-size:11.5px; color:var(--ink-dim);}
+  .ad-como summary{cursor:pointer; font-weight:600; color:var(--ink-dim); list-style:revert;}
+  .ad-como ul{margin:6px 0 4px; padding-left:16px; line-height:1.55;}
+  .ad-como li{margin-bottom:3px;}
+  .ad-como a{color:var(--ink-dim);}
   /* Glosario completo (31-oct-2026): buscador, índice y temas que se abren */
   .glos-buscar{position:sticky; top:-1px; z-index:3; background:var(--bg-panel); padding:4px 0 10px;
                margin-bottom:10px; border-bottom:1px solid var(--hairline);}
@@ -4594,7 +4604,7 @@ function frCapasHTML(s, mercado){
   if(!cols.length) return '';
   const fila = (txt, f) => `<tr><td>${txt}</td>${cols.map(c => f(c.fr)).join('')}</tr>`;
   return `
-    <p style="font-size:10.5px; font-weight:600; color:var(--ink-dim); margin:10px 0 4px;">Fuerza relativa semanal</p>
+    <p style="font-size:10.5px; font-weight:600; color:var(--ink-dim); margin:10px 0 4px;">Fuerza relativa semanal<button type="button" class="ad-q" data-glos-abrir="fr-semanal" aria-label="Qué significa" title="Qué significa">?</button></p>
     <table class="mini-table">
       <tr><td></td>${cols.map(c => `<td style="color:var(--ink-dim);">vs ${c.nombre}</td>`).join('')}</tr>
       ${fila('Mansfield (0 = empata)', f => `<td class="mono" style="color:${col(f.mansfield)};">${num(f.mansfield, '')}${f.cruzaMansfield ? ' ↑ cruzó' : ''}</td>`)}
@@ -4602,6 +4612,17 @@ function frCapasHTML(s, mercado){
       ${fila('Líder (máx. de 13 sem)', f => `<td style="color:${tickColor(f.lider13Sem)};">${f.lider13Sem == null ? '—' : (f.lider13Sem ? 'sí' : 'no')}</td>`)}
       ${fila('Ventaja 52 sem', f => `<td class="mono" style="color:${col(f.ventaja52SemPts)};">${num(f.ventaja52SemPts, ' pts')}</td>`)}
     </table>
+    <details class="ad-como">
+      <summary>¿Cómo se lee esta tabla?</summary>
+      <ul>
+        <li><b>Mansfield:</b> la fuerza relativa (precio de la acción ÷ el de la referencia) contra su promedio de 52 semanas. Sobre 0 = hoy le va mejor que en su promedio del último año; bajo 0 = peor. "↑ cruzó" = esta semana pasó de negativo a positivo.</li>
+        <li><b>Pendiente 13 sem:</b> cuánto le ganó (+) o perdió (−) a la referencia en las últimas 13 semanas (~3 meses).${fi && fi.disponible ? ` Contra el ${cols[0].nombre} es la confirmación 4.` : ''}</li>
+        <li><b>Líder:</b> "sí" = su mejor momento contra la referencia de las últimas 13 semanas.</li>
+        <li><b>Ventaja 52 sem:</b> lo que subió la acción en un año menos lo que subió la referencia, en puntos (+30 % contra +12 % = +18 pts).</li>
+        <li>Lo ideal es todo verde.${cols.length > 1 ? ' Verde contra el índice pero rojo contra el sector = sube con su sector, pero no es de las que lo lideran.' : ''} Es informativa: no cambia la fase ni el veredicto.</li>
+      </ul>
+      <a href="#" data-glos-abrir="fr-semanal">Más detalle en el glosario →</a>
+    </details>
     ${!fs && mercado === 'usa' && !(typeof ETFS_USA_SET !== 'undefined' && ETFS_USA_SET.has(openTicker))
       ? '<p style="font-size:10.5px; color:var(--ink-faint); margin:4px 0 0;">Sin comparación de sector: la acción no está en la tabla de sectores.</p>' : ''}`;
 }
@@ -4622,7 +4643,7 @@ function renderDiagnosticoFuerza(ticker){
   ` : `
     <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; border-radius:8px; background:${CASO_COLOR[d.caso] || 'var(--bg-field)'}22; border:1px solid ${CASO_COLOR[d.caso] || 'var(--ink-faint)'}55; margin-bottom:8px;">
       <div>
-        <div style="font-size:13px; font-weight:600; color:${CASO_COLOR[d.caso] || 'var(--ink-dim)'};">${d.casoTexto}</div>
+        <div style="font-size:13px; font-weight:600; color:${CASO_COLOR[d.caso] || 'var(--ink-dim)'};">${d.casoTexto}<button type="button" class="ad-q" data-glos-abrir="ad-caso" aria-label="Qué significa" title="Qué significa">?</button></div>
         <div style="font-size:11px; color:var(--ink-faint); margin-top:2px;">${d.decision}</div>
       </div>
       <div style="text-align:right;">
@@ -4632,16 +4653,17 @@ function renderDiagnosticoFuerza(ticker){
     </div>
     ${d.velaEnCurso ? '<p style="font-size:11px; color:var(--gold); margin:0 0 8px;">⚠ El dato de hoy puede seguir moviéndose hasta el cierre.</p>' : ''}
     <table class="mini-table">
-      <tr><td>Fuerza relativa vs. ${data.mercado === 'usa' ? 'S&P 500' : 'IPSA'}</td><td>${d.fuerzaRelativa.disponible ? d.fuerzaRelativa.lectura : 'sin datos del índice'}</td></tr>
+      <tr><td>Fuerza relativa vs. ${data.mercado === 'usa' ? 'S&P 500' : 'IPSA'}<button type="button" class="ad-q" data-glos-abrir="ad-fr-diaria" aria-label="Qué significa" title="Qué significa">?</button></td><td>${d.fuerzaRelativa.disponible ? d.fuerzaRelativa.lectura : 'sin datos del índice'}</td></tr>
       ${d.fuerzaRelativa.disponible ? `
       <tr><td style="color:${tickColor(d.fuerzaRelativa.pendientePositiva)};">${tickIcono(d.fuerzaRelativa.pendientePositiva)} Pendiente positiva (~1 mes)</td><td></td></tr>
       <tr><td style="color:${tickColor(d.fuerzaRelativa.lider)};">${tickIcono(d.fuerzaRelativa.lider)} Líder (máximo de ~3 meses)</td><td></td></tr>
       ` : ''}
-      <tr><td>Distancia a la EMA21 (solo si está sobreextendida)${d.sobreextendida ? ' ⚠' : ''}</td><td>${d.distanciaEMA21Pct != null ? fmtNum(d.distanciaEMA21Pct, 1) + '%' : '—'}</td></tr>
-      <tr><td>Escalón 1 (SMA50) — vende mitad</td><td class="mono">${fmt(d.stops.sma50, 2)}${d.stops.perdioSMA50 ? ' ⚠ perdida' : ''}</td></tr>
+      <tr><td>Distancia a la EMA21${d.sobreextendida ? ' ⚠ sobreextendida' : ''}<button type="button" class="ad-q" data-glos-abrir="ad-ema21" aria-label="Qué significa" title="Qué significa">?</button></td><td>${d.distanciaEMA21Pct != null ? fmtNum(d.distanciaEMA21Pct, 1) + '%' : '—'}</td></tr>
+      <tr><td>Escalón 1 (SMA50) — vende mitad<button type="button" class="ad-q" data-glos-abrir="ad-escalones" aria-label="Qué significa" title="Qué significa">?</button></td><td class="mono">${fmt(d.stops.sma50, 2)}${d.stops.perdioSMA50 ? ' ⚠ perdida' : ''}</td></tr>
       <tr><td>Escalón 2 (SMA150) — vende todo</td><td class="mono">${fmt(d.stops.sma150, 2)}${d.stops.perdioSMA150 ? ' ⚠ perdida' : ''}</td></tr>
     </table>
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 10px; margin-top:6px; font-size:11px;">
+    <p style="font-size:10.5px; font-weight:600; color:var(--ink-dim); margin:10px 0 4px;">Las 8 señales del score<button type="button" class="ad-q" data-glos-abrir="ad-ocho" aria-label="Qué significa" title="Qué significa">?</button></p>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 10px; font-size:11px;">
       ${[['f1','Cierre sobre media larga'],['f2','Media corta sobre larga'],['f3','Media larga subiendo'],['f4','Media corta subiendo'],['f5','Máximos crecientes'],['f6','Mínimos crecientes'],['f7','RSI mejorando'],['f8','Cierre sobre media corta']].map(([k,txt]) =>
         `<div style="color:${tickColor(d.checks[k])};">${tickIcono(d.checks[k])} ${txt}</div>`).join('')}
     </div>
@@ -4660,15 +4682,15 @@ function renderDiagnosticoFuerza(ticker){
         <div style="font-size:10.5px; color:var(--ink-faint);">${s.veredicto}</div>
       </div>
     </div>
-    <p style="font-size:10.5px; font-weight:600; color:var(--ink-dim); margin:0 0 4px;">Confirmaciones de fase 2</p>
+    <p style="font-size:10.5px; font-weight:600; color:var(--ink-dim); margin:0 0 4px;">Confirmaciones de fase 2<button type="button" class="ad-q" data-glos-abrir="ad-confirmaciones" aria-label="Qué significa" title="Qué significa">?</button></p>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 10px; font-size:11px;">
       <div style="color:${tickColor(s.confirmaciones.c1_precioSobreMedia)};">${tickIcono(s.confirmaciones.c1_precioSobreMedia)} Precio sobre la media</div>
       <div style="color:${tickColor(s.confirmaciones.c2_pendientePositiva)};">${tickIcono(s.confirmaciones.c2_pendientePositiva)} Pendiente positiva</div>
       <div style="color:${tickColor(s.confirmaciones.c3_rompioMaximo30sem)};">${tickIcono(s.confirmaciones.c3_rompioMaximo30sem)} Rompió máximo 30 sem</div>
       <div style="color:${tickColor(s.confirmaciones.c4_fuerzaRelativa)};">${tickIcono(s.confirmaciones.c4_fuerzaRelativa)} Fuerza relativa creciente</div>
-      <div style="color:${tickColor(s.confirmaciones.c5_volumen)};">${tickIcono(s.confirmaciones.c5_volumen)} Volumen no se ha secado${!s.volumenDisponible ? ' (sin dato)' : ''}</div>
+      <div style="color:${tickColor(s.confirmaciones.c5_volumen)};">${tickIcono(s.confirmaciones.c5_volumen)} Volumen sobre lo normal${!s.volumenDisponible ? ' (sin dato)' : ''}</div>
     </div>
-    <p style="font-size:10.5px; font-weight:600; color:var(--ink-dim); margin:10px 0 4px;">Señales de agotamiento</p>
+    <p style="font-size:10.5px; font-weight:600; color:var(--ink-dim); margin:10px 0 4px;">Señales de agotamiento<button type="button" class="ad-q" data-glos-abrir="ad-agotamiento" aria-label="Qué significa" title="Qué significa">?</button></p>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px 10px; font-size:11px;">
       <div style="color:${s.agotamiento.a1_mediaDejoDeSubir ? 'var(--gold)' : 'var(--ink-faint)'};">${tickIcono(s.agotamiento.a1_mediaDejoDeSubir)} La media dejó de subir</div>
       <div style="color:${s.agotamiento.a2_sinMaximosNuevos ? 'var(--gold)' : 'var(--ink-faint)'};">${tickIcono(s.agotamiento.a2_sinMaximosNuevos)} Sin máximos nuevos</div>
@@ -4682,11 +4704,11 @@ function renderDiagnosticoFuerza(ticker){
   `;
 
   wrap.innerHTML = `
-    <p style="font-size:11px; font-weight:600; color:var(--ink-dim); margin:4px 0 6px;">Diagnóstico diario (fuerza relativa y absoluta)</p>
+    <p style="font-size:11px; font-weight:600; color:var(--ink-dim); margin:4px 0 6px;">Diagnóstico diario (fuerza relativa y absoluta)<button type="button" class="ad-q" data-glos-abrir="analisis" aria-label="Qué significa" title="Qué significa">?</button></p>
     ${bloqueDiario}
-    <p style="font-size:11px; font-weight:600; color:var(--ink-dim); margin:14px 0 6px;">Fase semanal (Weinstein)</p>
+    <p style="font-size:11px; font-weight:600; color:var(--ink-dim); margin:14px 0 6px;">Fase semanal (Weinstein)<button type="button" class="ad-q" data-glos-abrir="ad-fase" aria-label="Qué significa" title="Qué significa">?</button></p>
     ${bloqueSemanal}
-    <p style="font-size:10.5px; color:var(--ink-faint); margin-top:10px;">No es recomendación de compra ni de venta — material educativo (clase de Inversapiens), calculado sobre cierres reales de Yahoo Finance. Los botones "Fuerza" y "Weinstein" en la fila de indicadores del gráfico (arriba) pintan el fondo con estos mismos colores.</p>
+    <p style="font-size:10.5px; color:var(--ink-faint); margin-top:10px;">No es recomendación de compra ni de venta — material educativo (clase de Inversapiens), calculado sobre cierres reales de Yahoo Finance. Los botones "Fuerza" y "Weinstein" en la fila de indicadores del gráfico (arriba) pintan el fondo con estos mismos colores. Cada <b>?</b> abre la explicación de esa parte.</p>
   `;
 }
 
@@ -5252,7 +5274,7 @@ var GLOSARIO_TEMAS = [
    <li><b>Fase 1 — Base.</b> Terminó de caer y está plana. No es momento de entrar: puede quedarse ahí meses.</li>
    <li><b>Fase 2 — Avance.</b> Rompió hacia arriba y la media va subiendo. Es la única fase en que este método compra.</li>
    <li><b>Fase 3 — Techo.</b> Dejó de hacer máximos nuevos y la media se aplanó. Zona de tomar utilidades, no de agregar.</li>
-   <li><b>Fase 4 — Caída.</b> Bajo su media, con la media cayendo. No se compra "porque está barata": puede seguir bajando mucho.</li></ul>`},
+   <li><b>Fase 4 — Caída</b> (en la pantalla de la acción dice "DECLIVE"). Bajo su media, con la media cayendo. No se compra "porque está barata": puede seguir bajando mucho.</li></ul>`},
   {id:'confirmaciones', t:'Confirmaciones (X de 5)', donde:'Tarjetas › recuadro "Fase" · Explorar', k:'confirmaciones cinco 5 fase 2 candidata valida',
    html:`<p>Estar en fase 2 no basta. La app cuenta cinco cosas que deberían pasar a la vez, y el método pide <b>al menos 4 de 5</b>:</p>
    <ul class="glos-lista">
@@ -5260,7 +5282,7 @@ var GLOSARIO_TEMAS = [
    <li>Esa media va subiendo.</li>
    <li>Rompió su máximo de las últimas 30 semanas hace poco (8 semanas o menos).</li>
    <li>Le está ganando al S&amp;P 500 (fuerza relativa subiendo).</li>
-   <li>El volumen del último tramo es 30 % más alto que su promedio.</li></ul>
+   <li>El volumen de la última semana es 30 % más alto que su promedio de 30 semanas.</li></ul>
    <p>Con 3 dice "no entra todavía"; con menos, "esperar".</p>`},
   {id:'score-fuerza', t:'Score de fuerza (0 a 8)', donde:'Tarjetas › recuadro "Oportunidad" · Explorar › Score', k:'score fuerza ocho 8 señales diario',
    html:`<p>Se calcula con <b>velas diarias</b> y suma ocho señales de que la acción va bien por dentro: precio sobre su media de 150 días, media de 50 sobre la de 150, las dos medias subiendo, máximos y mínimos de 10 días más altos que hace 10 días, RSI más alto que hace 20 días, y precio sobre su media de 50. El embudo pide <b>6 o más</b>.</p>
@@ -5275,8 +5297,97 @@ var GLOSARIO_TEMAS = [
    <p>Si ninguno aplica, dice "sin caso · en seguimiento".</p>`},
   {id:'fuerza-relativa', t:'Fuerza relativa', donde:'Tarjetas · Explorar ("fuerza relativa subiendo") · confirmación 4', k:'fuerza relativa sp500 comparada lider ganando terreno se queda atras',
    html:`<p>No es lo mismo que el RSI. Significa: <b>comparada con el S&amp;P 500, ¿va ganando o perdiendo?</b> Una acción que sube 10 % en un año en que el mercado subió 25 % no es fuerte: es lenta. El método pide que esa comparación vaya subiendo, no solo que el precio suba.</p>`},
-  {id:'mansfield', t:'Mansfield', donde:'Explorar › tarjeta de cada candidata', k:'mansfield fuerza relativa semanal desempate',
-   html:`<p>La fuerza relativa semanal contra el S&amp;P 500, comparada con su propio promedio de 52 semanas. Positivo (verde) = le está ganando al mercado más de lo habitual. En Explorar desempata a las candidatas con el mismo score.</p>`},
+  {id:'mansfield', t:'Mansfield', donde:'Explorar › tarjeta de cada candidata · pantalla de la acción › Análisis detallado › Fuerza relativa semanal', k:'mansfield fuerza relativa semanal desempate cruzo',
+   html:`<p>La fuerza relativa semanal contra el S&amp;P 500, comparada con su propio promedio de 52 semanas. Positivo (verde) = le está ganando al mercado más de lo habitual. En Explorar desempata a las candidatas con el mismo score.</p>
+   <p>En la pantalla de cada acción aparece junto a otras tres medidas: ver <a href="#" data-glos-ir="fr-semanal">Fuerza relativa semanal</a>.</p>`},
+]},
+
+{id:'analisis', titulo:'Análisis detallado de cada acción', intro:'El panel del final de la pantalla de la acción: el diagnóstico diario y la fase semanal, línea por línea.', items:[
+  {id:'ad-que-es', t:'Qué es el "Análisis detallado"', donde:'Pantalla de la acción › Análisis detallado (bajo los indicadores técnicos)', k:'analisis detallado diagnostico diario semanal panel abajo final',
+   html:`<p>Es el mismo cálculo de los recuadros "Oportunidad" y "Fase" de la tarjeta, pero abierto: muestra cada señal que lo compone. Tiene dos partes:</p>
+   <ul class="glos-lista">
+   <li><b>Diagnóstico diario:</b> con velas diarias. Dice si la acción está sana por dentro hoy (el score de 8) y si le gana al índice.</li>
+   <li><b>Fase semanal (Weinstein):</b> con velas semanales ya cerradas. Dice en qué parte del ciclo está, si se confirma la fase 2, si hay señales de techo y cómo le va contra el índice y contra su sector.</li></ul>
+   <p>Se calcula con 5 años de cierres reales. Los trazados "Fuerza" y "Weinstein" del gráfico pintan el fondo con estos mismos resultados, día a día y semana a semana. Cada título del panel tiene un botón <b>?</b> que abre aquí su explicación.</p>`},
+  {id:'ad-caso', t:'El recuadro del caso: "OPORTUNIDAD · comprar 7/8"', donde:'Análisis detallado › Diagnóstico diario › recuadro de color', k:'caso decision score 8 sana y con fuerza debilitandose debil lectura absoluta dato de hoy cierre',
+   html:`<p>A la izquierda, el <a href="#" data-glos-ir="casos">caso</a> del día y, debajo, la <a href="#" data-glos-ir="ad-decision">decisión</a> que sugiere el indicador. A la derecha, el <a href="#" data-glos-ir="score-fuerza">score</a> de 0 a 8 y cómo se lee:</p>
+   <ul class="glos-lista"><li><b>Sana y con fuerza:</b> 6 a 8.</li><li><b>Debilitándose:</b> 3 a 5.</li><li><b>Débil:</b> 0 a 2.</li></ul>
+   <p>"⚠ El dato de hoy puede seguir moviéndose hasta el cierre" = la bolsa está abierta y el cálculo usa el precio del momento; al cierre puede cambiar.</p>`},
+  {id:'ad-decision', t:'La decisión: comprar, mantener, vender la mitad…', donde:'Análisis detallado › Diagnóstico diario › bajo el caso', k:'decision vender todo mitad reducir esperar consolidacion mantener no aportar no comprar comprar liquidez reemplazar',
+   html:`<p>Es la regla del indicador de la clase para decidir qué hacer con la plata disponible. Se revisa en este orden y manda la primera que se cumple:</p>
+   <ol class="glos-lista">
+   <li>Cerró bajo su media de 150 días → <b>Vender todo y reemplazar</b>.</li>
+   <li>Cerró bajo su media de 50 días → <b>Vender la mitad</b> de lo que quede.</li>
+   <li>Score 2 o menos → <b>Reducir</b> y vigilar las medias.</li>
+   <li>Más de 5 % sobre su EMA de 21 días → <b>Esperar una consolidación</b>, no aportar.</li>
+   <li>Score 3 a 5 → <b>Mantener</b>, no aportar.</li>
+   <li>Media de 50 bajo la de 150 → <b>No comprar</b>.</li>
+   <li>Nada de lo anterior → <b>Comprar</b>: sana y sobre su media de 50.</li></ol>
+   <p>Es una lectura del indicador, no una orden. Las reglas que adoptaste (<a href="#" data-glos-ir="regla-zona">zona de compra</a>, <a href="#" data-glos-ir="regla-stop">stop inicial</a> y <a href="#" data-glos-ir="regla-movil">stop móvil</a>) son las que usa la app en A seguir y en Mi Cartera.</p>`},
+  {id:'ad-fr-diaria', t:'Fuerza relativa diaria: Líder, Ganando terreno, Se queda atrás', donde:'Análisis detallado › Diagnóstico diario › primeras filas de la tabla', k:'fuerza relativa diaria lider ganando terreno se queda atras pendiente positiva 1 mes 3 meses 21 63 dias sin datos del indice',
+   html:`<p>Cada día se divide el precio de la acción por el del índice (S&amp;P 500 en EE.UU., IPSA en Chile). Si esa división sube, la acción le gana al índice; si baja, le pierde. Ver <a href="#" data-glos-ir="fuerza-relativa">Fuerza relativa</a>.</p>
+   <ul class="glos-lista">
+   <li><b>✓ Pendiente positiva (~1 mes):</b> la división está más alta que hace 21 días hábiles.</li>
+   <li><b>✓ Líder (máximo de ~3 meses):</b> la división está en su punto más alto de los últimos 63 días hábiles.</li></ul>
+   <p>La lectura resume las dos: <b>Líder</b> si está en su máximo; si no, <b>Ganando terreno</b> si la pendiente es positiva; si no, <b>Se queda atrás</b>. "Sin datos del índice" = no llegó la serie del índice.</p>`},
+  {id:'ad-ema21', t:'Distancia a la EMA21', donde:'Análisis detallado › Diagnóstico diario › tabla', k:'distancia ema 21 sobreextendida estirada 5 por ciento',
+   html:`<p>Cuánto está el precio sobre (o bajo) su <a href="#" data-glos-ir="ema">EMA</a> de 21 días, en %. Sobre <b>+5 %</b> la acción está <b>sobreextendida</b> y aparece ⚠: subió muy rápido y conviene esperar que respire antes de comprar. Negativo = está bajo esa media.</p>`},
+  {id:'ad-escalones', t:'Escalón 1 (SMA50) y Escalón 2 (SMA150)', donde:'Análisis detallado › Diagnóstico diario › tabla', k:'escalon stop sma50 sma150 vende mitad vende todo perdida media 50 150 salida',
+   html:`<p>Los dos niveles de salida del indicador, con el valor de hoy de cada media:</p>
+   <ul class="glos-lista">
+   <li><b>Escalón 1 — media de 50 días:</b> si la acción cierra bajo ella, el indicador sugiere vender la mitad.</li>
+   <li><b>Escalón 2 — media de 150 días:</b> si cierra bajo ella, sugiere vender todo.</li></ul>
+   <p>"⚠ perdida" = el último cierre ya quedó bajo esa media. Son referencias del indicador; el stop que la app te propone para tu posición está en Mi Cartera (<a href="#" data-glos-ir="stop-propuesto">stop propuesto</a>).</p>`},
+  {id:'ad-ocho', t:'Las 8 señales del score', donde:'Análisis detallado › Diagnóstico diario › "Las 8 señales del score"', k:'ocho señales checks media larga corta subiendo maximos minimos crecientes rsi mejorando cierre sobre',
+   html:`<p>Cada ✓ verde suma un punto al <a href="#" data-glos-ir="score-fuerza">score</a>; el punto gris (·) no suma. "Media larga" = 150 días; "media corta" = 50 días.</p>
+   <ul class="glos-lista">
+   <li><b>Cierre sobre media larga:</b> el precio está sobre su media de 150.</li>
+   <li><b>Media corta sobre larga:</b> la de 50 está sobre la de 150.</li>
+   <li><b>Media larga subiendo</b> y <b>Media corta subiendo:</b> cada media está más alta que hace 10 días hábiles.</li>
+   <li><b>Máximos crecientes:</b> el cierre más alto de los últimos 10 días supera al de los 10 días anteriores.</li>
+   <li><b>Mínimos crecientes:</b> lo mismo con el cierre más bajo.</li>
+   <li><b>RSI mejorando:</b> el <a href="#" data-glos-ir="rsi">RSI</a> está más alto que hace 20 días.</li>
+   <li><b>Cierre sobre media corta:</b> el precio está sobre su media de 50.</li></ul>`},
+  {id:'ad-fase', t:'El recuadro de la fase: "FASE 2 · AVANCE 4/5"', donde:'Análisis detallado › Fase semanal (Weinstein) › recuadro de color', k:'fase avance base techo declive aqui y solo aqui no compramos preparar salida jamas candidata valida no entra todavia esperar no califica semana cerrada historial',
+   html:`<p>A la izquierda, la <a href="#" data-glos-ir="fase-weinstein">fase</a> y qué hacer en ella: <b>Base</b> → "no compramos"; <b>Avance</b> → "aquí y solo aquí"; <b>Techo</b> → "preparar salida"; <b>Declive</b> → "jamás". A la derecha, cuántas <a href="#" data-glos-ir="ad-confirmaciones">confirmaciones</a> cumple (de 5) y el veredicto:</p>
+   <ul class="glos-lista">
+   <li><b>Candidata válida:</b> fase 2 con 4 o 5 confirmaciones.</li>
+   <li><b>No entra todavía:</b> fase 2 con 3.</li>
+   <li><b>Esperar:</b> fase 2 con 2 o menos.</li>
+   <li><b>No califica:</b> no está en fase 2, aunque sume confirmaciones.</li></ul>
+   <p>Solo cuentan semanas <b>cerradas</b>: la línea del final dice hasta qué semana llega y cuántas semanas de historial hay. La semana en curso se cuenta desde el lunes siguiente.</p>
+   <p>Ojo: el "Declive" de la fase semanal (fase 4) no es lo mismo que el caso <a href="#" data-glos-ir="casos">Declive</a> del diario (bajo la media de 150 días), aunque suelen ir juntos.</p>`},
+  {id:'ad-confirmaciones', t:'Confirmaciones de fase 2, una por una', donde:'Análisis detallado › Fase semanal › "Confirmaciones de fase 2"', k:'confirmaciones precio sobre la media pendiente positiva rompio maximo 30 semanas fuerza relativa creciente volumen sobre lo normal',
+   html:`<p>Con velas semanales y la media de 30 semanas:</p>
+   <ul class="glos-lista">
+   <li><b>Precio sobre la media:</b> el último cierre semanal está sobre la media de 30 semanas.</li>
+   <li><b>Pendiente positiva:</b> esa media está más alta que hace 5 semanas.</li>
+   <li><b>Rompió máximo 30 sem:</b> en las últimas 8 semanas cerró sobre el cierre más alto de las 30 semanas anteriores.</li>
+   <li><b>Fuerza relativa creciente:</b> contra el S&amp;P 500 (o el IPSA) está mejor que hace 13 semanas. Es la "Pendiente 13 sem" de la <a href="#" data-glos-ir="fr-semanal">tabla de fuerza relativa</a>.</li>
+   <li><b>Volumen sobre lo normal:</b> el volumen de la última semana supera en 30 % su promedio de 30 semanas. "(sin dato)" = la fuente no entregó volumen.</li></ul>
+   <p>El método pide al menos 4 de 5 (ver <a href="#" data-glos-ir="confirmaciones">Confirmaciones</a>).</p>`},
+  {id:'ad-agotamiento', t:'Señales de agotamiento y "Techo confirmado"', donde:'Análisis detallado › Fase semanal › "Señales de agotamiento"', k:'agotamiento techo confirmado vigilar sin agotamiento distribucion volumen bajista media dejo de subir sin maximos nuevos pierde fuerza cierra bajo la media',
+   html:`<p>Lo contrario de las confirmaciones: cinco avisos de que la subida se está cansando. Se pintan amarillos cuando se cumplen.</p>
+   <ul class="glos-lista">
+   <li><b>La media dejó de subir:</b> la media de 30 semanas subió 0,5 % o menos en 5 semanas.</li>
+   <li><b>Sin máximos nuevos:</b> el cierre más alto de las últimas 8 semanas no supera al de las 8 anteriores.</li>
+   <li><b>Pierde fuerza relativa:</b> contra el índice está peor que hace 13 semanas.</li>
+   <li><b>Cierra bajo la media:</b> el último cierre semanal quedó bajo la media de 30 semanas.</li>
+   <li><b>Distribución (vol. bajista):</b> en las últimas 10 semanas, las que bajaron tuvieron más volumen promedio que las que subieron: alguien grande está vendiendo.</li></ul>
+   <p>La línea de abajo las suma: <b>sin agotamiento</b> (0 a 2), <b>vigilar</b> (3 o más) y <b>⚠ Techo confirmado</b> cuando está en fase 3 y suma 4 o 5. Con techo confirmado, el método dice preparar la salida.</p>`},
+  {id:'fr-semanal', t:'Fuerza relativa semanal: Mansfield, Pendiente 13 sem, Líder y Ventaja 52 sem', donde:'Análisis detallado › Fase semanal › tabla "Fuerza relativa semanal"', k:'fuerza relativa semanal tabla mansfield pendiente 13 semanas lider maximo ventaja 52 semanas puntos pts cruzo empata sector industria etf xlf xlk xle xlv xly xlp xli xlb xlu xlre xlc smh igv ita kre iyt xop vs sp500 s&p ipsa',
+   html:`<p>Compara la acción contra dos referencias, una en cada columna:</p>
+   <ul class="glos-lista">
+   <li><b>vs S&amp;P 500</b> (vs IPSA en Chile): ¿le gana al mercado?</li>
+   <li><b>vs ETF de su sector</b>: ¿es de las que lideran su propio sector? Se usa el ETF de su industria si la app tiene uno (SMH semiconductores, IGV software, ITA defensa, KRE bancos regionales, IYT transporte, XOP petróleo y gas) y si no, el de su sector (XLF financieras, XLK tecnología, XLV salud, XLE energía, etc.).</li></ul>
+   <p>"Fuerza relativa" es el precio de la acción dividido por el de la referencia, con velas semanales cerradas. Las cuatro filas:</p>
+   <ul class="glos-lista">
+   <li><b>Mansfield (0 = empata):</b> la fuerza relativa de esta semana comparada con su promedio de 52 semanas, en %. Sobre 0 (verde) = hoy le va mejor contra esa referencia que en su promedio del último año; bajo 0 (rojo) = peor; 0 = igual a su promedio. <b>"↑ cruzó"</b> = esta semana pasó de negativo a positivo: señal temprana de que empieza a liderar.</li>
+   <li><b>Pendiente 13 sem:</b> cuánto cambió la fuerza relativa en las últimas 13 semanas (~3 meses), en %. Positiva = en ese tramo le ganó a la referencia. Contra el S&amp;P 500 es exactamente la confirmación 4 ("Fuerza relativa creciente") y, si es negativa, la señal de agotamiento "Pierde fuerza relativa".</li>
+   <li><b>Líder (máx. de 13 sem):</b> "sí" si la fuerza relativa de esta semana es la más alta de las últimas 13.</li>
+   <li><b>Ventaja 52 sem:</b> lo que subió la acción en 52 semanas menos lo que subió la referencia, en puntos. Ejemplo: la acción +30 % y el S&amp;P 500 +12 % → <b>+18 pts</b>.</li></ul>
+   <p><b>Cómo leerla:</b> lo ideal es todo verde en las dos columnas. Verde contra el S&amp;P 500 pero rojo contra el sector = sube porque sube su sector, pero dentro de él hay otras mejores. Rojo contra el S&amp;P 500 = el mercado le está ganando.</p>
+   <p>"—" = no alcanza el historial para esa ventana (Mansfield y Ventaja necesitan un año). "Sin comparación de sector" = la acción no está en la tabla de sectores de la app. La tabla es informativa: salvo la pendiente contra el S&amp;P 500 (que es la confirmación 4), no cambia la fase, las confirmaciones ni el veredicto.</p>`},
 ]},
 
 {id:'promedios', titulo:'Promedios, RSI y volumen', intro:'Las medidas de todos los días que se ven en tarjetas, gráfico e indicadores.', items:[
@@ -5521,6 +5632,10 @@ function glosIndexar(){
   _glosIndexado = true;
 }
 function glosItemPorId(id){
+  // Indexar primero: es lo que le pone a cada entrada su tema (it.tema). Sin
+  // esto, abrir el glosario directo en una entrada (el "?" del gráfico o del
+  // Análisis detallado) fallaba si todavía no se había buscado nada.
+  glosIndexar();
   for(const t of GLOSARIO_TEMAS){ for(const it of t.items){ if(it.id === id) return it; } }
   return null;
 }
@@ -5759,6 +5874,15 @@ function abrirGlosario(seccion){
   if(esTema) glosScrollA(document.getElementById('glos-t-' + destino));
 }
 function mostrarSeccionGlosario(seccion){ abrirGlosario(seccion); }
+// Cualquier elemento con data-glos-abrir="<tema o entrada>" abre el glosario
+// ahí. Delegado en document porque el Análisis detallado se redibuja entero.
+document.addEventListener('click', e => {
+  const b = e.target.closest && e.target.closest('[data-glos-abrir]');
+  if(!b) return;
+  e.preventDefault();
+  e.stopPropagation();
+  abrirGlosario(b.dataset.glosAbrir);
+});
 
 document.querySelectorAll('.glos-nav-btn').forEach(b => {
   b.addEventListener('click', () => mostrarSeccionGlosario(b.dataset.glos));
