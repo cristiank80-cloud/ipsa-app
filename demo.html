@@ -3977,7 +3977,14 @@ const GRID_ORDENES = {
   nombre:      {lab: 'Nombre',      caro: false},
   oportunidad: {lab: 'Oportunidad', caro: true},
   fase:        {lab: 'Fase',        caro: true},
+  // Ficha fundamental (Clases Acciones USA, punto 3). No es "caro" en el
+  // sentido de arriba (no pide /diagnostico): pide las fichas que falten a
+  // la cola del servidor, y las que ya llegaron viven 7 días en el teléfono.
+  ficha:       {lab: 'Ficha',       caro: false},
 };
+// Filtro de la ficha. "Orientativa" = bancos, aseguradoras y financieras.
+const FICHA_FILTROS = [['calidad', 'Calidad'], ['vigilar', 'Vigilar'], ['incompleta', 'Incompleta'],
+                       ['financiera', 'Orientativa'], ['fuera', 'Fuera']];
 const CASOS_FILTRO = ['OPORTUNIDAD', 'RECUPERANDO', 'SOBREEXTENDIDA', 'DIVERGENCIA', 'DECLIVE'];
 // El orden de fase NO es 1,2,3,4: es el orden en que sirven. La 2 (avance)
 // es la única en la que el método compra; la 1 (base) es la antesala; la 3
@@ -3994,6 +4001,20 @@ function cargarGridOrden(){
 let gridOrden = cargarGridOrden();
 let gridFiltroCaso = null;   // null = todas
 let gridFiltroFase = null;   // null = todas
+let gridFiltroFicha = null;  // null = todas
+
+// Ficha de una tarjeta de la grilla, para ordenar y filtrar. El bloque de la
+// ficha vive más abajo en el archivo y usa `var`: antes de que corra,
+// FICHA_LISTO es undefined y esto responde "sin ficha" sin reventar.
+function fichaGrid(t){
+  if(!FICHA_LISTO || !fichaAplica(t)) return null;
+  const f = fichaDe(t);
+  return (f && f.disponible) ? f : null;
+}
+function veredictoGrid(t){
+  const f = fichaGrid(t);
+  return f ? fichaVeredicto(t, f) : null;
+}
 let diagDescargaActiva = false;
 
 function diagDe(ticker){ return diagTarjetaCache[ticker] || null; }
@@ -4036,6 +4057,8 @@ function cambiarGridOrden(nuevo){
   // que ya no está en pantalla.
   if(nuevo !== 'oportunidad') gridFiltroCaso = null;
   if(nuevo !== 'fase') gridFiltroFase = null;
+  if(nuevo !== 'ficha') gridFiltroFicha = null;
+  if(nuevo === 'ficha' && FICHA_LISTO) pedirFichas(stocksDelAmbiente(ambienteActivo).map(s => s.ticker));
   if(GRID_ORDENES[nuevo].caro) pedirDiagnosticoDeTodoElAmbiente();
   else diagDescargaActiva = false;
   renderOrdenRow();
@@ -4047,8 +4070,10 @@ function renderOrdenRow(){
   if(!cont) return;
   const pill = (txt, activa, attrs) => `<button type="button" class="orden-pill${activa ? ' activa' : ''}" ${attrs}>${txt}</button>`;
 
+  // "Ficha" solo donde hay empresas de EE.UU. (en Chile, ETF y cripto no aplica).
+  const conFicha = !!FICHA_LISTO && stocksDelAmbiente(ambienteActivo).some(s => fichaAplica(s.ticker));
   let html = `<div class="orden-linea"><span class="orden-lab">Ordenar por</span>`
-    + Object.entries(GRID_ORDENES).map(([k, v]) =>
+    + Object.entries(GRID_ORDENES).filter(([k]) => k !== 'ficha' || conFicha || gridOrden === 'ficha').map(([k, v]) =>
         pill(v.lab, gridOrden === k, `data-orden="${k}"`)).join('')
     + `</div>`;
 
@@ -4065,6 +4090,19 @@ function renderOrdenRow(){
       + `</div>`;
   }
 
+  if(gridOrden === 'ficha' && conFicha){
+    html += `<div class="orden-linea"><span class="orden-lab">Mostrar</span>`
+      + pill('Todas', gridFiltroFicha === null, 'data-fficha=""')
+      + FICHA_FILTROS.map(([k, lab]) => pill(lab, gridFiltroFicha === k, `data-fficha="${k}"`)).join('')
+      + `</div>`;
+    const aplican = stocksDelAmbiente(ambienteActivo).filter(s => fichaAplica(s.ticker));
+    const listas = aplican.filter(s => fichaDe(s.ticker)).length;
+    if(listas < aplican.length){
+      html += `<p class="orden-progreso">Calculando fichas… ${listas} de ${aplican.length}.
+        Cada una son unas 20 consultas a la SEC, así que la primera vez toma varios minutos;
+        después quedan guardadas 7 días en este teléfono. Las que faltan quedan al final de la lista mientras tanto.</p>`;
+    }
+  }
   if(GRID_ORDENES[gridOrden].caro){
     const {listas, total} = progresoDiagnostico();
     if(listas < total){
@@ -4080,6 +4118,11 @@ function renderOrdenRow(){
   cont.querySelectorAll('[data-fcaso]').forEach(b =>
     b.addEventListener('click', () => {
       gridFiltroCaso = b.dataset.fcaso || null;
+      renderOrdenRow(); renderGridOrder();
+    }));
+  cont.querySelectorAll('[data-fficha]').forEach(b =>
+    b.addEventListener('click', () => {
+      gridFiltroFicha = b.dataset.fficha || null;
       renderOrdenRow(); renderGridOrder();
     }));
   cont.querySelectorAll('[data-ffase]').forEach(b =>
@@ -4106,6 +4149,13 @@ function renderGridOrder(){
     if(gridOrden === 'fase' && gridFiltroFase){
       const f = faseDe(s.ticker);
       if(f !== null && f !== gridFiltroFase) return false;
+    }
+    if(gridOrden === 'ficha' && gridFiltroFicha){
+      // Sin ficha todavía no se esconde (igual que arriba); una que no
+      // aplica (chilena, ETF) sí, porque nunca va a tener una.
+      if(FICHA_LISTO && !fichaAplica(s.ticker)) return false;
+      const v = veredictoGrid(s.ticker);
+      if(v !== null && v !== gridFiltroFicha) return false;
     }
     return true;
   });
@@ -4146,6 +4196,19 @@ function renderGridOrder(){
       const pa = FASE_PRIORIDAD[fa] ?? 9, pb = FASE_PRIORIDAD[fb] ?? 9;
       return (pa - pb) || (conf(b.ticker) - conf(a.ticker)) || desempate(a, b);
     });
+  } else if(gridOrden === 'ficha'){
+    // Puntaje alto primero. Empate: la que tiene más preguntas con dato,
+    // después la firma de caja buena antes que la mala, y al final el orden
+    // de siempre. Sin ficha todavía (o sin datos), al final.
+    const clave = s => {
+      const f = fichaGrid(s.ticker);
+      return f ? [0, -f.puntaje, -(f.respondidas || 0), (f.firma && f.firma.mala) ? 1 : 0] : [1, 0, 0, 0];
+    };
+    ordenFinal = [...visibles].sort((a, b) => {
+      const ka = clave(a), kb = clave(b);
+      for(let i = 0; i < ka.length; i++){ if(ka[i] !== kb[i]) return ka[i] - kb[i]; }
+      return desempate(a, b);
+    });
   } else {
     // 'favoritas' -- el de siempre: las marcadas arriba, y dentro de cada
     // grupo el orden original de la lista.
@@ -4174,7 +4237,8 @@ function renderGridOrder(){
 
   const hint = document.getElementById('searchHint');
   const hayFiltro = (gridOrden === 'oportunidad' && gridFiltroCaso)
-                 || (gridOrden === 'fase' && gridFiltroFase);
+                 || (gridOrden === 'fase' && gridFiltroFase)
+                 || (gridOrden === 'ficha' && gridFiltroFicha);
   if(query || hayFiltro){
     // "acciones" era correcto cuando la grilla gringa eran solo empresas;
     // en la pestaña de ETF decía "11 de 40 acciones" sobre una lista de
@@ -11511,6 +11575,7 @@ function alLlegarFichas(tks){
     var t = el.dataset.fichaQh;
     if(set.has(t)) el.outerHTML = queHaceHTML(t, {industria: el.dataset.industria});
   });
+  if(typeof gridOrden !== 'undefined' && gridOrden === 'ficha'){ renderOrdenRow(); renderGridOrder(); }
   if(ambienteActivo === 'explorar' && tks.some(function(t){ return _fichaExplVista.has(t); })
      && typeof renderAmbienteExplorar === 'function') renderAmbienteExplorar();
 }
