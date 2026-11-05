@@ -406,6 +406,41 @@
   .esp-form{display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:10px;}
   .esp-form input, .esp-form select{padding:6px 8px; border:1px solid var(--hairline); border-radius:6px;
                                     background:var(--bg-field); font-size:12px;}
+  /* ---- "A seguir": escribir y borrar rápido (5-nov-2026) ---- */
+  .esp-buscar{position:relative; flex:1; min-width:150px; display:flex;}
+  .esp-buscar input{flex:1; min-width:0; padding-right:28px;}
+  .esp-buscar input.esp-tk-ok{border-color:var(--verdigris); font-weight:600;}
+  .esp-limpiar{position:absolute; right:3px; top:50%; transform:translateY(-50%); border:none; background:none;
+               color:var(--ink-faint); font-size:13px; line-height:1; cursor:pointer; padding:5px 6px;}
+  .esp-limpiar:hover{color:var(--copper);}
+  .esp-sugs{position:absolute; left:0; right:0; top:calc(100% + 3px); z-index:40; background:var(--bg-panel);
+            border:1px solid var(--hairline); border-radius:8px; box-shadow:0 8px 22px rgba(0,0,0,.14);
+            max-height:280px; overflow-y:auto;}
+  .esp-sug{display:flex; align-items:baseline; gap:8px; padding:8px 10px; font-size:12px; cursor:pointer;
+           border-bottom:1px solid var(--hairline);}
+  .esp-sug:last-child{border-bottom:none;}
+  .esp-sug b{font-family:'IBM Plex Mono',monospace; font-weight:600; min-width:64px; color:var(--ink);}
+  .esp-sug span{color:var(--ink-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;}
+  .esp-sug em{font-style:normal; font-size:9.5px; color:var(--ink-faint); white-space:nowrap;}
+  .esp-sug.activa{background:var(--bg-field);}
+  .esp-sug.ya{opacity:.6;}
+  .esp-sug-vacio{padding:9px 10px; font-size:11px; color:var(--ink-faint); line-height:1.45;}
+  .esp-row{position:relative;}
+  .esp-row .esp-head{padding-right:24px;}
+  .esp-x{position:absolute; top:6px; right:6px; border:none; background:none; color:var(--ink-faint);
+         font-size:15px; line-height:1; cursor:pointer; padding:4px 6px; border-radius:5px;}
+  .esp-x:hover{color:var(--copper);}
+  .esp-cond-inp{width:100%; box-sizing:border-box; padding:4px 7px; margin:0 0 1px; border:1px solid transparent;
+                border-radius:5px; background:var(--bg-field); font-size:11.5px; color:var(--ink); font-family:inherit;}
+  .esp-cond-inp:hover{border-color:var(--hairline);}
+  .esp-cond-inp:focus{border-color:var(--gold); outline:none; background:var(--bg-panel);}
+  .esp-deshacer{display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 11px; margin-bottom:8px;
+                border-radius:8px; background:var(--ink); color:var(--bg-panel); font-size:11.5px;}
+  .esp-deshacer button{font-size:10.5px; padding:3px 9px; border-radius:6px; border:1px solid rgba(255,255,255,.35);
+                       background:transparent; color:inherit; cursor:pointer; font-weight:600;}
+  .esp-deshacer button.principal{border-color:#E8C98A; color:#E8C98A;}
+  .esp-deshacer .hecho{opacity:.75; font-size:10.5px;}
+  .esp-row.esp-flash{box-shadow:0 0 0 2px var(--gold); transition:box-shadow .3s;}
   .cartera-sug{margin-top:5px;}
   .stop-sug{
     display:inline-flex; align-items:center; gap:5px; width:100%;
@@ -2892,6 +2927,17 @@ const stocksUSA = [
   // Agregada a pedido (29-oct-2026). Mismo lugar que en TICKERS_USA de
   // backend/main.py. Acción normal (no ETF).
   {ticker:'CNC',     name:"Centene",                                          dec:2, currency:'USD'},
+  // Agregada a pedido (5-nov-2026). Mismo lugar que en TICKERS_USA de
+  // backend/main.py. Es ETF (factor calidad en empresas medianas, el hermano
+  // de QUAL): también va en ETFS_USA_SET, GICS y ETF_AMPLIOS, más abajo.
+  {ticker:'XMHQ',    name:"Factor calidad mid cap · ETF",                     dec:2, currency:'USD'},
+  // Agregadas a pedido (5-nov-2026, segundo pedido). Mismos símbolos y mismo
+  // orden que en TICKERS_USA de backend/main.py. Acciones normales (no ETF).
+  // XBI, CCEP y FAST, que venían en el mismo pedido, ya tenían tarjeta.
+  {ticker:'MTD',     name:"Mettler-Toledo",                                   dec:2, currency:'USD'},
+  {ticker:'VLTO',    name:"Veralto",                                          dec:2, currency:'USD'},
+  {ticker:'VRSN',    name:"VeriSign",                                         dec:2, currency:'USD'},
+  {ticker:'WSM',     name:"Williams-Sonoma",                                  dec:2, currency:'USD'},
   // -----------------------------------------------------------------------
   // ETF DE SECTOR E INDUSTRIA (27-ago-2026)
   // -----------------------------------------------------------------------
@@ -2939,9 +2985,9 @@ const ETFS_USA_SET = new Set([
   'XLK','XLV','XLF','XLY','XLP','XLE','XLI','XLB','XLU','XLRE','XLC',
   // Industria (12)
   'SMH','IGV','CIBR','XBI','ITA','KRE','XRT','XOP','GDX','IYT','PAVE','URA',
-  // Amplios, renta fija, metales, factores y países (20)
+  // Amplios, renta fija, metales, factores y países (21)
   'VOO','VTI','VT','VXUS','QQQM','QQQ','URSP','SCHD','VIG','BND','TLT',
-  'GLD','SLV','DBC','ARKK','VLUE','MTUM','QUAL','USMV','EWJ',
+  'GLD','SLV','DBC','ARKK','VLUE','MTUM','QUAL','USMV','EWJ','XMHQ',
 ]);
 
 const stateUSA = stocksUSA.map(s => ({
@@ -10928,9 +10974,10 @@ function esperaRupturaHTML(tk, reg, s, moneda, restantes, vencida, conPos, enWat
         ${fichaChipHTML(tk, {prio:true})}
         ${enWatch ? '<span class="esp-watch" title="No está en tu grilla: la app le pide precio aparte, gracias a tu watchlist personal">watchlist</span>' : ''}
         <span class="esp-estado ${pill[0]}">${pill[1]}</span>
+        ${botonSacarEsperaHTML(tk)}
       </div>
       <div class="esp-cond">
-        ${reg.condicion ? reg.condicion.replace(/</g,'&lt;') : 'Esperando la ruptura de su máximo previo.'}
+        ${condicionInputHTML(tk, reg, 'Esperando la ruptura de su máximo previo — escribe acá qué más esperas')}
         ${estadoTxt ? `<br><b>${estadoTxt}</b>` : ''}
         ${z.cierre && z.cierre.ahora !== null && z.cierre.ahora !== undefined ? `<br><span style="color:var(--ink-faint);">Ahora: ${fmtMoneda2(z.cierre.ahora, moneda)} (intradía, no cuenta).</span>` : ''}
         ${restantes !== null && !vencida ? `<br><span style="color:var(--ink-faint);">Quedan ${restantes} días de los ${reg.dias || ESPERA_DIAS_DEFAULT}.</span>` : ''}
@@ -10950,7 +10997,6 @@ function esperaRupturaHTML(tk, reg, s, moneda, restantes, vencida, conPos, enWat
       ${condicionesHTML(condicionesCompra(tk, reg, s))}
       <div class="esp-btns">
         ${vencida ? `<button data-accion="esp-renovar" data-ticker="${tk}">Renovar ${ESPERA_DIAS_DEFAULT} días</button>` : ''}
-        <button data-accion="esp-editar" data-ticker="${tk}">Cambiar condición</button>
         <button data-accion="esp-sacar" data-ticker="${tk}">Sacar de la lista</button>
       </div>
     </div>`;
@@ -11022,9 +11068,10 @@ function esperaHTML(){
         ${fichaChipHTML(tk, {prio:true})}
         ${enWatch ? '<span class="esp-watch" title="No está en tu grilla: la app le pide precio aparte, gracias a tu watchlist personal">watchlist</span>' : ''}
         <span class="esp-estado ${pill[0]}">${pill[1]}</span>
+        ${botonSacarEsperaHTML(tk)}
       </div>
       <div class="esp-cond">
-        ${reg.condicion ? reg.condicion.replace(/</g,'&lt;') : 'Sin condición escrita'}
+        ${condicionInputHTML(tk, reg, 'Sin condición escrita — escríbela acá')}
         ${precioHoy !== null ? `<br>Hoy: <b>${fmtMoneda2(precioHoy, moneda)}</b>${distancia ? ` (${distancia} del objetivo)` : ''}` : ''}
         ${restantes !== null && !vencida ? `<br><span style="color:var(--ink-faint);">Quedan ${restantes} días de los ${reg.dias || ESPERA_DIAS_DEFAULT}.</span>` : ''}
         ${conPos ? `<br><span style="color:var(--copper);">Ya tienes esta acción — acá la alerta es tu stop, no una entrada. Sácala de esta lista.</span>` : ''}
@@ -11044,33 +11091,39 @@ function esperaHTML(){
       </div>
       <div class="esp-btns">
         ${vencida ? `<button data-accion="esp-renovar" data-ticker="${tk}">Renovar ${ESPERA_DIAS_DEFAULT} días</button>` : ''}
-        <button data-accion="esp-editar" data-ticker="${tk}">Cambiar condición</button>
         <button data-accion="esp-sacar" data-ticker="${tk}">Sacar de la lista</button>
       </div>
     </div>`;
   }).join('');
 
-  const opciones = todosLosStocks()
-    .filter(s => !espera[s.ticker])
-    .map(s => `<option value="${s.ticker}">${s.ticker} — ${s.name}</option>`).join('');
-
   return `<div class="plat-block">
     <div class="esp-form">
       <select id="espModo" title="Ruptura: espera que cierre en la zona (máximo previo a +4 %). Precio: avisa cuando cruza un precio, a cualquier hora."><option value="ruptura">esperar ruptura</option><option value="precio">precio de entrada</option></select>
-      <select id="espTicker" style="flex:1; min-width:150px;"><option value="">Elige una acción…</option>${opciones}</select>
+      <div class="esp-buscar">
+        <input type="text" id="espTickerTxt" placeholder="Escribe ticker o nombre…" autocomplete="off"
+               autocorrect="off" autocapitalize="characters" spellcheck="false" enterkeyhint="next"
+               role="combobox" aria-autocomplete="list" aria-controls="espSugs" aria-expanded="false">
+        <button type="button" class="esp-limpiar" id="espLimpiar" title="Borrar lo escrito en el formulario"
+                aria-label="Borrar lo escrito">✕</button>
+        <div class="esp-sugs" id="espSugs" role="listbox" hidden></div>
+      </div>
+      <input type="hidden" id="espTicker" value="">
       <select id="espDir" style="display:none;"><option value="baja">cuando baje a</option><option value="sube">cuando suba a</option></select>
       <input type="number" id="espPrecio" placeholder="Máximo previo" step="any" min="0" style="width:110px;">
       <input type="text" id="espCond" placeholder="¿Qué esperas? (ej: vuelva a su media 50)" style="flex:1; min-width:170px;">
       <button class="mov-btn" id="espAgregar">Agregar</button>
     </div>
+    ${deshacerEsperaHTML()}
     ${filas || '<p class="seguir-empty">Nada esperando entrada. Una acción entra acá cuando te interesa pero todavía no es el momento — y entra con la condición escrita, no como un nombre suelto.</p>'}
     <p style="font-size:10.5px; color:var(--ink-faint); margin:10px 0 0; line-height:1.55;">
       El precio objetivo se guarda además como alerta de precio, así que el aviso te llega al celular igual que
       los demás. A los ${ESPERA_DIAS_DEFAULT} días la app te pregunta si la sacas: sin eso, esta lista se llena de
       acciones que se te arrancaron y nunca vuelven.<br>
-      El selector de acá abajo ofrece las ${todosLosStocks().length} acciones que la app sigue con precio propio.
-      <b>Una candidata del S&amp;P 500 que no esté en esa lista sí se puede vigilar ahora</b>: mándala desde
-      Explorar con "+ A seguir" y entra sola a tu <b>watchlist personal</b>
+      El buscador de arriba encuentra las ${todosLosStocks().length} acciones que la app sigue con precio propio:
+      escribe el ticker o un pedazo del nombre — Enter elige, Enter otra vez agrega. La ✕ de cada fila la saca al
+      tiro, con unos segundos para deshacer.<br>
+      <b>Una que no esté en esa lista también se puede esperar</b>: escribe su ticker completo y la app la busca y
+      la suma a tu <b>watchlist personal</b>, o mándala desde Explorar con "+ A seguir"
       (${watchlist.length} de ${WATCHLIST_MAX} usadas), que es un cupo aparte para las que están fuera de la
       grilla. El tope existe porque cada acción vigilada es una petición más a Yahoo en cada ciclo.</p>
   </div>`;
@@ -11532,9 +11585,452 @@ function planInversionHTML(){
   return { asignacionHTML, colsHTML };
 }
 
+// ============================================================================
+// "A SEGUIR": ESCRIBIR Y BORRAR RÁPIDO  (5-nov-2026)
+// ============================================================================
+// Pedido de Cristian: "tener la opción de escribir y borrar rápidamente".
+// Tres cosas, y una cuarta que las hace posibles:
+//
+//  1. EL TICKER SE ESCRIBE. Antes era un <select> con las ~230 acciones de la
+//     app: en el celular eso es bajar y bajar. Ahora es un campo de texto con
+//     sugerencias (ticker o pedazo del nombre, sin importar tildes ni
+//     mayúsculas). El <input type="hidden" id="espTicker"> conserva el ticker
+//     ya resuelto, así refrescarSugerenciaEspera() y el resto siguen leyendo
+//     `espTicker.value` igual que antes.
+//     Un ticker que NO está en la app se ofrece sumarlo a la watchlist
+//     personal (se pide la cotización primero: si no existe, no entra).
+//  2. ENTER AGREGA. Enter en el ticker elige la sugerencia y salta al número;
+//     Enter en el número o en "¿Qué esperas?" agrega. XMHQ ⏎ ⏎ y listo.
+//  3. LA ✕ SACA AL TIRO, CON DESHACER. Los dos confirm() de antes se
+//     reemplazaron por una barra de "Deshacer" de unos segundos. Lo que esos
+//     confirm preguntaban (¿borro también el aviso de precio?, ¿dejo de
+//     vigilarla en la watchlist?) quedó como botones opcionales en la misma
+//     barra -- nada se borra sin que lo pidas, pero nada te frena.
+//     De paso: sacar una espera en modo ruptura ahora le avisa al servidor
+//     (sincronizarAlertasPrecio), que si no seguía vigilando su zona.
+//  4. EL REFRESCO DE PRECIOS YA NO BORRA LO QUE ESTÁS ESCRIBIENDO.
+//     renderAmbienteSeguir() se llama en cada ciclo de precios (vía
+//     renderAnalysis) y rehace la pestaña entera con innerHTML: lo escrito a
+//     medias en el formulario -- o en el precio de una fila -- desaparecía.
+//     Ahora se fotografía antes (fotoFormEspera) y se repone después
+//     (restaurarFormEspera), con el foco y el cursor donde estaban.
+//
+// La condición también se escribe en la fila misma (se guarda al salir del
+// campo o con Enter), igual que el precio y el máximo previo; por eso se fue
+// el botón "Cambiar condición", que abría dos prompt() seguidos.
+
+function escEsp(t){
+  return String(t === null || t === undefined ? '' : t)
+    .replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+// Para comparar lo escrito: sin tildes, en mayúsculas, sin espacios al borde.
+function normEsp(t){
+  return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim();
+}
+const ESP_PARECE_TICKER = /^[A-Z][A-Z0-9.\-]{0,9}$/;
+
+// Busca en todo lo que la app sigue con precio (grilla, cripto, watchlist,
+// fichas abiertas). Orden: ticker exacto, ticker que empieza así, nombre que
+// empieza así, una palabra del nombre que empieza así, y al final cualquier
+// coincidencia. Las que ya están en la lista vienen marcadas (`ya`): tocarlas
+// te lleva a su fila en vez de duplicarlas.
+function buscarEspera(q, max){
+  const Q = normEsp(q);
+  if(!Q) return [];
+  const vistos = new Set(), res = [];
+  todosLosStocks().forEach(s => {
+    if(!s || vistos.has(s.ticker)) return;
+    vistos.add(s.ticker);
+    const T = normEsp(s.ticker), N = normEsp(s.name);
+    let r = -1;
+    if(T === Q) r = 0;
+    else if(T.startsWith(Q)) r = 1;
+    else if(N.startsWith(Q)) r = 2;
+    else if(N.split(/[\s·\-—(),.\/&]+/).some(w => w && w.startsWith(Q))) r = 3;
+    else if(T.includes(Q) || N.includes(Q)) r = 4;
+    if(r >= 0) res.push({s, r, ya: !!espera[s.ticker]});
+  });
+  res.sort((a, b) => (a.r - b.r) || (a.ya - b.ya) || (a.s.ticker.length - b.s.ticker.length)
+                     || a.s.ticker.localeCompare(b.s.ticker));
+  return res.slice(0, max || 8);
+}
+// El ticker exacto que corresponde a lo escrito, o '' si no hay uno.
+function resolverTickerEspera(q){
+  const Q = normEsp(q);
+  if(!Q) return '';
+  const s = todosLosStocks().find(x => x && normEsp(x.ticker) === Q);
+  return s ? s.ticker : '';
+}
+
+let _espSugLista = [];
+let _espSugActiva = 0;
+let _espEnfocar = false;   // tras agregar con Enter, el foco vuelve al buscador
+
+function marcarTickerEspera(){
+  const txt = document.getElementById('espTickerTxt'), hid = document.getElementById('espTicker');
+  if(!txt || !hid) return;
+  txt.classList.toggle('esp-tk-ok', !!hid.value);
+  const s = hid.value ? todosLosStocks().find(x => x.ticker === hid.value) : null;
+  txt.title = s ? `${s.ticker} — ${s.name}` : '';
+}
+function cerrarSugsEspera(){
+  const box = document.getElementById('espSugs');
+  if(box){ box.hidden = true; box.innerHTML = ''; }
+  const txt = document.getElementById('espTickerTxt');
+  if(txt) txt.setAttribute('aria-expanded', 'false');
+  _espSugLista = [];
+}
+function pintarSugsEspera(){
+  const txt = document.getElementById('espTickerTxt'), box = document.getElementById('espSugs');
+  if(!txt || !box) return;
+  if(!normEsp(txt.value)){ cerrarSugsEspera(); return; }
+  const lista = buscarEspera(txt.value, 8);
+  _espSugLista = lista;
+  if(_espSugActiva >= lista.length) _espSugActiva = 0;
+  if(!lista.length){
+    const T = normEsp(txt.value);
+    box.innerHTML = ESP_PARECE_TICKER.test(T)
+      ? `<div class="esp-sug-vacio"><b>${escEsp(T)}</b> no está en la app. Pulsa <b>Agregar</b> (o Enter) y la busco para sumarla a tu watchlist personal.</div>`
+      : `<div class="esp-sug-vacio">Nada calza con "${escEsp(txt.value.trim())}".</div>`;
+  } else {
+    box.innerHTML = lista.map((x, i) =>
+      `<div class="esp-sug${i === _espSugActiva ? ' activa' : ''}${x.ya ? ' ya' : ''}" role="option" data-i="${i}"
+            aria-selected="${i === _espSugActiva}"><b>${escEsp(x.s.ticker)}</b><span>${escEsp(x.s.name)}</span>${x.ya ? '<em>ya en la lista ↓</em>' : ''}</div>`
+    ).join('');
+  }
+  box.hidden = false;
+  txt.setAttribute('aria-expanded', 'true');
+  const act = box.querySelector('.esp-sug.activa');
+  if(act && act.scrollIntoView) act.scrollIntoView({block:'nearest'});
+}
+function irAFilaEspera(tk){
+  const fila = [...document.querySelectorAll('#viewSeguir [data-esp]')].find(el => el.dataset.esp === tk);
+  if(!fila) return;
+  fila.scrollIntoView({behavior:'smooth', block:'center'});
+  fila.classList.add('esp-flash');
+  setTimeout(() => fila.classList.remove('esp-flash'), 1500);
+}
+function elegirSugEspera(i){
+  const x = _espSugLista[i];
+  if(!x) return;
+  if(x.ya){ cerrarSugsEspera(); irAFilaEspera(x.s.ticker); return; }
+  const txt = document.getElementById('espTickerTxt'), hid = document.getElementById('espTicker');
+  if(!txt || !hid) return;
+  txt.value = x.s.ticker;
+  hid.value = x.s.ticker;
+  marcarTickerEspera();
+  cerrarSugsEspera();
+  refrescarSugerenciaEspera();
+  const num = document.getElementById('espPrecio');
+  if(num) num.focus();
+}
+function limpiarFormEspera(){
+  ['espTickerTxt', 'espTicker', 'espPrecio', 'espCond'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  cerrarSugsEspera();
+  marcarTickerEspera();
+  refrescarSugerenciaEspera();
+}
+function cablearBuscadorEspera(viewEl){
+  const txt = viewEl.querySelector('#espTickerTxt'), hid = viewEl.querySelector('#espTicker');
+  const box = viewEl.querySelector('#espSugs'), limpiar = viewEl.querySelector('#espLimpiar');
+  if(!txt || !hid || !box) return;
+  txt.addEventListener('input', () => {
+    hid.value = resolverTickerEspera(txt.value);
+    marcarTickerEspera();
+    _espSugActiva = 0;
+    pintarSugsEspera();
+    refrescarSugerenciaEspera();
+  });
+  txt.addEventListener('focus', () => { if(normEsp(txt.value) && !hid.value) pintarSugsEspera(); });
+  txt.addEventListener('blur', () => setTimeout(() => {
+    const a = document.activeElement;
+    if(a && a.id === 'espTickerTxt') return;   // un re-dibujo le devolvió el foco: sigue abierta
+    cerrarSugsEspera();
+  }, 160));
+  txt.addEventListener('keydown', ev => {
+    const abierta = !box.hidden && _espSugLista.length > 0;
+    if(ev.key === 'ArrowDown' && abierta){
+      ev.preventDefault(); _espSugActiva = (_espSugActiva + 1) % _espSugLista.length; pintarSugsEspera();
+    } else if(ev.key === 'ArrowUp' && abierta){
+      ev.preventDefault(); _espSugActiva = (_espSugActiva - 1 + _espSugLista.length) % _espSugLista.length; pintarSugsEspera();
+    } else if(ev.key === 'Enter' && !ev.isComposing){
+      ev.preventDefault();
+      if(abierta) elegirSugEspera(_espSugActiva);
+      else if(hid.value){ const num = document.getElementById('espPrecio'); if(num) num.focus(); }
+      else if(normEsp(txt.value)) agregarDesdeFormEspera(true);   // no está en la app: ofrece la watchlist
+    } else if(ev.key === 'Escape'){
+      if(!box.hidden) cerrarSugsEspera(); else limpiarFormEspera();
+    }
+  });
+  // Que tocar una sugerencia no le quite el foco al campo antes del click
+  // (sin esto, en el celular el blur cerraba la lista antes de elegir).
+  box.addEventListener('mousedown', ev => ev.preventDefault());
+  box.addEventListener('click', ev => {
+    const it = ev.target.closest('.esp-sug');
+    if(it) elegirSugEspera(+it.dataset.i);
+  });
+  if(limpiar) limpiar.addEventListener('click', () => { limpiarFormEspera(); txt.focus(); });
+}
+
+// ---- Agregar: botón y Enter llaman a lo mismo ----------------------------
+// Antes vivía como un click anónimo dentro de renderAmbienteSeguir. Las
+// reglas son las mismas de siempre (manda lo escrito; en blanco, el
+// propuesto; nada de condición de entrada sobre una acción que ya tienes).
+let _espAgregando = false;
+async function agregarDesdeFormEspera(porTeclado){
+  if(_espAgregando) return;
+  const el = id => document.getElementById(id);
+  const txtEl = el('espTickerTxt'), hidEl = el('espTicker');
+  if(!txtEl || !hidEl) return;
+  let tk = hidEl.value || resolverTickerEspera(txtEl.value);
+  if(!tk){
+    const escrito = normEsp(txtEl.value);
+    if(!escrito){ alert('Escribe el ticker o el nombre de la acción.'); txtEl.focus(); return; }
+    // Una sola sugerencia posible: se toma esa (escribiste "kosmos" y hay una).
+    const posibles = buscarEspera(txtEl.value, 8).filter(x => !x.ya);
+    if(posibles.length === 1){
+      tk = posibles[0].s.ticker;
+    } else if(posibles.length > 1){
+      alert(`"${txtEl.value.trim()}" calza con varias: elige una de la lista.`);
+      txtEl.focus(); pintarSugsEspera(); return;
+    } else if(ESP_PARECE_TICKER.test(escrito)){
+      // No está en la app: se busca y, si existe, entra a la watchlist personal.
+      if(watchlist.length >= WATCHLIST_MAX){
+        alert(`${escrito} no está en la app, y tu watchlist personal ya tiene ${WATCHLIST_MAX} acciones (el tope).\n\n`
+            + 'Saca alguna que ya no estés esperando y vuelve a intentar.');
+        return;
+      }
+      if(!confirm(`${escrito} no está en la app.\n\n`
+                + `¿La busco y la sumo a tu watchlist personal (${watchlist.length} de ${WATCHLIST_MAX}) para poder esperarla?\n`
+                + 'Cada acción vigilada es una petición más a Yahoo en cada ciclo.')) return;
+      _espAgregando = true;
+      const btn = el('espAgregar');
+      if(btn){ btn.disabled = true; btn.textContent = 'Buscando…'; }
+      let r;
+      try { r = await pedirQuoteAccion(escrito); }
+      finally {
+        _espAgregando = false;
+        const b2 = el('espAgregar');   // pudo re-dibujarse mientras tanto
+        if(b2){ b2.disabled = false; b2.textContent = 'Agregar'; }
+      }
+      if(!r || !r.ok){
+        alert(`No encontré ${escrito}: ${(r && r.error) || 'sin respuesta'}\n\n`
+            + 'Revisa que el ticker esté bien escrito. Si el servidor estaba dormido, intenta de nuevo en un minuto.');
+        return;
+      }
+      let s = todosLosStocks().find(x => x.ticker === escrito);
+      if(!s){ s = nuevoStockFicha(escrito, escrito, r.currency); stateFicha.push(s); }
+      aplicarQuoteAStock(s, r.quote);
+      if(!estaEnGrilla(escrito) && !estaEnWatchlist(escrito)){
+        const w = agregarAWatchlist(escrito, escrito);   // hereda lo recién cargado (ver agregarAWatchlist)
+        if(!w.ok){ alert(`No se pudo sumar ${escrito} a la watchlist: ${w.motivo}`); return; }
+      }
+      tk = escrito;
+    } else {
+      alert(`Nada calza con "${txtEl.value.trim()}". Escribe el ticker o un pedazo del nombre y elige de la lista.`);
+      txtEl.focus(); return;
+    }
+  }
+  if(espera[tk]){
+    alert(`${tk} ya está en tu lista. Cámbiale lo que quieras en su propia fila.`);
+    cerrarSugsEspera(); irAFilaEspera(tk); return;
+  }
+  if(tienePosicion(tk)){
+    alert(`Ya tienes ${tk} comprada.\n\n`
+        + 'En una acción que ya tienes, la alerta de precio es tu STOP (la media 50). '
+        + 'Ponerle acá un precio de entrada te borraría el stop sin avisar, así que no se puede.');
+    return;
+  }
+  const modo = (el('espModo') || {}).value;
+  const dir = (el('espDir') || {}).value;
+  const num = parseFloat((el('espPrecio') || {}).value);
+  const cond = ((el('espCond') || {}).value || '').trim();
+  // Modo ruptura: el número es el MÁXIMO PREVIO (manda lo escrito; en
+  // blanco, el máximo intradía de 30 semanas).
+  if(modo === 'ruptura'){
+    limpiarFormEspera();          // antes de guardar: el re-dibujo encuentra el formulario vacío
+    _espEnfocar = !!porTeclado;
+    guardarRuptura(tk, (isFinite(num) && num > 0) ? num : null, cond);
+    return;
+  }
+  // LA REGLA: manda lo escrito; si el campo va en blanco, entra el
+  // propuesto (la media 50). Nunca al revés.
+  const loEscribio = isFinite(num) && num > 0;
+  const prop = loEscribio ? null : precioPropuestoEntrada(tk);
+  const precio = loEscribio ? num : (prop ? prop.valor : NaN);
+  if(!cond && !(precio > 0)){
+    alert('Escribe qué estás esperando, o al menos un precio objetivo.\n\n'
+        + 'Un nombre sin condición es justo lo que esta lista trata de evitar.');
+    return;
+  }
+  limpiarFormEspera();
+  _espEnfocar = !!porTeclado;
+  guardarCondicion(tk, dir, precio, cond);
+}
+
+// ---- La condición, escribible en la fila ---------------------------------
+function condicionInputHTML(tk, reg, placeholder){
+  return `<input type="text" class="esp-cond-inp" data-esp-cond="${tk}" value="${escEsp(reg.condicion || '')}"
+            placeholder="${escEsp(placeholder)}" maxlength="240" enterkeyhint="done" autocomplete="off"
+            title="Escribe y sal del campo (o Enter): se guarda solo. Vaciarla la borra.">`;
+}
+
+// ---- Sacar con un toque, con deshacer -------------------------------------
+function botonSacarEsperaHTML(tk){
+  return `<button type="button" class="esp-x" data-accion="esp-borrar" data-ticker="${tk}"
+            title="Sacar de la lista (puedes deshacer)" aria-label="Sacar ${tk} de la lista">✕</button>`;
+}
+const ESP_DESHACER_MS = 15000;
+let espDeshacer = null;          // {tk, reg, nombre, hasta, aviso?, watchSoltada?}
+let _espDeshacerTimer = null;
+function programarFinDeshacer(){
+  clearTimeout(_espDeshacerTimer);
+  _espDeshacerTimer = setTimeout(() => {
+    if(!espDeshacer || Date.now() < espDeshacer.hasta - 50) return;
+    espDeshacer = null;
+    // Solo se quita la barra: re-dibujar la pestaña entera por esto movería
+    // la pantalla bajo el dedo.
+    const bar = document.querySelector('#viewSeguir .esp-deshacer');
+    if(bar) bar.remove();
+  }, Math.max(100, (espDeshacer ? espDeshacer.hasta : Date.now()) - Date.now()));
+}
+function sacarDeEsperaRapido(tk){
+  const reg = espera[tk];
+  if(!reg) return;
+  const s = todosLosStocks().find(x => x.ticker === tk);
+  espDeshacer = {tk, reg: JSON.parse(JSON.stringify(reg)), nombre: s ? s.name : tk,
+                 hasta: Date.now() + ESP_DESHACER_MS};
+  delete espera[tk];
+  guardarEspera();
+  // La zona de una ruptura la vigila el servidor: sin esto te seguiría
+  // avisando al cierre de una acción que ya sacaste.
+  if(esRuptura(reg)) sincronizarAlertasPrecio();
+  programarFinDeshacer();
+  renderAmbienteSeguir();
+}
+function deshacerSacarEspera(){
+  const d = espDeshacer;
+  if(!d) return;
+  espDeshacer = null;
+  clearTimeout(_espDeshacerTimer);
+  espera[d.tk] = d.reg;
+  guardarEspera();
+  if(d.aviso){
+    if(!alertasPrecio[d.tk]) alertasPrecio[d.tk] = {sube:null, baja:null};
+    alertasPrecio[d.tk][d.aviso.lado] = d.aviso.valor;
+    guardarAlertasPrecio();
+  }
+  if(d.watchSoltada && !estaEnGrilla(d.tk) && !estaEnWatchlist(d.tk)) agregarAWatchlist(d.tk, d.nombre);
+  if(esRuptura(d.reg) || d.aviso) sincronizarAlertasPrecio();
+  renderAmbienteSeguir();
+}
+// El aviso de precio que dejó una espera en modo precio (el mismo número, en
+// el mismo lado). Si no calza exacto no es "su" aviso y no se ofrece borrarlo.
+function avisoDeEsperaSacada(d){
+  if(!d || esRuptura(d.reg) || typeof d.reg.precio !== 'number' || tienePosicion(d.tk)) return null;
+  const lado = d.reg.dir === 'sube' ? 'sube' : 'baja';
+  const al = alertasPrecio[d.tk];
+  return (al && al[lado] === d.reg.precio) ? {lado, valor: al[lado]} : null;
+}
+function borrarAvisoDeEsperaSacada(){
+  const d = espDeshacer;
+  if(!d || d.aviso) return;
+  const av = avisoDeEsperaSacada(d);
+  if(!av) return;
+  d.aviso = av;
+  alertasPrecio[d.tk][av.lado] = null;
+  guardarAlertasPrecio();
+  sincronizarAlertasPrecio();
+  d.hasta = Date.now() + ESP_DESHACER_MS;
+  programarFinDeshacer();
+  renderAmbienteSeguir();
+}
+function soltarWatchDeEsperaSacada(){
+  const d = espDeshacer;
+  if(!d || d.watchSoltada || !estaEnWatchlist(d.tk)) return;
+  sacarDeWatchlist(d.tk);
+  d.watchSoltada = true;
+  d.hasta = Date.now() + ESP_DESHACER_MS;
+  programarFinDeshacer();
+  renderAmbienteSeguir();
+}
+function deshacerEsperaHTML(){
+  const d = espDeshacer;
+  if(!d || Date.now() > d.hasta) return '';
+  const av = d.aviso ? null : avisoDeEsperaSacada(d);
+  const enWatch = !d.watchSoltada && estaEnWatchlist(d.tk);
+  return `<div class="esp-deshacer" role="status">
+      <span><b>${escEsp(d.tk)}</b> salió de la lista.</span>
+      <button type="button" class="principal" data-accion="esp-deshacer">Deshacer</button>
+      ${av ? `<button type="button" data-accion="esp-borrar-aviso">Borrar también su aviso de precio (${fmtNum(av.valor, 2)})</button>` : ''}
+      ${d.aviso ? '<span class="hecho">· aviso de precio borrado</span>' : ''}
+      ${enWatch ? `<button type="button" data-accion="esp-soltar-watch">Dejar de vigilarla (libera cupo de la watchlist)</button>` : ''}
+      ${d.watchSoltada ? '<span class="hecho">· ya no se vigila</span>' : ''}
+    </div>`;
+}
+
+// ---- Que el refresco de precios no borre lo que estás escribiendo ---------
+const ESP_CAMPOS_FORM = ['espTickerTxt', 'espPrecio', 'espCond', 'espModo', 'espDir'];
+function fotoFormEspera(viewEl){
+  const val = id => { const e = viewEl.querySelector('#' + id); return e ? e.value : null; };
+  const f = {txt: val('espTickerTxt'), modo: val('espModo'), dir: val('espDir'),
+             precio: val('espPrecio'), cond: val('espCond'), foco: null, sugsAbiertas: false,
+             sugActiva: _espSugActiva};
+  const box = viewEl.querySelector('#espSugs');
+  f.sugsAbiertas = !!(box && !box.hidden);
+  const a = document.activeElement;
+  if(a && viewEl.contains(a) && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)){
+    const fo = {id: a.id || null, data: null, valor: a.value, sel: null};
+    const k = Object.keys(a.dataset || {}).find(x => x.startsWith('esp'));
+    if(k) fo.data = [k, a.dataset[k]];
+    try { if(typeof a.selectionStart === 'number') fo.sel = [a.selectionStart, a.selectionEnd]; } catch(e){}
+    f.foco = fo;
+  }
+  return f;
+}
+function restaurarFormEspera(viewEl, f){
+  const txt = viewEl.querySelector('#espTickerTxt'), hid = viewEl.querySelector('#espTicker');
+  if(f){
+    const poner = (id, v) => { const e = viewEl.querySelector('#' + id); if(e && v !== null && v !== undefined) e.value = v; };
+    poner('espModo', f.modo); poner('espDir', f.dir); poner('espTickerTxt', f.txt);
+    poner('espPrecio', f.precio); poner('espCond', f.cond);
+  }
+  if(txt && hid) hid.value = resolverTickerEspera(txt.value);
+  marcarTickerEspera();
+  refrescarSugerenciaEspera();
+  if(_espEnfocar){
+    _espEnfocar = false;
+    if(txt){ try { txt.focus({preventScroll:true}); } catch(e){ txt.focus(); } }
+    return;
+  }
+  const fo = f && f.foco;
+  if(!fo) return;
+  let e = null;
+  if(fo.id) e = viewEl.querySelector('#' + CSS.escape(fo.id));
+  if(!e && fo.data) e = [...viewEl.querySelectorAll('input,select,textarea')].find(x => x.dataset[fo.data[0]] === fo.data[1]);
+  if(!e) return;
+  try { e.focus({preventScroll:true}); } catch(err){ e.focus(); }
+  // Lo que escribías en una FILA sin haber salido del campo: se repone, y al
+  // salir se guarda como si nada hubiera pasado (el elemento es nuevo, así que
+  // el 'change' nativo no sabe que hubo cambio -- se dispara a mano).
+  if(!ESP_CAMPOS_FORM.includes(fo.id) && e.value !== fo.valor){
+    e.value = fo.valor;
+    e.addEventListener('change', () => { e._espCambio = true; });
+    e.addEventListener('blur', () => {
+      if(!e._espCambio && e.value !== e.defaultValue) e.dispatchEvent(new Event('change'));
+    }, {once:true});
+  }
+  if(fo.sel){ try { e.setSelectionRange(fo.sel[0], fo.sel[1]); } catch(err){} }
+  if(fo.id === 'espTickerTxt' && f.sugsAbiertas){ _espSugActiva = f.sugActiva || 0; pintarSugsEspera(); }
+}
+
 function renderAmbienteSeguir(){
   const viewEl = document.getElementById('viewSeguir');
   if(!viewEl) return;
+  const fotoForm = fotoFormEspera(viewEl);
   fijarMaxPreviosPendientes();
   const d = calcularPatrimonioConsolidado();
   const { oculto, cambioOk, portClp, portUsd, valorClp, cajaClp, cajaUsd, totalCompleto, rentaVariableClp, patrimonioTotalClp } = d;
@@ -11552,45 +12048,20 @@ function renderAmbienteSeguir(){
   // ---- Esperando entrada ----
   // guardarCondicion() ahora vive a nivel de módulo (justo antes de esta
   // función) -- Explorar la reusa tal cual.
-  const selEsp = document.getElementById('espTicker');
-  if(selEsp) selEsp.addEventListener('change', refrescarSugerenciaEspera);
+  cablearBuscadorEspera(viewEl);
   const selModo = document.getElementById('espModo');
   if(selModo) selModo.addEventListener('change', refrescarSugerenciaEspera);
   refrescarSugerenciaEspera();
 
   const btnAgregar = document.getElementById('espAgregar');
-  if(btnAgregar){
-    btnAgregar.addEventListener('click', () => {
-      const tk = document.getElementById('espTicker').value;
-      if(!tk){ alert('Elige una acción de la lista.'); return; }
-      if(tienePosicion(tk)){
-        alert(`Ya tienes ${tk} comprada.\n\n`
-            + 'En una acción que ya tienes, la alerta de precio es tu STOP (la media 50). '
-            + 'Ponerle acá un precio de entrada te borraría el stop sin avisar, así que no se puede.');
-        return;
-      }
-      // Modo ruptura: el número del campo es el MÁXIMO PREVIO (manda lo
-      // escrito; en blanco, el máximo intradía de 30 semanas).
-      if((document.getElementById('espModo') || {}).value === 'ruptura'){
-        const mp = parseFloat(document.getElementById('espPrecio').value);
-        guardarRuptura(tk, (isFinite(mp) && mp > 0) ? mp : null, document.getElementById('espCond').value.trim());
-        return;
-      }
-      // LA REGLA: manda lo escrito; si el campo va en blanco, entra el
-      // propuesto (la media 50). Nunca al revés.
-      const escrito = parseFloat(document.getElementById('espPrecio').value);
-      const loEscribio = isFinite(escrito) && escrito > 0;
-      const prop = loEscribio ? null : precioPropuestoEntrada(tk);
-      const precio = loEscribio ? escrito : (prop ? prop.valor : NaN);
-      const cond = document.getElementById('espCond').value.trim();
-      if(!cond && !(precio > 0)){
-        alert('Escribe qué estás esperando, o al menos un precio objetivo.\n\n'
-            + 'Un nombre sin condición es justo lo que esta lista trata de evitar.');
-        return;
-      }
-      guardarCondicion(tk, document.getElementById('espDir').value, precio, cond);
+  if(btnAgregar) btnAgregar.addEventListener('click', () => agregarDesdeFormEspera(false));
+  // Enter en el número o en "¿Qué esperas?" agrega sin ir al botón.
+  ['espPrecio', 'espCond'].forEach(id => {
+    const e = document.getElementById(id);
+    if(e) e.addEventListener('keydown', ev => {
+      if(ev.key === 'Enter' && !ev.isComposing){ ev.preventDefault(); agregarDesdeFormEspera(true); }
     });
-  }
+  });
 
   // ---- El precio objetivo, editable en la propia fila (sep-2026) --------
   // Antes había que entrar a "Cambiar condición" para mover un número. Se
@@ -11639,6 +12110,24 @@ function renderAmbienteSeguir(){
       renderAmbienteSeguir();
     });
   });
+  // La condición, escrita en la fila (5-nov-2026). Se guarda al salir del
+  // campo o con Enter; Escape deshace lo que escribiste. No re-dibuja: el
+  // texto ya está en pantalla y re-dibujar te sacaría del campo siguiente.
+  viewEl.querySelectorAll('[data-esp-cond]').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const reg = espera[inp.dataset.espCond];
+      if(!reg) return;
+      const v = inp.value.trim();
+      inp.defaultValue = v;
+      if(v === (reg.condicion || '')) return;
+      reg.condicion = v;
+      guardarEspera();
+    });
+    inp.addEventListener('keydown', ev => {
+      if(ev.key === 'Enter' && !ev.isComposing){ ev.preventDefault(); inp.blur(); }
+      else if(ev.key === 'Escape'){ inp.value = (espera[inp.dataset.espCond] || {}).condicion || ''; inp.blur(); }
+    });
+  });
   viewEl.querySelectorAll('[data-esp-usar-max]').forEach(btn => {
     btn.addEventListener('click', () => {
       const reg = espera[btn.dataset.espUsarMax];
@@ -11662,27 +12151,18 @@ function renderAmbienteSeguir(){
   viewEl.querySelectorAll('[data-accion="esp-abrir"]').forEach(el => {
     el.addEventListener('click', () => openDetail(el.dataset.ticker));
   });
-  viewEl.querySelectorAll('[data-accion="esp-sacar"]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tk = btn.dataset.ticker;
-      if(!confirm(`Sacar ${tk} de "esperando entrada".\n\nLa alerta de precio que tenga se mantiene — bórrala aparte en Mi Cartera si tampoco la quieres.`)) return;
-      delete espera[tk];
-      guardarEspera();
-      // Si además estaba en la watchlist, se pregunta aparte en vez de
-      // sacarla sola: dejar de vigilarla es perder su precio, y puede que
-      // la quieras seguir mirando aunque ya no la estés esperando. Tampoco
-      // se deja sola para siempre: sin preguntar, el cupo de 15 se llenaría
-      // de acciones que dejaron de importar hace meses.
-      if(estaEnWatchlist(tk)){
-        if(confirm(`${tk} también está en tu watchlist personal (las que no están en la grilla).\n\n`
-                 + `¿Dejar de pedirle precio también? Libera un cupo de los ${WATCHLIST_MAX}.\n\n`
-                 + 'Aceptar = dejar de vigilarla · Cancelar = seguir viendo su precio')){
-          sacarDeWatchlist(tk);
-        }
-      }
-      renderAmbienteSeguir();
-    });
+  // Sacar de la lista: la ✕ de arriba y el botón de abajo hacen lo mismo,
+  // sin confirm() -- la barra de "Deshacer" reemplaza a los dos que había
+  // (ver sacarDeEsperaRapido).
+  viewEl.querySelectorAll('[data-accion="esp-sacar"], [data-accion="esp-borrar"]').forEach(btn => {
+    btn.addEventListener('click', ev => { ev.stopPropagation(); sacarDeEsperaRapido(btn.dataset.ticker); });
   });
+  const btnDeshacer = viewEl.querySelector('[data-accion="esp-deshacer"]');
+  if(btnDeshacer) btnDeshacer.addEventListener('click', deshacerSacarEspera);
+  const btnAviso = viewEl.querySelector('[data-accion="esp-borrar-aviso"]');
+  if(btnAviso) btnAviso.addEventListener('click', borrarAvisoDeEsperaSacada);
+  const btnSoltar = viewEl.querySelector('[data-accion="esp-soltar-watch"]');
+  if(btnSoltar) btnSoltar.addEventListener('click', soltarWatchDeEsperaSacada);
   viewEl.querySelectorAll('[data-accion="esp-renovar"]').forEach(btn => {
     btn.addEventListener('click', () => {
       const tk = btn.dataset.ticker, reg = espera[tk];
@@ -11692,29 +12172,16 @@ function renderAmbienteSeguir(){
       renderAmbienteSeguir();
     });
   });
-  viewEl.querySelectorAll('[data-accion="esp-editar"]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tk = btn.dataset.ticker, reg = espera[tk] || {};
-      const cond = prompt(`¿Qué estás esperando que pase con ${tk}?`, reg.condicion || '');
-      if(cond === null) return;
-      if(esRuptura(reg)){   // en ruptura el número es el máximo previo, y se edita en la fila
-        reg.condicion = cond.trim();
-        guardarEspera();
-        renderAmbienteSeguir();
-        return;
-      }
-      const pStr = prompt(`Precio objetivo para ${tk} (deja vacío si no quieres alerta):`,
-                          reg.precio !== null && reg.precio !== undefined ? String(reg.precio) : '');
-      if(pStr === null) return;
-      const precio = pStr.trim() === '' ? null : parseFloat(pStr);
-      guardarCondicion(tk, reg.dir, precio, cond.trim(), reg.dias);
-    });
-  });
+  // "Cambiar condición" (dos prompt() seguidos) se eliminó el 5-nov-2026: la
+  // condición se escribe en la fila, igual que el precio y el máximo previo.
 
   viewEl.querySelectorAll('.seguir-row[data-ticker]').forEach(el => {
     el.addEventListener('click', () => openDetail(el.dataset.ticker));
   });
 
+  // Al final, con todo ya cableado: lo que estabas escribiendo vuelve a su
+  // lugar (ver fotoFormEspera).
+  restaurarFormEspera(viewEl, fotoForm);
 }
 
 
@@ -11859,6 +12326,13 @@ const GICS = {
   'APH':['Tecnología','Instrumentos electrónicos'], 'IOT':['Tecnología','Software'],
   // Agregada a pedido (29-oct-2026). Misma industria que UNH.
   'CNC':['Salud','Seguros de salud'],
+  // Agregada a pedido (5-nov-2026).
+  'XMHQ':['Diversificado','Factor calidad mid cap EE.UU.'],
+  // Agregadas a pedido (5-nov-2026, segundo pedido). XBI y CCEP ya tenían
+  // tarjeta pero no clasificación: en Mi Cartera salían "Sin clasificar".
+  'MTD':['Salud','Equipos y análisis'], 'VLTO':['Industriales','Servicios ambientales'],
+  'VRSN':['Tecnología','Servicios de TI'], 'WSM':['Consumo discrecional','Retail del hogar'],
+  'CCEP':['Consumo básico','Bebidas'], 'XBI':['Salud','Biotecnología'],
   // Venían en el mismo pedido y ya tenían tarjeta, pero no clasificación.
   'FAST':['Industriales','Distribución industrial'], 'DELL':['Tecnología','Hardware y servidores'],
 };
@@ -11866,7 +12340,7 @@ const SIN_CLASIFICAR = 'Sin clasificar';
 // Los ETF que NO son de un sector puntual: se marcan para poder decir en
 // pantalla que su peso no está repartido por sector.
 const ETF_AMPLIOS = ['VOO','VTI','VT','VXUS','SPY','IVV','QQQ','QQQM','SCHD','VIG','ARKK','BND','AGG','TLT','VLUE',
-                     'MTUM','QUAL','USMV','EWJ'];
+                     'MTUM','QUAL','USMV','EWJ','XMHQ'];
 function sectorDe(t){ return (GICS[t] || [SIN_CLASIFICAR, SIN_CLASIFICAR])[0]; }
 function industriaDe(t){ return (GICS[t] || [SIN_CLASIFICAR, SIN_CLASIFICAR])[1]; }
 
