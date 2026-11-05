@@ -441,6 +441,93 @@
   .esp-deshacer button.principal{border-color:#E8C98A; color:#E8C98A;}
   .esp-deshacer .hecho{opacity:.75; font-size:10.5px;}
   .esp-row.esp-flash{box-shadow:0 0 0 2px var(--gold); transition:box-shadow .3s;}
+  /* ---- Reporte Inversapiens (5-nov-2026) ---- */
+  .rep-cab{display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap;}
+  .rep-cab-tit{flex:1; min-width:170px; display:flex; flex-direction:column; gap:2px;}
+  .rep-eyebrow{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-dim);}
+  .rep-fecha{font-size:16px; font-weight:600;}
+  .rep-sub{font-size:11px; color:var(--ink-dim); line-height:1.5;}
+  .rep-sub-t{font-size:11.5px; font-weight:600; color:var(--ink-dim); margin:8px 0 4px;}
+  .rep-sub-t:first-child{margin-top:0;}
+  .rep-sub-t.c{color:var(--verdigris);}
+  .rep-txt{font-size:12px; color:var(--ink-dim); line-height:1.5; margin-top:5px;}
+  .rep-txt b, .rep-kv b{font-family:'IBM Plex Mono',monospace; color:var(--ink); font-weight:600;}
+  .rep-cont{display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:6px; margin-top:12px;}
+  .rep-cont div{border-radius:8px; padding:8px 9px; display:flex; flex-direction:column;}
+  .rep-cont b{font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:600;}
+  .rep-cont span{font-size:11px; color:var(--ink-dim);}
+  .rep-c-v{background:var(--copper-soft);} .rep-c-v b{color:var(--copper);}
+  .rep-c-r{background:rgba(144,111,55,0.12);} .rep-c-r b{color:var(--gold);}
+  .rep-c-c{background:var(--verdigris-soft);} .rep-c-c b{color:var(--verdigris);}
+  .rep-sec{font-size:11px; font-weight:600; letter-spacing:.1em; text-transform:uppercase;
+           border-bottom:1px solid var(--hairline); padding-bottom:6px; margin:18px 0 8px;}
+  .rep-sec.v{color:var(--copper);} .rep-sec.r{color:var(--gold);}
+  .rep-sec.c{color:var(--verdigris);} .rep-sec.n{color:var(--ink-dim);}
+  .rep-card{border:1px solid var(--hairline); border-radius:10px; padding:11px 12px; margin-bottom:8px; background:var(--bg-panel);}
+  .rep-card.v{border-color:var(--copper);} .rep-card.c{border-color:var(--verdigris);}
+  .rep-lista{padding:4px 12px;}
+  .rep-fila{padding:10px 0; border-bottom:1px solid var(--hairline);}
+  .rep-fila:last-child{border-bottom:none;}
+  .rep-head{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .rep-tk{font-weight:600; font-size:14px; cursor:pointer;}
+  .rep-nom{font-size:11px; color:var(--ink-dim);}
+  .rep-pill{margin-left:auto; font-size:10px; font-weight:600; padding:3px 8px; border-radius:20px; background:var(--bg-field); color:var(--ink-dim);}
+  .rep-pill.v{background:var(--copper-soft); color:var(--copper);}
+  .rep-pill.c{background:var(--verdigris-soft); color:var(--verdigris);}
+  .rep-pill.r{background:rgba(144,111,55,0.12); color:var(--gold);}
+  .rep-kv{display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:3px 10px; font-size:11.5px; color:var(--ink-dim); margin-top:7px;}
+  .rep-kv b{text-align:right;}
+  .rep-btns{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; align-items:center;}
+  .rep-btn{display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; border-radius:8px;
+           min-height:40px; padding:0 12px; cursor:pointer; border:1px solid var(--hairline); background:var(--bg-field);
+           color:var(--ink); font-family:'IBM Plex Sans',sans-serif; text-decoration:none; box-sizing:border-box;}
+  .rep-btn.r{border-color:var(--gold); color:var(--gold); background:rgba(144,111,55,0.08);}
+  .rep-btn.c{border-color:var(--verdigris); color:var(--verdigris); background:var(--verdigris-soft);}
+  .rep-btn.v{border-color:var(--copper); color:#fff; background:var(--copper);}
+  .rep-btn[disabled]{opacity:.6; cursor:default;}
+  .rep-btn-grande{min-height:46px; padding:0 20px; font-size:14px; background:var(--gold); color:#fff;}
+  .rep-nosigo{margin-left:auto; font-size:11px; color:var(--ink-dim); background:none; border:none; cursor:pointer;
+              text-decoration:underline; min-height:40px; padding:0 4px; font-family:'IBM Plex Sans',sans-serif;}
+  .rep-dudoso{font-size:11px; color:var(--copper); margin-top:5px;}
+  .rep-encontre{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:5px; font-size:12.5px;}
+  .rep-encontre b{font-weight:500;}
+  .rep-chips{display:flex; flex-wrap:wrap; gap:5px;}
+  .rep-chip{font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; padding:3px 8px; border-radius:20px; background:var(--bg-field); color:var(--ink-dim);}
+  .rep-chip.c{background:var(--verdigris-soft); color:var(--verdigris);}
+  .rep-chip.v{background:var(--copper-soft); color:var(--copper);}
+  .rep-chip.r{background:rgba(144,111,55,0.12); color:var(--gold);}
+  .rep-ojo{border-color:var(--gold); background:rgba(144,111,55,0.05);}
+  .rep-sigo-grupo{margin-bottom:8px;}
+  .rep-sigo-lista{display:flex; flex-wrap:wrap; gap:5px; margin-top:4px;}
+  .rep-sigo{display:inline-flex; align-items:center; gap:5px; font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600;
+            border:1px solid var(--hairline); border-radius:8px; padding:0 9px; min-height:36px; cursor:pointer; background:var(--bg-panel);}
+  .rep-sigo input{margin:0;}
+  .rep-mini{display:grid; grid-template-columns:72px minmax(0, 1fr) auto auto; gap:8px; align-items:center; font-size:11.5px;
+            padding:5px 0; font-family:'IBM Plex Mono',monospace;}
+  .rep-mini b{font-weight:600; cursor:pointer;}
+  .rep-mini span{color:var(--ink-dim);}
+  .rep-mini .rep-btn{min-height:34px; padding:0 10px; font-size:11px;}
+  .rep-modo{display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:3px; background:var(--bg-field); border-radius:9px; padding:3px; margin-bottom:10px;}
+  .rep-modo button{font-size:12px; font-weight:600; color:var(--ink-dim); background:transparent; border:0; border-radius:7px; min-height:40px; cursor:pointer; font-family:'IBM Plex Sans',sans-serif;}
+  .rep-modo button.on{background:var(--bg-panel); color:var(--gold); box-shadow:0 1px 2px rgba(0,0,0,.06);}
+  .rep-monto{display:flex; flex-direction:column; gap:4px; font-size:12px; font-weight:600;}
+  .rep-monto input{font-family:'IBM Plex Mono',monospace; font-size:14px; padding:8px 10px; border:1px solid var(--hairline); border-radius:8px; background:var(--bg-field); max-width:200px;}
+  table.rep-tabla{width:100%; border-collapse:collapse; font-size:12px;}
+  table.rep-tabla th, table.rep-tabla td{padding:7px 6px; border-bottom:1px solid var(--hairline); text-align:left; font-family:'IBM Plex Mono',monospace; white-space:nowrap;}
+  table.rep-tabla thead th{font-family:'IBM Plex Sans',sans-serif; font-size:10px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-dim); font-weight:600;}
+  table.rep-tabla td.rep-dif{text-align:right;}
+  table.rep-tabla thead th:last-child{text-align:right;}
+  .rep-nosigues{margin-top:16px; font-size:12px;}
+  .rep-nosigues summary{cursor:pointer; font-weight:600; color:var(--ink-dim); min-height:36px; display:flex; align-items:center;}
+  .rep-franja{margin-top:8px; background:rgba(144,111,55,0.10); border-radius:8px; padding:8px 10px; display:flex; flex-direction:column; gap:4px;
+              font-size:11.5px; color:var(--ink-dim); line-height:1.45;}
+  .rep-franja.v{background:var(--copper-soft);}
+  .rep-franja b{font-family:'IBM Plex Mono',monospace; color:var(--ink);}
+  .rep-franja-tit{font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--gold);}
+  .rep-franja.v .rep-franja-tit{color:var(--copper);}
+  .rep-franja .rep-btns{margin-top:2px;}
+  .esp-rep{font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px; letter-spacing:.03em;
+           background:rgba(144,111,55,0.14); color:var(--gold); text-transform:uppercase;}
   .cartera-sug{margin-top:5px;}
   .stop-sug{
     display:inline-flex; align-items:center; gap:5px; width:100%;
@@ -688,6 +775,15 @@
   .exp-reset{background:none; border:1px solid var(--hairline); border-radius:7px; color:var(--ink-dim);
              font-size:11px; padding:6px 11px; cursor:pointer; font-weight:600;}
   .exp-reset:hover{border-color:var(--gold); color:var(--gold);}
+  /* Explorar: Método 1 / Método 2 (5-nov-2026) */
+  .expl-metodos{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:0 0 12px;}
+  .expl-metodo-btn{background:var(--bg-field); border:1px solid var(--hairline); border-radius:10px; padding:9px 11px;
+    text-align:left; cursor:pointer; color:var(--ink-dim); font:inherit; line-height:1.3;}
+  .expl-metodo-btn b{display:block; font-size:12.5px; color:var(--ink);}
+  .expl-metodo-btn > span{display:block; font-size:10.5px; color:var(--ink-faint); margin-top:2px;}
+  .expl-metodo-btn.active{border-color:var(--gold); box-shadow:inset 0 0 0 1px var(--gold);}
+  .expl-metodo-btn.active b{color:var(--gold);}
+  .expl-metodo-btn .corre{color:var(--copper);}
   .exp-limite{
     font-size:10.5px; color:var(--copper); line-height:1.55; margin:8px 0 0;
     padding:8px 10px; background:rgba(179,74,50,0.05); border-left:2px solid var(--copper); border-radius:0 6px 6px 0;
@@ -1499,6 +1595,8 @@
            abajo los tres mercados (miran los precios). -->
       <div class="env-fila">
         <button type="button" class="env-btn" data-amb="explorar"><span class="env-largo">Explorar</span><span class="env-corto">Explorar</span></button>
+        <!-- Reporte de Inversapiens (5-nov-2026): la fila de arriba pasa a 5. -->
+        <button type="button" class="env-btn" data-amb="reporte"><span class="env-largo">Reporte</span><span class="env-corto">Reporte</span></button>
         <button type="button" class="env-btn" data-amb="cartera"><span class="env-largo">Mi Cartera</span><span class="env-corto">Cartera</span></button>
         <button type="button" class="env-btn" data-amb="seguir"><span class="env-largo">A seguir</span><span class="env-corto">A seguir</span></button>
         <button type="button" class="env-btn" data-amb="riesgo"><span class="env-largo">Riesgo</span><span class="env-corto">Riesgo</span></button>
@@ -1799,6 +1897,7 @@
        pedido). Se construye en el bloque 8; aquí solo el contenedor. -->
   <div class="ambiente-view" id="viewCartera" style="display:none;"></div>
   <div class="ambiente-view" id="viewRiesgo" style="display:none;"></div>
+  <div class="ambiente-view" id="viewReporte" style="display:none;"></div>
 
   <!-- Ambiente 5 · Explorar (bloque 9): la primera alerta. Se construye
        más abajo; aquí solo el contenedor, igual que los otros tres. -->
@@ -2746,7 +2845,7 @@ function stocksDelAmbiente(amb){
   if(amb === 'usa') return stateUSA.filter(s => !s.esEtf).concat(stateWatch);
   if(amb === 'etf') return stateUSA.filter(s => s.esEtf);
   if(amb === 'cripto') return stateCripto;
-  if(amb === 'seguir') return todosLosStocks(); // el buscador de "A seguir" cubre ambos mercados (sección 6.3 de la spec v3)
+  if(amb === 'seguir' || amb === 'reporte') return todosLosStocks(); // el buscador de "A seguir" cubre ambos mercados (sección 6.3 de la spec v3)
   return state;
 }
 
@@ -2766,7 +2865,7 @@ function cargarAmbienteActivo(){
     // pestaña nueva. Esta lista y la de cambiarAmbiente() tienen que decir
     // lo mismo, siempre.
     return (v === 'usa' || v === 'etf' || v === 'cripto' || v === 'seguir'
-            || v === 'cartera' || v === 'explorar' || v === 'riesgo') ? v : 'chile';
+            || v === 'cartera' || v === 'explorar' || v === 'riesgo' || v === 'reporte') ? v : 'chile';
   } catch(e){ return 'chile'; }
 }
 function guardarAmbienteActivo(a){
@@ -2794,7 +2893,7 @@ const DISCLAIMER_ETF = '<b>Mismos datos que la pestaña de acciones</b>, mismo r
 // bloque. El ambiente "seguir" (consolidado) se construye en el bloque 7;
 // por ahora solo conmuta la vista, #viewSeguir puede llegar vacío.
 function cambiarAmbiente(nuevo){
-  if(nuevo !== 'chile' && nuevo !== 'usa' && nuevo !== 'etf' && nuevo !== 'cripto' && nuevo !== 'seguir' && nuevo !== 'cartera' && nuevo !== 'explorar' && nuevo !== 'riesgo') return;
+  if(nuevo !== 'chile' && nuevo !== 'usa' && nuevo !== 'etf' && nuevo !== 'cripto' && nuevo !== 'seguir' && nuevo !== 'cartera' && nuevo !== 'explorar' && nuevo !== 'riesgo' && nuevo !== 'reporte') return;
   ambienteActivo = nuevo;
   guardarAmbienteActivo(nuevo);
 
@@ -2821,10 +2920,11 @@ function cambiarAmbiente(nuevo){
   const esCartera = nuevo === 'cartera';
   const esExplorar = nuevo === 'explorar';
   const esRiesgo = nuevo === 'riesgo';
+  const esReporte = nuevo === 'reporte';
   // "Mi Cartera", "Explorar" y "Riesgo" son vistas consolidadas como
   // "A seguir" -- ocultan la grilla de tarjetas y los paneles de
   // análisis/movimientos.
-  const esVistaConsolidada = esSeguir || esCartera || esExplorar || esRiesgo;
+  const esVistaConsolidada = esSeguir || esCartera || esExplorar || esRiesgo || esReporte;
 
   // Bloques de índice / estado de mercado / UF-UTM / disclaimer
   const idxBlock = document.getElementById('idxBlock');
@@ -2882,6 +2982,8 @@ function cambiarAmbiente(nuevo){
   if(viewCartera) viewCartera.style.display = esCartera ? '' : 'none';
   if(viewExplorar) viewExplorar.style.display = esExplorar ? '' : 'none';
   if(viewRiesgo) viewRiesgo.style.display = esRiesgo ? '' : 'none';
+  const viewReporte = document.getElementById('viewReporte');
+  if(viewReporte) viewReporte.style.display = esReporte ? '' : 'none';
 
   // Re-renderizar los componentes compartidos con el ambiente ya cambiado
   // La barra de orden va ANTES de la grilla: si el ambiente nuevo tiene un
@@ -2913,6 +3015,7 @@ function cambiarAmbiente(nuevo){
   if(esCartera && typeof renderAmbienteCartera === 'function') renderAmbienteCartera();
   if(esExplorar && typeof renderAmbienteExplorar === 'function') renderAmbienteExplorar();
   if(esRiesgo && typeof renderAmbienteRiesgo === 'function') renderAmbienteRiesgo();
+  if(esReporte && typeof renderAmbienteReporte === 'function') renderAmbienteReporte();
   // Al entrar a EE.UU. o al consolidado, refrescar sus precios de inmediato:
   // el refresco periódico de arriba está apagado mientras se mira Chile, así
   // que sin esto el usuario vería datos de hace rato al cambiarse.
@@ -5501,6 +5604,11 @@ var GLOSARIO_TEMAS = [
   {id:'explorar-que-es', t:'Qué es Explorar y "Volver a ejecutar"', donde:'Pestaña Explorar', k:'explorar primera alerta volver a ejecutar correr corrida',
    html:`<p>Recorre el mercado completo de EE.UU. con el screener de TradingView y te deja una lista corta para analizar a fondo. Es una <b>primera alerta</b>, no un informe: el análisis de verdad lo haces en TradingView.</p>
    <p>No corre solo: lo pides con <b>Volver a ejecutar</b> y toma unos minutos. Al lado se ve la fecha del último resultado.</p>`},
+  {id:'explorar-metodos', t:'Método 1 y Método 2', donde:'Explorar › los dos botones de arriba', k:'metodo 1 2 crecimiento calidad tendencia reporte inversapiens maximo 52 semanas monto liquidez dolares ventas',
+   html:`<p>Explorar tiene dos formas de buscar. Cada una guarda su resultado y sus umbrales: correr una no borra la otra.</p>
+   <ul class="glos-lista"><li><b>Método 1 · Crecimiento</b> (el de siempre): volumen ≥ 2 M de acciones, BPA y ventas creciendo 25 % o más.</li>
+   <li><b>Método 2 · Calidad en tendencia</b>: el tipo de acción que elige el reporte. Liquidez en <b>dólares</b> (precio × volumen ≥ US$ 20 M al día, así una acción cara que transa pocas acciones no cae), a <b>≤ 5 % de su máximo de 52 semanas</b> y <b>ventas que no caen</b> (≥ 0 %). La fase de Weinstein se calcula para todas las que pasan.</li></ul>
+   <p>Lo demás es igual en los dos: precio, tendencia (SMA 50 y 200), capitalización, fase 2 con 4 confirmaciones, score y fuerza relativa, ficha fundamental y una por motor.</p>`},
   {id:'riel', t:'Los pasos: Alerta · Sectores · El embudo · Filtros · A mano', donde:'Explorar › fila de recuadros', k:'pasos alerta candidatas sectores embudo filtros a mano',
    html:`<p>El resultado va primero (<b>Alerta · Candidatas</b>). Los demás recuadros muestran cómo se llegó ahí: <b>Paso 1 Sectores</b>, <b>Paso 2 El embudo</b>, <b>Paso 3 Filtros</b> y <b>Extra A mano</b>. El número de cada recuadro es cuántas quedan en ese paso.</p>`},
   {id:'sectores', t:'Paso 1: dónde está entrando la plata', donde:'Explorar › Paso 1 Sectores', k:'sectores industrias fuerza 12 meses sp500 etf sectoriales',
@@ -6700,6 +6808,9 @@ function renderAnalysis(){
   // Cartera" se enteran de que llegaron precios nuevos. Renombrarla o
   // borrarla obligaria a tocar esos diez sitios para nada.
   if(ambienteActivo === 'seguir' && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir();
+  // Reporte (5-nov-2026): el estado de cada zona depende del precio. Con
+  // `true` no rehace la pestaña si estás escribiendo un monto en ella.
+  if(ambienteActivo === 'reporte' && typeof renderAmbienteReporte === 'function') renderAmbienteReporte(true);
   if(ambienteActivo === 'cartera' && typeof renderAmbienteCartera === 'function') renderAmbienteCartera();
   // Riesgo se sumó el 23-sep-2026: desde que tiene la asignación objetivo,
   // sus barras dependen del patrimonio consolidado y ese cambia con cada
@@ -7817,6 +7928,25 @@ function cargarEspera(){
   } catch(err){ return {}; }
 }
 let espera = cargarEspera();
+
+// ---- Reporte Inversapiens (5-nov-2026): el ESTADO vive acá arriba para que
+// exista antes de cualquier render o respaldo al abrir la app; las funciones
+// están más abajo, en el bloque "AMBIENTE REPORTE".
+const REPORTE_KEY = 'ipsa_reporte';
+const REPORTE_EXCL_KEY = 'ipsa_reporte_excluidos';
+let reporteIns = (() => {
+  try { const r = JSON.parse(localStorage.getItem(REPORTE_KEY) || 'null');
+        return (r && typeof r === 'object' && Array.isArray(r.usa)) ? r : null; } catch(e){ return null; }
+})();
+let reporteExcluidos = (() => {
+  try { const a = JSON.parse(localStorage.getItem(REPORTE_EXCL_KEY) || '[]');
+        return new Set(Array.isArray(a) ? a : []); } catch(e){ return new Set(); }
+})();
+let reporteBorrador = null;      // lo leído del PDF, esperando "Aplicar"
+let reporteLeyendo = null;       // {pag, total, archivo} mientras se lee
+let reporteError = null;
+let reporteNoSigoAbierto = false;
+let reporteCuadre = {base: null, modo: 'ambos', aporte: null};   // lo escrito en el cuadre de ETF
 function guardarEspera(){
   try { localStorage.setItem('ipsa_espera', JSON.stringify(espera)); } catch(e){}
 }
@@ -8065,13 +8195,16 @@ function estadoDeAccion(ticker){
   }
 
   // ---- 3 · Es candidata de Explorar --------------------------------------
-  if(typeof explorarResultado !== 'undefined' && explorarResultado){
-    const fin = (explorarResultado.finalistas || []).find(c => c.ticker === ticker);
-    const mano = (explorarResultado.revisarAMano || []).find(c => c.ticker === ticker);
+  for(const mx of ['1', '2']){
+    const res = explorarResultados[mx];
+    if(!res) continue;
+    const fin = (res.finalistas || []).find(c => c.ticker === ticker);
+    const mano = (res.revisarAMano || []).find(c => c.ticker === ticker);
     const c = fin || mano;
     if(c){
       return {
-        clase: 'candidata', etiqueta: fin ? 'Candidata de Explorar' : 'Candidata — falta un dato',
+        clase: 'candidata',
+        etiqueta: (fin ? 'Candidata de Explorar' : 'Candidata — falta un dato') + (mx === '2' ? ' (método 2)' : ''),
         detalle: [
           c.fase != null ? `Fase ${c.fase}` : null,
           typeof c.score === 'number' ? `score ${c.score}/8` : null,
@@ -8658,9 +8791,25 @@ let explorarError = null;
 let explorarPollTimer = null;
 let explorarPeticionEnCurso = false; // true SOLO mientras la petición a /explorar/run está en el aire
 
+// MÉTODO 1 / MÉTODO 2 (5-nov-2026)
+// =================================
+// Método 1 · Crecimiento: el de siempre (BPA y ventas +25 %, volumen en
+// acciones). Método 2 · Calidad en tendencia: lo que elige el reporte de
+// Inversapiens -- liquidez en DÓLARES, a ≤ 5 % del máximo de 52 semanas,
+// ventas que no caen. El servidor guarda un resultado por método, así que
+// correr uno no borra el otro; `explorarResultado` es siempre el del método
+// que se está mirando.
+let explMetodo = (() => {
+  try { return localStorage.getItem('ipsa_expl_metodo') === '2' ? '2' : '1'; } catch(e){ return '1'; }
+})();
+const explorarResultados = {'1': undefined, '2': undefined};
+const EXPL_METODO_NOMBRE = {'1': 'Método 1 · Crecimiento', '2': 'Método 2 · Calidad en tendencia'};
+const EXPL_SIN_M2 = 'El servidor todavía no tiene el método 2: falta subir sus archivos nuevos (explorar.py, fuente_tradingview.py, server.py y data_source.py). Mientras tanto funciona solo el método 1.';
+function explQ(m){ return '?metodo=' + encodeURIComponent(m || explMetodo); }
+
 async function explorarPedirEstado(){
   try {
-    const resp = await fetchConPlazo(BACKEND_URL + '/explorar/estado', {}, 20000);
+    const resp = await fetchConPlazo(BACKEND_URL + '/explorar/estado' + explQ(), {}, 20000);
     if(!resp.ok) throw new Error('HTTP ' + resp.status);
     explorarEstado = await resp.json();
     explorarError = null;
@@ -8671,19 +8820,28 @@ async function explorarPedirEstado(){
   return explorarEstado;
 }
 
-async function explorarPedirResultado(){
+async function explorarPedirResultado(metodo){
+  const m = metodo || explMetodo;
   try {
-    const resp = await fetchConPlazo(BACKEND_URL + '/explorar/resultado', {}, 25000);
+    const resp = await fetchConPlazo(BACKEND_URL + '/explorar/resultado' + explQ(m), {}, 25000);
     const data = await resp.json();
     if(resp.ok && data.hayResultado){
-      explorarResultado = data.analisis;
-      explorarError = null;
+      // Un servidor sin el método 2 ignora "?metodo=2" y devuelve el del 1.
+      // Mostrarlo como método 2 sería mentir: se avisa y se deja vacío.
+      if(m === '2' && (data.analisis || {}).metodo !== '2'){
+        explorarResultados['2'] = null;
+        explorarError = EXPL_SIN_M2;
+      } else {
+        explorarResultados[m] = data.analisis;
+        explorarError = null;
+      }
     } else {
-      explorarResultado = null;
+      explorarResultados[m] = null;
     }
   } catch(e){
     explorarError = 'No se pudo traer el resultado del análisis. Intenta de nuevo en un momento.';
   }
+  explorarResultado = explorarResultados[explMetodo];
   if(ambienteActivo === 'explorar') renderAmbienteExplorar();
 }
 
@@ -8699,7 +8857,8 @@ function explorarEmpezarPolling(){
     const est = await explorarPedirEstado();
     if(est && est.estado !== 'corriendo'){
       explorarDetenerPolling();
-      if(est.estado === 'listo') await explorarPedirResultado();
+      // Se trae el del método que CORRIÓ, aunque ahora estés mirando el otro.
+      if(est.estado === 'listo') await explorarPedirResultado(est.metodo || explMetodo);
     }
   }, 8000);
 }
@@ -8712,9 +8871,11 @@ async function explorarEjecutar(){
   try {
     // 60 s de plazo: el plan gratis de Render puede tardar hasta 50 s en
     // despertar si nadie lo usaba (ver PASOS-FASE-3A.md).
-    const resp = await fetchConPlazo(BACKEND_URL + '/explorar/run', {method: 'GET'}, 60000);
+    const resp = await fetchConPlazo(BACKEND_URL + '/explorar/run' + explQ(), {method: 'GET'}, 60000);
     const data = await resp.json();
     explorarEstado = data.estado || explorarEstado;
+    // Un servidor viejo arranca igual, pero el método 1 (no conoce el 2).
+    if(explMetodo === '2' && data.arrancado && data.metodo === undefined) explorarError = EXPL_SIN_M2;
     // Si venía 409 "ya_corriendo" no es un error -- solo hay que engancharse
     // a la corrida que ya está en curso, que es justo lo que hace el polling.
     explorarEmpezarPolling();
@@ -8840,7 +9001,7 @@ function tvAnclaHTML(ticker, texto){
 const EXPL_FALTA_INFO = {
   'capitalización':          {tv:'Cap. de mercado',                umbral:u => `≥ ${fmtNum(u.capB, 1)} B USD`},
   'crecimiento del BPA':     {tv:'Crecimiento BPA dil., TTM YoY',  umbral:u => `≥ ${u.crecimiento} %`},
-  'crecimiento de ingresos': {tv:'Crecimiento ingresos, TTM YoY',  umbral:u => `≥ ${u.crecimiento} %`},
+  'crecimiento de ingresos': {tv:'Crecimiento ingresos, TTM YoY',  umbral:u => `≥ ${u.crecVentas != null ? u.crecVentas : u.crecimiento} %`},
 };
 
 function explFaltaHTML(c){
@@ -8894,6 +9055,8 @@ function explorarTarjetaHTML(c, tipo){
       ${fase}${conf ? ' · ' + conf : ''} · ${frTxt}${mfTxt}<br>
       Precio: <b>US$${typeof c.precio === 'number' ? c.precio.toLocaleString('es-CL') : '—'}</b>
       ${typeof c.capB === 'number' ? ` · Cap.: US$${fmtNum(c.capB, 1)} B` : ''}
+      ${explMetodo === '2' && typeof c.distMax === 'number' ? ` · a ${fmtNum(c.distMax, 1)} % de su máx. de 52 sem.` : ''}
+      ${explMetodo === '2' && typeof c.montoM === 'number' ? ` · US$${fmtNum(c.montoM, 0)} M/día` : ''}
       ${c.sinFundamentales ? ' · <span style="color:var(--ink-dim);">sin datos de empresa (cripto) — pasó solo con precio/tendencia/fase/fuerza</span>' : ''}
     </div>
     ${tipo === 'mano' && c.faltan && c.faltan.length ? explFaltaHTML(c) : ''}
@@ -8928,6 +9091,10 @@ function explorarTarjetaHTML(c, tipo){
 // líquidas de esas. Aflojar un filtro más allá de ese conjunto no se puede
 // resolver acá; la app lo dice en vez de mostrar un número incompleto.
 const EXPL_UMBRALES_DEF = {precio:10, volM:2, capB:2, crecimiento:25, score:6};
+// Método 2 (5-nov-2026): montoM = monto medio diario en millones de US$
+// (precio × volumen de 90 días), distMax = cuánto bajo su máximo de 52
+// semanas puede estar (%), crecVentas = ventas TTM contra el año anterior (%).
+const EXPL_UMBRALES_DEF_M2 = {precio:10, montoM:20, capB:2, distMax:5, crecVentas:0, score:6};
 let explUmbrales = cargarExplUmbrales();
 let explFiltros = cargarExplFiltros();   // qué etapas están encendidas
 let explPaso = 0;                        // 0 = la alerta (el resultado), ver PASOS
@@ -9010,14 +9177,32 @@ function explNorm(s){
     .trim();
 }
 
+// Cada método guarda sus umbrales aparte: mover el monto del método 2 no
+// toca el volumen del método 1.
+function explUmbralesDef(){ return explMetodo === '2' ? EXPL_UMBRALES_DEF_M2 : EXPL_UMBRALES_DEF; }
+function explClaveUmbrales(){ return explMetodo === '2' ? 'ipsa_expl_umbrales_m2' : 'ipsa_expl_umbrales'; }
 function cargarExplUmbrales(){
+  const def = explUmbralesDef();
   try {
-    const v = JSON.parse(localStorage.getItem('ipsa_expl_umbrales') || 'null');
-    return Object.assign({}, EXPL_UMBRALES_DEF, (v && typeof v === 'object') ? v : {});
-  } catch(e){ return Object.assign({}, EXPL_UMBRALES_DEF); }
+    const v = JSON.parse(localStorage.getItem(explClaveUmbrales()) || 'null');
+    return Object.assign({}, def, (v && typeof v === 'object') ? v : {});
+  } catch(e){ return Object.assign({}, def); }
 }
 function guardarExplUmbrales(){
-  try { localStorage.setItem('ipsa_expl_umbrales', JSON.stringify(explUmbrales)); } catch(e){}
+  try { localStorage.setItem(explClaveUmbrales(), JSON.stringify(explUmbrales)); } catch(e){}
+}
+function explCambiarMetodo(m){
+  m = (m === '2') ? '2' : '1';
+  if(m === explMetodo) return;
+  explMetodo = m;
+  try { localStorage.setItem('ipsa_expl_metodo', m); } catch(e){}
+  explUmbrales = cargarExplUmbrales();
+  explorarResultado = explorarResultados[m];
+  explPaso = 0; explCaidosAbiertos = {}; explVerTodo = {}; explGrupoAbierto = null;
+  explorarError = null;
+  // "¿Hay resultado?" es por método: se vuelve a preguntar al servidor.
+  explorarEstado = undefined;
+  renderAmbienteExplorar();
 }
 function cargarExplFiltros(){
   const def = {weinstein:true, fuerza:true, dedup:true};
@@ -9036,7 +9221,7 @@ function guardarExplFiltros(){
 function explEtapas(){
   const u = explUmbrales;
   const num = v => (typeof v === 'number' && isFinite(v));
-  return [
+  const lista = [
     {grupo:'Calidad', id:'precio', corto:'precio', tit:`Precio ≥ ${u.precio} USD`, sub:'descarta chatarra',
      pasa:a => num(a.p) && a.p >= u.precio, val:a => num(a.p) ? `US$${a.p}` : 'sin precio'},
     {grupo:null, id:'volM', corto:'volumen', tit:`Volumen 90 d ≥ ${fmtNum(u.volM, 1)} M`, sub:'entras y sales sin mover el precio',
@@ -9065,6 +9250,38 @@ function explEtapas(){
      estricta:true, opcional:true, activo:explFiltros.fuerza,
      pasa:a => num(a.sc) && a.sc >= u.score && a.fr === 1,
      val:a => a.dg ? `score ${num(a.sc)?a.sc:'—'} · fuerza ${a.fr===1?'sube':a.fr===0?'baja':'sin dato'}` : 'no diagnosticada'},
+  ];
+  return explMetodo === '2' ? explEtapasM2(lista, u, num) : lista;
+}
+
+// MÉTODO 2 · CALIDAD EN TENDENCIA (5-nov-2026). Mismo embudo con tres
+// cambios: la liquidez se mide en DÓLARES (precio × volumen, así una acción
+// cara como MTD no cae por transar pocas acciones), se exige estar cerca del
+// máximo de 52 semanas, y del crecimiento solo se pide que las ventas no
+// caigan. Fase, score/fuerza y una por motor son los mismos.
+function explMonto(a){
+  const n = v => (typeof v === 'number' && isFinite(v));
+  return n(a.mo) ? a.mo : ((n(a.p) && n(a.v)) ? Math.round(a.p * a.v * 10) / 10 : null);
+}
+function explEtapasM2(lista, u, num){
+  const por = id => lista.find(e => e.id === id);
+  return [
+    por('precio'),
+    {grupo:null, id:'montoM', corto:'monto diario', tit:`Monto diario ≥ US$ ${fmtNum(u.montoM, 0)} M`,
+     sub:'liquidez en dólares: no castiga a las acciones caras',
+     pasa:a => num(explMonto(a)) && explMonto(a) >= u.montoM,
+     val:a => num(explMonto(a)) ? `US$ ${fmtNum(explMonto(a), 0)} M/día` : 'sin volumen'},
+    por('sma50'),
+    por('cruce'),
+    {grupo:null, id:'distMax', corto:'lejos del máximo', tit:`A ≤ ${fmtNum(u.distMax)} % de su máximo de 52 semanas`,
+     sub:'cerca de romper: de ahí sale la zona de compra', estricta:true,
+     pasa:a => num(a.dm) && a.dm <= u.distMax,
+     val:a => num(a.dm) ? `${fmtNum(a.dm, 1)} % bajo el máx.` : 'sin máximo'},
+    Object.assign({}, por('capB'), {grupo:'Tamaño y ventas'}),
+    Object.assign({}, por('crecVentas'), {corto:'ventas caen', tit:`Ventas ≥ ${u.crecVentas} % contra el año anterior`,
+     sub:'que no caigan', pasa:a => a.sf || (num(a.gV) && a.gV >= u.crecVentas)}),
+    por('weinstein'),
+    por('fuerza'),
   ];
 }
 
@@ -9342,12 +9559,20 @@ function explorarResultadoHTML(analisis){
   const controles = `
     <div class="exp-ctrl"><span>Precio mínimo</span>
       <input type="range" data-umbral="precio" min="0" max="100" step="1" value="${u.precio}"><b>${u.precio} USD</b></div>
+    ${explMetodo === '2' ? `
+    <div class="exp-ctrl"><span>Monto diario</span>
+      <input type="range" data-umbral="montoM" min="0" max="200" step="5" value="${u.montoM}"><b>US$ ${fmtNum(u.montoM, 0)} M</b></div>
+    <div class="exp-ctrl"><span>Bajo el máximo</span>
+      <input type="range" data-umbral="distMax" min="0" max="30" step="0.5" value="${u.distMax}"><b>≤ ${fmtNum(u.distMax)} %</b></div>` : `
     <div class="exp-ctrl"><span>Volumen 90 d</span>
-      <input type="range" data-umbral="volM" min="0" max="20" step="0.25" value="${u.volM}"><b>${fmtNum(u.volM, 2)} M</b></div>
+      <input type="range" data-umbral="volM" min="0" max="20" step="0.25" value="${u.volM}"><b>${fmtNum(u.volM, 2)} M</b></div>`}
     <div class="exp-ctrl"><span>Capitalización</span>
       <input type="range" data-umbral="capB" min="0" max="50" step="0.5" value="${u.capB}"><b>${fmtNum(u.capB, 1)} B</b></div>
+    ${explMetodo === '2' ? `
+    <div class="exp-ctrl"><span>Ventas</span>
+      <input type="range" data-umbral="crecVentas" min="-20" max="50" step="1" value="${u.crecVentas}"><b>≥ ${u.crecVentas} %</b></div>` : `
     <div class="exp-ctrl"><span>Crecimiento</span>
-      <input type="range" data-umbral="crecimiento" min="-20" max="100" step="5" value="${u.crecimiento}"><b>${u.crecimiento} %</b></div>
+      <input type="range" data-umbral="crecimiento" min="-20" max="100" step="5" value="${u.crecimiento}"><b>${u.crecimiento} %</b></div>`}
     <div class="exp-ctrl"><span>Score mínimo</span>
       <input type="range" data-umbral="score" min="0" max="8" step="1" value="${u.score}"><b>${u.score} / 8</b></div>
     <div style="display:flex; gap:8px; align-items:center; margin-top:4px;">
@@ -9386,13 +9611,18 @@ function explorarResultadoHTML(analisis){
   // ---- Tabla de sobrevivientes ------------------------------------------
   const tabla = (lista, vacio) => lista.length ? `
     <div class="exp-tabla-wrap"><table class="exp-tabla">
-      <thead><tr><th>Acción</th><th>Precio</th><th>Cap. B</th><th>Vol. M</th><th>BPA</th><th>Fase</th><th>Score</th></tr></thead>
+      <thead><tr><th>Acción</th><th>Precio</th><th>Cap. B</th>${explMetodo === '2'
+        ? '<th>US$ M/día</th><th>Bajo máx.</th><th>Ventas</th>' : '<th>Vol. M</th><th>BPA</th>'}<th>Fase</th><th>Score</th></tr></thead>
       <tbody>${lista.map(x => `<tr>
         <td data-accion="exp-abrir" data-ticker="${x.t}">${x.t}</td>
         <td>${typeof x.p === 'number' ? x.p : '—'}</td>
         <td>${typeof x.cB === 'number' ? x.cB : '<span class="no">—</span>'}</td>
+        ${explMetodo === '2' ? `
+        <td>${typeof explMonto(x) === 'number' ? fmtNum(explMonto(x), 0) : '—'}</td>
+        <td>${typeof x.dm === 'number' ? fmtNum(x.dm, 1) + ' %' : '—'}</td>
+        <td>${typeof x.gV === 'number' ? x.gV + ' %' : '<span class="no">—</span>'}</td>` : `
         <td>${typeof x.v === 'number' ? x.v : '—'}</td>
-        <td>${explFmtCrec(x)}</td>
+        <td>${explFmtCrec(x)}</td>`}
         <td>${x.f == null ? '<span class="no">—</span>' : `<span class="${x.f===2?'ok':''}">${x.f}${typeof x.cf==='number'?`·${x.cf}`:''}</span>`}</td>
         <td>${typeof x.sc === 'number' ? `<span class="${x.sc>=6?'ok':''}">${x.sc}</span>` : '<span class="no">—</span>'}</td>
       </tr>`).join('')}</tbody>
@@ -9403,6 +9633,7 @@ function explorarResultadoHTML(analisis){
     reservas:x._reservas || [], motor:x._motor || null,
     ticker:x.t, nombre:x.n, sector:x.se, industria:x['in'], precio:x.p, sma50:x.c50,
     capB:x.cB, crecBpa:x.gB, crecVentas:x.gV, volM:x.v, fase:x.f, confirmaciones:x.cf,
+    distMax:x.dm, montoM:explMonto(x),
     score:x.sc, fuerzaRelativa:{disponible:x.fr!==null, pendientePositiva:x.fr===1},
     mansfield:x.mf,
     tradingview:`https://www.tradingview.com/symbols/${x.t}/`,
@@ -9585,7 +9816,7 @@ function explorarResultadoHTML(analisis){
                     (x._reservas || []).map(r => Object.assign({}, r, {_estado:'reserva de ' + x.t}))), []),
                   fuera: fueraFicha.map(x => Object.assign({}, x, {_estado:'fuera por la ficha'})),
                   mano, etfs: etfsFuerza,
-                  meta: {generado: analisis.generado, umbrales: Object.assign({}, explUmbrales),
+                  meta: {generado: analisis.generado, umbrales: Object.assign({}, explUmbrales), metodo: explMetodo,
                          filtros: Object.assign({}, explFiltros)}};
 
   return `
@@ -9647,11 +9878,12 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
   const norm = x => {
     if(x.t){
       return {t:x.t, n:x.n, se:x.se, ind:x['in'], p:x.p, c50:x.c50, cB:x.cB, gB:x.gB, gV:x.gV, v:x.v,
+              mo:explMonto(x), dm:x.dm,
               f:x.f, cf:x.cf, sc:x.sc, fr:x.fr, mf:x.mf, x30:x.x30, m10:x.m10, rp:x.rp, rpS:x.rpS, estado:x._estado};
     }
     const fr = x.fuerzaRelativa || {}, pr = x.proximoReporte || {};
     return {t:x.ticker, n:x.nombre, se:x.sector, ind:x.industria, p:x.precio, c50:x.sma50, cB:x.capB,
-            gB:x.crecBpa, gV:x.crecVentas, v:x.volM, f:x.fase, cf:x.confirmaciones, sc:x.score,
+            gB:x.crecBpa, gV:x.crecVentas, v:x.volM, mo:x.montoM, dm:x.distMax, f:x.fase, cf:x.confirmaciones, sc:x.score,
             fr: fr.disponible ? (fr.pendientePositiva ? 1 : 0) : null, mf:x.mansfield,
             x30:x.maximo30sem, m10:x.min10, rp:pr.fecha || null, rpS:pr.sinReporteHasta || null,
             faltan:x.faltan, estado:'a mano'};
@@ -9660,7 +9892,7 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
   const CAB = ['Ticker', 'Estado', 'Motor', 'Qué hace', 'Nombre', 'Sector', 'Industria',
     'Precio USD (corrida)', 'Media 50', 'Máx. 30 semanas', 'Zona de compra hasta (+4 %)', 'Precio vs máx. 30 sem. %',
     'Mín. 10 sesiones', 'Stop clase entrando en el máx. 30 sem.', 'Próximos resultados', 'Días hábiles a resultados',
-    'Cap. B', 'Crec. BPA %', 'Crec. ventas %', 'Volumen 90d M',
+    'Cap. B', 'Crec. BPA %', 'Crec. ventas %', 'Volumen 90d M', 'Monto diario US$ M', '% bajo máx. 52 sem.',
     'Fase', 'Confirmaciones', 'Score', 'Fuerza relativa subiendo', 'Mansfield',
     'Ficha (de 5)', 'Ficha con dato (de 5)', 'Veredicto ficha', 'Firma de caja',
     'Ventas vs año anterior % (ficha)', 'BPA vs año anterior % (ficha)',
@@ -9698,7 +9930,7 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
       (x30 !== null && num(x.p) !== null) ? r2((x.p / x30 - 1) * 100) : null,
       r2(m10), stopClase(x30, m10),
       rp ? rp : (rpS ? 'ninguno hasta ' + rpS : ''), (dh !== null && dh >= 0) ? dh : null,
-      num(x.cB), num(x.gB), num(x.gV), num(x.v),
+      num(x.cB), num(x.gB), num(x.gV), num(x.v), num(x.mo), num(x.dm),
       num(x.f), num(x.cf), num(x.sc), x.fr === 1 ? 'si' : (x.fr === 0 ? 'no' : ''), num(x.mf),
       ok ? fi.puntaje : null, ok ? fi.respondidas : null,
       ve ? FICHA_VEREDICTO[ve][0] : (fi ? 'sin datos' : 'sin calcular'),
@@ -9730,7 +9962,12 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
     ['Mercado (S&P 500 vs su media de 200 días, vía ' + MERCADO_REF + ')', m
       ? `${m.sano ? 'Sano' : 'Débil'}: ${MERCADO_REF} ${m.esCierre ? 'cerró' : 'está'} en ${fmtNum(m.ref, 2)} USD; media 200 = ${fmtNum(m.sma, 2)} (${m.distPct >= 0 ? '+' : ''}${fmtNum(m.distPct, 1)} %)`
       : 'sin dato'],
-    ['Umbrales usados', `Precio ≥ ${u.precio} USD · Volumen 90 d ≥ ${fmtNum(u.volM, 2)} M · Capitalización ≥ ${fmtNum(u.capB, 1)} B · Crecimiento BPA y ventas ≥ ${u.crecimiento} % · Score ≥ ${u.score}/8`],
+    ['Método', meta.metodo === '2'
+      ? 'Método 2 · Calidad en tendencia (el tipo de acción del reporte): liquidez en dólares, cerca del máximo de 52 semanas, ventas que no caen'
+      : 'Método 1 · Crecimiento: BPA y ventas creciendo fuerte, volumen alto'],
+    ['Umbrales usados', meta.metodo === '2'
+      ? `Precio ≥ ${u.precio} USD · Monto diario ≥ US$ ${fmtNum(u.montoM, 0)} M · A ≤ ${fmtNum(u.distMax)} % del máximo de 52 semanas · Capitalización ≥ ${fmtNum(u.capB, 1)} B · Ventas ≥ ${u.crecVentas} % · Score ≥ ${u.score}/8`
+      : `Precio ≥ ${u.precio} USD · Volumen 90 d ≥ ${fmtNum(u.volM, 2)} M · Capitalización ≥ ${fmtNum(u.capB, 1)} B · Crecimiento BPA y ventas ≥ ${u.crecimiento} % · Score ≥ ${u.score}/8`],
     ['Filtros', `Fase 2 con ≥ 4 confirmaciones: ${onOff(fl.weinstein)} · Score y fuerza relativa subiendo: ${onOff(fl.fuerza)} · Una por motor de negocio: ${onOff(fl.dedup)}`],
     ['Hoja Candidatas', 'Pasaron todo el embudo y la ficha no las deja fuera. Estado "candidata" = encabeza su motor; "reserva de X" = mismo motor que X, con menor score.'],
     ['Hoja Fuera por la ficha', 'Pasaron el embudo técnico, pero la ficha fundamental suma menos de 3 de 5 (o con lo que le falta ya no llega a 3).'],
@@ -9776,7 +10013,7 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
     ]));
     hojas.push({nombre: 'ETF', filas});
   }
-  descargarXlsx(`ipsa-explorar-${_hoyArchivo()}.xlsx`, hojas);
+  descargarXlsx(`ipsa-explorar${meta.metodo === '2' ? '-metodo2' : ''}-${_hoyArchivo()}.xlsx`, hojas);
 }
 
 // ---- SEMÁFORO DE MERCADO (Clases Acciones USA, condición 3 · 29-oct-2026) ----
@@ -9857,14 +10094,19 @@ function renderAmbienteExplorar(){
   // corrida en curso o un resultado de hace un rato (vive 24 h en memoria).
   if(explorarEstado === undefined){
     explorarEstado = null; // marca "ya se pidió", evita disparar el fetch dos veces
+    const mPedido = explMetodo;
     explorarPedirEstado().then(est => {
       if(est && est.estado === 'corriendo') explorarEmpezarPolling();
-      else if(est && est.hayResultado) explorarPedirResultado();
+      // El resultado guardado se trae aunque haya una corrida en curso (puede
+      // ser del OTRO método), salvo que ya lo tengamos.
+      if(est && est.hayResultado && mPedido === explMetodo && !explorarResultados[mPedido]) explorarPedirResultado(mPedido);
     });
   }
 
   const est = explorarEstado;
   const corriendo = !!(est && est.estado === 'corriendo');
+  const metodoCorriendo = corriendo ? (est.metodo || null) : null;
+  const correOtro = !!(metodoCorriendo && metodoCorriendo !== explMetodo);
   const analisis = explorarResultado;
   const ocupado = corriendo || explorarPeticionEnCurso;
 
@@ -9877,11 +10119,13 @@ function renderAmbienteExplorar(){
     const pct = est.progreso || 0;
     cuerpoHTML += `
       <div class="expl-progress-wrap">
-        <div class="expl-progress-etapa">${(est.etapa || 'Corriendo…').replace(/</g,'&lt;')}</div>
+        <div class="expl-progress-etapa">${metodoCorriendo ? 'Método ' + metodoCorriendo + ' · ' : ''}${(est.etapa || 'Corriendo…').replace(/</g,'&lt;')}</div>
         <div class="expl-progress-bar"><div class="expl-progress-fill" style="width:${pct}%;"></div></div>
         <div class="expl-progress-pct">${pct}%</div>
       </div>
-      <p class="expl-run-nota">Puedes cambiar de ambiente y volver — esto sigue en el servidor aunque cierres la app. Suele tomar entre 4 y 7 minutos.</p>`;
+      <p class="expl-run-nota">Puedes cambiar de ambiente y volver — esto sigue en el servidor aunque cierres la app. ${metodoCorriendo === '2'
+        ? 'El método 2 calcula la fase de todas las que pasan, así que tarda algo más que el método 1.'
+        : 'Suele tomar entre 4 y 7 minutos.'}${correOtro ? ' Cuando termine, el resultado queda en su método; el que estás mirando no se toca.' : ''}</p>`;
   }
 
   if(analisis){
@@ -9889,21 +10133,34 @@ function renderAmbienteExplorar(){
   } else if(!corriendo && est && est.estado !== 'corriendo' && !explorarError){
     cuerpoHTML += `<p class="expl-empty">${est.hayResultado
       ? 'Hay un resultado guardado pero no se pudo traer todavía — reintenta en un momento.'
-      : 'Todavía no se ha corrido el análisis. Aprieta "Ejecutar análisis" para tener la primera alerta del día.'}</p>`;
+      : (explMetodo === '2'
+        ? 'Todavía no se ha corrido el método 2. Aprieta "Ejecutar análisis" para buscar las de calidad en tendencia.'
+        : 'Todavía no se ha corrido el análisis. Aprieta "Ejecutar análisis" para tener la primera alerta del día.')}</p>`;
   }
 
   viewEl.innerHTML = `
     <p class="section-title" style="margin-top:0;">Explorar — primera alerta</p>
     <div id="mercadoFranjaExpl">${mercadoFranjaHTML()}</div>
-    <p class="expl-run-nota" style="margin-bottom:10px;">
+    <div class="expl-metodos">${[
+      ['1', 'BPA y ventas +25 %, volumen ≥ 2 M de acciones'],
+      ['2', 'como el reporte: cerca del máximo, ventas que no caen'],
+    ].map(([m, s]) => `<button type="button" class="expl-metodo-btn ${m === explMetodo ? 'active' : ''}" data-expl-metodo="${m}">
+        <b>${EXPL_METODO_NOMBRE[m]}</b><span>${metodoCorriendo === m ? '<span class="corre">corriendo…</span>' : s}</span></button>`).join('')}
+    </div>
+    ${explMetodo === '2' ? `<p class="expl-run-nota" style="margin-bottom:10px;">
+      Busca lo que elige el reporte: <b>empresas de calidad en tendencia</b>. Barre el mismo mercado completo, pero
+      mide la liquidez en <b>dólares</b> (así no castiga a las caras, como MTD o VRSN), exige estar <b>cerca del máximo
+      de 52 semanas</b> y que <b>las ventas no caigan</b>, en vez de crecer 25 %. Después aplica lo mismo que el
+      método 1: fase de Weinstein, score y fuerza relativa, ficha fundamental y una por motor. No corre solo.
+    </p>` : `<p class="expl-run-nota" style="margin-bottom:10px;">
       Barre el mercado de EE.UU. completo con el screener de TradingView (si no responde, el S&amp;P 500 + el Nasdaq-100 + tu grilla, 536 acciones), aplica el método completo
       — precio, tendencia, capitalización, crecimiento, fase de Weinstein y fuerza relativa — y te deja
       lo que vale la pena abrir en TradingView, que es donde haces el análisis en profundidad. No corre
       solo: lo pides tú, cuando te sientas a revisar el mercado.
-    </p>
+    </p>`}
     <div class="expl-run-row">
       <button type="button" class="expl-run-btn" id="explBtnRun" ${ocupado ? 'disabled' : ''}>
-        ${explorarPeticionEnCurso ? 'Arrancando…' : corriendo ? 'Corriendo…' : analisis ? 'Volver a ejecutar' : 'Ejecutar análisis'}
+        ${explorarPeticionEnCurso ? 'Arrancando…' : correOtro ? `Corriendo el método ${metodoCorriendo}…` : corriendo ? 'Corriendo…' : analisis ? 'Volver a ejecutar' : 'Ejecutar análisis'}
       </button>
       ${analisis && !corriendo ? `<span class="expl-run-nota">Último resultado: ${explorarFechaHTML(analisis)}</span>` : ''}
     </div>
@@ -9912,6 +10169,9 @@ function renderAmbienteExplorar(){
 
   const btn = document.getElementById('explBtnRun');
   if(btn) btn.addEventListener('click', explorarEjecutar);
+  viewEl.querySelectorAll('[data-expl-metodo]').forEach(b => {
+    b.addEventListener('click', () => explCambiarMetodo(b.dataset.explMetodo));
+  });
 
   // ---- Controles del embudo por etapas ----------------------------------
   viewEl.querySelectorAll('[data-accion="exp-paso"]').forEach(b => {
@@ -9977,7 +10237,7 @@ function renderAmbienteExplorar(){
 
   const btnReset = viewEl.querySelector('[data-accion="exp-reset"]');
   if(btnReset) btnReset.addEventListener('click', () => {
-    explUmbrales = Object.assign({}, EXPL_UMBRALES_DEF);
+    explUmbrales = Object.assign({}, explUmbralesDef());
     guardarExplUmbrales();
     renderAmbienteExplorar();
   });
@@ -10292,6 +10552,12 @@ function maxPrevioPropuesto(s){
 function zonaDeRegistro(reg, moneda){
   const mp = (reg && typeof reg.maxPrevio === 'number' && reg.maxPrevio > 0) ? reg.maxPrevio : null;
   if(mp === null) return null;
+  // La zona que escribe el reporte de Inversapiens (5-nov-2026) manda sobre
+  // el +4 %: en Chile trae zonas de +5 % (Andina, Falabella) y de +2,6 %
+  // (Colbún). El servidor recibe desde/hasta tal cual, así que avisa al
+  // cierre con la zona del reporte sin tocar nada allá.
+  const hastaRep = (reg && typeof reg.zonaHasta === 'number' && reg.zonaHasta > mp) ? reg.zonaHasta : null;
+  if(hastaRep !== null) return {desde: mp, hasta: hastaRep};
   return {desde: mp, hasta: redondearStop(mp * (1 + ZONA_PCT / 100), moneda)};
 }
 
@@ -10477,6 +10743,7 @@ function esperaRupturaHTML(tk, reg, s, moneda, restantes, vencida, conPos, enWat
         <span style="font-size:10.5px;color:var(--ink-faint);">${s ? s.name : ''}</span>
         ${fichaChipHTML(tk, {prio:true})}
         ${enWatch ? '<span class="esp-watch" title="No está en tu grilla: la app le pide precio aparte, gracias a tu watchlist personal">watchlist</span>' : ''}
+        ${chipReporteEsperaHTML(reg)}
         <span class="esp-estado ${pill[0]}">${pill[1]}</span>
         ${botonSacarEsperaHTML(tk)}
       </div>
@@ -10489,14 +10756,15 @@ function esperaRupturaHTML(tk, reg, s, moneda, restantes, vencida, conPos, enWat
       </div>
       ${barraZonaHTML(z, moneda)}
       <div class="zona-datos">
-        <label for="espMax-${tk}">Máximo previo${reg.maxPrevioOrigen === 'propuesto' ? ' <span style="color:var(--ink-faint);">(propuesto: máx. de 30 semanas)</span>' : ''}</label>
+        <label for="espMax-${tk}">Máximo previo${reg.maxPrevioOrigen === 'propuesto' ? ' <span style="color:var(--ink-faint);">(propuesto: máx. de 30 semanas)</span>' : (reg.maxPrevioOrigen === 'reporte' ? ' <span style="color:var(--ink-faint);">(el del reporte)</span>' : '')}</label>
         <input type="number" step="any" min="0" id="espMax-${tk}" data-esp-maxprevio="${tk}"
                value="${typeof reg.maxPrevio === 'number' ? reg.maxPrevio : ''}" placeholder="${prop !== null ? prop : 'sin dato'}"
                title="Queda fijo hasta que lo cambies. Vacío = sin zona.">
         ${(prop !== null && reg.maxPrevio !== prop)
           ? `<button type="button" class="esp-usar" data-esp-usar-max="${tk}" data-valor="${prop}">usar máx. de 30 semanas · ${fmtMoneda2(prop, moneda)}</button>` : ''}
-        ${z.zona ? `<span>Zona de compra (+${ZONA_PCT}%)</span><span class="zd-v">${fmtNum(z.zona.desde, dec)} – ${fmtNum(z.zona.hasta, dec)}</span>` : ''}
+        ${z.zona ? `<span>Zona de compra ${reg.zonaHasta ? '(la del reporte)' : `(+${ZONA_PCT}%)`}</span><span class="zd-v">${fmtNum(z.zona.desde, dec)} – ${fmtNum(z.zona.hasta, dec)}</span>` : ''}
         ${vol ? `<span>Volumen del último cierre <span style="color:var(--ink-faint);">(dato)</span></span><span class="zd-v">${fmtNum(vol.veces, 1)}× su prom. 50 días</span>` : ''}
+        ${datosReporteEsperaHTML(tk, reg, moneda)}
       </div>
       ${condicionesHTML(condicionesCompra(tk, reg, s))}
       <div class="esp-btns">
@@ -10571,6 +10839,7 @@ function esperaHTML(){
         <span style="font-size:10.5px;color:var(--ink-faint);">${s ? s.name : ''}</span>
         ${fichaChipHTML(tk, {prio:true})}
         ${enWatch ? '<span class="esp-watch" title="No está en tu grilla: la app le pide precio aparte, gracias a tu watchlist personal">watchlist</span>' : ''}
+        ${chipReporteEsperaHTML(reg)}
         <span class="esp-estado ${pill[0]}">${pill[1]}</span>
         ${botonSacarEsperaHTML(tk)}
       </div>
@@ -11301,37 +11570,13 @@ async function agregarDesdeFormEspera(porTeclado){
       alert(`"${txtEl.value.trim()}" calza con varias: elige una de la lista.`);
       txtEl.focus(); pintarSugsEspera(); return;
     } else if(ESP_PARECE_TICKER.test(escrito)){
-      // No está en la app: se busca y, si existe, entra a la watchlist personal.
-      if(watchlist.length >= WATCHLIST_MAX){
-        alert(`${escrito} no está en la app, y tu watchlist personal ya tiene ${WATCHLIST_MAX} acciones (el tope).\n\n`
-            + 'Saca alguna que ya no estés esperando y vuelve a intentar.');
-        return;
-      }
-      if(!confirm(`${escrito} no está en la app.\n\n`
-                + `¿La busco y la sumo a tu watchlist personal (${watchlist.length} de ${WATCHLIST_MAX}) para poder esperarla?\n`
-                + 'Cada acción vigilada es una petición más a Yahoo en cada ciclo.')) return;
+      // No está en la app: se busca y, si existe, entra a la watchlist
+      // personal (sumarAWatchlistBuscando, compartida con el reporte).
       _espAgregando = true;
-      const btn = el('espAgregar');
-      if(btn){ btn.disabled = true; btn.textContent = 'Buscando…'; }
-      let r;
-      try { r = await pedirQuoteAccion(escrito); }
-      finally {
-        _espAgregando = false;
-        const b2 = el('espAgregar');   // pudo re-dibujarse mientras tanto
-        if(b2){ b2.disabled = false; b2.textContent = 'Agregar'; }
-      }
-      if(!r || !r.ok){
-        alert(`No encontré ${escrito}: ${(r && r.error) || 'sin respuesta'}\n\n`
-            + 'Revisa que el ticker esté bien escrito. Si el servidor estaba dormido, intenta de nuevo en un minuto.');
-        return;
-      }
-      let s = todosLosStocks().find(x => x.ticker === escrito);
-      if(!s){ s = nuevoStockFicha(escrito, escrito, r.currency); stateFicha.push(s); }
-      aplicarQuoteAStock(s, r.quote);
-      if(!estaEnGrilla(escrito) && !estaEnWatchlist(escrito)){
-        const w = agregarAWatchlist(escrito, escrito);   // hereda lo recién cargado (ver agregarAWatchlist)
-        if(!w.ok){ alert(`No se pudo sumar ${escrito} a la watchlist: ${w.motivo}`); return; }
-      }
+      let ok = false;
+      try { ok = await sumarAWatchlistBuscando(escrito, el('espAgregar')); }
+      finally { _espAgregando = false; }
+      if(!ok) return;
       tk = escrito;
     } else {
       alert(`Nada calza con "${txtEl.value.trim()}". Escribe el ticker o un pedazo del nombre y elige de la lista.`);
@@ -11609,6 +11854,7 @@ function renderAmbienteSeguir(){
       const v = parseFloat(inp.value);
       reg.maxPrevio = (isFinite(v) && v > 0) ? v : null;
       reg.maxPrevioOrigen = reg.maxPrevio === null ? 'vacio' : 'escrito';
+      delete reg.zonaHasta;   // el techo del reporte era para SU máximo previo
       guardarEspera();
       sincronizarAlertasPrecio();
       renderAmbienteSeguir();
@@ -11638,6 +11884,7 @@ function renderAmbienteSeguir(){
       if(!reg) return;
       reg.maxPrevio = parseFloat(btn.dataset.valor);
       reg.maxPrevioOrigen = 'propuesto';
+      delete reg.zonaHasta;
       guardarEspera();
       sincronizarAlertasPrecio();
       renderAmbienteSeguir();
@@ -13344,6 +13591,7 @@ function renderAmbienteCartera(){
         </div>
         ${montoRiesgoHTML}
         ${sugerenciaStopHTML(s, pos, obj, currency)}
+        ${franjaReporteCarteraHTML(s, pos, obj)}
       </div>`;
   };
 
@@ -13579,6 +13827,11 @@ function renderAmbienteCartera(){
       guardarAlertasPrecio();
       renderAmbienteCartera();
     });
+  });
+  // "Usar X" del reporte de Inversapiens (5-nov-2026): el mismo camino que
+  // escribir el número a mano en el campo.
+  viewEl.querySelectorAll('[data-rep-usar]').forEach(btn => {
+    btn.addEventListener('click', () => usarValorReporte(btn.dataset.repUsar, btn.dataset.lado, parseFloat(btn.dataset.valor)));
   });
   viewEl.querySelectorAll('.cartera-campo input').forEach(input => {
     input.addEventListener('change', () => {
@@ -15218,6 +15471,10 @@ function construirRespaldoUnificado(){
     // se podía restaurar en un teléfono nuevo y quedar sin ninguna alerta
     // puesta, en silencio -- justo lo que este respaldo existe para evitar.
     alertasPrecio,
+    // Reporte de Inversapiens (5-nov-2026): el último cargado y lo que
+    // marcaste como "no lo sigo". Viaja para que el PC y la tablet vean el
+    // reporte que subiste en el teléfono.
+    reporteInversapiens: reporteParaRespaldo(),
   };
 }
 
@@ -15588,6 +15845,14 @@ function aplicarRespaldo(nuevo, opciones){
 
   tesis = (nuevo.tesis && typeof nuevo.tesis === 'object') ? nuevo.tesis : {};
   guardarTesis();
+
+  // Reporte de Inversapiens (5-nov-2026). Un respaldo de antes no lo trae: se
+  // deja el que hay en este equipo en vez de borrarlo.
+  if(nuevo.reporteInversapiens && typeof nuevo.reporteInversapiens === 'object'){
+    const ri = nuevo.reporteInversapiens;
+    if(ri.reporte && Array.isArray(ri.reporte.usa)){ reporteIns = ri.reporte; guardarReporte(); }
+    if(Array.isArray(ri.excluidos)){ reporteExcluidos = new Set(ri.excluidos); guardarExcluidosReporte(); }
+  }
 
   favoritos.clear();
   (Array.isArray(nuevo.favoritos) ? nuevo.favoritos : []).forEach(t => favoritos.add(t));
@@ -16266,6 +16531,1064 @@ setInterval(fetchRealQuotes, 60000);
 // así que no se nota ninguna espera.
 setInterval(() => { if(ambienteActivo !== 'chile') fetchRealQuotesUsa(); }, 60000);
 setInterval(fetchSignals, 60000);
+
+// ============================================================================
+// REPORTE INVERSAPIENS: LECTURA DEL PDF  (5-nov-2026)
+// ============================================================================
+// El PDF se lee EN EL TELÉFONO con pdf.js (se carga de cdnjs solo cuando
+// tocas "Cargar reporte"; el resto de la app no lo necesita). El archivo no
+// se sube a ningún servidor.
+//
+// De las 142 páginas sirven cinco bloques: la tabla de ETF y sus páginas de
+// "Idea", la tabla de acciones de EE.UU. y sus "Idea", la tabla de Chile con
+// sus comentarios, la línea de cripto y la regla de exposición a Chile. El
+// resto (macro, dólar, oro...) se ignora: no cambia ninguna decisión que la
+// app pueda ayudar a tomar.
+//
+// LO FRÁGIL, DICHO DE FRENTE: el reporte no usa un solo formato de número.
+// La tabla de EE.UU. escribe "$1.697,00" (punto de miles, coma decimal); las
+// ideas de ETF, "139.1" (punto decimal); la tabla de Chile, "4,762" (coma de
+// miles) y "144.15" (punto decimal). numReporte() decide por la cantidad de
+// dígitos después del separador (3 = miles), y después la revisión los
+// compara con el precio del día y corrige un ×1000 si hace falta, avisando.
+// Si un próximo reporte cambia la forma de las tablas, la revisión lo dice
+// (cuenta lo que encontró) antes de aplicar nada.
+
+const PDFJS_VER = '3.11.174';
+const PDFJS_URL = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VER}/pdf.min.js`;
+const PDFJS_WORKER_URL = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS_VER}/pdf.worker.min.js`;
+
+function cargarPdfJs(){
+  return new Promise((ok, mal) => {
+    if(window.pdfjsLib) return ok(window.pdfjsLib);
+    const sc = document.createElement('script');
+    sc.src = PDFJS_URL;
+    sc.onload = () => {
+      if(!window.pdfjsLib) return mal(new Error('El lector de PDF no se cargó bien.'));
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
+      ok(window.pdfjsLib);
+    };
+    sc.onerror = () => mal(new Error('No se pudo bajar el lector de PDF. Revisa la conexión e intenta de nuevo.'));
+    document.head.appendChild(sc);
+  });
+}
+
+// Arma las líneas de una página a partir de los trozos de texto de pdf.js:
+// agrupa por altura (y) y ordena por posición (x). Entre dos trozos separados
+// por un hueco pone un espacio -- así las celdas de una tabla quedan
+// separadas igual que en una línea de texto.
+function lineasDeItemsPdf(items){
+  const filas = [];
+  items.forEach(it => {
+    if(!it || typeof it.str !== 'string' || !it.transform) return;
+    if(!it.str.trim()) return;
+    const x = it.transform[4], y = it.transform[5];
+    const alto = Math.abs(it.transform[3]) || it.height || 8;
+    let f = filas.find(g => Math.abs(g.y - y) <= Math.max(2, alto * 0.4));
+    if(!f){ f = {y, items: []}; filas.push(f); }
+    f.items.push({x, w: it.width || 0, s: it.str});
+  });
+  filas.sort((a, b) => b.y - a.y);
+  return filas.map(f => {
+    f.items.sort((a, b) => a.x - b.x);
+    let out = '', fin = null;
+    f.items.forEach(it => {
+      if(fin !== null && it.x - fin > 1.2 && !/\s$/.test(out) && !/^\s/.test(it.s)) out += ' ';
+      out += it.s;
+      fin = it.x + it.w;
+    });
+    return out.replace(/\s+/g, ' ').trim();
+  }).filter(Boolean).join('\n');
+}
+
+async function textoPaginasPdf(buffer, progreso){
+  const pdfjs = await cargarPdfJs();
+  const doc = await pdfjs.getDocument({data: buffer}).promise;
+  const paginas = [];
+  try {
+    for(let i = 1; i <= doc.numPages; i++){
+      const pag = await doc.getPage(i);
+      const tc = await pag.getTextContent();
+      paginas.push(lineasDeItemsPdf(tc.items));
+      pag.cleanup();
+      if(progreso) progreso(i, doc.numPages);
+    }
+  } finally {
+    try { await doc.destroy(); } catch(e){}
+  }
+  return paginas;
+}
+
+// "1.697,00" -> 1697 · "20,71" -> 20.71 · "139.1" -> 139.1 · "4,762" -> 4762 ·
+// "144.15" -> 144.15 · "10.627" -> 10627. Con los dos separadores, el último
+// es el decimal; con uno solo, tres dígitos detrás = miles.
+function numReporte(txt){
+  if(txt === null || txt === undefined) return null;
+  let s = String(txt).replace(/[$\s]/g, '').replace(/[.,]+$/, '');
+  if(!/\d/.test(s)) return null;
+  const ip = s.lastIndexOf('.'), ic = s.lastIndexOf(',');
+  if(ip >= 0 && ic >= 0){
+    const dec = ip > ic ? '.' : ',';
+    const mil = dec === '.' ? ',' : '.';
+    s = s.split(mil).join('').replace(dec, '.');
+  } else if(ip >= 0 || ic >= 0){
+    const sep = ip >= 0 ? '.' : ',';
+    const partes = s.split(sep);
+    const tresDigitos = partes.length > 1 && partes.slice(1).every(p => p.length === 3);
+    s = tresDigitos ? partes.join('') : s.replace(sep, '.');
+  }
+  const v = parseFloat(s);
+  return isFinite(v) ? v : null;
+}
+
+const MESES_REPORTE = {enero:1, febrero:2, marzo:3, abril:4, mayo:5, junio:6, julio:7, agosto:8,
+                       septiembre:9, setiembre:9, octubre:10, noviembre:11, diciembre:12};
+
+function normTickerReporte(t){ return String(t || '').trim().toUpperCase().replace(/_/g, '-'); }
+// La lista que sigue a "Comprar:", "Vender:" o "Subir stop …:": tickers
+// separados por coma, y nada más (lo que venga después no es parte de ella).
+function listaTrasEtiqueta(tx, etiqueta){
+  const re = new RegExp(etiqueta + '[^:]{0,40}:\\s*([A-Z][A-Z0-9_.\\-]*(?:\\s*,\\s*[A-Z][A-Z0-9_.\\-]*)*)');
+  const m = String(tx || '').match(re);
+  return m ? listaTickersReporte(m[1]) : [];
+}
+function listaTickersReporte(txt){
+  return String(txt || '').split(/[,\s]+/).map(normTickerReporte).filter(t => /^[A-Z][A-Z0-9.\-]{0,11}$/.test(t));
+}
+function sinTildesReporte(t){ return String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase(); }
+
+// Lee el texto de las páginas y devuelve el reporte en la forma que usa la
+// app. Nunca lanza: lo que no encuentra lo deja vacío y lo anota en `avisos`.
+function parsearReporte(paginas, archivo){
+  const R = {version: 1, fecha: null, fechaTexto: null, archivo: archivo || null,
+             etf: [], usa: [], chile: [], cripto: [], reglas: {},
+             usaComprar: [], usaVender: [], usaSubirStop: [], etfComprar: [], etfVender: [],
+             chileComprar: [], chileVender: [], avisos: []};
+  // Fuera la marca de agua ("Uso exclusivo de …", "ID:<correo>", la web y
+  // el botón de volver): cae en medio de las frases y de las tablas -- en la
+  // página de VOO partía "media de 30 | ID:… | semanas" en dos.
+  const P = paginas.map(t => String(t || '').split('\n')
+    .filter(l => !/^\s*(ID:\S*|Uso exclusivo de\b.*|www\.inversapiens\.com|←.*|\S+@\S+\.\S+)\s*$/i.test(l))
+    .map(l => l.replace(/ID:\S+@\S+/g, '').replace(/Uso exclusivo de\s+\S+@\S+/g, ''))
+    .join('\n'));
+  const plano = t => t.replace(/\s+/g, ' ').trim();
+
+  // ---- fecha ----
+  for(const t of P.slice(0, 3)){
+    const m = plano(t).match(/(\d{1,2})\s+(?:de\s+)?([A-Za-zÁÉÍÓÚáéíóú]+)\s+(?:de\s+)?(20\d{2})/);
+    if(m && MESES_REPORTE[m[2].toLowerCase()]){
+      const mes = MESES_REPORTE[m[2].toLowerCase()];
+      R.fecha = `${m[3]}-${String(mes).padStart(2, '0')}-${String(+m[1]).padStart(2, '0')}`;
+      R.fechaTexto = `${+m[1]} de ${m[2].toLowerCase()} de ${m[3]}`;
+      break;
+    }
+  }
+  if(!R.fecha) R.avisos.push('No encontré la fecha del reporte en las primeras páginas.');
+
+  // ---- cartera de ETF ----
+  const iEtf = P.findIndex(t => /^\s*Cartera ETFs?\b/m.test(t) && /\d+%\s+\d+%/.test(t));
+  if(iEtf >= 0){
+    P[iEtf].split('\n').forEach(l => {
+      const m = l.trim().match(/^([A-Z]{2,5})\s+(.+?)\s+(\d+)\s?%\s+(\d+)\s?%\s+\$\s?([\d.,]+)$/);
+      if(m) R.etf.push({ticker: m[1], clase: m[2], antes: +m[3], ahora: +m[4]});
+    });
+    const tx = plano(P[iEtf]);
+    R.etfComprar = listaTrasEtiqueta(tx, 'Comprar');
+    R.etfVender = listaTrasEtiqueta(tx, 'Vender');
+    // Las "Idea" vienen en el mismo orden que la tabla, una página cada una.
+    const ideas = [];
+    for(let i = iEtf + 1; i < P.length && ideas.length < R.etf.length; i++){
+      const t = plano(P[i]);
+      if(!/^Idea:/.test(t)) break;
+      ideas.push(t);
+    }
+    if(ideas.length !== R.etf.length){
+      R.avisos.push(`ETF: la tabla trae ${R.etf.length} fondos y encontré ${ideas.length} páginas de idea; las reglas de piso pueden haber quedado cruzadas.`);
+    }
+    R.etf.forEach((e, k) => {
+      const tx = ideas[k];
+      if(!tx) return;
+      const id = tx.match(/^Idea:\s*(\S+)/);
+      e.idea = id ? id[1] : null;
+      const v1 = tx.match(/vender todo si (el viernes )?cierra bajo (?:los )?([\d.,]+)\s*\(([^)]*)\)/i);
+      const v2 = tx.match(/cerró bajo (?:los )?([\d.,]+)\s*\(([^)]*)\)/i);
+      const v3 = tx.match(/vendió bajo (?:los )?([\d.,]+)\s*\(([^)]*)\)/i);
+      if(v1){ e.piso = numReporte(v1[2]); e.pisoRegla = v1[3]; e.pisoSemanal = !!v1[1]; }
+      else if(v2){ e.piso = numReporte(v2[1]); e.pisoRegla = v2[2]; e.pisoSemanal = false; }
+      else if(v3){ e.piso = numReporte(v3[1]); e.pisoRegla = v3[2]; e.pisoSemanal = false; }
+      const rc = tx.match(/recompramos al cerrar sobre (?:los )?([\d.,]+)/i)
+              || tx.match(/volvemos a comprar si cierra sobre (?:los )?([\d.,]+)/i)
+              || tx.match(/hasta que cierre sobre (?:los )?([\d.,]+)/i);
+      if(rc) e.recompraSobre = numReporte(rc[1]);
+      const sv = tx.match(/sobreventa bajo (?:los )?([\d.,]+)/i);
+      if(sv) e.recompraSobreventa = numReporte(sv[1]);
+      const f = tx.match(/fase (\d) de Weinstein/i);
+      if(f) e.fase = +f[1];
+      if(/no tiene regla de piso/i.test(tx)) e.sinPiso = true;
+      e.texto = tx.replace(/^Idea:\s*\S+\s*/, '');
+    });
+  } else {
+    R.avisos.push('No encontré la tabla "Cartera ETFs".');
+  }
+
+  // ---- acciones de EE.UU. ----
+  const iUsa = P.findIndex(t => /^\s*Cartera Acciones USA\b/m.test(t));
+  if(iUsa >= 0){
+    P[iUsa].split('\n').forEach(l => {
+      const m = l.trim().match(/^([A-Z][A-Z.]{0,5})\s+(.+?)\s+\$\s?([\d.,]+)\s*[–-]\s*\$\s?([\d.,]+)\s+\$\s?([\d.,]+)\s+(\d+)\s?%\s+(\d+)\s?%\s+(.+)$/);
+      if(m) R.usa.push({ticker: m[1], sector: m[2], zonaDesde: numReporte(m[3]), zonaHasta: numReporte(m[4]),
+                        stop: numReporte(m[5]), antes: +m[6], ahora: +m[7], accion: m[8].trim()});
+    });
+    const tx = plano(P[iUsa]);
+    R.usaComprar = listaTrasEtiqueta(tx, 'Comprar');
+    R.usaVender = listaTrasEtiqueta(tx, 'Vender');
+    R.usaSubirStop = listaTrasEtiqueta(tx, 'Subir stop');
+    const porTk = {};
+    for(let i = iUsa + 1; i < Math.min(P.length, iUsa + 40); i++){
+      const t = plano(P[i]);
+      const m = t.match(/^Idea:\s*(.+?)\s+Las?\s+([A-Z][A-Z.]{0,5})\s+est[aá]n? en ([\d.,]+)/);
+      if(!m) continue;
+      const d = {idea: m[1], precioReporte: numReporte(m[3]), texto: t.replace(/^Idea:\s*.+?\s+(?=Las?\s)/, '')};
+      const tp = t.match(/Primera toma de 1\/3 en ([\d.,]+) y segunda en ([\d.,]+)/i);
+      if(tp){ d.toma1 = numReporte(tp[1]); d.toma2 = numReporte(tp[2]); }
+      porTk[m[2]] = d;
+    }
+    R.usa.forEach(a => Object.assign(a, porTk[a.ticker] || {}));
+    const sinIdea = R.usa.filter(a => !porTk[a.ticker]).map(a => a.ticker);
+    if(sinIdea.length) R.avisos.push(`EE.UU.: sin página de idea para ${sinIdea.join(', ')}.`);
+  } else {
+    R.avisos.push('No encontré la tabla "Cartera Acciones USA".');
+  }
+
+  // ---- Chile ----
+  const iChi = P.findIndex(t => /Portafolio de Acciones Chilenas/.test(t) && /Stoploss|Stop loss/i.test(t));
+  if(iChi >= 0){
+    const tx = plano(P[iChi]);
+    const mx = tx.match(/Exposición máxima de (\d+)\s?% \((\d+)\s?% en caja\)/i);
+    if(mx) R.reglas.chileExposicionMax = +mx[1];
+    P[iChi].split('\n').forEach(l => {
+      const m = l.trim().match(/^([A-Z][A-Z0-9_\-]{1,14})\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s+(\d+)\s?%$/);
+      if(m && m[1] !== 'CAJA') R.chile.push({ticker: normTickerReporte(m[1]), nombre: m[2],
+        zonaDesde: numReporte(m[3]), zonaHasta: numReporte(m[4]), stop: numReporte(m[5]), ahora: +m[6]});
+    });
+    R.chileComprar = listaTrasEtiqueta(tx, 'Comprar');
+    R.chileVender = listaTrasEtiqueta(tx, 'Vender');
+    // Los comentarios de Chile nombran la acción por su nombre ("Las Andina",
+    // "Mal las Ripley"), no por el ticker: se cruzan por la primera palabra.
+    const claves = {};
+    R.chile.forEach(c2 => { claves[sinTildesReporte(c2.nombre).split(' ')[0]] = c2.ticker; claves[c2.ticker.split('-')[0]] = c2.ticker; });
+    R.chileVender.forEach(t => { claves[t.split('-')[0]] = t; });
+    R.chileTextos = {};
+    for(let i = iChi + 1; i < Math.min(P.length, iChi + 12); i++){
+      const t = plano(P[i]);
+      if(/^Portafolio|^\d{2}\s|Acciones Americanas/.test(t)) break;
+      const m = sinTildesReporte(t).match(/^(?:MAL |BIEN )?(?:LAS|LOS)\s+([A-Z]+)|AGREGAMOS (?:LAS|LOS)\s+([A-Z]+)/);
+      const k = m && (m[1] || m[2]);
+      if(k && claves[k]) R.chileTextos[claves[k]] = t;
+    }
+    R.chile.forEach(c2 => {
+      if(R.chileTextos[c2.ticker]) c2.texto = R.chileTextos[c2.ticker];
+      c2.idea = R.chileComprar.includes(c2.ticker) ? 'Comprar' : 'Mantener';
+      const pr = (c2.texto || '').match(/cierran en ([\d.,]+)/i);
+      if(pr) c2.precioReporte = numReporte(pr[1]);
+    });
+    // Las que el reporte vende no vienen en la tabla: solo en la lista y en
+    // su comentario, que trae el stop que tocaron.
+    R.chileSalen = R.chileVender.map(t => {
+      const tx = R.chileTextos[t] || '';
+      const sl = tx.match(/SL de ([\d.,]+)/i);
+      const pr = tx.match(/cierran en ([\d.,]+)/i);
+      return {ticker: t, texto: tx || null, stop: sl ? numReporte(sl[1]) : null, precioReporte: pr ? numReporte(pr[1]) : null};
+    });
+    if(R.reglas.chileExposicionMax === undefined) R.avisos.push('Chile: no encontré la regla de exposición máxima.');
+  } else {
+    R.avisos.push('No encontré la tabla de acciones chilenas.');
+  }
+  // Lo que dice del IPSA contra su media de 30 semanas (página de renta variable Chile).
+  for(const t of P){
+    const m = plano(t).match(/IPSA[^.]*?media de 30 semanas \(([\d.,]+)\) y cierra la semana en ([\d.,]+)/i);
+    if(m){ R.reglas.ipsaMedia30s = numReporte(m[1]); R.reglas.ipsaCierre = numReporte(m[2]); break; }
+  }
+
+  // ---- cripto ----
+  for(const t of P){
+    const m = plano(t).match(/Mantenemos el (\d+)\s?% en BTC/i);
+    if(m){ R.cripto.push({ticker: 'BTC-USD', ahora: +m[1]}); break; }
+  }
+
+  // ---- sumas de control ----
+  const suma = l => l.reduce((a, x) => a + (x.ahora || 0), 0);
+  if(R.etf.length && suma(R.etf) !== 100) R.avisos.push(`ETF: los pesos suman ${suma(R.etf)} %, no 100 %.`);
+  if(R.usa.length && suma(R.usa) !== 100) R.avisos.push(`EE.UU.: los pesos suman ${suma(R.usa)} %, no 100 %.`);
+  return R;
+}
+
+// ============================================================================
+// AMBIENTE "REPORTE": EL REPORTE DE INVERSAPIENS DENTRO DE LA APP (5-nov-2026)
+// ============================================================================
+// Cristian recibe cada ~2 semanas el reporte "Maratón de Inversiones" (PDF de
+// ~140 páginas) y lo usa como guía para comprar. Antes copiaba a mano los
+// pisos de los ETF a "Vta si baja" (QQQ 681, DBC 29, CIBR 95, SMH 565 en el
+// respaldo del 24-sep). Esto lo trae a la app. Decisiones suyas (5-nov):
+//
+//  * SE SUBE EN LA APP. El PDF se lee en el teléfono (lector de arriba).
+//  * PESTAÑA PROPIA "Reporte", en la fila de arriba.
+//  * LOS AVISOS FUNCIONAN COMO HOY. "Usar X" escribe en los mismos precios
+//    objetivo de Mi Cartera (alertasPrecio), que avisan al primer cruce del
+//    día; nada nuevo en el servidor. La zona de compra que pasa a "A seguir"
+//    usa el aviso al cierre que ya existía para las rupturas.
+//  * ÉL DECIDE QUÉ SE INCLUYE: "su cartera no es necesariamente la del
+//    reporte". Cada ticker se puede marcar "no lo sigo"; la marca se recuerda
+//    para los reportes siguientes (por ticker) y lo excluido no aparece en la
+//    lista de qué hacer, ni en Mi Cartera, ni en el cuadre de ETF. No
+//    desaparece: queda en "No sigues", con un botón para volver a seguirlo
+//    (esconder un nombre es el peor error de una alerta, ver Explorar).
+//  * NADA SE CAMBIA SOLO. El reporte propone con un botón; su regla del 7 %
+//    sigue mandando. Mismo criterio que el stop sugerido de Mi Cartera.
+//
+// Los datos viven en localStorage ('ipsa_reporte', 'ipsa_reporte_excluidos')
+// y viajan en el respaldo y en la sincronización (reporteInversapiens).
+
+function guardarReporte(){
+  try {
+    if(reporteIns) localStorage.setItem(REPORTE_KEY, JSON.stringify(reporteIns));
+    else localStorage.removeItem(REPORTE_KEY);
+  } catch(e){}
+}
+function guardarExcluidosReporte(){
+  try { localStorage.setItem(REPORTE_EXCL_KEY, JSON.stringify([...reporteExcluidos])); } catch(e){}
+}
+// Para el respaldo: con try porque construirRespaldoUnificado() puede
+// llamarse antes de que este bloque termine de cargar.
+function reporteParaRespaldo(){
+  try { return {reporte: reporteIns, excluidos: [...reporteExcluidos]}; } catch(e){ return undefined; }
+}
+
+const MESES_CORTOS_REP = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function fechaCortaRep(iso){
+  const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}-${MESES_CORTOS_REP[+m[2] - 1]}` : '';
+}
+// Bitcoin se lleva en pesos (su stop también): solo ETF y EE.UU. van en dólares.
+function esUsdRep(it){ return it.tipo === 'usa' || it.tipo === 'etf'; }
+// Números del reporte con el formato de la app: dólares con 2 decimales,
+// pesos sin decimales salvo que el número los tenga (Colbún 144,15).
+function fmtRep(v, it){
+  if(typeof v !== 'number' || !isFinite(v)) return '—';
+  if(esUsdRep(it)) return fmtNum(v, 2);
+  return fmtNum(v, Math.abs(v - Math.round(v)) > 1e-9 ? 2 : 0);
+}
+function pctRep(a, b){ return (typeof a === 'number' && typeof b === 'number' && b > 0) ? (a / b - 1) * 100 : null; }
+function stockRep(tk){ return todosLosStocks().find(x => x.ticker === tk) || null; }
+
+// La idea de cada ETF/acción, en cinco palabras: Vender · Mantener ·
+// Comprar · Aumentar · Subir stop.
+function ideaNormalRep(it){
+  const id = String(it.idea || it.accion || '').toLowerCase();
+  if(/vend/.test(id)) return 'Vender';
+  if(/subir stop/.test(id)) return 'Subir stop';
+  if(/aument/.test(id)) return 'Aumentar';
+  if(/compr/.test(id)) return 'Comprar';
+  if(it.ahora === 0 && it.antes > 0) return 'Vender';
+  if(it.antes === 0 && it.ahora > 0) return 'Comprar';
+  return 'Mantener';
+}
+
+// Todo lo del reporte en una sola lista: {tk, tipo, idea, d}.
+function itemsReporte(R){
+  if(!R) return [];
+  const out = [];
+  (R.etf || []).forEach(d => out.push({tk: d.ticker, tipo: 'etf', d, idea: ideaNormalRep(d)}));
+  (R.usa || []).forEach(d => out.push({tk: d.ticker, tipo: 'usa', d, idea: ideaNormalRep(d)}));
+  (R.chile || []).forEach(d => out.push({tk: d.ticker, tipo: 'chile', d, idea: ideaNormalRep(d)}));
+  (R.chileSalen || []).forEach(d => {
+    if(!out.some(x => x.tk === d.ticker)) out.push({tk: d.ticker, tipo: 'chile', d: Object.assign({ahora: 0}, d), idea: 'Vender'});
+  });
+  (R.cripto || []).forEach(d => out.push({tk: d.ticker, tipo: 'cripto', d, idea: 'Mantener'}));
+  return out;
+}
+function itemReporte(tk){ return itemsReporte(reporteIns).find(x => x.tk === tk) || null; }
+function sigueReporte(tk){ return !reporteExcluidos.has(tk); }
+
+// ---- Revisar los números contra el precio del día --------------------------
+// El reporte mezcla formatos (ver numReporte). Si la zona leída no se parece
+// al precio de hoy pero ×1000 o ÷1000 sí, se corrige y se avisa; si ninguna
+// calza, queda marcada como dudosa. Nunca corrige en silencio.
+function corregirNumerosReporte(R){
+  R.correcciones = [];
+  R.sinPrecio = [];
+  const campos = ['zonaDesde', 'zonaHasta', 'stop', 'toma1', 'toma2', 'precioReporte', 'piso', 'recompraSobre', 'recompraSobreventa'];
+  itemsReporte(R).forEach(it => {
+    if(it.tipo === 'cripto') return;
+    const s = stockRep(it.tk);
+    const p = s && typeof s.price === 'number' && s.price > 0 ? s.price : null;
+    if(p === null){ if(it.idea !== 'Vender') R.sinPrecio.push(it.tk); return; }
+    const ref = it.d.zonaDesde || it.d.piso || it.d.stop;
+    if(!(ref > 0)) return;
+    const calza = v => v / p >= 0.4 && v / p <= 2.5;
+    if(calza(ref)) return;
+    const f = [1000, 0.001].find(k => calza(ref * k));
+    if(f){
+      campos.forEach(c => { if(typeof it.d[c] === 'number') it.d[c] = Math.round(it.d[c] * f * 1e6) / 1e6; });
+      R.correcciones.push(`${it.tk}: leí ${fmtNum(ref, 2)} y lo corregí a ${fmtNum(ref * f, 2)}, que calza con el precio de hoy (${fmtNum(p, 2)}).`);
+    } else {
+      it.d.dudoso = true;
+      R.correcciones.push(`${it.tk}: ${fmtNum(ref, 2)} no calza con el precio de hoy (${fmtNum(p, 2)}). Revisa esa fila en el PDF.`);
+    }
+  });
+}
+
+async function leerReporteArchivo(file){
+  if(!file) return;
+  reporteError = null;
+  reporteBorrador = null;
+  reporteLeyendo = {pag: 0, total: null, archivo: file.name};
+  renderAmbienteReporte();
+  try {
+    const buf = await file.arrayBuffer();
+    const paginas = await textoPaginasPdf(buf, (i, n) => {
+      reporteLeyendo = {pag: i, total: n, archivo: file.name};
+      const el = document.getElementById('repProgreso');
+      if(el) el.textContent = `Leyendo página ${i} de ${n}…`;
+    });
+    const R = parsearReporte(paginas, file.name);
+    R.paginas = paginas.length;
+    if(!R.etf.length && !R.usa.length && !R.chile.length){
+      throw new Error('No encontré ninguna de las tablas del reporte (ETF, EE.UU., Chile). ¿Es el PDF del reporte de Inversapiens?');
+    }
+    corregirNumerosReporte(R);
+    reporteBorrador = R;
+  } catch(e){
+    reporteError = (e && e.message) || String(e);
+  } finally {
+    reporteLeyendo = null;
+    renderAmbienteReporte();
+  }
+}
+
+// ---- Acciones ----------------------------------------------------------------
+// "Usar X": escribe el número del reporte en "Vta si baja" o "Vta si sube" de
+// Mi Cartera. Es el mismo camino que escribirlo a mano en la tarjeta.
+function usarValorReporte(tk, lado, valor){
+  if(!(valor > 0) || (lado !== 'baja' && lado !== 'sube')) return;
+  if(!alertasPrecio[tk]) alertasPrecio[tk] = {sube: null, baja: null};
+  alertasPrecio[tk][lado] = valor;
+  guardarAlertasPrecio();
+  sincronizarAlertasPrecio();
+  if(ambienteActivo === 'cartera') renderAmbienteCartera();
+  if(ambienteActivo === 'reporte') renderAmbienteReporte();
+}
+
+// Busca una acción que no está en la grilla y la suma a la watchlist personal
+// (la cotización primero: si no existe, no entra). Lo usan el formulario de
+// "A seguir" y "Esperar en A seguir" del reporte.
+async function sumarAWatchlistBuscando(tk, btn){
+  if(watchlist.length >= WATCHLIST_MAX){
+    alert(`${tk} no está en la app, y tu watchlist personal ya tiene ${WATCHLIST_MAX} acciones (el tope).\n\n`
+        + 'Saca alguna que ya no estés esperando y vuelve a intentar.');
+    return false;
+  }
+  if(!confirm(`${tk} no está en la app.\n\n`
+            + `¿La busco y la sumo a tu watchlist personal (${watchlist.length} de ${WATCHLIST_MAX}) para poder esperarla?\n`
+            + 'Cada acción vigilada es una petición más a Yahoo en cada ciclo.')) return false;
+  const txtAntes = btn ? btn.textContent : '';
+  if(btn){ btn.disabled = true; btn.textContent = 'Buscando…'; }
+  let r;
+  try { r = await pedirQuoteAccion(tk); }
+  finally { if(btn && btn.isConnected){ btn.disabled = false; btn.textContent = txtAntes; } }
+  if(!r || !r.ok){
+    alert(`No encontré ${tk}: ${(r && r.error) || 'sin respuesta'}\n\n`
+        + 'Revisa que el ticker esté bien escrito. Si el servidor estaba dormido, intenta de nuevo en un minuto.');
+    return false;
+  }
+  let s = todosLosStocks().find(x => x.ticker === tk);
+  if(!s){ s = nuevoStockFicha(tk, tk, r.currency); stateFicha.push(s); }
+  aplicarQuoteAStock(s, r.quote);
+  if(!estaEnGrilla(tk) && !estaEnWatchlist(tk)){
+    const w = agregarAWatchlist(tk, tk);   // hereda lo recién cargado
+    if(!w.ok){ alert(`No se pudo sumar ${tk} a la watchlist: ${w.motivo}`); return false; }
+  }
+  return true;
+}
+
+// "Esperar en A seguir": crea la espera en modo ruptura con la zona, el stop,
+// las tomas y el peso del reporte. El servidor avisa al cierre si cierra
+// dentro de la zona (el mismo aviso de siempre de las rupturas).
+async function esperarDesdeReporte(tk, btn){
+  const it = itemReporte(tk);
+  if(!it || !(it.d.zonaDesde > 0)) return;
+  if(espera[tk]){ cambiarAmbiente('seguir'); setTimeout(() => irAFilaEspera(tk), 80); return; }
+  if(tienePosicion(tk)){
+    alert(`Ya tienes ${tk}. En una acción que ya tienes, la alerta de precio es tu stop: revísala en Mi Cartera.`);
+    return;
+  }
+  if(!stockRep(tk)){
+    if(it.tipo === 'chile'){
+      alert(`${tk} no está en tu grilla de Chile, así que la app no tiene su precio y no podría avisarte.\n\n`
+          + 'Hay que agregarla a la grilla (backend y app): pídelo y queda lista para esperarla.');
+      return;
+    }
+    if(!(await sumarAWatchlistBuscando(tk, btn))) return;
+  }
+  const d = it.d;
+  espera[tk] = {
+    modo: 'ruptura',
+    maxPrevio: d.zonaDesde,
+    maxPrevioOrigen: 'reporte',
+    zonaHasta: (d.zonaHasta > d.zonaDesde) ? d.zonaHasta : null,
+    condicion: `Comprar ${d.ahora || '?'} % si cierra en la zona (reporte ${fechaCortaRep(reporteIns.fecha)})`,
+    desde: hoyISO(),
+    dias: ESPERA_DIAS_DEFAULT,
+    reporte: {fecha: reporteIns.fecha, stop: d.stop || null, toma1: d.toma1 || null, toma2: d.toma2 || null, peso: d.ahora || null},
+  };
+  guardarEspera();
+  sincronizarAlertasPrecio();
+  renderAmbienteReporte();
+}
+
+// ---- Piezas que usan "A seguir" y "Mi Cartera" --------------------------------
+function chipReporteEsperaHTML(reg){
+  if(!reg || !reg.reporte) return '';
+  return `<span class="esp-rep" title="La agregaste desde el reporte de Inversapiens">reporte ${fechaCortaRep(reg.reporte.fecha)}</span>`;
+}
+// Filas extra para la grilla "zona-datos" de una espera que vino del reporte.
+function datosReporteEsperaHTML(tk, reg, moneda){
+  if(!reg || !reg.reporte) return '';
+  const r = reg.reporte, s = stockRep(tk);
+  const it = {tipo: moneda === 'USD' ? 'usa' : 'chile'};
+  const ref = (s && typeof s.price === 'number') ? s.price : reg.maxPrevio;
+  const dist = (r.stop > 0 && ref > 0) ? (1 - r.stop / ref) * 100 : null;
+  let h = '';
+  if(r.stop) h += `<span>Stop del reporte</span><span class="zd-v">${fmtRep(r.stop, it)}${dist !== null ? ` · −${fmtNum(dist, 1)} %` : ''}</span>`;
+  if(r.toma1) h += `<span>Tomas de 1/3</span><span class="zd-v">${fmtRep(r.toma1, it)}${r.toma2 ? ` · ${fmtRep(r.toma2, it)}` : ''}</span>`;
+  if(r.peso) h += `<span>Peso en el reporte</span><span class="zd-v">${r.peso} %</span>`;
+  // El reporte nuevo ya no la tiene (o la vende): se dice, no se saca sola.
+  if(reporteIns && reporteIns.fecha && reporteIns.fecha > r.fecha){
+    const ahora = itemReporte(tk);
+    if(!ahora || ahora.idea === 'Vender'){
+      h += `<span style="grid-column:1 / -1; color:var(--copper);">El reporte del ${fechaCortaRep(reporteIns.fecha)} ya no la tiene. Si ya no la esperas, sácala con la ✕.</span>`;
+    }
+  }
+  return h;
+}
+
+// La franja del reporte en la tarjeta de Mi Cartera (solo si la tienes y la
+// sigues). Propone; no cambia nada sola.
+function franjaReporteCarteraHTML(s, pos, obj){
+  if(!reporteIns || !s || !(pos && pos.netoQ > 0)) return '';
+  const it = itemReporte(s.ticker);
+  if(!it || !sigueReporte(it.tk) || it.tipo === 'cripto') return '';
+  const d = it.d, f = fechaCortaRep(reporteIns.fecha);
+  const baja = (obj && typeof obj.baja === 'number') ? obj.baja : null;
+  const sube = (obj && typeof obj.sube === 'number') ? obj.sube : null;
+  if(it.idea === 'Vender'){
+    return `<div class="rep-franja v"><span class="rep-franja-tit">Reporte ${f} · vender</span>
+      <span>${escEsp(textoVentaRep(it))}</span></div>`;
+  }
+  const lineas = [], botones = [];
+  const propBaja = it.tipo === 'etf' ? (it.d.sinPiso ? null : d.piso) : d.stop;
+  if(it.tipo === 'etf'){
+    lineas.push(d.sinPiso ? 'Sin regla de piso: en sus pruebas ninguna le ganó a mantenerlo.'
+      : (d.piso ? `Vende todo si ${d.pisoSemanal ? 'el viernes ' : ''}cierra bajo <b>${fmtRep(d.piso, it)}</b>${d.pisoRegla ? ` (${escEsp(d.pisoRegla)})` : ''}.` : ''));
+  } else if(d.stop){
+    lineas.push(`Stop <b>${fmtRep(d.stop, it)}</b>${d.toma1 ? ` · vende 1/3 en <b>${fmtRep(d.toma1, it)}</b>${d.toma2 ? ` y otro en <b>${fmtRep(d.toma2, it)}</b>` : ''}` : ''}.`);
+  }
+  if(propBaja > 0){
+    if(baja === null) lineas.push('No tienes aviso de venta puesto.');
+    else if(Math.abs(baja - propBaja) > 1e-9) lineas.push(`Tu aviso (${fmtRep(baja, it)}) está ${fmtNum(Math.abs(pctRep(baja, propBaja)), 1)} % ${baja > propBaja ? 'más arriba: más estricto' : 'más abajo: más holgado'}.`);
+    if(baja === null || Math.abs(baja - propBaja) > 1e-9){
+      botones.push(`<button type="button" class="rep-btn r" data-rep-usar="${it.tk}" data-lado="baja" data-valor="${propBaja}">Usar ${fmtRep(propBaja, it)}</button>`);
+    }
+  }
+  if(d.toma1 > 0 && (sube === null || Math.abs(sube - d.toma1) > 1e-9)){
+    botones.push(`<button type="button" class="rep-btn r" data-rep-usar="${it.tk}" data-lado="sube" data-valor="${d.toma1}">${fmtRep(d.toma1, it)} en "Vta si sube"</button>`);
+  }
+  const pesoTxt = it.idea === 'Aumentar' ? `sube a ${d.ahora} %` : (it.idea === 'Comprar' ? `entra con ${d.ahora} %` : `mantener ${d.ahora} %`);
+  return `<div class="rep-franja"><span class="rep-franja-tit">Reporte ${f} · ${pesoTxt}</span>
+    ${lineas.filter(Boolean).map(l => `<span>${l}</span>`).join('')}
+    ${botones.length ? `<span class="rep-btns">${botones.join('')}</span>` : ''}</div>`;
+}
+
+function textoVentaRep(it){
+  const d = it.d;
+  if(it.tipo === 'etf'){
+    return `Sale de ${d.antes} % a 0 %.${d.piso ? ` Cerró bajo ${fmtRep(d.piso, it)}.` : ''}`
+      + (d.recompraSobre ? ` Recompra si cierra sobre ${fmtRep(d.recompraSobre, it)}${d.recompraSobreventa ? ` o en sobreventa bajo ${fmtRep(d.recompraSobreventa, it)}` : ''}.` : '');
+  }
+  if(d.texto) return d.texto;
+  return 'El reporte la vende y sale de la cartera.';
+}
+
+// ---- La vista ----------------------------------------------------------------
+function renderAmbienteReporte(desdeRefresco){
+  const viewEl = document.getElementById('viewReporte');
+  if(!viewEl) return;
+  if(desdeRefresco){
+    // Un refresco de precios no rehace la pestaña mientras escribes un monto
+    // ni mientras revisas un reporte recién leído.
+    const a = document.activeElement;
+    if(a && viewEl.contains(a) && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)) return;
+    if(reporteLeyendo || reporteBorrador) return;
+  }
+  let cuerpo;
+  if(reporteLeyendo) cuerpo = reporteLeyendoHTML();
+  else if(reporteBorrador) cuerpo = reporteRevisionHTML(reporteBorrador);
+  else if(!reporteIns) cuerpo = reporteVacioHTML();
+  else cuerpo = reportePrincipalHTML(reporteIns);
+  viewEl.innerHTML = `<p class="section-title" style="margin-top:0;">Reporte Inversapiens</p>${cuerpo}`;
+  cablearReporte(viewEl);
+}
+
+function inputArchivoRepHTML(etiqueta, clase){
+  return `<input type="file" id="repArchivo" accept="application/pdf,.pdf" style="display:none;">
+    <label for="repArchivo" class="rep-btn ${clase || 'r'}" role="button" tabindex="0">${etiqueta}</label>`;
+}
+
+function reporteVacioHTML(){
+  return `<div class="plat-block">
+    <p style="margin:0 0 6px; font-size:14px; font-weight:600;">Carga el reporte de Inversapiens</p>
+    <p class="rep-txt" style="margin:0 0 12px;">Sube el PDF tal como te llega. La app lo lee en este equipo (no se sube a ningún
+      servidor), te muestra qué encontró y qué cambió, y recién ahí lo aplicas. Después cruza el reporte con lo que tienes:
+      qué vender, qué avisos revisar y qué esperar para comprar.</p>
+    ${inputArchivoRepHTML('Cargar el reporte (PDF)', 'r')}
+    ${reporteError ? `<p class="rep-dudoso" style="margin-top:10px;">${escEsp(reporteError)}</p>` : ''}
+  </div>`;
+}
+
+function reporteLeyendoHTML(){
+  const l = reporteLeyendo || {};
+  return `<div class="plat-block">
+    <p style="margin:0 0 4px; font-weight:600;">Leyendo ${escEsp(l.archivo || 'el PDF')}</p>
+    <p class="rep-txt" id="repProgreso" style="margin:0;">${l.total ? `Leyendo página ${l.pag} de ${l.total}…` : 'Preparando el lector de PDF…'}</p>
+  </div>`;
+}
+
+function chipsRep(lista, clase){
+  return lista.length ? lista.map(t => `<span class="rep-chip ${clase}">${escEsp(t)}</span>`).join('') : '<span class="rep-sub">—</span>';
+}
+
+function reporteRevisionHTML(R){
+  const items = itemsReporte(R);
+  const cuenta = (n, txt) => `<li>${n ? '✓' : '⚠'} <b>${txt}</b></li>`;
+  const entran = [], salen = [], suben = [];
+  items.forEach(it => {
+    const d = it.d;
+    if(it.idea === 'Vender') salen.push(it.tk);
+    else if(it.idea === 'Comprar' || it.idea === 'Aumentar') entran.push(`${it.tk} ${d.antes > 0 ? `${d.antes}→` : ''}${d.ahora} %`);
+    else if(it.idea === 'Subir stop') suben.push(`${it.tk} → ${fmtRep(d.stop, it)}`);
+  });
+  const reemplaza = reporteIns
+    ? (reporteIns.fecha === R.fecha ? 'Ya tenías cargado este mismo reporte: aplicarlo lo reemplaza.'
+       : `Reemplaza al reporte del ${fechaCortaRep(reporteIns.fecha)}.`) : '';
+  const grupos = [['ETF', 'etf'], ['EE.UU.', 'usa'], ['Chile', 'chile'], ['Cripto', 'cripto']].map(([tit, tipo]) => {
+    const g = items.filter(it => it.tipo === tipo);
+    if(!g.length) return '';
+    return `<div class="rep-sigo-grupo"><span class="rep-sub">${tit}</span><div class="rep-sigo-lista">${g.map(it =>
+      `<label class="rep-sigo"><input type="checkbox" data-rep-sigo="${it.tk}" ${reporteExcluidos.has(it.tk) ? '' : 'checked'}><span>${escEsp(it.tk.replace(/-USD$/, ''))}</span></label>`).join('')}</div></div>`;
+  }).join('');
+  const avisos = (R.avisos || []).concat(R.correcciones || []);
+  return `<div class="plat-block">
+      <p class="rep-sub" style="margin:0; word-break:break-all;">Cargaste <span class="mono">${escEsp(R.archivo || 'un PDF')}</span> · ${R.paginas || '?'} páginas</p>
+      <p style="margin:4px 0 10px; font-size:16px; font-weight:600;">${R.fechaTexto ? `Leí el reporte del ${escEsp(R.fechaTexto)}` : 'Leí el reporte (sin fecha)'}</p>
+      <ul class="rep-encontre">
+        ${cuenta(R.etf.length, `Cartera ETF: ${R.etf.length} fondos, ${R.etf.filter(e => e.piso || e.sinPiso).length} con su regla de piso`)}
+        ${cuenta(R.usa.length, `Acciones EE.UU.: ${R.usa.length}, ${R.usa.filter(a => a.toma1).length} con tomas de 1/3`)}
+        ${cuenta(R.chile.length, `Acciones Chile: ${R.chile.length}${R.reglas.chileExposicionMax ? ` y la regla de máximo ${R.reglas.chileExposicionMax} %` : ''}`)}
+        ${cuenta(R.cripto.length, `Cripto: ${R.cripto.map(c => `${c.ticker.replace('-USD', '')} ${c.ahora} %`).join(', ') || 'no encontrado'}`)}
+      </ul>
+      ${reemplaza ? `<p class="rep-sub" style="margin:8px 0 0;">${reemplaza}</p>` : ''}
+    </div>
+    <div class="plat-block">
+      <p style="margin:0 0 8px; font-weight:600;">Qué cambió desde el reporte anterior</p>
+      <p class="rep-sub" style="margin:0 0 4px;">Entran o suben</p><div class="rep-chips">${chipsRep(entran, 'c')}</div>
+      <p class="rep-sub" style="margin:8px 0 4px;">Salen</p><div class="rep-chips">${chipsRep(salen, 'v')}</div>
+      <p class="rep-sub" style="margin:8px 0 4px;">Suben el stop</p><div class="rep-chips">${chipsRep(suben, 'r')}</div>
+    </div>
+    ${avisos.length || (R.sinPrecio || []).length ? `<div class="plat-block rep-ojo">
+      <p style="margin:0 0 6px; font-weight:600; color:var(--gold);">Revisa antes de aplicar</p>
+      ${avisos.map(a => `<p class="rep-txt" style="margin:0 0 4px;">· ${escEsp(a)}</p>`).join('')}
+      ${(R.sinPrecio || []).length ? `<p class="rep-txt" style="margin:0;">· Sin precio en la app (no están en tu grilla): ${escEsp(R.sinPrecio.join(', '))}. Se muestran con el precio que trae el reporte.</p>` : ''}
+    </div>` : ''}
+    <div class="plat-block">
+      <p style="margin:0 0 4px; font-weight:600;">Qué sigues de este reporte</p>
+      <p class="rep-sub" style="margin:0 0 8px;">Desmarca lo que no sigues. Se recuerda para los próximos reportes y lo puedes cambiar después.</p>
+      ${grupos}
+    </div>
+    <div class="rep-btns">
+      <button type="button" class="rep-btn r rep-btn-grande" data-rep-accion="aplicar">Aplicar el reporte</button>
+      <button type="button" class="rep-btn" data-rep-accion="cancelar">Cancelar</button>
+    </div>
+    <p class="rep-sub" style="margin:8px 0 0;">Aplicar guarda el reporte y arma la lista de qué te toca. No mueve tus avisos ni registra compras: eso lo decides tú, fila por fila.</p>`;
+}
+
+// Precio para mostrar: el de la app; si no está en la grilla, el del reporte.
+function precioRep(it){
+  const s = stockRep(it.tk);
+  if(s && typeof s.price === 'number' && s.price > 0) return {v: s.price, deApp: true, s};
+  if(typeof it.d.precioReporte === 'number') return {v: it.d.precioReporte, deApp: false, s: null};
+  return {v: null, deApp: false, s};
+}
+function zonaRep(it){
+  const d = it.d;
+  if(!(d.zonaDesde > 0)) return null;
+  const pr = precioRep(it);
+  const hasta = d.zonaHasta > d.zonaDesde ? d.zonaHasta : d.zonaDesde * (1 + ZONA_PCT / 100);
+  let z;
+  if(pr.s) z = estadoZona({modo: 'ruptura', maxPrevio: d.zonaDesde, zonaHasta: hasta}, pr.s);
+  if(!z || !z.cierre){
+    if(pr.v === null) return {zona: {desde: d.zonaDesde, hasta}, cierre: null, estado: null};
+    const v = pr.v;
+    z = {zona: {desde: d.zonaDesde, hasta}, cierre: {valor: v, esCierre: true, ahora: null},
+         estado: v < d.zonaDesde ? 'bajo' : (v <= hasta ? 'dentro' : 'sobre')};
+  }
+  return z;
+}
+
+function botonNoSigoHTML(tk){
+  return `<button type="button" class="rep-nosigo" data-rep-excl="${tk}">No lo sigo</button>`;
+}
+
+function tarjetaVenderRep(it, pos){
+  const al = alertasPrecio[it.tk] || {};
+  const tiene = pos ? `Tienes ${fmtCantidad(pos.netoQ, esUsdRep(it) ? 'USD' : 'CLP', it.tk)}${typeof al.baja === 'number' ? ` · tu aviso de venta está en ${fmtRep(al.baja, it)}` : ''}` : '';
+  return `<div class="rep-card v">
+    <div class="rep-head"><span class="rep-tk" data-rep-abrir="${it.tk}">${it.tk}</span>
+      <span class="rep-nom">${escEsp(nombreRep(it))}</span>
+      <span class="rep-pill v">${it.tipo === 'etf' ? `${it.d.antes} % → 0 %` : 'vender'}</span></div>
+    <div class="rep-txt">${escEsp(textoVentaRep(it))}</div>
+    ${tiene ? `<div class="rep-sub" style="margin-top:4px;">${tiene}</div>` : ''}
+    <div class="rep-btns">
+      <button type="button" class="rep-btn v" data-rep-ir="${it.tk}">Ver en Mi Cartera</button>
+      ${botonNoSigoHTML(it.tk)}
+    </div></div>`;
+}
+
+function nombreRep(it){
+  const s = stockRep(it.tk);
+  const base = s ? s.name : (it.d.nombre || '');
+  const extra = it.tipo === 'etf' ? (it.d.clase || '') : (it.d.sector || '');
+  if(it.tipo === 'etf') return base || extra;   // el nombre de la grilla dice más que "Acciones USA"
+  return base && extra ? `${base} · ${extra}` : (base || extra);
+}
+
+function filaRevisarRep(it, pos){
+  const d = it.d;
+  const al = alertasPrecio[it.tk] || {};
+  const baja = typeof al.baja === 'number' ? al.baja : null;
+  const sube = typeof al.sube === 'number' ? al.sube : null;
+  const propBaja = it.tipo === 'etf' ? (d.sinPiso ? null : d.piso) : (it.tipo === 'cripto' ? null : d.stop);
+  let regla;
+  if(it.tipo === 'cripto') regla = `El reporte mantiene ${d.ahora} % en bitcoin. No trae stop.`;
+  else if(it.tipo === 'etf') regla = d.sinPiso ? 'Sin regla de piso (en sus pruebas ninguna le ganó a mantenerlo).'
+    : (d.piso ? `Vende todo si ${d.pisoSemanal ? 'el viernes ' : ''}cierra bajo <b>${fmtRep(d.piso, it)}</b>${d.pisoRegla ? ` (${escEsp(d.pisoRegla)})` : ''}.` : 'El reporte no trae piso legible para este fondo.');
+  else regla = `Stop del reporte <b>${fmtRep(d.stop, it)}</b>${d.toma1 ? ` · vende 1/3 en <b>${fmtRep(d.toma1, it)}</b>${d.toma2 ? ` y otro en <b>${fmtRep(d.toma2, it)}</b>` : ''}` : ''}.`;
+  let tuyo;
+  if(propBaja > 0){
+    if(baja === null) tuyo = '<span style="color:var(--copper);">No tienes aviso de venta puesto.</span>';
+    else if(Math.abs(baja - propBaja) < 1e-9) tuyo = `Tu aviso: <b>${fmtRep(baja, it)}</b> · igual al del reporte.`;
+    else {
+      const dif = Math.abs(pctRep(baja, propBaja));
+      tuyo = baja > propBaja
+        ? `Tu aviso: <b>${fmtRep(baja, it)}</b> · ${fmtNum(dif, 1)} % más arriba, más estricto.`
+        : `<span style="color:var(--copper);">Tu aviso: <b>${fmtRep(baja, it)}</b> · ${fmtNum(dif, 1)} % más abajo, más holgado.</span>`;
+    }
+  } else {
+    tuyo = baja !== null ? `Tu aviso: <b>${fmtRep(baja, it)}</b> · lo manejas tú.` : 'Sin aviso de venta puesto.';
+  }
+  const btns = [];
+  if(propBaja > 0 && (baja === null || Math.abs(baja - propBaja) > 1e-9)){
+    btns.push(`<button type="button" class="rep-btn r" data-rep-usar="${it.tk}" data-lado="baja" data-valor="${propBaja}">Usar ${fmtRep(propBaja, it)}</button>`);
+  }
+  if(d.toma1 > 0 && (sube === null || Math.abs(sube - d.toma1) > 1e-9)){
+    btns.push(`<button type="button" class="rep-btn r" data-rep-usar="${it.tk}" data-lado="sube" data-valor="${d.toma1}">${fmtRep(d.toma1, it)} en "Vta si sube"</button>`);
+  }
+  const peso = it.idea === 'Aumentar' ? `sube a ${d.ahora} %` : (it.idea === 'Subir stop' ? `sube el stop · ${d.ahora} %` : `${d.ahora} %`);
+  return `<div class="rep-fila">
+    <div class="rep-head"><span class="rep-tk" data-rep-abrir="${it.tk}">${it.tk}</span><span class="rep-nom">${escEsp(nombreRep(it))} · ${peso}</span></div>
+    <div class="rep-txt" style="margin-top:3px;">${regla}</div>
+    <div class="rep-txt" style="margin-top:2px;">${tuyo}</div>
+    <div class="rep-btns">${btns.join('')}${botonNoSigoHTML(it.tk)}</div>
+  </div>`;
+}
+
+function tarjetaComprarRep(it, glob){
+  const d = it.d;
+  const z = zonaRep(it);
+  const pr = precioRep(it);
+  const pill = !z || !z.estado ? ['', 'sin precio'] : (z.estado === 'dentro' ? ['c', 'dentro de la zona']
+    : (z.estado === 'bajo' ? ['', 'esperando ruptura'] : ['r', 'sobre la zona']));
+  const dist = (pr.v > 0 && d.stop > 0) ? (1 - d.stop / pr.v) * 100 : null;
+  let tuRegla = '';
+  if(pr.v > 0 && d.stop > 0 && glob){
+    const sz = sizingNueva(pr.v, d.stop, sizing, glob, decSizing(it.tk));
+    if(sz && typeof sz.pesoFinal === 'number' && sz.pesoFinal > 0) tuRegla = ` · tu regla ${fmtNum(sz.pesoFinal * 100, 0)} %`;
+  }
+  const yaEspera = !!espera[it.tk];
+  const moneda = esUsdRep(it) ? 'USD' : 'CLP';
+  const notaPrecio = pr.v !== null && !pr.deApp ? '<div class="rep-sub">Precio del reporte: no está en tu grilla.</div>' : '';
+  const estadoTxt = z && z.estado === 'bajo' ? `A ${fmtNum(-pctRep(z.cierre.valor, z.zona.desde), 1)} % de la zona: el reporte dice esperar la ruptura.`
+    : (z && z.estado === 'sobre' ? `${fmtNum(pctRep(z.cierre.valor, z.zona.hasta), 1)} % sobre la zona: comprar ahora es perseguir el precio.` : '');
+  return `<div class="rep-card ${z && z.estado === 'dentro' ? 'c' : ''}">
+    <div class="rep-head"><span class="rep-tk" data-rep-abrir="${it.tk}">${it.tk}</span><span class="rep-nom">${escEsp(nombreRep(it))}</span>
+      <span class="rep-pill ${pill[0]}">${pill[1]}</span></div>
+    ${z && z.cierre ? barraZonaHTML(z, moneda) : ''}
+    ${notaPrecio}
+    <div class="rep-kv">
+      <span>Zona del reporte</span><b>${fmtRep(d.zonaDesde, it)} – ${fmtRep(d.zonaHasta, it)}</b>
+      <span>Stop del reporte</span><b>${fmtRep(d.stop, it)}${dist !== null ? ` · −${fmtNum(dist, 1)} %` : ''}</b>
+      ${d.toma1 ? `<span>Tomas de 1/3</span><b>${fmtRep(d.toma1, it)}${d.toma2 ? ` · ${fmtRep(d.toma2, it)}` : ''}</b>` : ''}
+      <span>Peso</span><b>reporte ${d.ahora} %${tuRegla}</b>
+    </div>
+    ${estadoTxt ? `<div class="rep-txt">${estadoTxt}</div>` : ''}
+    ${d.dudoso ? '<div class="rep-dudoso">Los números de esta fila no calzan con el precio de hoy: revísalos en el PDF.</div>' : ''}
+    <div class="rep-btns">
+      ${yaEspera ? `<button type="button" class="rep-btn" data-rep-esperar="${it.tk}">Ya está en A seguir · ver</button>`
+                 : `<button type="button" class="rep-btn c" data-rep-esperar="${it.tk}">Esperar en A seguir</button>`}
+      ${botonNoSigoHTML(it.tk)}
+    </div></div>`;
+}
+
+function filaComprarEtfRep(it){
+  const d = it.d;
+  return `<div class="rep-fila">
+    <div class="rep-head"><span class="rep-tk" data-rep-abrir="${it.tk}">${it.tk}</span>
+      <span class="rep-nom">${escEsp(nombreRep(it))} · ${d.antes > 0 ? `sube de ${d.antes} % a ${d.ahora} %` : `entra con ${d.ahora} %`}</span></div>
+    <div class="rep-txt" style="margin-top:3px;">${d.piso ? `Piso: vende todo si ${d.pisoSemanal ? 'el viernes ' : ''}cierra bajo <b>${fmtRep(d.piso, it)}</b>.` : ''}
+      ${d.fase ? ` Fase ${d.fase} de Weinstein.` : ''}</div>
+    <div class="rep-btns"><a class="rep-btn c" href="#repCuadre">Ver cuánto comprar</a>${botonNoSigoHTML(it.tk)}</div>
+  </div>`;
+}
+
+// ---- Chile: la regla del 30 % ----
+function franjaChileRep(R){
+  const max = R.reglas && R.reglas.chileExposicionMax;
+  if(!max) return '';
+  const bajo = R.reglas.ipsaCierre && R.reglas.ipsaMedia30s ? R.reglas.ipsaCierre < R.reglas.ipsaMedia30s : null;
+  const portClp = calcularPortafolio('CLP', 'chile');
+  let valor = 0, falta = false;
+  state.forEach(s => {
+    const p = portClp[s.ticker];
+    if(!p || !(p.netoQ > 0)) return;
+    if(typeof s.price === 'number') valor += p.netoQ * s.price; else falta = true;
+  });
+  const cajaClp = (caja && typeof caja.CLP === 'number') ? caja.CLP : 0;
+  const total = valor + cajaClp;
+  const pct = total > 0 ? valor / total * 100 : null;
+  const pasa = pct !== null && pct > max + 0.05;
+  const oculto = estaOculto();
+  return `<div class="mercado-franja ${pasa ? 'mf-debil' : 'mf-sano'}" style="margin-bottom:12px;">
+    <span class="mf-punto"></span>
+    <div><span class="mf-titulo">Chile, máximo ${max} %.</span>
+      <span class="mf-det">${bajo === null ? '' : (bajo ? `Según el reporte, el IPSA está bajo su media de 30 semanas (${fmtNum(R.reglas.ipsaCierre, 0)} contra ${fmtNum(R.reglas.ipsaMedia30s, 0)}): ${100 - max} % en caja hasta que vuelva a fase 2.` : `El IPSA está sobre su media de 30 semanas según el reporte.`)}
+      ${pct !== null ? ` Tú: ${fmtMoneda(valor, oculto, 'CLP')} en acciones chilenas y ${fmtMoneda(cajaClp, oculto, 'CLP')} en caja en pesos = <b>${fmtNum(pct, 0)} % invertido</b>${pasa ? ', sobre el máximo.' : '.'}${falta ? ' (falta el precio de alguna)' : ''}` : ''}</span></div>
+  </div>`;
+}
+
+// ---- Cartera ETF: el reporte contra la tuya ----
+function cuadreEtfRep(R){
+  const portUsd = calcularPortafolio('USD');
+  const filas = [];
+  (R.etf || []).forEach(d => {
+    if(!sigueReporte(d.ticker)) return;
+    const s = stockRep(d.ticker);
+    const pos = portUsd[d.ticker];
+    const q = pos && pos.netoQ > 0 ? pos.netoQ : 0;
+    const precio = s && typeof s.price === 'number' ? s.price : null;
+    if(d.ahora === 0 && q === 0) return;   // sale del reporte y no la tienes: nada que cuadrar
+    filas.push({tk: d.ticker, rep: d.ahora, q, precio, valor: precio !== null ? q * precio : (q > 0 ? null : 0)});
+  });
+  if(!filas.length) return '';
+  const sumaRep = filas.reduce((a, f) => a + f.rep, 0);
+  const faltaPrecio = filas.some(f => f.valor === null);
+  const actual = filas.reduce((a, f) => a + (f.valor || 0), 0);
+  const base = (reporteCuadre.base > 0) ? reporteCuadre.base : actual;
+  const aporte = reporteCuadre.aporte > 0 ? reporteCuadre.aporte : 0;
+  const modoAporte = reporteCuadre.modo === 'aporte';
+  const totalObj = modoAporte ? actual + aporte : base;
+  filas.forEach(f => {
+    f.obj = sumaRep > 0 ? f.rep / sumaRep : 0;
+    f.pctTu = actual > 0 && f.valor !== null ? f.valor / actual * 100 : 0;
+    f.meta = f.obj * totalObj;
+    f.dif = f.valor !== null ? f.meta - f.valor : null;
+  });
+  if(modoAporte){
+    const def = filas.map(f => Math.max(0, f.dif || 0));
+    const sumDef = def.reduce((a, b) => a + b, 0);
+    filas.forEach((f, i) => { f.dif = sumDef > 0 ? aporte * def[i] / sumDef : 0; });
+  }
+  const oculto = estaOculto();
+  const reescala = filas.some(f => Math.abs(f.obj * 100 - f.rep) > 0.05);
+  const fueraRep = Object.keys(portUsd).filter(tk => {
+    const s = stockRep(tk);
+    return s && s.esEtf && portUsd[tk].netoQ > 0 && !(R.etf || []).some(e => e.ticker === tk);
+  });
+  const filasHTML = filas.map(f => {
+    const tit = f.precio > 0 && f.dif !== null && Math.abs(f.dif) >= 0.01 ? ` <span class="rep-sub">≈ ${fmtNum(Math.abs(f.dif) / f.precio, 4)} tít.</span>` : '';
+    const dif = f.dif === null ? '<span class="rep-sub">sin precio</span>'
+      : (Math.abs(f.dif) < 0.5 ? `<span class="rep-sub">${modoAporte && f.valor > f.meta + 0.5 ? (f.obj === 0 ? 'sale: no se compra' : 'sobra: no se compra') : 'en su peso'}</span>`
+        : `<span style="color:${f.dif > 0 ? 'var(--verdigris)' : 'var(--copper)'}; font-weight:600;">${f.dif > 0 ? '+' : '−'}${fmtMoneda(Math.abs(f.dif), oculto, 'USD')}</span>${tit}${f.obj === 0 && f.dif < 0 ? ' <span class="rep-sub">(todo)</span>' : ''}`);
+    return `<tr><th>${f.tk}</th><td>${f.rep} %${reescala ? ` <span class="rep-sub">(${fmtNum(f.obj * 100, 1)} %)</span>` : ''}</td>
+      <td>${f.valor === null ? '—' : `${fmtNum(f.pctTu, 0)} %`}</td><td class="rep-dif">${dif}</td></tr>`;
+  }).join('');
+  return `<div class="plat-block" id="repCuadre">
+    <p style="margin:0 0 4px; font-weight:600;">Cartera ETF: el reporte contra la tuya</p>
+    <p class="rep-sub" style="margin:0 0 10px;">Solo los ETF del reporte que sigues${reescala ? '; como dejaste alguno fuera, sus pesos se reescalan al 100 % (entre paréntesis)' : ''}.
+      Tienes hoy ${fmtMoneda(actual, oculto, 'USD')} en ellos${faltaPrecio ? ' (falta el precio de alguno)' : ''}.</p>
+    <div class="rep-modo" role="group" aria-label="Cómo cuadrar">
+      <button type="button" class="${modoAporte ? '' : 'on'}" data-rep-modo="ambos">Comprando y vendiendo</button>
+      <button type="button" class="${modoAporte ? 'on' : ''}" data-rep-modo="aporte">Solo con plata nueva</button>
+    </div>
+    ${modoAporte
+      ? `<label class="rep-monto">Aporte (US$)<input type="number" inputmode="decimal" min="0" step="any" id="repAporte" value="${reporteCuadre.aporte > 0 ? reporteCuadre.aporte : ''}" placeholder="500"></label>
+         <p class="rep-sub" style="margin:4px 0 8px;">No vendes nada: el aporte se reparte en proporción a lo que le falta a cada uno.</p>`
+      : `<label class="rep-monto">Cuánto quieres en estos ETF (US$)<input type="number" inputmode="decimal" min="0" step="any" id="repBase" value="${reporteCuadre.base > 0 ? reporteCuadre.base : ''}" placeholder="${fmtNum(actual, 0)}"></label>
+         <p class="rep-sub" style="margin:4px 0 8px;">En blanco: lo que tienes hoy. Súbelo si vas a aportar.</p>`}
+    <div style="overflow-x:auto;"><table class="rep-tabla">
+      <thead><tr><th>ETF</th><th>Reporte</th><th>Tú</th><th>Para cuadrar</th></tr></thead>
+      <tbody>${filasHTML}</tbody></table></div>
+    ${fueraRep.length ? `<p class="rep-sub" style="margin:8px 0 0;">Tienes y el reporte no menciona: ${escEsp(fueraRep.join(', '))}. Quedan fuera del cálculo.</p>` : ''}
+  </div>`;
+}
+
+function reportePrincipalHTML(R){
+  const portUsd = calcularPortafolio('USD');
+  const portClp = calcularPortafolio('CLP');
+  const posDe = it => {
+    const p = esUsdRep(it) ? portUsd[it.tk] : portClp[it.tk];
+    return p && p.netoQ > 0 ? p : null;
+  };
+  const items = itemsReporte(R);
+  const sigo = items.filter(it => sigueReporte(it.tk));
+  const noSigo = items.filter(it => !sigueReporte(it.tk));
+  const vender = [], revisar = [], comprar = [], comprarEtf = [], mantenerNo = [], salieron = [], etfNo = [], infoTienes = [];
+  sigo.forEach(it => {
+    const pos = posDe(it);
+    if(it.idea === 'Vender'){ (pos ? vender : salieron).push({it, pos}); return; }
+    // Cripto: el reporte solo dice el peso, sin stop ni zona. No hay nada que
+    // revisar, así que va en una línea y no como fila.
+    if(it.tipo === 'cripto'){ (pos ? infoTienes : etfNo).push({it}); return; }
+    if(pos){ revisar.push({it, pos}); return; }
+    if(it.tipo === 'etf'){ (it.idea === 'Comprar' || it.idea === 'Aumentar' ? comprarEtf : etfNo).push({it}); return; }
+    if(it.idea === 'Comprar') comprar.push({it}); else mantenerNo.push({it});
+  });
+  let glob = null;
+  try { glob = sizingGlobal(sizing); } catch(e){}
+  const nRevisar = revisar.filter(({it}) => {
+    const al = alertasPrecio[it.tk] || {};
+    const prop = it.tipo === 'etf' ? (it.d.sinPiso ? null : it.d.piso) : (it.tipo === 'cripto' ? null : it.d.stop);
+    return prop > 0 && !(typeof al.baja === 'number' && Math.abs(al.baja - prop) < 1e-9);
+  }).length;
+  const cargado = R.cargado ? new Date(R.cargado).toLocaleString('es-CL', {day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'}) : '';
+
+  // "Mantener · no las tienes": por dónde va el precio contra su zona.
+  const grupos = {dentro: [], sobre: [], bajo: [], nada: []};
+  mantenerNo.forEach(({it}) => {
+    const z = zonaRep(it);
+    const k = z && z.estado ? z.estado : 'nada';
+    grupos[k].push({it, z});
+  });
+  const filaMant = ({it, z}) => {
+    const v = z && z.cierre ? z.cierre.valor : null;
+    const extra = !z || !z.estado ? '' : (z.estado === 'dentro' ? fmtRep(v, it)
+      : (z.estado === 'sobre' ? `+${fmtNum(pctRep(v, z.zona.hasta), 1)} %` : `−${fmtNum(-pctRep(v, z.zona.desde), 1)} %`));
+    return `<div class="rep-mini"><b data-rep-abrir="${it.tk}">${it.tk}</b><span>${fmtRep(it.d.zonaDesde, it)} – ${fmtRep(it.d.zonaHasta, it)}</span><span class="mono">${extra}</span>
+      ${!espera[it.tk] && it.d.zonaDesde > 0 ? `<button type="button" class="rep-btn" data-rep-esperar="${it.tk}">Esperar</button>` : '<span class="rep-sub">en A seguir</span>'}</div>`;
+  };
+
+  return `<div class="plat-block">
+      <div class="rep-cab">
+        <div class="rep-cab-tit">
+          <div class="rep-fecha">${escEsp(R.fechaTexto || R.fecha || '')}</div>
+          <span class="rep-sub">${cargado ? `Cargado ${cargado}` : ''}${R.archivo ? ` · ${escEsp(R.archivo)}` : ''}</span></div>
+        ${inputArchivoRepHTML('Cargar otro', 'r')}
+      </div>
+      <div class="rep-cont">
+        <div class="rep-c-v"><b>${vender.length}</b><span>ventas</span></div>
+        <div class="rep-c-r"><b>${nRevisar}</b><span>avisos por revisar</span></div>
+        <div class="rep-c-c"><b>${comprar.length + comprarEtf.length}</b><span>compras posibles</span></div>
+      </div>
+      ${reporteError ? `<p class="rep-dudoso">${escEsp(reporteError)}</p>` : ''}
+    </div>
+    ${franjaChileRep(R)}
+    ${vender.length ? `<p class="rep-sec v">Vender · las tienes</p>${vender.map(({it, pos}) => tarjetaVenderRep(it, pos)).join('')}` : ''}
+    ${revisar.length ? `<p class="rep-sec r">Las tienes · revisa tu aviso de venta</p>
+      <div class="plat-block rep-lista">${revisar.map(({it, pos}) => filaRevisarRep(it, pos)).join('')}</div>
+      <p class="rep-sub" style="margin:-4px 0 0;">Tu regla del 7 % sigue mandando: la app propone el número del reporte y tú eliges. Los avisos funcionan como siempre (al primer cruce del día).</p>` : ''}
+    ${comprar.length || comprarEtf.length ? `<p class="rep-sec c">Comprar · no las tienes</p>
+      ${comprar.map(({it}) => tarjetaComprarRep(it, glob)).join('')}
+      ${comprarEtf.length ? `<div class="plat-block rep-lista"><p class="rep-sub" style="margin:0 0 4px;">ETF · comprar ahora</p>${comprarEtf.map(({it}) => filaComprarEtfRep(it)).join('')}</div>` : ''}` : ''}
+    ${mantenerNo.length ? `<p class="rep-sec n">Mantener · no las tienes</p>
+      <div class="plat-block rep-lista">
+        ${grupos.dentro.length ? `<p class="rep-sub-t c">Hoy dentro de su zona: puedes entrar al cierre</p>${grupos.dentro.map(filaMant).join('')}` : ''}
+        ${grupos.sobre.length ? `<p class="rep-sub-t">Sobre la zona: espera un retroceso</p>${grupos.sobre.map(filaMant).join('')}` : ''}
+        ${grupos.bajo.length ? `<p class="rep-sub-t">Bajo la zona: espera que vuelva</p>${grupos.bajo.map(filaMant).join('')}` : ''}
+        ${grupos.nada.length ? `<p class="rep-sub-t">Sin precio</p>${grupos.nada.map(filaMant).join('')}` : ''}
+      </div>` : ''}
+    ${infoTienes.length ? `<p class="rep-sub" style="margin:8px 0 0;">Lo tienes y el reporte lo mantiene: ${infoTienes.map(({it}) => `${it.tk.replace('-USD', '')} ${it.d.ahora} %`).join(' · ')}.</p>` : ''}
+    ${etfNo.length ? `<p class="rep-sub" style="margin:8px 0 0;">También en el reporte y no las tienes: ${etfNo.map(({it}) => `${it.tk.replace('-USD', '')} ${it.d.ahora} %`).join(' · ')}.</p>` : ''}
+    ${salieron.length ? `<p class="rep-sec n">Salieron · no las tienes</p><p class="rep-txt">${salieron.map(({it}) => it.tk).join(' · ')} — nada que hacer.</p>` : ''}
+    ${cuadreEtfRep(R)}
+    ${noSigo.length ? `<details class="rep-nosigues" ${reporteNoSigoAbierto ? 'open' : ''}>
+      <summary>No sigues (${noSigo.length})</summary>
+      ${noSigo.map(it => `<div class="rep-mini"><b>${it.tk}</b><span>${escEsp(it.idea)}${it.d.ahora !== undefined ? ` · ${it.d.ahora} %` : ''}</span><span></span>
+        <button type="button" class="rep-btn" data-rep-incl="${it.tk}">Volver a seguir</button></div>`).join('')}
+    </details>` : ''}
+    <p class="rep-sub" style="margin:14px 0 0;"><button type="button" class="rep-nosigo" style="margin:0;" data-rep-accion="borrar">Quitar el reporte cargado</button></p>`;
+}
+
+function cablearReporte(viewEl){
+  const inp = viewEl.querySelector('#repArchivo');
+  if(inp) inp.addEventListener('change', () => { const f = inp.files && inp.files[0]; inp.value = ''; leerReporteArchivo(f); });
+  const lab = viewEl.querySelector('label[for="repArchivo"]');
+  if(lab) lab.addEventListener('keydown', ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); if(inp) inp.click(); } });
+  viewEl.querySelectorAll('[data-rep-accion]').forEach(b => b.addEventListener('click', () => {
+    const a = b.dataset.repAccion;
+    if(a === 'cancelar'){ reporteBorrador = null; renderAmbienteReporte(); }
+    else if(a === 'aplicar' && reporteBorrador){
+      viewEl.querySelectorAll('[data-rep-sigo]').forEach(chk => {
+        if(chk.checked) reporteExcluidos.delete(chk.dataset.repSigo); else reporteExcluidos.add(chk.dataset.repSigo);
+      });
+      reporteIns = Object.assign({}, reporteBorrador, {cargado: new Date().toISOString()});
+      reporteBorrador = null;
+      reporteError = null;
+      guardarReporte();
+      guardarExcluidosReporte();
+      renderAmbienteReporte();
+      try { window.scrollTo({top: 0, behavior: 'smooth'}); } catch(e){}
+    }
+    else if(a === 'borrar'){
+      if(!confirm('¿Quitar el reporte cargado? Tus avisos, tus esperas y lo que marcaste como "no lo sigo" se quedan como están.')) return;
+      reporteIns = null; guardarReporte(); renderAmbienteReporte();
+    }
+  }));
+  viewEl.querySelectorAll('[data-rep-usar]').forEach(b => b.addEventListener('click', () => {
+    usarValorReporte(b.dataset.repUsar, b.dataset.lado, parseFloat(b.dataset.valor));
+  }));
+  viewEl.querySelectorAll('[data-rep-excl]').forEach(b => b.addEventListener('click', () => {
+    reporteExcluidos.add(b.dataset.repExcl); guardarExcluidosReporte(); renderAmbienteReporte();
+  }));
+  viewEl.querySelectorAll('[data-rep-incl]').forEach(b => b.addEventListener('click', () => {
+    reporteExcluidos.delete(b.dataset.repIncl); guardarExcluidosReporte(); reporteNoSigoAbierto = true; renderAmbienteReporte();
+  }));
+  const det = viewEl.querySelector('details.rep-nosigues');
+  if(det) det.addEventListener('toggle', () => { reporteNoSigoAbierto = det.open; });
+  viewEl.querySelectorAll('[data-rep-esperar]').forEach(b => b.addEventListener('click', () => esperarDesdeReporte(b.dataset.repEsperar, b)));
+  viewEl.querySelectorAll('[data-rep-ir]').forEach(b => b.addEventListener('click', () => {
+    const tk = b.dataset.repIr;
+    cambiarAmbiente('cartera');
+    setTimeout(() => irAFilaCartera(tk), 80);
+  }));
+  viewEl.querySelectorAll('[data-rep-abrir]').forEach(el => el.addEventListener('click', () => {
+    if(stockRep(el.dataset.repAbrir)) openDetail(el.dataset.repAbrir);
+  }));
+  viewEl.querySelectorAll('[data-rep-modo]').forEach(b => b.addEventListener('click', () => {
+    reporteCuadre.modo = b.dataset.repModo; renderAmbienteReporte();
+  }));
+  const base = viewEl.querySelector('#repBase');
+  if(base) base.addEventListener('change', () => { const v = parseFloat(base.value); reporteCuadre.base = v > 0 ? v : null; renderAmbienteReporte(); });
+  const ap = viewEl.querySelector('#repAporte');
+  if(ap) ap.addEventListener('change', () => { const v = parseFloat(ap.value); reporteCuadre.aporte = v > 0 ? v : null; renderAmbienteReporte(); });
+}
 
 // ---- Selector de ambientes: listeners de los botones + estado inicial ----
 (function inicializarSelectorAmbientes(){
