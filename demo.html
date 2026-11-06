@@ -17794,6 +17794,7 @@ function corregirNumerosReporte(R){
 
 async function leerReporteArchivo(file){
   if(!file) return;
+  if(/\.json$/i.test(file.name || '') || file.type === 'application/json') return cargarRegistroRepArchivo(file);
   reporteError = null;
   reporteAviso = null;
   reporteBorrador = null;
@@ -17814,7 +17815,12 @@ async function leerReporteArchivo(file){
     corregirNumerosReporte(R);
     reporteBorrador = R;
   } catch(e){
-    reporteError = (e && e.message) || String(e);
+    const m = (e && e.message) || String(e), nom = (e && e.name) || '';
+    reporteError = /password/i.test(nom + ' ' + m)
+      ? 'Ese PDF tiene clave. Ábrelo, guárdalo sin clave y cárgalo de nuevo.'
+      : (/Invalid ?PDF|Missing ?PDF|InvalidPDFException|MissingPDFException/i.test(nom + ' ' + m)
+          ? `${file.name || 'Ese archivo'} no es un PDF que la app pueda leer. Sube el PDF del reporte de Inversapiens (o, si es el registro, usa "Cargar registro (archivo)").`
+          : m);
   } finally {
     reporteLeyendo = null;
     renderAmbienteReporte();
@@ -18017,6 +18023,23 @@ function importarRegistroReportes(obj){
                      + (anterior && anterior.fecha ? ` (antes tenías el del ${fechaRegistroRep(anterior.fecha)})` : ''));
   else if(reporteIns && reporteIns.fecha > nuevo.fecha) t.push(`el que tienes aplicado (del ${fechaRegistroRep(reporteIns.fecha)}) es más nuevo y se queda`);
   return t.length ? 'Registro cargado: ' + t.join(' y ') + '.' : 'Ese registro ya lo tenías completo: no cambié nada.';
+}
+// Lee el .json y lo carga. Lo usan el botón del registro y el del PDF (si eliges un .json ahí).
+async function cargarRegistroRepArchivo(f){
+  if(!f) return;
+  reporteBorrador = null;
+  reporteLeyendo = null;
+  try {
+    let obj;
+    try { obj = JSON.parse(await f.text()); } catch(e){ throw new Error('el archivo no es un registro de reportes (.json).'); }
+    reporteAviso = importarRegistroReportes(obj);
+    reporteError = null;
+  } catch(e){
+    reporteAviso = null;
+    reporteError = 'No pude cargar el registro: ' + ((e && e.message) || String(e));
+  }
+  renderAmbienteReporte();
+  try { window.scrollTo({top: 0, behavior: 'smooth'}); } catch(e){}
 }
 
 function historialReporteHTML(){
@@ -18709,21 +18732,10 @@ function cablearReporte(viewEl){
   const lab = viewEl.querySelector('label[for="repArchivo"]');
   if(lab) lab.addEventListener('keydown', ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); if(inp) inp.click(); } });
   const inpReg = viewEl.querySelector('#repRegistroArchivo');
-  if(inpReg) inpReg.addEventListener('change', async () => {
+  if(inpReg) inpReg.addEventListener('change', () => {
     const f = inpReg.files && inpReg.files[0];
     inpReg.value = '';
-    if(!f) return;
-    try {
-      let obj;
-      try { obj = JSON.parse(await f.text()); } catch(e){ throw new Error('el archivo no es un registro de reportes (.json).'); }
-      reporteAviso = importarRegistroReportes(obj);
-      reporteError = null;
-    } catch(e){
-      reporteAviso = null;
-      reporteError = 'No pude cargar el registro: ' + ((e && e.message) || String(e));
-    }
-    renderAmbienteReporte();
-    try { window.scrollTo({top: 0, behavior: 'smooth'}); } catch(e){}
+    cargarRegistroRepArchivo(f);
   });
   const labReg = viewEl.querySelector('label[for="repRegistroArchivo"]');
   if(labReg) labReg.addEventListener('keydown', ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); if(inpReg) inpReg.click(); } });
