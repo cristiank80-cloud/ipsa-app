@@ -5703,7 +5703,9 @@ var GLOSARIO_TEMAS = [
   {id:'tarjeta-candidata', t:'La tarjeta de una candidata', donde:'Explorar › resultado', k:'candidata tarjeta score ver ficha a seguir botones',
    html:`<p>Ticker, nombre y sector; su <b>Score x/8</b>; qué hace y su motor; el chip de la ficha; fase, confirmaciones, fuerza relativa y Mansfield; precio y capitalización. Botones: abrir en TradingView y otras páginas, <b>Ver ficha</b> (la pantalla de la acción) y <b>+ A seguir</b> (la deja esperando su ruptura).</p>`},
   {id:'excel-explorar', t:'⬇ Excel de Explorar (para el prompt maestro)', donde:'Explorar › resultado › botón ⬇ Excel', k:'excel planilla descargar prompt maestro hojas notas',
-   html:`<p>Baja lo que estás viendo, con tus umbrales, en cinco hojas: <b>Notas</b> (fechas, mercado, filtros y tus reglas de riesgo), <b>Candidatas</b> (con su estado: candidata o reserva), <b>Fuera por la ficha</b>, <b>A mano</b> y <b>ETF</b>. Incluye la ficha con sus números, el máximo de 30 semanas, la zona de compra, el stop de la clase y la fecha de resultados. Es el insumo del prompt maestro.</p>`},
+   html:`<p>Baja lo que estás viendo, con tus umbrales, en estas hojas: <b>Notas</b> (fechas, mercado, filtros, tus reglas de riesgo y qué datos faltaron), <b>Candidatas</b> (con su estado: candidata o reserva), <b>Fuera por la ficha</b>, <b>A mano</b>, <b>ETF</b> y <b>Columnas</b> (qué significa cada columna). Es el insumo del prompt maestro.</p>
+   <p>Cada acción trae su <b>ficha completa</b>, lo mismo que su pantalla: el máximo de 30 semanas, la zona de compra, el stop de la clase y la fecha de resultados; su estado en la app; el precio de hoy, la rentabilidad y los indicadores técnicos; el análisis detallado (caso, decisión, las 8 señales y los escalones); la fase semanal con sus confirmaciones y señales de agotamiento; la fuerza relativa semanal; la ficha fundamental pregunta por pregunta, y Mi Cartera. El sizing ("¿Cuánto compro?") no va: lo calcula el prompt.</p>
+   <p>Antes de bajar junta lo que falte (el precio de las que no están en tu grilla, el análisis y las fichas): el botón va mostrando el avance y puede tardar un minuto, más si el servidor estaba dormido. Si algo no llega, la celda queda vacía y la hoja Notas dice qué faltó.</p>`},
   {id:'cobertura', t:'Cobertura, núcleo y "se cortó por tiempo"', donde:'Explorar › resultado › línea de datos (Cobertura, Núcleo)', k:'cobertura nucleo cortado tiempo bajo el piso sp500 nasdaq',
    html:`<p>El <b>núcleo</b> es el S&amp;P 500 + el Nasdaq-100 + tu grilla. Si quedó completo, un número bajo de candidatas significa que de verdad no había. <b>Cobertura</b> = de cuántas de las revisables alcanzó a decidir. Las acciones bajo el piso del screener (precio, tamaño o volumen muy bajos) no se revisan a propósito: no pueden pasar el embudo.</p>
    <p>"Se cortó por tiempo" quiere decir que algo del núcleo quedó sin revisar: vuelve a ejecutar.</p>`},
@@ -9958,8 +9960,8 @@ function explorarResultadoHTML(analisis){
          ${(embudo.rotacionMercado && typeof embudo.bajoPisoTV !== 'number') ? `<span title="El resto del mercado (fuera del núcleo) se cubre de a poco, corrida tras corrida: hoy le tocó desde este punto de esa lista, y mañana empieza en otro. No queda guardado en ningún lado -- se calcula solo con la fecha de hoy, así que no depende de que el servidor siga prendido entre corridas. Con el paso de hoy, una vuelta completa toma ~${embudo.rotacionMercado.periodoDias} días.">Resto del mercado hoy: <b>desde el ${embudo.rotacionMercado.offsetHoy}/${embudo.rotacionMercado.totalResto}</b> · vuelta en ~${embudo.rotacionMercado.periodoDias}d</span>` : ''}
        </div>
        ${(a.sectoresFuertes && a.sectoresFuertes.length) ? `<div class="expl-tags">${a.sectoresFuertes.map(s=>`<span class="expl-tag">${s.replace(/</g,'&lt;')}</span>`).join('')}</div>` : ''}
-       ${(finales.length || mano.length || etfsFuerza.length || fueraFicha.length) ? `<button type="button" class="expl-xls" data-expl-excel
-          title="Descarga estas mismas listas como planilla de Excel (.xlsx), con los umbrales que tienes puestos ahora">⬇ Excel</button>` : ''}
+       ${(finales.length || mano.length || etfsFuerza.length || fueraFicha.length) ? `<button type="button" class="expl-xls" data-expl-excel ${_explXlsAvance ? 'disabled' : ''}
+          title="Descarga estas mismas listas como planilla de Excel (.xlsx), con los umbrales que tienes puestos ahora y la ficha completa de cada acción (precios, indicadores, análisis detallado, fase semanal, ficha fundamental y Mi Cartera). Antes junta lo que falte: puede tardar un minuto.">${explXlsBtnTxt()}</button>` : ''}
      </div>
      ${explFichaProgresoHTML(sobreviven.map(x => x.t))}
      ${explMetodo === '2' && finales.length ? `<p class="expl-section-nota">Método 2: <b>la líder de su industria</b> — ficha 4 o más de 5
@@ -10039,7 +10041,7 @@ function explorarResultadoHTML(analisis){
                     .concat(pendientes.map(x => Object.assign({}, x, {_estado:'ficha pendiente'}))),
                   mano, etfs: etfsFuerza,
                   meta: {generado: analisis.generado, umbrales: Object.assign({}, explUmbrales), metodo: explMetodo,
-                         filtros: Object.assign({}, explFiltros)}};
+                         filtros: Object.assign({}, explFiltros), sectCartera: explSectoresCartera(acciones)}};
 
   return `
     ${avisoDatos}
@@ -10083,17 +10085,238 @@ function explorarResultadoHTML(analisis){
 // mismo plazo, ver _fuerza_vs_benchmark en explorar.py): +9,8 = le sacó
 // 9,8 puntos al índice. La pantalla solo muestra 12 meses; la planilla trae
 // además 1, 3 y 6, que el servidor ya calculaba.
-function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
+//
+// LA FICHA COMPLETA DE CADA ACCIÓN (6-nov-2026, a pedido)
+// =========================================================
+// El Excel es lo que Cristian le sube a la IA junto con el prompt maestro.
+// Antes cada fila traía solo lo que venía en la corrida; ahora trae TODO lo
+// que muestra la pantalla de esa acción: resumen de precios, rentabilidad,
+// indicadores técnicos, el análisis detallado (caso, decisión, las 8
+// señales, escalones), la fase semanal con sus confirmaciones y señales de
+// agotamiento, la fuerza relativa semanal, la ficha pregunta por pregunta,
+// su estado en la app y Mi Cartera. Más una hoja "Columnas" que
+// explica cada columna, para que la IA no tenga que adivinar. El sizing de
+// "¿Cuánto compro?" queda FUERA a propósito (decisión de Cristian): lo
+// calcula el prompt con sus propias reglas.
+//
+// DE DÓNDE SALE (lo mismo que usa la pantalla de la acción; nada inventado)
+// =========================================================================
+//  * Precio e indicadores: la grilla, si la acción está ahí. Si no, /accion
+//    (el mismo de "Ver ficha"), de a una, y quedan en stateFicha: después
+//    "Ver ficha" abre al tiro.
+//  * Análisis detallado: /diagnostico-lote, que reusa la serie de 5 años que
+//    la corrida de Explorar ya bajó (caché de 24 h en el servidor): en el
+//    caso normal no cuesta ni una petición a Yahoo. Las pocas que tienen ETF
+//    de sector en la tabla GICS van por /diagnostico, que es el único que
+//    trae la columna "vs sector".
+//  * Ficha fundamental: la guardada en el teléfono; las que falten se piden
+//    al empezar (el servidor las calcula mientras tanto) y se esperan un rato.
+//
+// Una petición a la vez: el servidor tiene un solo worker. Si falla dos veces
+// seguidas se deja de insistir y el Excel sale igual, con lo que haya; la
+// hoja Notas dice qué acción quedó sin qué. Nunca se rellena un dato que no
+// llegó: la celda queda vacía.
+//
+// La descarga ocurre al final de la espera, ya sin el toque del usuario. Si
+// algún navegador la bloqueara, el segundo toque es casi instantáneo: todo
+// quedó en caché (10 min los precios sueltos, 2 h el análisis).
+var _explXlsAvance = null;   // texto del botón mientras junta datos; null = libre
+const EXPL_XLS_PRECIO_TTL_MS = 10 * 60 * 1000;
+const EXPL_XLS_DIAG_TTL_MS = 2 * 3600 * 1000;
+const EXPL_XLS_FICHA_ESPERA_MS = 30 * 1000;
+
+function explXlsBtnTxt(){ return _explXlsAvance || '⬇ Excel'; }
+function explXlsPintar(){
+  document.querySelectorAll('[data-expl-excel]').forEach(b => {
+    b.textContent = explXlsBtnTxt();
+    b.disabled = !!_explXlsAvance;
+  });
+}
+
+// ¿Hay un análisis detallado reciente de esta acción en el teléfono? Es la
+// misma caché del detalle (diagFuerzaCache), así que lo que se junta acá
+// también sirve para abrir la pantalla de la acción después.
+function explXlsDiagReciente(t){
+  const d = diagFuerzaCache[t];
+  if(!d || d.error || !d._recibido) return null;
+  const edad = Date.now() - d._recibido;
+  return edad <= (diagFuerzaSinDatos(d) ? DIAG_REINTENTO_SIN_DATOS_MS : EXPL_XLS_DIAG_TTL_MS) ? d : null;
+}
+// ¿El precio que tiene la app de esta acción sirve? La grilla y "A seguir"
+// se refrescan solas; una ficha suelta (consulta de una vez) no.
+function explXlsPrecioAlDia(t){
+  const s = todosLosStocks().find(x => x.ticker === t);
+  if(!s || typeof s.price !== 'number') return false;
+  return !s.esFichaSuelta || (!!s._pedidoTs && Date.now() - s._pedidoTs <= EXPL_XLS_PRECIO_TTL_MS);
+}
+
+async function explXlsJuntar(tks, nombres){
+  const r = {sinPrecio: {}, sinDiag: {}, cortado: null};
+  let fallosSeguidos = 0;
+  const caido = () => fallosSeguidos >= 2;
+  const anotar = ok => { fallosSeguidos = ok ? 0 : fallosSeguidos + 1; };
+  const motivoRed = e => (e && e.name === 'AbortError') ? 'el servidor no respondió a tiempo' : 'sin conexión con el servidor';
+
+  // Las fichas que falten, primero: el servidor las calcula mientras se piden
+  // los precios y el análisis.
+  const E = fichaEst();
+  const fichaAplicaA = t => fichaAplica(t) && !E.noAplica[t];
+  pedirFichas(tks.filter(t => fichaAplicaA(t) && !fichaDe(t)), true);
+
+  const diagFalta = tks.filter(t => !explXlsDiagReciente(t));
+  const porUna = diagFalta.filter(t => etfReferenciaSector(t));
+  const porLote = diagFalta.filter(t => !etfReferenciaSector(t));
+  const precioFalta = tks.filter(t => !explXlsPrecioAlDia(t));
+  let total = diagFalta.length + precioFalta.length, hecho = 0;
+  const avance = etapa => { _explXlsAvance = `${etapa} ${Math.min(hecho, total)}/${total}…`; explXlsPintar(); };
+
+  // ---- 1 · Análisis detallado, en lotes ----------------------------------
+  for(let i = 0; i < porLote.length; i += DIAG_LOTE_MAX){
+    const lote = porLote.slice(i, i + DIAG_LOTE_MAX);
+    avance('Análisis');
+    if(caido()){ lote.forEach(t => { r.sinDiag[t] = 'el servidor no respondió'; }); hecho += lote.length; continue; }
+    try {
+      const resp = await fetchConPlazo(`${BACKEND_URL}/diagnostico-lote?tickers=${encodeURIComponent(lote.join(','))}`, {}, 90000);
+      if(!resp.ok) throw new Error('HTTP ' + resp.status);
+      const j = await resp.json();
+      const dg = (j && j.diagnosticos) || {};
+      lote.forEach(t => {
+        if(dg[t]) diagFuerzaCache[t] = Object.assign({ticker: t}, dg[t], {_recibido: Date.now()});
+        // El lote no la reconoció (pasa recién reiniciado el servidor):
+        // /diagnostico sí la deja pasar.
+        else { porUna.push(t); total++; }
+      });
+      anotar(true);
+    } catch(e){
+      anotar(false);
+      lote.forEach(t => { r.sinDiag[t] = (e && /^HTTP/.test(e.message || '')) ? e.message : motivoRed(e); });
+    }
+    hecho += lote.length;
+  }
+
+  // ---- 2 · Las que tienen ETF de sector (y las que el lote no reconoció) --
+  for(const t of porUna){
+    avance('Análisis');
+    if(caido()){ r.sinDiag[t] = 'el servidor no respondió'; hecho++; continue; }
+    try {
+      const etf = etfReferenciaSector(t);
+      const resp = await fetchConPlazo(`${BACKEND_URL}/diagnostico?ticker=${encodeURIComponent(t)}`
+                                       + (etf ? `&sector=${etf}` : ''), {}, DIAG_PLAZO_MS);
+      if(resp.ok){
+        diagFuerzaCache[t] = Object.assign(await resp.json(), {_recibido: Date.now()});
+        delete r.sinDiag[t];
+      } else {
+        let motivo = 'HTTP ' + resp.status;
+        try { const j = await resp.json(); if(j && j.error) motivo += ' — ' + j.error; } catch(_){}
+        r.sinDiag[t] = motivo;
+      }
+      anotar(resp.status < 500);
+    } catch(e){
+      anotar(false);
+      r.sinDiag[t] = motivoRed(e);
+    }
+    hecho++;
+  }
+
+  // ---- 3 · Precio e indicadores de las que no están en la grilla ---------
+  for(const t of precioFalta){
+    avance('Precios');
+    if(caido()){ r.sinPrecio[t] = 'el servidor no respondió'; hecho++; continue; }
+    try {
+      const resp = await fetchConPlazo(BACKEND_URL + '/accion?ticker=' + encodeURIComponent(t), {}, 70000);
+      const body = await resp.json().catch(() => ({}));
+      const q = (body && body.quote) || {};
+      if(resp.ok && typeof q.price === 'number'){
+        // Igual que abrirFichaSuelta: si ya está en la grilla o en la
+        // watchlist se actualiza ESA, no se crea una ficha paralela.
+        let s = todosLosStocks().find(x => x.ticker === t);
+        if(!s){ s = nuevoStockFicha(t, nombres[t] || t, body.currency); stateFicha.push(s); }
+        aplicarQuoteAStock(s, q);
+        s._pedidoTs = Date.now();
+      } else {
+        r.sinPrecio[t] = (body && body.error) || ('HTTP ' + resp.status);
+      }
+      anotar(resp.ok || resp.status < 500);
+    } catch(e){
+      anotar(false);
+      r.sinPrecio[t] = motivoRed(e);
+    }
+    hecho++;
+  }
+
+  // ---- 4 · Las fichas pedidas al empezar: se esperan un rato --------------
+  const aplican = tks.filter(fichaAplicaA);
+  const t0 = Date.now();
+  while(!caido() && aplican.some(t => !fichaDe(t) && fichaAplicaA(t))
+        && (E.pend.size || E.cola.size || E.prio.size || E.timer)
+        && Date.now() - t0 < EXPL_XLS_FICHA_ESPERA_MS){
+    _explXlsAvance = `Fichas ${aplican.filter(t => fichaDe(t)).length}/${aplican.length}…`;
+    explXlsPintar();
+    await new Promise(res => setTimeout(res, 1000));
+  }
+  if(caido()) r.cortado = 'El servidor falló dos veces seguidas y se dejó de insistir: lo que no alcanzó a llegar quedó vacío.';
+  return r;
+}
+
+// El botón "⬇ Excel". Junta lo que falte y después arma la planilla.
+async function explXlsExportar(){
+  if(_explXlsAvance) return;
+  const L0 = _explListas || {};
+  const todas = [].concat(L0.finales || [], L0.fuera || [], L0.mano || []);
+  if(!todas.length && !(L0.etfs || []).length){ alert('No hay nada que exportar todavía.'); return; }
+  const nombres = {}, tks = [];
+  todas.forEach(x => {
+    const t = x.t || x.ticker;
+    if(!t || Object.prototype.hasOwnProperty.call(nombres, t)) return;
+    nombres[t] = x.n || x.nombre || t;
+    tks.push(t);
+  });
+  _explXlsAvance = 'Preparando…';
+  explXlsPintar();
+  let det = {sinPrecio: {}, sinDiag: {}, cortado: null};
+  try {
+    det = await explXlsJuntar(tks, nombres);
+  } catch(e){
+    console.warn('Excel de Explorar: no se pudo juntar todo', e);
+    det.cortado = 'Falló la recolección de datos (' + ((e && e.message) || e) + '): el Excel salió con lo que había.';
+  } finally {
+    _explXlsAvance = null;
+    explXlsPintar();
+  }
+  // Mientras se juntaban los datos pudieron llegar fichas que cambian de lista
+  // a una acción (de "ficha pendiente" a candidata, por ejemplo): se exporta
+  // la lista de AHORA, si sigue siendo el mismo método.
+  const L = (_explListas && _explListas.meta && L0.meta && _explListas.meta.metodo === L0.meta.metodo) ? _explListas : L0;
+  try {
+    exportarExplorarExcel(L.finales, L.mano, L.etfs, L.fuera, L.meta, det);
+  } catch(e){
+    console.error('Excel de Explorar:', e);
+    alert('No se pudo armar el Excel: ' + ((e && e.message) || e));
+  }
+}
+
+function exportarExplorarExcel(finales, mano, etfs, fuera, meta, det){
   // Clases Acciones USA, punto 3 (30-oct-2026). El Excel es el insumo del
   // prompt maestro, así que lleva todo lo que la app ya sabe y el prompt
   // necesita para fijar entrada y stop: la ficha con sus números, la zona de
   // compra, el stop de la clase y la fecha de resultados. Y una hoja "Notas"
   // con las fechas, los umbrales y las reglas, para que nadie tenga que
   // adivinar de cuándo son los datos ni con qué filtros salieron.
+  //
+  // 6-nov-2026: + la ficha completa de cada acción (ver arriba). Las columnas
+  // de antes quedan PRIMERO, con el mismo nombre y en el mismo orden -- el
+  // prompt maestro las nombra --, y las nuevas van después. Cada columna se
+  // declara UNA vez en COLS (nombre, explicación, valor): así el encabezado,
+  // la fila y la hoja "Columnas" no se pueden desalinear.
   finales = finales || []; mano = mano || []; etfs = etfs || []; fuera = fuera || []; meta = meta || {};
+  det = det || {sinPrecio: {}, sinDiag: {}, cortado: null};
   if(!finales.length && !mano.length && !etfs.length && !fuera.length){ alert('No hay nada que exportar todavía.'); return; }
   const num = v => (typeof v === 'number' && isFinite(v)) ? v : null;
   const r2 = v => num(v) === null ? null : Math.round(v * 100) / 100;
+  const SI = b => b === true ? 'sí' : (b === false ? 'no' : '');
+  const pctEntre = (a, b) => (num(a) !== null && num(b) !== null && b > 0) ? r2((a / b - 1) * 100) : null;
+  const plano = h => String(h || '').replace(/<[^>]+>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+                       .replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
 
   // Una fila de acción, venga de la corrida (claves cortas) o de una
   // tarjeta "A mano" (claves largas).
@@ -10111,16 +10334,6 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
             faltan:x.faltan, estado:'a mano'};
   };
 
-  const CAB = ['Ticker', 'Estado', 'Motor', 'Qué hace', 'Nombre', 'Sector', 'Industria',
-    'Precio USD (corrida)', 'Media 50', 'Máx. 30 semanas', 'Zona de compra hasta (+4 %)', 'Precio vs máx. 30 sem. %',
-    'Mín. 10 sesiones', 'Stop clase entrando en el máx. 30 sem.', 'Próximos resultados', 'Días hábiles a resultados',
-    'Cap. B', 'Crec. BPA %', 'Crec. ventas %', 'Volumen 90d M', 'Monto diario US$ M', '% bajo máx. 52 sem.', '% sobre EMA 21', 'Entrada (método 2)',
-    'Fase', 'Confirmaciones', 'Score', 'Fuerza relativa subiendo', 'Mansfield',
-    'Ficha (de 5)', 'Ficha con dato (de 5)', 'Veredicto ficha', 'Firma de caja',
-    'Ventas vs año anterior % (ficha)', 'BPA vs año anterior % (ficha)',
-    'Margen bruto %', 'Margen bruto hace 3 años %', 'Margen operacional %', 'Margen operacional hace 3 años %',
-    'Flujo libre / utilidad %', 'Deuda en años de flujo libre', 'ROIC %', 'Estados hasta', 'Fuente ficha'];
-
   // El stop de la clase si la entrada fuera justo el máximo de 30 semanas.
   // Si el mínimo de 10 sesiones ya quedó sobre ese máximo (la acción se fue
   // lejos), entrar ahí no tiene sentido: se deja vacío.
@@ -10130,7 +10343,12 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
     return st < x30 ? r2(st) : null;
   };
 
-  const filaDe = (x0, conFalta) => {
+  let portUSD = {};
+  try { portUSD = calcularPortafolio('USD') || {}; } catch(e){}
+  const sectCartera = meta.sectCartera || null;
+
+  // Todo lo que se sabe de una acción, calculado una sola vez por fila.
+  const ctxDe = (x0, conFalta) => {
     const x = norm(x0);
     // Lo de la grilla es más fresco que lo de la corrida, cuando existe.
     const s = todosLosStocks().find(k => k.ticker === x.t);
@@ -10139,31 +10357,225 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
     const pr = (s && s.proximoReporte) || null;
     const rp = pr ? pr.fecha : x.rp;
     const rpS = pr ? pr.sinReporteHasta : x.rpS;
-    const fi = fichaDe(x.t), mo = motorDe(x.t, x.ind), pf = FICHA_PERFILES[x.t];
-    const ve = fichaVeredicto(x.t, fi, x.se, x.ind);
-    const ok = fi && fi.disponible;
-    const dato = (n, k) => { if(!ok) return null; const q = (fi.preguntas || [])[n - 1]; return q && q.datos ? num(q.datos[k]) : null; };
-    const fte = ok ? ({sec:'SEC', 'sec+tradingview':'SEC + TradingView', tradingview:'TradingView'}[fi.fuente] || fi.fuente) : '';
-    const queHace = pf ? pf[1] : (fi && fi.perfil && fi.perfil.resumen ? fi.perfil.resumen + ' (Yahoo, en inglés)' : '');
-    const dh = rp ? diasHabilesHasta(rp) : null;
-    const fila = [
-      x.t, x.estado || '', mo ? mo.nombre : '', queHace, x.n || '', x.se || '', x.ind || '',
-      num(x.p), num(x.c50), r2(x30), x30 !== null ? r2(x30 * (1 + ZONA_PCT / 100)) : null,
-      (x30 !== null && num(x.p) !== null) ? r2((x.p / x30 - 1) * 100) : null,
-      r2(m10), stopClase(x30, m10),
-      rp ? rp : (rpS ? 'ninguno hasta ' + rpS : ''), (dh !== null && dh >= 0) ? dh : null,
-      num(x.cB), num(x.gB), num(x.gV), num(x.v), num(x.mo), num(x.dm), num(x.de), x.ent || '',
-      num(x.f), num(x.cf), num(x.sc), x.fr === 1 ? 'si' : (x.fr === 0 ? 'no' : ''), num(x.mf),
-      ok ? fi.puntaje : null, ok ? fi.respondidas : null,
-      ve ? FICHA_VEREDICTO[ve][0] : (fi ? 'sin datos' : 'sin calcular'),
-      (fi && fi.firma) ? fi.firma.signos.replace(/−/g, '-') + (fi.firma.mala ? ' (mala)' : '') : '',
-      dato(1, 'ventas'), dato(1, 'bpa'),
-      dato(2, 'bruto'), dato(2, 'brutoAntes'), dato(2, 'operacional'), dato(2, 'operacionalAntes'),
-      dato(3, 'relacion'), dato(4, 'años'), dato(5, 'roic'),
-      ok && fi.hasta ? fi.hasta : '', fte,
-    ];
-    if(conFalta) fila.push((x.faltan || []).join(', '));
-    fila.push(`https://www.tradingview.com/symbols/${x.t}/`);
+    const fi = fichaDe(x.t);
+    const ok = !!(fi && fi.disponible);
+    const dg0 = diagFuerzaCache[x.t];
+    const dg = (dg0 && !dg0.error) ? dg0 : null;
+    const ds = (dg && dg.semanal && dg.semanal.disponible) ? dg.semanal : null;
+    let est = null;
+    try { est = estadoDeAccion(x.t); } catch(e){}
+    const pos = portUSD[x.t];
+    return {
+      x, s, x30, m10, rp, rpS, fi, ok, conFalta,
+      mo: motorDe(x.t, x.ind), pf: FICHA_PERFILES[x.t],
+      ve: fichaVeredicto(x.t, fi, x.se, x.ind),
+      dh: rp ? diasHabilesHasta(rp) : null,
+      q: (s && typeof s.price === 'number') ? s : null,
+      dg, ds,
+      dd: (dg && dg.diario && dg.diario.disponible) ? dg.diario : null,
+      frS: (ds && ds.fuerzaRelativa && ds.fuerzaRelativa.disponible) ? ds.fuerzaRelativa : null,
+      vsS: (ds && ds.vsSector && ds.vsSector.disponible) ? ds.vsSector : null,
+      est,
+      pos: (pos && pos.netoQ > 0) ? pos : null,
+      obj: (typeof alertasPrecio !== 'undefined' && alertasPrecio[x.t]) || {},
+      preg: n => ok ? ((fi.preguntas || []).find(p => p && p.n === n) || null) : null,
+    };
+  };
+
+  const dato = (c, n, k) => { if(!c.ok) return null; const q = (c.fi.preguntas || [])[n - 1]; return q && q.datos ? num(q.datos[k]) : null; };
+  const objNum = v => (v !== null && v !== undefined && v !== '' && isFinite(v)) ? Number(v) : null;
+  const ck = (c, k) => (c.dd && c.dd.checks) ? SI(!!c.dd.checks[k]) : '';
+  const cf = (c, k) => c.ds ? SI(!!(c.ds.confirmaciones || {})[k]) : '';
+  const ag = (c, k) => c.ds ? SI(!!(c.ds.agotamiento || {})[k]) : '';
+  const FR_TXT = {
+    mansfield: ['Mansfield', 'la fuerza relativa de esta semana contra su promedio de 52 semanas, en % (0 = empata; positivo = hoy le va mejor que en su último año).'],
+    cruza: ['Mansfield cruzó esta semana', 'sí = esta semana el Mansfield pasó de negativo a positivo: señal temprana de liderazgo.'],
+    pend: ['pendiente 13 sem %', 'cuánto cambió la fuerza relativa en 13 semanas, en %. Positiva = le ganó en ese tramo.'],
+    lider: ['líder (máx. 13 sem)', 'sí = la fuerza relativa de esta semana es la más alta de las últimas 13.'],
+    vent: ['ventaja 52 sem (pts)', 'lo que subió la acción en 52 semanas menos lo que subió la referencia, en puntos.'],
+  };
+  const colsFR = (pref, ref, de) => [
+    [`${pref} · ${FR_TXT.mansfield[0]}`, `Contra ${ref}: ${FR_TXT.mansfield[1]}`, c => { const f = de(c); return f ? num(f.mansfield) : null; }],
+    [`${pref} · ${FR_TXT.cruza[0]}`, `Contra ${ref}: ${FR_TXT.cruza[1]}`, c => { const f = de(c); return f ? SI(!!f.cruzaMansfield) : ''; }],
+    [`${pref} · ${FR_TXT.pend[0]}`, `Contra ${ref}: ${FR_TXT.pend[1]}`, c => { const f = de(c); return f ? num(f.pendiente13SemPct) : null; }],
+    [`${pref} · ${FR_TXT.lider[0]}`, `Contra ${ref}: ${FR_TXT.lider[1]}`, c => { const f = de(c); return (f && typeof f.lider13Sem === 'boolean') ? SI(f.lider13Sem) : ''; }],
+    [`${pref} · ${FR_TXT.vent[0]}`, `Contra ${ref}: ${FR_TXT.vent[1]}`, c => { const f = de(c); return f ? num(f.ventaja52SemPts) : null; }],
+  ];
+
+  const COLS = [
+    // ---- Las de siempre: mismo nombre y mismo orden (el prompt las usa) ----
+    ['Ticker', 'Símbolo de la acción.', c => c.x.t],
+    ['Estado', 'En qué lista quedó en Explorar: "candidata" (encabeza su motor o industria), "reserva de X" (mismo motor que X, quedó debajo), "fuera por la ficha", "vigilar (ficha 3 a 3,5)", "ficha pendiente" o "a mano" (le faltó un dato del embudo).', c => c.x.estado || ''],
+    ['Motor', 'Motor de negocio (tabla de la app) o, si la empresa no está en ella, su industria. Explorar deja una candidata por motor.', c => c.mo ? c.mo.nombre : ''],
+    ['Qué hace', 'A qué se dedica la empresa: tabla de la app o, si no está, el resumen de Yahoo (en inglés).', c => c.pf ? c.pf[1] : (c.fi && c.fi.perfil && c.fi.perfil.resumen ? c.fi.perfil.resumen + ' (Yahoo, en inglés)' : '')],
+    ['Nombre', 'Nombre de la empresa.', c => c.x.n || ''],
+    ['Sector', 'Sector según la fuente de la corrida (TradingView o Yahoo).', c => c.x.se || ''],
+    ['Industria', 'Industria según la fuente de la corrida.', c => c.x.ind || ''],
+    ['Precio USD (corrida)', 'Precio cuando corrió Explorar (fecha en Notas). El de hoy está en "Precio actual USD".', c => num(c.x.p)],
+    ['Media 50', 'Media simple de 50 días al momento de la corrida.', c => num(c.x.c50)],
+    ['Máx. 30 semanas', 'Máximo intradía de las 30 semanas anteriores: el máximo previo cuya ruptura abre la zona de compra de la clase.', c => r2(c.x30)],
+    ['Zona de compra hasta (+4 %)', 'Máx. 30 semanas + 4 %: la zona de compra va del máximo hasta acá. Sobre esto, no perseguir.', c => c.x30 !== null ? r2(c.x30 * (1 + ZONA_PCT / 100)) : null],
+    ['Precio vs máx. 30 sem. %', 'Precio de la corrida contra el máx. de 30 semanas, en %. Entre 0 y +4 = dentro de la zona.', c => (c.x30 !== null && num(c.x.p) !== null) ? r2((c.x.p / c.x30 - 1) * 100) : null],
+    ['Mín. 10 sesiones', 'Mínimo intradía de las últimas 10 sesiones (la parte "soporte" del stop de la clase).', c => r2(c.m10)],
+    ['Stop clase entrando en el máx. 30 sem.', 'Stop de la clase si se entrara justo en el máx. de 30 semanas: el mayor entre el mín. de 10 sesiones y la entrada −7 %. Vacío si ese mínimo ya quedó sobre el máximo.', c => stopClase(c.x30, c.m10)],
+    ['Próximos resultados', 'Fecha del próximo reporte trimestral, o "ninguno hasta …" si el calendario no lo muestra.', c => c.rp ? c.rp : (c.rpS ? 'ninguno hasta ' + c.rpS : '')],
+    ['Días hábiles a resultados', 'Días hábiles desde hoy hasta los resultados. Regla: no comprar si faltan 5 o menos.', c => (c.dh !== null && c.dh >= 0) ? c.dh : null],
+    ['Cap. B', 'Capitalización bursátil, en miles de millones de USD.', c => num(c.x.cB)],
+    ['Crec. BPA %', 'Crecimiento del BPA que usó el embudo (TTM o último trimestre contra el mismo del año anterior).', c => num(c.x.gB)],
+    ['Crec. ventas %', 'Crecimiento de las ventas que usó el embudo.', c => num(c.x.gV)],
+    ['Volumen 90d M', 'Volumen promedio diario de 90 días, en millones de acciones.', c => num(c.x.v)],
+    ['Monto diario US$ M', 'Precio × volumen promedio: millones de dólares transados al día (la liquidez del método 2).', c => num(c.x.mo)],
+    ['% bajo máx. 52 sem.', 'Cuánto está bajo su máximo de 52 semanas, en % (el método 2 pide 8 o menos).', c => num(c.x.dm)],
+    ['% sobre EMA 21', 'Distancia a la media exponencial de 21 días en la corrida, en %. Sobre +5 = sobreextendida.', c => num(c.x.de)],
+    ['Entrada (método 2)', 'En retroceso (bajo el máx. de 30 semanas y sobre la EMA 21: donde compra el reporte), En ruptura (dentro de la zona +4 %), Sobre la zona (no perseguir) o Bajo la EMA 21 (esperar).', c => c.x.ent || ''],
+    ['Fase', 'Fase de Weinstein semanal en la corrida: 1 base, 2 avance, 3 techo, 4 declive.', c => num(c.x.f)],
+    ['Confirmaciones', 'Confirmaciones de fase 2 en la corrida (de 5).', c => num(c.x.cf)],
+    ['Score', 'Score diario de fuerza en la corrida (0 a 8).', c => num(c.x.sc)],
+    ['Fuerza relativa subiendo', 'si = en la corrida, la fuerza relativa diaria contra el S&P 500 venía subiendo (~1 mes).', c => c.x.fr === 1 ? 'si' : (c.x.fr === 0 ? 'no' : '')],
+    ['Mansfield', 'Fuerza relativa semanal vs S&P 500 contra su promedio de 52 semanas, en la corrida (0 = empata).', c => num(c.x.mf)],
+    ['Ficha (de 5)', 'Puntaje de la ficha fundamental: Sí = 1, A medias = ½, No = 0.', c => c.ok ? c.fi.puntaje : null],
+    ['Ficha con dato (de 5)', 'Cuántas de las 5 preguntas tuvieron dato.', c => c.ok ? c.fi.respondidas : null],
+    ['Veredicto ficha', 'calidad (4 o más), vigilar (3 a 3,5), fuera (menos de 3), incompleta, orientativa (financieras), sin datos o sin calcular.', c => c.ve ? FICHA_VEREDICTO[c.ve][0] : (c.fi ? 'sin datos' : 'sin calcular')],
+    ['Firma de caja', 'Signos de los flujos de 12 meses: operación, inversión, financiamiento. "+--" es la que se busca; "(mala)" = la operación no genera caja.', c => (c.fi && c.fi.firma) ? c.fi.firma.signos.replace(/−/g, '-') + (c.fi.firma.mala ? ' (mala)' : '') : ''],
+    ['Ventas vs año anterior % (ficha)', 'Pregunta 1: ventas del último trimestre contra el mismo trimestre del año anterior.', c => dato(c, 1, 'ventas')],
+    ['BPA vs año anterior % (ficha)', 'Pregunta 1: BPA del último trimestre contra el mismo trimestre del año anterior.', c => dato(c, 1, 'bpa')],
+    ['Margen bruto %', 'Pregunta 2: margen bruto de 12 meses.', c => dato(c, 2, 'bruto')],
+    ['Margen bruto hace 3 años %', 'Pregunta 2: el mismo margen hace 3 años (se pide estable ±2 puntos o subiendo).', c => dato(c, 2, 'brutoAntes')],
+    ['Margen operacional %', 'Pregunta 2: margen operacional de 12 meses.', c => dato(c, 2, 'operacional')],
+    ['Margen operacional hace 3 años %', 'Pregunta 2: el mismo margen hace 3 años.', c => dato(c, 2, 'operacionalAntes')],
+    ['Flujo libre / utilidad %', 'Pregunta 3: flujo libre de 12 meses como % de la utilidad (se pide 80 o más).', c => dato(c, 3, 'relacion')],
+    ['Deuda en años de flujo libre', 'Pregunta 4: deuda total ÷ flujo libre anual (menos de 3 = sí; 3 a 5 = a medias).', c => dato(c, 4, 'años')],
+    ['ROIC %', 'Pregunta 5: retorno sobre el capital invertido (sobre 15 = sí; 10 a 15 = a medias).', c => dato(c, 5, 'roic')],
+    ['Estados hasta', 'Fecha del último estado financiero que usó la ficha.', c => c.ok && c.fi.hasta ? c.fi.hasta : ''],
+    ['Fuente ficha', 'SEC (10-K y 10-Q), TradingView o ambas.', c => c.ok ? ({sec:'SEC', 'sec+tradingview':'SEC + TradingView', tradingview:'TradingView'}[c.fi.fuente] || c.fi.fuente) : ''],
+
+    // ---- Estado en la app ----------------------------------------------------
+    ['Estado en la app', 'La franja de la pantalla de la acción: la tienes, la estás esperando, candidata de Explorar, la vendiste o solo la miras, con su detalle.', c => c.est ? c.est.etiqueta + (c.est.detalle ? ' · ' + c.est.detalle : '') : ''],
+    ['Lo único pendiente', 'Lo que la app dice que falta hacer con esta acción.', c => c.est ? c.est.pendiente : ''],
+    ['Acciones tuyas en su sector', 'Cuántas acciones de este mismo sector tienes hoy en Mi Cartera (EE.UU.). 0 = sector nuevo para ti.', c => (sectCartera && c.x.se) ? (sectCartera[c.x.se] || 0) : null],
+
+    // ---- Resumen de precios (hoy) ------------------------------------------
+    ['Precio actual USD', 'Último precio que tiene la app: el de la grilla o, si la acción no está ahí, el que se le pidió a Yahoo al exportar. La hora va en la columna siguiente.', c => c.q ? num(c.q.price) : null],
+    ['Fecha y hora del dato (Chile)', 'Cuándo es ese precio, en hora de Chile.', c => { const h = c.q && formatoHoraDato(c.q.marketTime, null); return h ? h.texto : ''; }],
+    ['Cierre anterior', 'Cierre de la sesión anterior.', c => c.q ? num(c.q.previousClose) : null],
+    ['Variación del día %', 'Precio actual contra el cierre anterior, en %.', c => c.q ? pctEntre(c.q.price, c.q.previousClose) : null],
+    ['Máximo del día', 'Precio más alto de la sesión.', c => c.q ? num(c.q.dayHigh) : null],
+    ['Mínimo del día', 'Precio más bajo de la sesión.', c => c.q ? num(c.q.dayLow) : null],
+    ['Promedio 90 días', 'Promedio de los cierres de 90 días.', c => c.q ? r2(c.q.avg) : null],
+    ['Variación vs promedio 90 días %', 'Precio actual contra ese promedio, en %.', c => c.q ? pctEntre(c.q.price, c.q.avg) : null],
+    ['Umbral de alerta (promedio −4 %)', 'Bajo este precio la app marca la acción en alerta.', c => (c.q && num(c.q.avg) !== null) ? r2(c.q.avg * ALERT_THRESHOLD) : null],
+    ['Volumen hoy (títulos)', 'Acciones transadas en la sesión.', c => c.q ? num(c.q.volume) : null],
+    ['Monto transado hoy US$ M', 'Volumen × precio de la sesión, en millones de dólares (aprox.).', c => (c.q && num(c.q.montoTransado) !== null) ? r2(c.q.montoTransado / 1e6) : null],
+    ['Precio actual vs máx. 30 sem. %', 'Precio actual contra el máx. de 30 semanas, en %. Entre 0 y +4 = hoy está en la zona de compra.', c => c.q ? pctEntre(c.q.price, c.x30) : null],
+    ['Hoy en zona de compra', 'sí = el precio actual está entre el máx. de 30 semanas y +4 % (la clase da la compra por buena al cierre).', c => (c.q && c.x30 !== null && num(c.q.price) !== null) ? SI(c.q.price >= c.x30 && c.q.price <= c.x30 * (1 + ZONA_PCT / 100)) : ''],
+
+    // ---- Rentabilidad --------------------------------------------------------
+    ['Rentabilidad 3 meses %', 'Cuánto subió (o bajó) en 3 meses, con cierres reales.', c => (c.q && num(c.q.ret3m) !== null) ? r2(c.q.ret3m * 100) : null],
+    ['Rentabilidad 1 año %', 'Cuánto subió (o bajó) en 1 año.', c => (c.q && num(c.q.ret1y) !== null) ? r2(c.q.ret1y * 100) : null],
+
+    // ---- Indicadores técnicos (cierres diarios) -----------------------------
+    ['RSI 14', 'Índice de fuerza relativa de 14 días (0 a 100): sobre 70 subió muy rápido, bajo 30 cayó muy rápido.', c => c.q ? num(c.q.rsi14) : null],
+    ['SMA 20', 'Media simple de 20 días (hoy).', c => c.q ? r2(c.q.sma20) : null],
+    ['EMA 21', 'Media exponencial de 21 días (hoy).', c => c.q ? r2(c.q.ema21) : null],
+    ['SMA 50 (hoy)', 'Media simple de 50 días (hoy; "Media 50" es la de la corrida).', c => c.q ? r2(c.q.sma50) : null],
+    ['SMA 100', 'Media simple de 100 días.', c => c.q ? r2(c.q.sma100) : null],
+    ['SMA 200', 'Media simple de 200 días: la referencia de tendencia de largo plazo.', c => c.q ? r2(c.q.sma200) : null],
+
+    // ---- Análisis detallado · diario (indicador de fuerza de la clase) ------
+    ['Diario · fecha del dato', 'Día de la última vela diaria usada por el análisis.', c => c.dd ? (c.dd.fecha || '') : ''],
+    ['Diario · vela de hoy en curso', 'sí = la bolsa estaba abierta: el dato de hoy puede moverse hasta el cierre.', c => c.dd ? SI(!!c.dd.velaEnCurso) : ''],
+    ['Diario · caso', 'OPORTUNIDAD (comprar), RECUPERANDO (vigilar), SOBREEXTENDIDA (esperar: más de 5 % sobre la EMA 21), DIVERGENCIA (esperar) o DECLIVE (bajo la media de 150).', c => c.dd ? (c.dd.casoTexto || '') : ''],
+    ['Diario · decisión del indicador', 'La regla de la clase para la plata disponible (vender todo, vender la mitad, reducir, esperar consolidación, mantener, no comprar o comprar). Es una lectura, no una orden.', c => c.dd ? (c.dd.decision || '') : ''],
+    ['Diario · score (de 8)', 'Cuántas de las 8 señales se cumplen hoy.', c => c.dd ? num(c.dd.score) : null],
+    ['Diario · lectura del score', 'SANA Y CON FUERZA (6 a 8), DEBILITÁNDOSE (3 a 5) o DÉBIL (0 a 2).', c => c.dd ? (c.dd.lecturaAbsoluta || '') : ''],
+    ['Diario · fuerza relativa vs S&P 500', 'LÍDER (en su máximo de ~3 meses contra el índice), GANANDO TERRENO (pendiente positiva) o SE QUEDA ATRÁS.', c => c.dd ? ((c.dd.fuerzaRelativa && c.dd.fuerzaRelativa.disponible) ? (c.dd.fuerzaRelativa.lectura || '') : 'sin datos del índice') : ''],
+    ['Diario · FR pendiente positiva (~1 mes)', 'sí = la acción ÷ el S&P 500 está más alta que hace 21 días hábiles.', c => (c.dd && c.dd.fuerzaRelativa && c.dd.fuerzaRelativa.disponible) ? SI(!!c.dd.fuerzaRelativa.pendientePositiva) : ''],
+    ['Diario · FR líder (máx. ~3 meses)', 'sí = la acción ÷ el S&P 500 está en su máximo de 63 días hábiles.', c => (c.dd && c.dd.fuerzaRelativa && c.dd.fuerzaRelativa.disponible) ? SI(!!c.dd.fuerzaRelativa.lider) : ''],
+    ['Diario · distancia a EMA 21 %', 'Cuánto está el precio sobre (o bajo) su EMA de 21 días, hoy.', c => c.dd ? num(c.dd.distanciaEMA21Pct) : null],
+    ['Diario · sobreextendida', 'sí = más de 5 % sobre la EMA 21: conviene esperar que respire.', c => c.dd ? SI(!!c.dd.sobreextendida) : ''],
+    ['Escalón 1 · SMA 50 (vende la mitad)', 'Valor de hoy de la media de 50 días: si cierra bajo ella, el indicador sugiere vender la mitad.', c => (c.dd && c.dd.stops) ? r2(c.dd.stops.sma50) : null],
+    ['Escalón 1 perdido', 'sí = el último cierre ya quedó bajo la SMA 50.', c => (c.dd && c.dd.stops) ? SI(!!c.dd.stops.perdioSMA50) : ''],
+    ['Escalón 2 · SMA 150 (vende todo)', 'Valor de hoy de la media de 150 días: si cierra bajo ella, el indicador sugiere vender todo.', c => (c.dd && c.dd.stops) ? r2(c.dd.stops.sma150) : null],
+    ['Escalón 2 perdido', 'sí = el último cierre ya quedó bajo la SMA 150.', c => (c.dd && c.dd.stops) ? SI(!!c.dd.stops.perdioSMA150) : ''],
+    ['Señal 1 · Cierre sobre media larga', 'Una de las 8 señales del score: el precio está sobre su media de 150 días.', c => ck(c, 'f1')],
+    ['Señal 2 · Media corta sobre larga', 'La media de 50 está sobre la de 150.', c => ck(c, 'f2')],
+    ['Señal 3 · Media larga subiendo', 'La media de 150 está más alta que hace 10 días hábiles.', c => ck(c, 'f3')],
+    ['Señal 4 · Media corta subiendo', 'La media de 50 está más alta que hace 10 días hábiles.', c => ck(c, 'f4')],
+    ['Señal 5 · Máximos crecientes', 'El cierre más alto de los últimos 10 días supera al de los 10 anteriores.', c => ck(c, 'f5')],
+    ['Señal 6 · Mínimos crecientes', 'El cierre más bajo de los últimos 10 días supera al de los 10 anteriores.', c => ck(c, 'f6')],
+    ['Señal 7 · RSI mejorando', 'El RSI está más alto que hace 20 días.', c => ck(c, 'f7')],
+    ['Señal 8 · Cierre sobre media corta', 'El precio está sobre su media de 50 días.', c => ck(c, 'f8')],
+
+    // ---- Fase semanal (Weinstein) --------------------------------------------
+    ['Semanal · fase', 'Fase de Weinstein con velas semanales cerradas: 1 base, 2 avance, 3 techo, 4 declive.', c => c.ds ? num(c.ds.fase) : null],
+    ['Semanal · nombre de la fase', 'BASE, AVANCE, TECHO o DECLIVE.', c => c.ds ? (c.ds.nombreFase || '') : ''],
+    ['Semanal · qué hacer en esta fase', 'Base: no compramos · Avance: aquí y solo aquí · Techo: preparar salida · Declive: jamás.', c => c.ds ? (c.ds.accionFase || '') : ''],
+    ['Semanal · confirmaciones (de 5)', 'Cuántas confirmaciones de fase 2 cumple hoy.', c => c.ds ? num(c.ds.scoreConfirmaciones) : null],
+    ['Semanal · veredicto', 'CANDIDATA VÁLIDA (fase 2 con 4 o 5), NO ENTRA TODAVÍA (fase 2 con 3), ESPERAR (fase 2 con 2 o menos) o NO CALIFICA (no está en fase 2).', c => c.ds ? (c.ds.veredicto || '') : ''],
+    ['Conf. 1 · Precio sobre la media', 'El último cierre semanal está sobre la media de 30 semanas.', c => cf(c, 'c1_precioSobreMedia')],
+    ['Conf. 2 · Pendiente positiva', 'La media de 30 semanas está más alta que hace 5 semanas.', c => cf(c, 'c2_pendientePositiva')],
+    ['Conf. 3 · Rompió máximo 30 sem', 'En las últimas 8 semanas cerró sobre el cierre más alto de las 30 semanas anteriores.', c => cf(c, 'c3_rompioMaximo30sem')],
+    ['Conf. 4 · Fuerza relativa creciente', 'Contra el S&P 500 está mejor que hace 13 semanas.', c => cf(c, 'c4_fuerzaRelativa')],
+    ['Conf. 5 · Volumen sobre lo normal', 'El volumen de la última semana supera en 30 % su promedio de 30 semanas ("sin dato" = la fuente no entregó volumen).', c => c.ds ? (c.ds.volumenDisponible === false ? 'sin dato' : cf(c, 'c5_volumen')) : ''],
+    ['Agot. 1 · La media dejó de subir', 'Señal de agotamiento: la media de 30 semanas subió 0,5 % o menos en 5 semanas.', c => ag(c, 'a1_mediaDejoDeSubir')],
+    ['Agot. 2 · Sin máximos nuevos', 'El cierre más alto de las últimas 8 semanas no supera al de las 8 anteriores.', c => ag(c, 'a2_sinMaximosNuevos')],
+    ['Agot. 3 · Pierde fuerza relativa', 'Contra el índice está peor que hace 13 semanas.', c => ag(c, 'a3_pierdeFuerzaRelativa')],
+    ['Agot. 4 · Cierra bajo la media', 'El último cierre semanal quedó bajo la media de 30 semanas.', c => ag(c, 'a4_cierraBajoMedia')],
+    ['Agot. 5 · Distribución (vol. bajista)', 'En las últimas 10 semanas, las que bajaron tuvieron más volumen promedio que las que subieron.', c => ag(c, 'a5_distribucion')],
+    ['Semanal · agotamiento (de 5)', 'Cuántas señales de agotamiento se cumplen.', c => c.ds ? num(c.ds.scoreAgotamiento) : null],
+    ['Semanal · lectura del agotamiento', 'sin agotamiento (0 a 2), vigilar (3 o más) o TECHO CONFIRMADO (fase 3 con 4 o 5: preparar la salida).', c => c.ds ? (c.ds.techoConfirmado ? 'TECHO CONFIRMADO' : (c.ds.scoreAgotamiento >= 3 ? 'vigilar' : 'sin agotamiento')) : ''],
+  ].concat(
+    colsFR('FR semanal vs S&P 500', 'el S&P 500', c => c.frS),
+    [['FR semanal vs sector · ETF', 'ETF de su industria o sector contra el que se mide (vacío = la acción no está en la tabla de sectores de la app).', c => c.vsS ? (c.vsS.etf || '') : '']],
+    colsFR('FR semanal vs sector', 'el ETF de su sector', c => c.vsS),
+  ).concat([
+    ['Semana cerrada hasta', 'Última semana cerrada que usa la fase semanal (la semana en curso no se cuenta).', c => c.ds ? (c.ds.semanaCerradaHasta || '') : ''],
+    ['Semanas de historial', 'Semanas de historial con que se calculó.', c => c.ds ? num(c.ds.semanasDeHistorial) : null],
+    ['Análisis detallado · si falta, por qué', 'Si el análisis diario o semanal quedó vacío, el motivo.', c => {
+      if(!c.dg) return det.sinDiag[c.x.t] || 'no llegó del servidor';
+      const m = [];
+      if(!c.dd) m.push('diario: ' + ((c.dg.diario && c.dg.diario.motivo) || 'sin datos suficientes'));
+      if(!c.ds) m.push('semanal: ' + ((c.dg.semanal && c.dg.semanal.motivo) || 'sin datos suficientes'));
+      return m.join(' · ');
+    }],
+
+    // ---- Ficha fundamental, pregunta por pregunta ---------------------------
+    ['Ficha · lectura del veredicto', 'El veredicto de la ficha explicado; si no hay ficha, por qué.', c => {
+      if(!c.fi){ const na = fichaEst().noAplica[c.x.t]; return na ? 'no aplica: ' + na : (fichaAplica(c.x.t) ? 'todavía sin calcular' : 'no aplica'); }
+      if(!c.fi.disponible) return 'Sin datos: ' + (c.fi.motivo || 'ni la SEC ni TradingView entregaron estados de esta empresa');
+      const v = c.ve || 'incompleta';
+      return FICHA_VEREDICTO[v][1] + (c.fi.respondidas < 5 ? ` Con dato: ${c.fi.respondidas} de 5; como máximo llegaría a ${fichaPts(c.fi.maximo)}.` : '');
+    }],
+  ]).concat([1, 2, 3, 4, 5].reduce((acc, n) => acc.concat([
+    [`P${n} ${FICHA_PREG[n - 1]} · resultado`, `Sí, A medias, No o sin dato. Regla: ${FICHA_REGLA[n - 1]}`,
+      c => { const q = c.preg(n); return q ? (q.resultado && FICHA_RES[q.resultado] ? FICHA_RES[q.resultado][0] : 'sin dato') : ''; }],
+    [`P${n} · dato`, `Los números de la pregunta ${n}, como los muestra la ficha.`,
+      c => { const q = c.preg(n); return q ? plano(fichaDatoTxt(q)) + (q.fuente === 'tradingview' ? ' (TradingView)' : '') : ''; }],
+    [`P${n} · nota`, `Aclaración de la ficha sobre la pregunta ${n}, si la hay.`,
+      c => { const q = c.preg(n); return (q && q.nota) ? String(q.nota) : ''; }],
+  ]), [])).concat([
+    ['Firma de caja · lectura', 'Qué significa la firma de caja de esta empresa.', c => (c.fi && c.fi.firma && c.fi.firma.texto) ? c.fi.firma.texto : ''],
+    ['Ficha · período', 'Últimos 12 meses, o último año fiscal si la empresa no reporta trimestres a la SEC.', c => c.ok ? (c.fi.periodo === 'anual' ? 'último año fiscal' : 'últimos 12 meses') : ''],
+    ['Ficha · calculada el', 'Cuándo se calculó la ficha (queda guardada 7 días en el teléfono).', c => (c.fi && c.fi.calculado) ? String(c.fi.calculado).slice(0, 10) : ''],
+    ['Ficha · reportes en la SEC', 'Enlace a los reportes de la empresa en la SEC (EDGAR).', c => (c.fi && c.fi.edgar) ? c.fi.edgar : ''],
+
+    // ---- Mi Cartera ----------------------------------------------------------
+    ['Mi Cartera · títulos', 'Acciones que tienes hoy, según tus movimientos (vacío = no la tienes).', c => c.pos ? c.pos.netoQ : null],
+    ['Mi Cartera · precio de compra promedio', 'Tu costo promedio por acción.', c => (c.pos && num(c.pos.costoPromedio) !== null) ? r2(c.pos.costoPromedio) : null],
+    ['Mi Cartera · resultado %', 'Precio actual contra tu costo promedio, en %.', c => (c.pos && c.q) ? pctEntre(c.q.price, c.pos.costoPromedio) : null],
+    ['Mi Cartera · venta si sube a', 'Tu precio objetivo de venta ("Vta si sube").', c => objNum(c.obj.sube)],
+    ['Mi Cartera · venta si baja a (stop)', 'Tu stop guardado ("Vta si baja").', c => objNum(c.obj.baja)],
+  ]);
+
+  const CAB = COLS.map(k => k[0]);
+  const filaDe = (x0, conFalta) => {
+    const c = ctxDe(x0, conFalta);
+    const fila = COLS.map(k => {
+      // Una celda rara no puede tumbar la planilla entera: queda vacía.
+      try { const v = k[2](c); return v === undefined ? null : v; } catch(e){ return null; }
+    });
+    if(conFalta) fila.push((c.x.faltan || []).join(', '));
+    fila.push(`https://www.tradingview.com/symbols/${c.x.t}/`);
     return fila;
   };
 
@@ -10173,9 +10585,15 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
   const u = meta.umbrales || {}, fl = meta.filtros || {};
   const onOff = v => v ? 'encendido' : 'apagado';
   const m = estadoMercado();
+  const tksTodas = Array.from(new Set(finales.concat(fuera, mano).map(x => norm(x).t)));
   const pend = finales.concat(fuera).map(x => norm(x).t).filter(t => fichaAplica(t) && !fichaDe(t));
   const perd = (sizing && num(sizing.perdidaTotal) !== null) ? sizing.perdidaTotal * 100 : null;
   const nPos = sizing && num(sizing.nPosiciones);
+  const conPrecio = tksTodas.filter(t => { const s = todosLosStocks().find(k => k.ticker === t); return s && typeof s.price === 'number'; });
+  const conDiag = tksTodas.filter(t => { const d = diagFuerzaCache[t]; return d && !d.error && ((d.diario && d.diario.disponible) || (d.semanal && d.semanal.disponible)); });
+  const listaMotivos = o => Object.keys(o).filter(t => tksTodas.indexOf(t) >= 0).map(t => `${t} (${o[t]})`).join(', ');
+  const sinPrecioTxt = listaMotivos(det.sinPrecio || {});
+  const sinDiagTxt = listaMotivos(det.sinDiag || {});
   const notas = [
     ['Campo', 'Valor'],
     ['Archivo', 'Exportado de IPSA Monitor · Explorar'],
@@ -10195,6 +10613,13 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
     ['Hoja Fuera por la ficha', 'Pasaron el embudo técnico, pero la ficha fundamental suma menos de 3 de 5 (o con lo que le falta ya no llega a 3).'],
     ['Hoja A mano', 'Técnicamente sanas, pero les faltó un dato del embudo (columna "Le falta").'],
     ['Hoja ETF', 'Fuerza contra el S&P 500 en puntos porcentuales a 1, 3, 6 y 12 meses.'],
+    ['Hoja Columnas', 'Qué significa cada columna de las hojas de acciones. Leerla antes de analizar.'],
+    ['Ficha completa de cada acción', 'Cada fila trae lo mismo que la pantalla de la acción en la app: las columnas de la corrida primero (hasta "Fuente ficha"), y después su estado en la app, el resumen de precios de hoy, rentabilidad, indicadores técnicos, el análisis detallado diario (caso, decisión, las 8 señales, escalones), la fase semanal con sus confirmaciones y señales de agotamiento, la fuerza relativa semanal, la ficha pregunta por pregunta y Mi Cartera. El sizing ("¿Cuánto compro?") no va: lo calcula el prompt con sus reglas.'],
+    ['Datos de la corrida vs datos de hoy', 'Las columnas de la corrida (precio, media 50, fase, score…) son de la hora de la corrida. Las nuevas (Precio actual, indicadores, Diario · …, Semanal · …) son las de la app al exportar: si difieren, manda la de hoy.'],
+    ['Precio de hoy', `${conPrecio.length} de ${tksTodas.length} acciones con precio de hoy (de la grilla, o pedido a Yahoo al exportar).`
+      + (sinPrecioTxt ? ' No se pudo actualizar: ' + sinPrecioTxt + '.' : '')],
+    ['Análisis detallado', `${conDiag.length} de ${tksTodas.length} acciones con análisis diario/semanal.`
+      + (sinDiagTxt ? ' Sin análisis: ' + sinDiagTxt + '.' : '')],
     ['Ficha fundamental', 'Las 5 preguntas de la clase con estados de la SEC (10-K/10-Q), TradingView de respaldo. Sí = 1, A medias = ½, No = 0. 4 o más: calidad · 3 a 3,5: vigilar · menos de 3: fuera. En bancos, aseguradoras y financieras es orientativa.'],
     ['Zona de compra', `Hasta ${ZONA_PCT} % sobre el máximo intradía de las 30 semanas anteriores; la compra vale al cierre.`],
     ['Stop de la clase', 'El mayor entre el mínimo intradía de las últimas 10 sesiones y la entrada −7 %. La columna lo calcula entrando justo en el máximo de 30 semanas.'],
@@ -10202,8 +10627,9 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
     ['Riesgo', `Pérdida total aceptada ${perd !== null ? fmtNum(perd, 1) : '—'} % en ${nPos || '—'} posiciones = ${perd !== null && nPos ? fmtNum(perd / nPos, 2) : '—'} % por posición · tope por posición ${fmtNum(topePorPosicionPct(), 0)} % · fracciones hasta 6 decimales.`],
     ['Resultados', 'No se compra si la empresa reporta resultados en los próximos 5 días hábiles.'],
     ['Fichas sin calcular al exportar', pend.length ? pend.length + ': ' + pend.join(', ') : 'ninguna'],
-    ['Celdas vacías', 'La app no tiene ese dato. Máx. 30 semanas, mín. 10 sesiones y próximos resultados salen de la corrida (o de la grilla si la acción está ahí); una acción sin diagnóstico en la corrida los trae vacíos.'],
   ];
+  if(det.cortado) notas.push(['Servidor', det.cortado]);
+  notas.push(['Celdas vacías', 'La app no tiene ese dato: nunca se rellena con un supuesto. Máx. 30 semanas, mín. 10 sesiones y próximos resultados salen de la app (grilla o consulta al exportar) o, si no, de la corrida.']);
   const hojas = [{nombre: 'Notas', filas: notas}];
 
   if(finales.length){
@@ -10234,6 +10660,12 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
       `https://www.tradingview.com/symbols/${x.etf}/`,
     ]));
     hojas.push({nombre: 'ETF', filas});
+  }
+  if(finales.length || fuera.length || mano.length){
+    hojas.push({nombre: 'Columnas', filas: [['Columna', 'Qué es']]
+      .concat(COLS.map(k => [k[0], k[1]]))
+      .concat([['Le falta', 'Solo en la hoja A mano: qué dato del embudo no entregó la fuente.'],
+               ['TradingView', 'Enlace a la acción en TradingView, donde se hace el análisis en profundidad.']])});
   }
   descargarXlsx(`ipsa-explorar${meta.metodo === '2' ? '-metodo2' : ''}-${_hoyArchivo()}.xlsx`, hojas);
 }
@@ -10454,9 +10886,10 @@ function renderAmbienteExplorar(){
   // _explListas se llena al armar el panel, un instante antes de esto: si
   // mueves un umbral, la pantalla se redibuja entera y el botón exporta la
   // lista nueva.
+  // 6-nov-2026: antes de bajar junta la ficha completa de cada acción (ver
+  // explXlsExportar); por eso lee _explListas al tocar y otra vez al final.
   const btnExplXls = viewEl.querySelector('[data-expl-excel]');
-  if(btnExplXls) btnExplXls.addEventListener('click',
-    () => exportarExplorarExcel(_explListas.finales, _explListas.mano, _explListas.etfs, _explListas.fuera, _explListas.meta));
+  if(btnExplXls) btnExplXls.addEventListener('click', explXlsExportar);
 
   const btnReset = viewEl.querySelector('[data-accion="exp-reset"]');
   if(btnReset) btnReset.addEventListener('click', () => {
