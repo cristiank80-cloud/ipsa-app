@@ -489,6 +489,7 @@
   .rep-nosigo{margin-left:auto; font-size:11px; color:var(--ink-dim); background:none; border:none; cursor:pointer;
               text-decoration:underline; min-height:40px; padding:0 4px; font-family:'IBM Plex Sans',sans-serif;}
   .rep-dudoso{font-size:11px; color:var(--copper); margin-top:5px;}
+  .rep-aviso{font-size:12px; color:var(--verdigris); background:var(--verdigris-soft); border-radius:8px; padding:7px 10px; margin:10px 0 0;}
   .rep-encontre{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:5px; font-size:12.5px;}
   .rep-encontre b{font-weight:500;}
   .rep-chips{display:flex; flex-wrap:wrap; gap:5px;}
@@ -528,6 +529,44 @@
   .rep-franja .rep-btns{margin-top:2px;}
   .esp-rep{font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px; letter-spacing:.03em;
            background:rgba(144,111,55,0.14); color:var(--gold); text-transform:uppercase;}
+  /* Cabecera y tabla resumen del reporte cargado (6-nov-2026) */
+  /* Registro de reportes y comparación (6-nov-2026) */
+  .rep-historial > summary{cursor:pointer; font-weight:600; font-size:13px; min-height:36px; display:flex; align-items:center;
+                           gap:4px 8px; list-style:none;}
+  .rep-historial > summary::-webkit-details-marker{display:none;}
+  .rep-historial > summary::before{content:'▸'; color:var(--gold); font-size:12px;}
+  .rep-historial[open] > summary::before{content:'▾';}
+  .rep-hist-fila{padding:8px 0; border-bottom:1px solid var(--hairline); font-size:11.5px; line-height:1.45;}
+  .rep-hist-fila:last-of-type{border-bottom:0;}
+  .rep-hist-fila.actual{background:rgba(144,111,55,0.06); margin:0 -8px; padding:8px;}
+  .rep-hist-l1{display:flex; align-items:center; gap:4px 8px; flex-wrap:wrap;}
+  .rep-hist-l1 b{font-family:'IBM Plex Mono',monospace; font-size:13px;}
+  .rep-hist-l1 .rep-pill{margin-left:0;}
+  .rep-hist-l2{color:var(--ink-dim); margin-top:2px; word-break:break-word;}
+  .rep-hist-l3{margin-top:2px;}
+  .rep-segunpdf{margin-top:10px;}
+  .rep-segunpdf > summary{cursor:pointer; font-size:11px; color:var(--ink-dim); margin-bottom:6px;}
+  .rep-edad{font-size:11.5px; color:var(--ink-dim);}
+  .rep-edad.vieja{color:var(--copper); font-weight:600;}
+  .rep-resumen > summary{cursor:pointer; font-weight:600; font-size:13px; min-height:36px; display:flex; align-items:center;
+                         gap:4px 8px; flex-wrap:wrap; list-style:none;}
+  .rep-resumen > summary::-webkit-details-marker{display:none;}
+  .rep-resumen > summary::before{content:'▸'; color:var(--gold); font-size:12px;}
+  .rep-resumen[open] > summary::before{content:'▾';}
+  .rep-resumen > summary .rep-sub{font-weight:400;}
+  .rep-res-wrap{overflow-x:auto; margin-top:6px; -webkit-overflow-scrolling:touch;}
+  table.rep-res-tabla{width:100%; border-collapse:collapse; font-size:11px;}
+  table.rep-res-tabla th, table.rep-res-tabla td{padding:6px 4px; border-bottom:1px solid var(--hairline); text-align:left;
+                         white-space:nowrap; font-family:'IBM Plex Mono',monospace;}
+  table.rep-res-tabla thead th{font-family:'IBM Plex Sans',sans-serif; font-size:9.5px; letter-spacing:.05em; text-transform:uppercase;
+                         color:var(--ink-dim); font-weight:600;}
+  table.rep-res-tabla td b{cursor:pointer; font-weight:600;}
+  table.rep-res-tabla .rep-pill{margin-left:0; padding:2px 6px; font-family:'IBM Plex Sans',sans-serif;}
+  table.rep-res-tabla td.rep-res-z{white-space:normal;}
+  tr.rep-res-g td{font-family:'IBM Plex Sans',sans-serif; font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+                         color:var(--gold); padding-top:12px;}
+  tr.rep-res-off td{opacity:.5;}
+  .rep-res-tu{display:block; font-family:'IBM Plex Sans',sans-serif; font-size:9.5px; color:var(--ink-dim); font-weight:400; margin-top:1px;}
   .cartera-sug{margin-top:5px;}
   .stop-sug{
     display:inline-flex; align-items:center; gap:5px; width:100%;
@@ -784,6 +823,26 @@
   .expl-metodo-btn.active{border-color:var(--gold); box-shadow:inset 0 0 0 1px var(--gold);}
   .expl-metodo-btn.active b{color:var(--gold);}
   .expl-metodo-btn .corre{color:var(--copper);}
+  /* ETF: piso y candidatas (6-nov-2026) */
+  .etf-piso{font-size:10px; font-weight:700; padding:2px 7px; border-radius:20px; white-space:nowrap;}
+  .etf-piso.ok{background:var(--verdigris-soft); color:var(--verdigris);}
+  .etf-piso.so{background:var(--copper-soft); color:var(--copper);}
+  .etf-piso.re{background:rgba(144,111,55,0.14); color:var(--gold);}
+  .etf-cand{border:1px solid var(--hairline); border-radius:10px; padding:9px 11px; margin-bottom:8px; background:var(--bg-panel);}
+  .etf-cand-head{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .etf-cand-head b{font-family:'IBM Plex Mono',monospace; font-size:14px; cursor:pointer;}
+  .etf-cand-sub{font-size:11px; color:var(--ink-dim); line-height:1.45; margin-top:3px;}
+  .cs-piso{display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:10.5px; color:var(--ink-dim); margin-top:6px;}
+  .cs-piso b{color:var(--ink);}
+  /* Método 2, segunda vuelta (6-nov-2026): entrada y sector en las tarjetas */
+  .expl-m2-linea{display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:6px;}
+  .expl-ent{font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:20px; background:var(--bg-field); color:var(--ink-dim);}
+  .expl-ent.re{background:var(--verdigris-soft); color:var(--verdigris);}
+  .expl-ent.ru{background:rgba(144,111,55,0.14); color:var(--gold);}
+  .expl-ent.so{background:var(--copper-soft); color:var(--copper);}
+  .expl-ent-txt{font-size:11px; color:var(--ink-dim); line-height:1.4;}
+  .expl-sect{font-size:10.5px; color:var(--ink-dim);}
+  .expl-sect.nuevo{color:var(--verdigris); font-weight:600;}
   .exp-limite{
     font-size:10.5px; color:var(--copper); line-height:1.55; margin:8px 0 0;
     padding:8px 10px; background:rgba(179,74,50,0.05); border-left:2px solid var(--copper); border-radius:0 6px 6px 0;
@@ -2243,6 +2302,7 @@
         // 52 semanas. Inventados al final para no mover los números de arriba.
         mo: Math.round(p * (gana ? 6 + r()*40 : r()*14) * 10) / 10,
         dm: esCripto ? null : Math.round((gana ? r()*3 : r()*20) * 10) / 10,
+        de: esCripto ? null : Math.round((gana ? r()*4 : r()*10 - 5) * 10) / 10,
       };
     });
   }
@@ -2260,7 +2320,9 @@
   }
 
   function fuerza(nombre, etf, m12, fase){
-    return {nombre:nombre, etf:etf, fuerza:{m12:m12}, fase:fase};
+    var ok = fase === 2;
+    return {nombre:nombre, etf:etf, fuerza:{m12:m12}, fase:fase, conf: ok ? 4 : 1,
+            precio: 100, sma50: ok ? 96 : 103, sma200: ok ? 90 : 104, dm: ok ? (m12 > 15 ? 2.5 : 9.5) : 14};
   }
 
   function analisisDemo(metodoDemo){
@@ -2381,7 +2443,10 @@
         edadResultadoSeg:900, error:null, resultadoVencido:false});
     }
     if(ruta.indexOf('/explorar/resultado') === 0){
-      return json({hayResultado:true, analisis: analisisDemo(new URLSearchParams(ruta.split('?')[1] || '').get('metodo'))});
+      var an = analisisDemo(new URLSearchParams(ruta.split('?')[1] || '').get('metodo'));
+      an.etfs = (an.sectores || []).map(function(x){ return Object.assign({grupo:'sector'}, x); })
+        .concat((an.industrias || []).map(function(x){ return Object.assign({grupo:'industria'}, x); }));
+      return json({hayResultado:true, analisis: an});
     }
 
     // Ficha fundamental (punto 3 de la clase): INVENTADA para la demo, igual
@@ -3913,6 +3978,7 @@ function crearTarjetaStock(s){
         <span class="cs-obj cs-obj--sube"><span class="cs-obj-lab">Vta si sube</span><b class="mono" data-el="csObjSube">—</b></span>
         <span class="cs-obj cs-obj--baja"><span class="cs-obj-lab">Vta si baja</span><b class="mono" data-el="csObjBaja">—</b></span>
       </div>
+      ${s.esEtf ? '<div class="cs-piso" data-el="csPiso"></div>' : ''}
     </div>
     <div class="dato-hora mono" data-el="datoHora"><span>&nbsp;</span></div>
     <div class="tap-hint">Toca para ver detalle</div>
@@ -6108,8 +6174,14 @@ var GLOSARIO_TEMAS = [
   {id:'explorar-metodos', t:'Método 1 y Método 2', donde:'Explorar › los dos botones de arriba', k:'metodo 1 2 crecimiento calidad tendencia reporte inversapiens maximo 52 semanas monto liquidez dolares ventas',
    html:`<p>Explorar tiene dos formas de buscar. Cada una guarda su resultado y sus umbrales: correr una no borra la otra.</p>
    <ul class="glos-lista"><li><b>Método 1 · Crecimiento</b> (el de siempre): volumen ≥ 2 M de acciones, BPA y ventas creciendo 25 % o más.</li>
-   <li><b>Método 2 · Calidad en tendencia</b>: el tipo de acción que elige el reporte. Liquidez en <b>dólares</b> (precio × volumen ≥ US$ 20 M al día, así una acción cara que transa pocas acciones no cae), a <b>≤ 5 % de su máximo de 52 semanas</b> y <b>ventas que no caen</b> (≥ 0 %). La fase de Weinstein se calcula para todas las que pasan.</li></ul>
-   <p>Lo demás es igual en los dos: precio, tendencia (SMA 50 y 200), capitalización, fase 2 con 4 confirmaciones, score y fuerza relativa, ficha fundamental y una por motor.</p>`},
+   <li><b>Método 2 · Calidad en tendencia</b>: el tipo de acción que elige el reporte. Liquidez en <b>dólares</b> (precio × volumen ≥ US$ 20 M al día, así una acción cara que transa pocas acciones no cae), a <b>≤ 8 % de su máximo de 52 semanas</b>, <b>ventas que no caen</b> (≥ 0 %) y fase 2 con <b>3</b> confirmaciones (la de volumen casi nunca aparece en estas acciones). La fase se calcula para todas las que pasan.</li></ul>
+   <p>En el método 2 la candidata es <b>la líder de su industria</b>: ficha 4 o más de 5 (en financieras, orientativa), una por industria, ordenadas por ficha y después por fuerza relativa. Ficha 3 a 3,5 va a "Vigilar"; sin ficha todavía, a "Ficha pendiente".</p>
+   <p><b>Entrada</b> (solo método 2): <b>en retroceso</b> = bajo su máximo de 30 semanas pero sobre la EMA 21, donde compra el reporte (el techo o la EMA 21); <b>en ruptura</b> = sobre ese máximo, dentro de la zona de la clase (+4 %); <b>sobre la zona</b> = no perseguir; <b>bajo la EMA 21</b> = esperar.</p>
+   <p>Probado el 6-nov-2026 contra las 19 compras del reporte entre el 8-sep y el 3-nov: con estos valores, 14 habrían salido el día de la compra.</p>`},
+  {id:'etf-piso', t:'ETF: candidatas y piso', donde:'Explorar › ETF · pestaña ETF · Mi Cartera', k:'etf piso media 200 candidatas clase sobreventa reporte vender todo cierre aviso',
+   html:`<p><b>Candidatas ETF</b> (Explorar): lo que usa el reporte para entrar a un ETF nuevo — sobre las medias de 50 y 200 días, a 8 % o menos de su máximo de 52 semanas y fase 2 con 3 confirmaciones. Una por clase (no XLE y XOP a la vez), la de más fuerza a 12 meses.</p>
+   <p><b>Piso</b>: si un ETF cierra bajo su piso, la regla vende todo. Es el del reporte si lo trae (cada ETF tiene su media: 200 días, 30 o 40 semanas, 150 días); si no, la media de 200 días −2 %. <b>Sobreventa</b>: bajo la media −15 % (o lo que diga el reporte) es zona de recompra.</p>
+   <p>Para los ETF que tienes, el servidor avisa <b>al cierre</b> si cruzan el piso (el viernes, si la regla es semanal), una vez por cruce. No es el aviso de "Vta si baja", que salta al primer cruce del día.</p>`},
   {id:'riel', t:'Los pasos: Alerta · Sectores · El embudo · Filtros · A mano', donde:'Explorar › fila de recuadros', k:'pasos alerta candidatas sectores embudo filtros a mano',
    html:`<p>El resultado va primero (<b>Alerta · Candidatas</b>). Los demás recuadros muestran cómo se llegó ahí: <b>Paso 1 Sectores</b>, <b>Paso 2 El embudo</b>, <b>Paso 3 Filtros</b> y <b>Extra A mano</b>. El número de cada recuadro es cuántas quedan en ese paso.</p>`},
   {id:'sectores', t:'Paso 1: dónde está entrando la plata', donde:'Explorar › Paso 1 Sectores', k:'sectores industrias fuerza 12 meses sp500 etf sectoriales',
@@ -6755,6 +6827,7 @@ function renderCard(s){
   // sitio que llama.
   if(!card) return;
   pintarFichaCard(card, s.ticker);
+  if(s.esEtf) pintarPisoCard(card, s);
   const priceEl = card.querySelector('[data-el="price"]');
   const deltaEl = card.querySelector('[data-el="delta"]');
   const deltaDiaEl = card.querySelector('[data-el="deltaDia"]');
@@ -8443,9 +8516,16 @@ let reporteExcluidos = (() => {
   try { const a = JSON.parse(localStorage.getItem(REPORTE_EXCL_KEY) || '[]');
         return new Set(Array.isArray(a) ? a : []); } catch(e){ return new Set(); }
 })();
+// Registro de los reportes aplicados (6-nov-2026): uno por fecha de reporte.
+const REPORTE_HIST_KEY = 'ipsa_reporte_historial';
+let reporteHistorial = (() => {
+  try { const a = JSON.parse(localStorage.getItem(REPORTE_HIST_KEY) || '[]'); return Array.isArray(a) ? a : []; }
+  catch(e){ return []; }
+})();
 let reporteBorrador = null;      // lo leído del PDF, esperando "Aplicar"
 let reporteLeyendo = null;       // {pag, total, archivo} mientras se lee
 let reporteError = null;
+let reporteAviso = null;        // lo que dejó "Cargar registro" (6-nov-2026)
 let reporteNoSigoAbierto = false;
 let reporteCuadre = {base: null, modo: 'ambos', aporte: null};   // lo escrito en el cuadre de ETF
 function guardarEspera(){
@@ -9558,6 +9638,10 @@ function explorarTarjetaHTML(c, tipo){
       ${typeof c.capB === 'number' ? ` · Cap.: US$${fmtNum(c.capB, 1)} B` : ''}
       ${explMetodo === '2' && typeof c.distMax === 'number' ? ` · a ${fmtNum(c.distMax, 1)} % de su máx. de 52 sem.` : ''}
       ${explMetodo === '2' && typeof c.montoM === 'number' ? ` · US$${fmtNum(c.montoM, 0)} M/día` : ''}
+      ${explMetodo === '2' && c.entrada ? `<div class="expl-m2-linea"><span class="expl-ent ${c.entrada.cls}">${c.entrada.tit}</span>
+        <span class="expl-ent-txt">${c.entrada.txt}</span></div>` : ''}
+      ${explMetodo === '2' && c.sector && typeof c.enCartera === 'number' ? `<div class="expl-m2-linea"><span class="expl-sect ${c.enCartera ? '' : 'nuevo'}">${
+        c.enCartera ? `Ya tienes ${c.enCartera} en ${escEsp(c.sector)}` : `Sector nuevo para tu cartera (${escEsp(c.sector)})`}</span></div>` : ''}
       ${c.sinFundamentales ? ' · <span style="color:var(--ink-dim);">sin datos de empresa (cripto) — pasó solo con precio/tendencia/fase/fuerza</span>' : ''}
     </div>
     ${tipo === 'mano' && c.faltan && c.faltan.length ? explFaltaHTML(c) : ''}
@@ -9595,7 +9679,9 @@ const EXPL_UMBRALES_DEF = {precio:10, volM:2, capB:2, crecimiento:25, score:6};
 // Método 2 (5-nov-2026): montoM = monto medio diario en millones de US$
 // (precio × volumen de 90 días), distMax = cuánto bajo su máximo de 52
 // semanas puede estar (%), crecVentas = ventas TTM contra el año anterior (%).
-const EXPL_UMBRALES_DEF_M2 = {precio:10, montoM:20, capB:2, distMax:5, crecVentas:0, score:6};
+// 6-nov-2026: 8 % y 3 confirmaciones (conf), probado contra las 19 compras
+// del reporte entre el 8-sep y el 3-nov.
+const EXPL_UMBRALES_DEF_M2 = {precio:10, montoM:20, capB:2, distMax:8, crecVentas:0, conf:3, score:6};
 let explUmbrales = cargarExplUmbrales();
 let explFiltros = cargarExplFiltros();   // qué etapas están encendidas
 let explPaso = 0;                        // 0 = la alerta (el resultado), ver PASOS
@@ -9685,7 +9771,10 @@ function explClaveUmbrales(){ return explMetodo === '2' ? 'ipsa_expl_umbrales_m2
 function cargarExplUmbrales(){
   const def = explUmbralesDef();
   try {
-    const v = JSON.parse(localStorage.getItem(explClaveUmbrales()) || 'null');
+    let v = JSON.parse(localStorage.getItem(explClaveUmbrales()) || 'null');
+    // Umbrales del método 2 guardados antes del 6-nov (sin "conf"): eran los
+    // de la primera versión (5 %), se descartan para que mande la nueva.
+    if(explMetodo === '2' && v && typeof v === 'object' && v.conf === undefined) v = null;
     return Object.assign({}, def, (v && typeof v === 'object') ? v : {});
   } catch(e){ return Object.assign({}, def); }
 }
@@ -9781,7 +9870,8 @@ function explEtapasM2(lista, u, num){
     Object.assign({}, por('capB'), {grupo:'Tamaño y ventas'}),
     Object.assign({}, por('crecVentas'), {corto:'ventas caen', tit:`Ventas ≥ ${u.crecVentas} % contra el año anterior`,
      sub:'que no caigan', pasa:a => a.sf || (num(a.gV) && a.gV >= u.crecVentas)}),
-    por('weinstein'),
+    Object.assign({}, por('weinstein'), {tit:`Fase 2 con ≥ ${u.conf} confirmaciones`,
+     pasa:a => a.f === 2 && num(a.cf) && a.cf >= u.conf}),
     por('fuerza'),
   ];
 }
@@ -9913,6 +10003,101 @@ function explComparacionHTML(c){
   </details>`;
 }
 
+// ---- ETF: clases, piso y candidatas (6-nov-2026) ---------------------------
+// Una por clase: dos ETF de la misma clase son casi la misma apuesta (XLE y
+// XOP, QQQ y QQQM). Los factores van separados porque el reporte sí tiene a
+// la vez el S&P 500 (VOO) y mid caps de calidad (XMHQ). Editable: un ETF que
+// no esté acá es su propia clase.
+const ETF_CLASE = {
+  VOO: 'EE.UU. amplio', VTI: 'EE.UU. amplio', URSP: 'EE.UU. amplio',
+  QQQ: 'Nasdaq 100', QQQM: 'Nasdaq 100',
+  SCHD: 'Dividendos', VIG: 'Dividendos', USMV: 'Baja volatilidad', QUAL: 'Calidad', XMHQ: 'Calidad',
+  MTUM: 'Momentum', VLUE: 'Valor',
+  VT: 'Mundo y fuera de EE.UU.', VXUS: 'Mundo y fuera de EE.UU.', EWJ: 'Japón',
+  XLK: 'Tecnología', SMH: 'Semiconductores', IGV: 'Software', CIBR: 'Ciberseguridad', ARKK: 'Innovación',
+  XLV: 'Salud', XBI: 'Biotecnología', XLF: 'Financiero', KRE: 'Financiero',
+  XLE: 'Energía', XOP: 'Energía', XLB: 'Materiales', DBC: 'Materias primas',
+  GLD: 'Metales preciosos', SLV: 'Metales preciosos', GDX: 'Metales preciosos', URA: 'Uranio',
+  XLI: 'Industriales', PAVE: 'Industriales', IYT: 'Industriales', ITA: 'Defensa',
+  XLY: 'Consumo discrecional', XRT: 'Consumo discrecional', XLP: 'Consumo básico', XLC: 'Comunicaciones',
+  XLU: 'Servicios básicos', XLRE: 'Inmobiliario', BND: 'Bonos', TLT: 'Bonos',
+};
+const ETF_DIST_MAX = 8;    // % bajo el máximo de 52 semanas, como el método 2
+const ETF_CONF_MIN = 3;    // confirmaciones de fase 2, como el método 2
+
+// El piso de un ETF: el del reporte si lo trae (y lo sigues); si no, la media
+// de 200 días −2 % (la regla del reporte para XBI, SMH y DBC, y casi la de
+// XMHQ: 40 semanas son ~200 días). Sobreventa por defecto: 15 % bajo la media.
+function pisoEtf(tk){
+  try {
+    const it = (reporteIns && typeof itemReporte === 'function') ? itemReporte(tk) : null;
+    if(it && it.tipo === 'etf' && sigueReporte(tk)){
+      const d = it.d;
+      if(d.sinPiso) return {sinPiso: true, origen: 'reporte', fecha: reporteIns.fecha};
+      // Regla semanal (30 o 40 semanas): cuenta el cierre del viernes, aunque
+      // el texto de ese reporte no lo diga (el del 6-nov no lo dice para VOO).
+      if(d.piso > 0) return {nivel: d.piso, origen: 'reporte', fecha: reporteIns.fecha, viernes: !!d.pisoSemanal || /semana/i.test(d.pisoRegla || ''),
+                             regla: d.pisoRegla || null, sobreventa: d.recompraSobreventa || null, recompra: d.recompraSobre || null};
+    }
+  } catch(e){}
+  const s = todosLosStocks().find(x => x.ticker === tk);
+  const sma = (s && typeof s.sma200 === 'number' && s.sma200 > 0) ? s.sma200 : null;
+  if(sma === null) return null;
+  const r2 = v => Math.round(v * 100) / 100;
+  return {nivel: r2(sma * 0.98), origen: 'media200', viernes: false, sobreventa: r2(sma * 0.85), recompra: r2(sma), sma200: sma};
+}
+function estadoPisoEtf(precio, p){
+  if(!p || p.sinPiso || !(precio > 0) || !(p.nivel > 0)) return null;
+  if(precio < p.nivel){
+    if(p.sobreventa && precio <= p.sobreventa) return {cls: 're', tit: 'Sobreventa', txt: 'zona de recompra del método'};
+    return {cls: 'so', tit: 'Bajo el piso', txt: 'la regla vende todo' + (p.viernes ? ' si el viernes cierra así' : ' si cierra así')};
+  }
+  return {cls: 'ok', tit: 'Sobre el piso', txt: fmtNum((precio / p.nivel - 1) * 100, 1) + ' % sobre el piso'};
+}
+function pisoEtfTexto(p){
+  if(!p) return '';
+  if(p.sinPiso) return 'sin regla de piso (reporte: ninguna le ganó a mantenerlo)';
+  return (p.origen === 'reporte' ? `del reporte del ${fechaCortaRep(p.fecha)}` : 'media de 200 días −2 %') + (p.viernes ? ', al cierre del viernes' : '');
+}
+// Tarjeta de la pestaña ETF.
+function pintarPisoCard(card, s){
+  const el = card.querySelector('[data-el="csPiso"]');
+  if(!el) return;
+  const p = pisoEtf(s.ticker);
+  if(!p){ el.innerHTML = ''; return; }
+  if(p.sinPiso){ el.innerHTML = '<span>Piso: sin regla (reporte)</span>'; return; }
+  const e = estadoPisoEtf(s.price, p);
+  el.innerHTML = `<span>Piso <b class="mono">${fmtNum(p.nivel, 2)}</b> · ${p.origen === 'reporte' ? 'reporte' : 'MM 200 −2 %'}${p.viernes ? ' (viernes)' : ''}</span>`
+    + (e ? `<span class="etf-piso ${e.cls}">${e.tit}</span>` : '');
+}
+// Mi Cartera: solo cuando el piso NO viene del reporte (ese lo muestra su franja).
+function pisoEtfCarteraHTML(s, pos){
+  if(!s || !s.esEtf || !(pos && pos.netoQ > 0)) return '';
+  const p = pisoEtf(s.ticker);
+  if(!p || p.origen === 'reporte') return '';
+  const e = estadoPisoEtf(s.price, p);
+  return `<div class="rep-franja"><span class="rep-franja-tit">Piso del ETF · media de 200 días −2 %</span>
+    <span>La regla vende todo si cierra bajo <b>${fmtNum(p.nivel, 2)}</b>${e ? ` · hoy: <b style="font-family:inherit;">${e.tit.toLowerCase()}</b> (${e.txt})` : ''}.
+    Te aviso al cierre si lo cruza.</span></div>`;
+}
+// Candidatas ETF de Explorar: sobre las medias de 50 y 200 días, cerca del
+// máximo, fase 2 con 3 confirmaciones; una por clase, por fuerza a 12 meses.
+function etfCandidatas(etfs){
+  const n = v => typeof v === 'number' && isFinite(v);
+  const pasa = x => n(x.precio) && n(x.sma50) && n(x.sma200) && x.precio > x.sma50 && x.precio > x.sma200
+                    && n(x.dm) && x.dm <= ETF_DIST_MAX && x.fase === 2 && n(x.conf) && x.conf >= ETF_CONF_MIN;
+  const m12 = x => (x.fuerza && n(x.fuerza.m12)) ? x.fuerza.m12 : -1e9;
+  const vistas = {}, lideres = [];
+  etfs.filter(pasa).sort((a, b) => m12(b) - m12(a)).forEach(x => {
+    const c = ETF_CLASE[x.etf] || x.etf;
+    if(vistas[c]){ vistas[c]._otras.push(x.etf); return; }
+    const y = Object.assign({}, x, {_clase: c, _otras: []});
+    vistas[c] = y;
+    lideres.push(y);
+  });
+  return lideres;
+}
+
 function explorarResultadoHTML(analisis){
   const a = analisis.alerta || {};
   const sectores = analisis.sectores || [];
@@ -9970,15 +10155,39 @@ function explorarResultadoHTML(analisis){
     // avance, 4 es caída. Es la única de las dos lecturas del método que
     // sobrevive entera cuando el papel no es una empresa.
     const fase = (typeof x.fase === 'number' && x.fase > 0) ? x.fase : null;
+    const pz = pisoEtf(x.etf), ez = pz ? estadoPisoEtf(typeof x.precio === 'number' ? x.precio : null, pz) : null;
     return `<div class="expl-etf-row">
-        <span class="expl-etf-nom">${(x.nombre||x.etf).replace(/</g,'&lt;')}
+        <span class="expl-etf-nom">${(x.nombre||x.etf).replace(/</g,'&lt;')}${ez ? ` <span class="etf-piso ${ez.cls}" title="Piso ${fmtNum(pz.nivel, 2)} · ${pisoEtfTexto(pz)}">${ez.tit.toLowerCase()}</span>` : ''}
           <span class="expl-etf-tic mono">${x.etf}</span>
           <span class="expl-etf-grp">${ETF_GRUPO_TXT[x.grupo] || ''}</span></span>
         ${fase ? `<span class="expl-etf-fase" style="color:${FASE_COLOR[fase] || 'var(--ink-faint)'};">fase ${fase}</span>` : '<span class="expl-etf-fase"></span>'}
         <span class="expl-fuerza-val ${cls}">${m12 === null ? '—' : (m12>=0?'+':'') + fmtNum(m12, 1) + '%'}</span>
       </div>`;
   };
-  const ETF_LISTA_HTML = etfsFuerza.length ? `
+  // Candidatas ETF (6-nov-2026): lo que usa el reporte para ENTRAR a un ETF
+  // nuevo. Necesita el servidor nuevo (precio, medias, máximo y
+  // confirmaciones por ETF); con uno viejo, este bloque no aparece.
+  const candEtf = etfCandidatas(etfsFuerza);
+  const conDatosEtf = etfsFuerza.some(x => typeof x.sma200 === 'number');
+  const CAND_ETF_HTML = conDatosEtf ? `
+     <p class="expl-section-title">ETF · candidatas (${candEtf.length})</p>
+     <p class="expl-section-nota">Las que usa el reporte para entrar a un ETF nuevo: <b>sobre las medias de 50 y 200 días, a ≤ ${ETF_DIST_MAX} %
+     de su máximo de 52 semanas, fase 2 con ≥ ${ETF_CONF_MIN} confirmaciones</b>. Una por clase (la de más fuerza a 12 meses; las otras
+     de la clase quedan anotadas). El piso es el del reporte si lo trae; si no, la media de 200 días −2 %.</p>
+     ${candEtf.length ? candEtf.map(x => {
+        const pz = pisoEtf(x.etf), ez = pz ? estadoPisoEtf(x.precio, pz) : null;
+        const m12 = (x.fuerza && typeof x.fuerza.m12 === 'number') ? x.fuerza.m12 : null;
+        return `<div class="etf-cand">
+          <div class="etf-cand-head"><b data-accion="expl-abrir" data-ticker="${x.etf}">${x.etf}</b>
+            <span class="expl-etf-grp">${escEsp(x._clase)}</span>
+            ${ez ? `<span class="etf-piso ${ez.cls}">${ez.tit.toLowerCase()}</span>` : ''}
+            ${(typeof espera !== 'undefined' && espera[x.etf]) ? '<span class="expl-ya">en A seguir</span>' : (tienePosicion(x.etf) ? '<span class="expl-ya">la tienes</span>' : '')}</div>
+          <div class="etf-cand-sub">${escEsp(x.nombre || '')} · ${fmtNum(x.dm, 1)} % bajo su máximo · fase 2 · ${x.conf}/5 confirmaciones
+            ${m12 !== null ? ` · ${m12 >= 0 ? '+' : ''}${fmtNum(m12, 1)} pp vs S&amp;P 500 a 12 meses` : ''}
+            ${pz && !pz.sinPiso ? `<br>Piso ${fmtNum(pz.nivel, 2)} (${pisoEtfTexto(pz)})` : (pz && pz.sinPiso ? '<br>Sin regla de piso (reporte)' : '')}
+            ${x._otras.length ? `<br>Misma clase, también pasan: ${x._otras.join(', ')}` : ''}</div>
+        </div>`; }).join('') : '<p class="expl-empty">Ningún ETF cumple hoy las cuatro condiciones.</p>'}` : '';
+  const ETF_LISTA_HTML = etfsFuerza.length ? `${CAND_ETF_HTML}
      <p class="expl-section-title">ETF · fuerza contra el S&amp;P 500 (${etfsFuerza.length})</p>
      <p class="expl-section-nota">El segundo listado, separado de las acciones a propósito. A un fondo no se le
      pueden aplicar los filtros de empresa del método —no tiene capitalización ni utilidades—, así que acá manda
@@ -10007,7 +10216,8 @@ function explorarResultadoHTML(analisis){
   // "Fuera por la ficha", al final, y las del mismo motor quedan de reserva.
   _fichaExplVista = new Set(sobreviven.map(x => x.t).concat((analisis.revisarAMano || []).map(c => c.ticker)));
   pedirFichas(Array.from(_fichaExplVista), true);
-  const {finales, fueraFicha} = explAgruparPorMotor(sobreviven, explFiltros.dedup);
+  const {finales, fueraFicha, vigilar = [], pendientes = []} = explAgruparPorMotor(sobreviven, explFiltros.dedup);
+  const sectCartera = explMetodo === '2' ? explSectoresCartera(acciones) : {};
 
   // ---- Riel de pasos -----------------------------------------------------
   // EL RESULTADO VA PRIMERO, no el paso 1. Esto es una primera alerta: se
@@ -10071,7 +10281,9 @@ function explorarResultadoHTML(analisis){
       <input type="range" data-umbral="capB" min="0" max="50" step="0.5" value="${u.capB}"><b>${fmtNum(u.capB, 1)} B</b></div>
     ${explMetodo === '2' ? `
     <div class="exp-ctrl"><span>Ventas</span>
-      <input type="range" data-umbral="crecVentas" min="-20" max="50" step="1" value="${u.crecVentas}"><b>≥ ${u.crecVentas} %</b></div>` : `
+      <input type="range" data-umbral="crecVentas" min="-20" max="50" step="1" value="${u.crecVentas}"><b>≥ ${u.crecVentas} %</b></div>
+    <div class="exp-ctrl"><span>Confirmaciones</span>
+      <input type="range" data-umbral="conf" min="0" max="5" step="1" value="${u.conf}"><b>≥ ${u.conf} de 5</b></div>` : `
     <div class="exp-ctrl"><span>Crecimiento</span>
       <input type="range" data-umbral="crecimiento" min="-20" max="100" step="5" value="${u.crecimiento}"><b>${u.crecimiento} %</b></div>`}
     <div class="exp-ctrl"><span>Score mínimo</span>
@@ -10089,7 +10301,7 @@ function explorarResultadoHTML(analisis){
     la app siempre será más corta que la de tu screener. Apágalos para comparar 1 a 1.</p>
     <label class="exp-toggle">
       <input type="checkbox" data-filtro="weinstein" ${explFiltros.weinstein?'checked':''}>
-      <span class="exp-toggle-txt"><b>Fase 2 de Weinstein, con ≥ 4 confirmaciones</b>
+      <span class="exp-toggle-txt"><b>Fase 2 de Weinstein, con ≥ ${explMetodo === '2' ? u.conf : 4} confirmaciones</b>
       Solo compra en la fase de avance. Es el filtro que más recorta.</span>
     </label>
     <label class="exp-toggle">
@@ -10113,7 +10325,7 @@ function explorarResultadoHTML(analisis){
   const tabla = (lista, vacio) => lista.length ? `
     <div class="exp-tabla-wrap"><table class="exp-tabla">
       <thead><tr><th>Acción</th><th>Precio</th><th>Cap. B</th>${explMetodo === '2'
-        ? '<th>US$ M/día</th><th>Bajo máx.</th><th>Ventas</th>' : '<th>Vol. M</th><th>BPA</th>'}<th>Fase</th><th>Score</th></tr></thead>
+        ? '<th>US$ M/día</th><th>Bajo máx.</th><th>Ventas</th>' : '<th>Vol. M</th><th>BPA</th>'}<th>Fase</th><th>Score</th>${explMetodo === '2' ? '<th>Entrada</th>' : ''}</tr></thead>
       <tbody>${lista.map(x => `<tr>
         <td data-accion="exp-abrir" data-ticker="${x.t}">${x.t}</td>
         <td>${typeof x.p === 'number' ? x.p : '—'}</td>
@@ -10126,6 +10338,7 @@ function explorarResultadoHTML(analisis){
         <td>${explFmtCrec(x)}</td>`}
         <td>${x.f == null ? '<span class="no">—</span>' : `<span class="${x.f===2?'ok':''}">${x.f}${typeof x.cf==='number'?`·${x.cf}`:''}</span>`}</td>
         <td>${typeof x.sc === 'number' ? `<span class="${x.sc>=6?'ok':''}">${x.sc}</span>` : '<span class="no">—</span>'}</td>
+        ${explMetodo === '2' ? `<td>${(explEntradaM2(x) || {}).tit || '—'}</td>` : ''}
       </tr>`).join('')}</tbody>
     </table></div>` : `<p class="expl-empty">${vacio}</p>`;
 
@@ -10135,6 +10348,8 @@ function explorarResultadoHTML(analisis){
     ticker:x.t, nombre:x.n, sector:x.se, industria:x['in'], precio:x.p, sma50:x.c50,
     capB:x.cB, crecBpa:x.gB, crecVentas:x.gV, volM:x.v, fase:x.f, confirmaciones:x.cf,
     distMax:x.dm, montoM:explMonto(x),
+    entrada: explMetodo === '2' ? explEntradaM2(x) : null,
+    enCartera: (explMetodo === '2' && x.se) ? (sectCartera[x.se] || 0) : null,
     score:x.sc, fuerzaRelativa:{disponible:x.fr!==null, pendientePositiva:x.fr===1},
     mansfield:x.mf,
     tradingview:`https://www.tradingview.com/symbols/${x.t}/`,
@@ -10228,7 +10443,7 @@ function explorarResultadoHTML(analisis){
   // El panel del resultado. Se define aparte porque va PRIMERO en el riel
   // (ver la nota de PASOS), pero se arma con todo lo calculado más arriba.
   const RESULTADO_HTML =     `<div class="expl-alert">
-       <div class="expl-alert-frase">${finales.length} candidata(s) sobre ${acciones.length} acciones revisadas${mano.length?`, más ${mano.length} para mirar a mano`:''}${fueraFicha.length?` · ${fueraFicha.length} fuera por la ficha`:''}.</div>
+       <div class="expl-alert-frase">${finales.length} candidata(s) sobre ${acciones.length} acciones revisadas${mano.length?`, más ${mano.length} para mirar a mano`:''}${vigilar.length?` · ${vigilar.length} para vigilar`:''}${pendientes.length?` · ${pendientes.length} con ficha pendiente`:''}${fueraFicha.length?` · ${fueraFicha.length} fuera por la ficha`:''}.</div>
        <div class="expl-alert-meta">
          <span>Cobertura: <b>${a.cobertura != null ? a.cobertura + '%' : '—'}</b></span>
          <span>Generado: <b>${explorarFechaHTML(analisis)}</b></span>
@@ -10254,10 +10469,21 @@ function explorarResultadoHTML(analisis){
           title="Descarga estas mismas listas como planilla de Excel (.xlsx), con los umbrales que tienes puestos ahora">⬇ Excel</button>` : ''}
      </div>
      ${explFichaProgresoHTML(sobreviven.map(x => x.t))}
+     ${explMetodo === '2' && finales.length ? `<p class="expl-section-nota">Método 2: <b>la líder de su industria</b> — ficha 4 o más de 5
+       (en financieras la ficha es orientativa), una por industria; las demás de esa industria quedan de reserva bajo ella.
+       Ordenadas por ficha y después por fuerza relativa.</p>` : ''}
      ${finales.length ? finales.map(tarjetaDe).join('')
        : embudoCortado
          ? '<p class="expl-empty" style="color:var(--copper);">No se puede saber todavía: el embudo se cortó antes de llegar acá, por lo que dice el aviso de arriba.</p>'
          : '<p class="expl-empty">Ninguna con estos umbrales. Puedes aflojarlos en el paso 2 o apagar los dos filtros del paso 3 y ver qué aparece.</p>'}
+     ${vigilar.length ? `<p class="expl-section-title">Vigilar · ficha 3 a 3,5 (${vigilar.length})</p>
+       <p class="expl-section-nota">Pasaron todo el embudo, pero su ficha no llega a 4 (o le faltan datos). No son líderes de su industria todavía.</p>
+       <div class="exp-caidos">${vigilar.map(x => { const en = explEntradaM2(x); return `<div class="exp-caido"><b data-accion="expl-abrir" data-ticker="${x.t}" style="cursor:pointer;">${x.t}</b><span class="ec-val">${
+         fichaChipHTML(x.t, {pedir:false, sector:x.se, industria:x['in']})}${en ? ' · ' + en.tit.toLowerCase() : ''}${typeof x.dm === 'number' ? ' · ' + fmtNum(x.dm, 1) + ' % bajo máx.' : ''}</span></div>`; }).join('')}</div>` : ''}
+     ${pendientes.length ? `<p class="expl-section-title">Ficha pendiente (${pendientes.length})</p>
+       <p class="expl-section-nota">Pasaron todo el embudo y su ficha se está calculando: se ubican solas (candidata, vigilar o fuera) cuando llega.</p>
+       <div class="exp-caidos">${pendientes.map(x => `<div class="exp-caido"><b data-accion="expl-abrir" data-ticker="${x.t}" style="cursor:pointer;">${x.t}</b><span class="ec-val">${
+         fichaChipHTML(x.t, {pedir:false, sector:x.se, industria:x['in']})}${x.se ? ' · ' + escEsp(x.se) : ''}</span></div>`).join('')}</div>` : ''}
      ${fueraFicha.length ? `<p class="expl-section-title">Fuera por la ficha (${fueraFicha.length})</p>
        <p class="expl-section-nota">Pasaron el embudo técnico, pero su ficha fundamental suma menos de 3 de 5 (o con lo
        que le falta ya no llega a 3). No se esconden: ábrelas para ver qué pregunta reprobaron.</p>
@@ -10315,7 +10541,9 @@ function explorarResultadoHTML(analisis){
   // Lo que quedo en pantalla, para que "⬇ Excel" exporte exactamente esto.
   _explListas = {finales: finales.reduce((acc, x) => acc.concat([Object.assign({}, x, {_estado:'candidata'})],
                     (x._reservas || []).map(r => Object.assign({}, r, {_estado:'reserva de ' + x.t}))), []),
-                  fuera: fueraFicha.map(x => Object.assign({}, x, {_estado:'fuera por la ficha'})),
+                  fuera: fueraFicha.map(x => Object.assign({}, x, {_estado:'fuera por la ficha'}))
+                    .concat(vigilar.map(x => Object.assign({}, x, {_estado:'vigilar (ficha 3 a 3,5)'})))
+                    .concat(pendientes.map(x => Object.assign({}, x, {_estado:'ficha pendiente'}))),
                   mano, etfs: etfsFuerza,
                   meta: {generado: analisis.generado, umbrales: Object.assign({}, explUmbrales), metodo: explMetodo,
                          filtros: Object.assign({}, explFiltros)}};
@@ -10379,12 +10607,12 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
   const norm = x => {
     if(x.t){
       return {t:x.t, n:x.n, se:x.se, ind:x['in'], p:x.p, c50:x.c50, cB:x.cB, gB:x.gB, gV:x.gV, v:x.v,
-              mo:explMonto(x), dm:x.dm,
+              mo:explMonto(x), dm:x.dm, de:x.de, ent:(explEntradaM2(x) || {}).tit || '',
               f:x.f, cf:x.cf, sc:x.sc, fr:x.fr, mf:x.mf, x30:x.x30, m10:x.m10, rp:x.rp, rpS:x.rpS, estado:x._estado};
     }
     const fr = x.fuerzaRelativa || {}, pr = x.proximoReporte || {};
     return {t:x.ticker, n:x.nombre, se:x.sector, ind:x.industria, p:x.precio, c50:x.sma50, cB:x.capB,
-            gB:x.crecBpa, gV:x.crecVentas, v:x.volM, mo:x.montoM, dm:x.distMax, f:x.fase, cf:x.confirmaciones, sc:x.score,
+            gB:x.crecBpa, gV:x.crecVentas, v:x.volM, mo:x.montoM, dm:x.distMax, de:x.distEMA21, f:x.fase, cf:x.confirmaciones, sc:x.score,
             fr: fr.disponible ? (fr.pendientePositiva ? 1 : 0) : null, mf:x.mansfield,
             x30:x.maximo30sem, m10:x.min10, rp:pr.fecha || null, rpS:pr.sinReporteHasta || null,
             faltan:x.faltan, estado:'a mano'};
@@ -10393,7 +10621,7 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
   const CAB = ['Ticker', 'Estado', 'Motor', 'Qué hace', 'Nombre', 'Sector', 'Industria',
     'Precio USD (corrida)', 'Media 50', 'Máx. 30 semanas', 'Zona de compra hasta (+4 %)', 'Precio vs máx. 30 sem. %',
     'Mín. 10 sesiones', 'Stop clase entrando en el máx. 30 sem.', 'Próximos resultados', 'Días hábiles a resultados',
-    'Cap. B', 'Crec. BPA %', 'Crec. ventas %', 'Volumen 90d M', 'Monto diario US$ M', '% bajo máx. 52 sem.',
+    'Cap. B', 'Crec. BPA %', 'Crec. ventas %', 'Volumen 90d M', 'Monto diario US$ M', '% bajo máx. 52 sem.', '% sobre EMA 21', 'Entrada (método 2)',
     'Fase', 'Confirmaciones', 'Score', 'Fuerza relativa subiendo', 'Mansfield',
     'Ficha (de 5)', 'Ficha con dato (de 5)', 'Veredicto ficha', 'Firma de caja',
     'Ventas vs año anterior % (ficha)', 'BPA vs año anterior % (ficha)',
@@ -10431,7 +10659,7 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
       (x30 !== null && num(x.p) !== null) ? r2((x.p / x30 - 1) * 100) : null,
       r2(m10), stopClase(x30, m10),
       rp ? rp : (rpS ? 'ninguno hasta ' + rpS : ''), (dh !== null && dh >= 0) ? dh : null,
-      num(x.cB), num(x.gB), num(x.gV), num(x.v), num(x.mo), num(x.dm),
+      num(x.cB), num(x.gB), num(x.gV), num(x.v), num(x.mo), num(x.dm), num(x.de), x.ent || '',
       num(x.f), num(x.cf), num(x.sc), x.fr === 1 ? 'si' : (x.fr === 0 ? 'no' : ''), num(x.mf),
       ok ? fi.puntaje : null, ok ? fi.respondidas : null,
       ve ? FICHA_VEREDICTO[ve][0] : (fi ? 'sin datos' : 'sin calcular'),
@@ -10464,12 +10692,12 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta){
       ? `${m.sano ? 'Sano' : 'Débil'}: ${MERCADO_REF} ${m.esCierre ? 'cerró' : 'está'} en ${fmtNum(m.ref, 2)} USD; media 200 = ${fmtNum(m.sma, 2)} (${m.distPct >= 0 ? '+' : ''}${fmtNum(m.distPct, 1)} %)`
       : 'sin dato'],
     ['Método', meta.metodo === '2'
-      ? 'Método 2 · Calidad en tendencia (el tipo de acción del reporte): liquidez en dólares, cerca del máximo de 52 semanas, ventas que no caen'
+      ? 'Método 2 · Calidad en tendencia (el tipo de acción del reporte): liquidez en dólares, cerca del máximo de 52 semanas, ventas que no caen; candidata = líder de su industria por la ficha (4 o más de 5). Hoja "Fuera por la ficha" incluye también las de vigilar y las de ficha pendiente (columna Estado).'
       : 'Método 1 · Crecimiento: BPA y ventas creciendo fuerte, volumen alto'],
     ['Umbrales usados', meta.metodo === '2'
-      ? `Precio ≥ ${u.precio} USD · Monto diario ≥ US$ ${fmtNum(u.montoM, 0)} M · A ≤ ${fmtNum(u.distMax)} % del máximo de 52 semanas · Capitalización ≥ ${fmtNum(u.capB, 1)} B · Ventas ≥ ${u.crecVentas} % · Score ≥ ${u.score}/8`
+      ? `Precio ≥ ${u.precio} USD · Monto diario ≥ US$ ${fmtNum(u.montoM, 0)} M · A ≤ ${fmtNum(u.distMax)} % del máximo de 52 semanas · Capitalización ≥ ${fmtNum(u.capB, 1)} B · Ventas ≥ ${u.crecVentas} % · Fase 2 con ≥ ${u.conf} confirmaciones · Score ≥ ${u.score}/8`
       : `Precio ≥ ${u.precio} USD · Volumen 90 d ≥ ${fmtNum(u.volM, 2)} M · Capitalización ≥ ${fmtNum(u.capB, 1)} B · Crecimiento BPA y ventas ≥ ${u.crecimiento} % · Score ≥ ${u.score}/8`],
-    ['Filtros', `Fase 2 con ≥ 4 confirmaciones: ${onOff(fl.weinstein)} · Score y fuerza relativa subiendo: ${onOff(fl.fuerza)} · Una por motor de negocio: ${onOff(fl.dedup)}`],
+    ['Filtros', `Fase 2 con ≥ ${meta.metodo === '2' ? u.conf : 4} confirmaciones: ${onOff(fl.weinstein)} · Score y fuerza relativa subiendo: ${onOff(fl.fuerza)} · Una por motor de negocio: ${onOff(fl.dedup)}`],
     ['Hoja Candidatas', 'Pasaron todo el embudo y la ficha no las deja fuera. Estado "candidata" = encabeza su motor; "reserva de X" = mismo motor que X, con menor score.'],
     ['Hoja Fuera por la ficha', 'Pasaron el embudo técnico, pero la ficha fundamental suma menos de 3 de 5 (o con lo que le falta ya no llega a 3).'],
     ['Hoja A mano', 'Técnicamente sanas, pero les faltó un dato del embudo (columna "Le falta").'],
@@ -10644,15 +10872,16 @@ function renderAmbienteExplorar(){
     <div id="mercadoFranjaExpl">${mercadoFranjaHTML()}</div>
     <div class="expl-metodos">${[
       ['1', 'BPA y ventas +25 %, volumen ≥ 2 M de acciones'],
-      ['2', 'como el reporte: cerca del máximo, ventas que no caen'],
+      ['2', 'como el reporte: la líder de su industria, cerca del máximo'],
     ].map(([m, s]) => `<button type="button" class="expl-metodo-btn ${m === explMetodo ? 'active' : ''}" data-expl-metodo="${m}">
         <b>${EXPL_METODO_NOMBRE[m]}</b><span>${metodoCorriendo === m ? '<span class="corre">corriendo…</span>' : s}</span></button>`).join('')}
     </div>
     ${explMetodo === '2' ? `<p class="expl-run-nota" style="margin-bottom:10px;">
-      Busca lo que elige el reporte: <b>empresas de calidad en tendencia</b>. Barre el mismo mercado completo, pero
-      mide la liquidez en <b>dólares</b> (así no castiga a las caras, como MTD o VRSN), exige estar <b>cerca del máximo
-      de 52 semanas</b> y que <b>las ventas no caigan</b>, en vez de crecer 25 %. Después aplica lo mismo que el
-      método 1: fase de Weinstein, score y fuerza relativa, ficha fundamental y una por motor. No corre solo.
+      Busca lo que elige el reporte: <b>la líder de su industria, en tendencia</b>. Barre el mismo mercado completo, pero
+      mide la liquidez en <b>dólares</b> (así no castiga a las caras, como MTD o VRSN), exige estar <b>a 8 % o menos del
+      máximo de 52 semanas</b> y que <b>las ventas no caigan</b>. Pide fase 2 con 3 confirmaciones, score y fuerza relativa,
+      y deja como candidata solo a la de mejor ficha de cada industria (4 o más de 5). Cada tarjeta dice si está
+      <b>en retroceso</b> (donde compra el reporte) o <b>en ruptura</b>, y si su sector es nuevo en tu cartera. No corre solo.
     </p>` : `<p class="expl-run-nota" style="margin-bottom:10px;">
       Barre el mercado de EE.UU. completo con el screener de TradingView (si no responde, el S&amp;P 500 + el Nasdaq-100 + tu grilla, 536 acciones), aplica el método completo
       — precio, tendencia, capitalización, crecimiento, fase de Weinstein y fuerza relativa — y te deja
@@ -13162,6 +13391,7 @@ function fichaDetalleHTML(t, o){
 // (y Mansfield en empate) encabeza su motor, y las demás quedan debajo como
 // reserva. Las que la ficha deja fuera van aparte, al final.
 function explAgruparPorMotor(lista, agrupar){
+  if(explMetodo === '2') return explLideresM2(lista, agrupar);
   var mfOrden = function(a){ return (typeof a.mf === 'number') ? a.mf : -1e9; };
   var orden = lista.slice().sort(function(a, b){
     return (b.sc || 0) - (a.sc || 0) || mfOrden(b) - mfOrden(a) || a.t.localeCompare(b.t);
@@ -13176,6 +13406,69 @@ function explAgruparPorMotor(lista, agrupar){
     lideres.push(x);
   });
   return {finales: lideres, fueraFicha: fueraFicha};
+}
+
+// MÉTODO 2 · LÍDER DE SU INDUSTRIA (6-nov-2026). El reporte elige "la líder
+// de su sector según resultados financieros": la ficha manda. Candidatas =
+// ficha 4 o más (calidad) o financiera (la ficha es orientativa ahí y no saca
+// a nadie); una por motor/industria, la de mejor ficha y, si empatan, la de
+// más fuerza relativa (Mansfield). Ficha 3 a 3,5 o incompleta: "Vigilar".
+// Sin ficha todavía: "Ficha pendiente" (se ubican solas cuando llega).
+function explLideresM2(lista, agrupar){
+  var mfOrden = function(a){ return (typeof a.mf === 'number') ? a.mf : -1e9; };
+  var pts = function(a){ var f = fichaDe(a.t); return (f && f.disponible && typeof f.puntaje === 'number') ? f.puntaje : -1; };
+  var orden = lista.slice().sort(function(a, b){
+    return pts(b) - pts(a) || mfOrden(b) - mfOrden(a) || (b.sc || 0) - (a.sc || 0) || a.t.localeCompare(b.t);
+  });
+  var lideres = [], fueraFicha = [], vigilar = [], pendientes = [], porMotor = {};
+  orden.forEach(function(a){
+    var v = fichaAplica(a.t) ? fichaVeredicto(a.t, fichaDe(a.t), a.se, a['in']) : 'calidad';
+    if(v === 'fuera'){ fueraFicha.push(a); return; }
+    if(v === 'vigilar' || v === 'incompleta'){ vigilar.push(a); return; }
+    if(v !== 'calidad' && v !== 'financiera'){ pendientes.push(a); return; }
+    var m = motorDe(a.t, a['in']);
+    var x = Object.assign({}, a, {_motor: m, _reservas: []});
+    if(agrupar && m && porMotor[m.clave]){ porMotor[m.clave]._reservas.push(x); return; }
+    if(m) porMotor[m.clave] = x;
+    lideres.push(x);
+  });
+  return {finales: lideres, fueraFicha: fueraFicha, vigilar: vigilar, pendientes: pendientes};
+}
+
+// MÉTODO 2 · LA ENTRADA (6-nov-2026). El reporte compra el retroceso al techo
+// o a la EMA 21 (en las 19 compras, su zona partía en el máximo de 30 semanas
+// o bajo él); la zona de la clase espera la ruptura del máximo. Las dos se
+// muestran: x30 = máximo intradía de 30 semanas, de = % sobre la EMA 21.
+function explEntradaM2(x){
+  var n = function(v){ return typeof v === 'number' && isFinite(v); };
+  if(!n(x.p)) return null;
+  if(n(x.x30) && x.p >= x.x30){
+    var sobre = (x.p / x.x30 - 1) * 100;
+    return sobre <= ZONA_PCT
+      ? {cls: 'ru', tit: 'En ruptura', txt: 'sobre su máximo de 30 semanas, dentro de la zona de la clase (+' + ZONA_PCT + ' %)'}
+      : {cls: 'so', tit: 'Sobre la zona', txt: fmtNum(sobre, 1) + ' % sobre su máximo de 30 semanas: no perseguir'};
+  }
+  if(!n(x.de)) return {cls: '', tit: 'Sin EMA 21', txt: 'no se calculó la media de 21 días (acción sin diagnóstico)'};
+  if(x.de >= 0){
+    return {cls: 're', tit: 'En retroceso', txt: (n(x.x30) ? fmtNum((1 - x.p / x.x30) * 100, 1) + ' % bajo su máximo de 30 semanas, ' : '')
+      + fmtNum(x.de, 1) + ' % sobre la EMA 21: donde compra el reporte (el techo o la EMA 21)'};
+  }
+  return {cls: '', tit: 'Bajo la EMA 21', txt: fmtNum(-x.de, 1) + ' % bajo la media de 21 días: esperar que la recupere'};
+}
+// Cuántas acciones de cada sector tienes hoy (EE.UU.), para la marca de la tarjeta.
+function explSectoresCartera(acciones){
+  var m = {};
+  try {
+    var porT = {};
+    (acciones || []).forEach(function(a){ if(a.se) porT[a.t] = a.se; });
+    var port = calcularPortafolio('USD');
+    Object.keys(port).forEach(function(t){
+      if(!(port[t] && port[t].netoQ > 0)) return;
+      var se = porT[t];
+      if(se) m[se] = (m[se] || 0) + 1;
+    });
+  } catch(e){}
+  return m;
 }
 
 function explFichaProgresoHTML(tks){
@@ -13447,8 +13740,16 @@ function sincronizarAlertasPrecio(inmediato){
     [['CLP', 'chile'], ['USD', undefined]].forEach(([mon, amb]) => {
       Object.values(calcularPortafolio(mon, amb)).forEach(p => {
         if(!(p.netoQ > 0) || !(p.costoPromedio > 0) || !p.fechaInicio || esTickerCripto(p.ticker)) return;
-        objetivos[p.ticker] = Object.assign(objetivos[p.ticker] || {sube: null, baja: null, mercado: mon},
-                                            {pos: {compra: p.costoPromedio, desde: p.fechaInicio}});
+        const extra = {pos: {compra: p.costoPromedio, desde: p.fechaInicio}};
+        // Piso del ETF (6-nov-2026): el servidor avisa al cierre si lo cruza.
+        // El del reporte va como número fijo; el de por defecto, como regla
+        // (media de 200 días −2 %), porque la media se mueve cada día.
+        if(mon === 'USD' && ETFS_USA_SET.has(p.ticker)){
+          const pz = pisoEtf(p.ticker);
+          if(pz && !pz.sinPiso && pz.origen === 'reporte' && pz.nivel > 0) extra.piso = {nivel: pz.nivel, viernes: !!pz.viernes, fecha: pz.fecha};
+          else if(pz && !pz.sinPiso) extra.piso = {media: 200, banda: 2};
+        }
+        objetivos[p.ticker] = Object.assign(objetivos[p.ticker] || {sube: null, baja: null, mercado: mon}, extra);
       });
     });
     fetch(BACKEND_URL + '/alertas-precio', {
@@ -14093,6 +14394,7 @@ function renderAmbienteCartera(){
         ${montoRiesgoHTML}
         ${sugerenciaStopHTML(s, pos, obj, currency)}
         ${franjaReporteCarteraHTML(s, pos, obj)}
+        ${pisoEtfCarteraHTML(s, pos)}
       </div>`;
   };
 
@@ -16353,6 +16655,7 @@ function aplicarRespaldo(nuevo, opciones){
     const ri = nuevo.reporteInversapiens;
     if(ri.reporte && Array.isArray(ri.reporte.usa)){ reporteIns = ri.reporte; guardarReporte(); }
     if(Array.isArray(ri.excluidos)){ reporteExcluidos = new Set(ri.excluidos); guardarExcluidosReporte(); }
+    if(Array.isArray(ri.historial)){ reporteHistorial = ri.historial; guardarHistorialReporte(); }
   }
 
   favoritos.clear();
@@ -17209,7 +17512,9 @@ function parsearReporte(paginas, archivo){
     R.etf.forEach((e, k) => {
       const tx = ideas[k];
       if(!tx) return;
-      const id = tx.match(/^Idea:\s*(\S+)/);
+      // La idea completa: en los reportes viejos dice "Venta parcial" o
+      // "Vender parcial" (baja el peso, no vende todo) y "Venta total".
+      const id = tx.match(/^Idea:\s*((?:venta|vender)\s+(?:parcial|total)|subir stop|\S+)/i);
       e.idea = id ? id[1] : null;
       const v1 = tx.match(/vender todo si (el viernes )?cierra bajo (?:los )?([\d.,]+)\s*\(([^)]*)\)/i);
       const v2 = tx.match(/cerró bajo (?:los )?([\d.,]+)\s*\(([^)]*)\)/i);
@@ -17217,6 +17522,12 @@ function parsearReporte(paginas, archivo){
       if(v1){ e.piso = numReporte(v1[2]); e.pisoRegla = v1[3]; e.pisoSemanal = !!v1[1]; }
       else if(v2){ e.piso = numReporte(v2[1]); e.pisoRegla = v2[2]; e.pisoSemanal = false; }
       else if(v3){ e.piso = numReporte(v3[1]); e.pisoRegla = v3[2]; e.pisoSemanal = false; }
+      else {
+        // Formato viejo (sep-oct 2026): el piso escrito a mano. Solo si hay un
+        // número claro: "bajo la media de 30 semanas" sin número no es piso.
+        const v4 = tx.match(/(?:vender todo|venta total|vendemos todo|vender completo|vender el (?:último|restante)[^.]{0,15})[^.]{0,70}?(?:bajo|pierde)\s+(?:(la media de \d+ (?:días|semanas))[^.]{0,30}?\ben\s+)?(?:los\s+)?(\d[\d.,]*\d)(?!\s*(?:semanas|días|%))(?:\s*\(([^)]*)\))?/i);
+        if(v4){ e.piso = numReporte(v4[2]); e.pisoRegla = v4[3] || v4[1] || 'escrito en el reporte'; e.pisoSemanal = false; e.pisoViejo = true; }
+      }
       const rc = tx.match(/recompramos al cerrar sobre (?:los )?([\d.,]+)/i)
               || tx.match(/volvemos a comprar si cierra sobre (?:los )?([\d.,]+)/i)
               || tx.match(/hasta que cierre sobre (?:los )?([\d.,]+)/i);
@@ -17258,7 +17569,33 @@ function parsearReporte(paginas, archivo){
     const sinIdea = R.usa.filter(a => !porTk[a.ticker]).map(a => a.ticker);
     if(sinIdea.length) R.avisos.push(`EE.UU.: sin página de idea para ${sinIdea.join(', ')}.`);
   } else {
-    R.avisos.push('No encontré la tabla "Cartera Acciones USA".');
+    // Formato viejo (sep-oct 2026): "Portafolio de Acciones USA". Columnas:
+    // Ticker · Nombre · Sector · Rango · Stop · Riesgo · % cartera · Perd. máx.
+    // · % anterior · Qué hacer. "% cartera" es el peso NUEVO y "% anterior" el
+    // viejo (al revés que en noviembre). No trae páginas "Idea:" ni tomas.
+    const iViejo = P.findIndex(t => /Portafolio de Acciones USA/.test(t) && /Rango de compra/.test(t));
+    if(iViejo >= 0){
+      R.formatoViejoUsa = true;
+      const SECTOR = /^(.*?)\s+((?:Financiero|Materiales|Salud|Energ[ií]a|Tecnolog[ií]a|Mercado amplio|Industrial|Consumo|Comunicaci[oó]n|Inmobiliari|Servicios|Utilities)\b.*)$/;
+      const pct = '(?:[\\d.,]+\\s?%|—|-)';
+      const re = new RegExp('^([A-Z][A-Z.]{0,5})\\s+(.+?)\\s+\\$\\s?([\\d.,]+)\\s*[–-]\\s*\\$\\s?([\\d.,]+)\\s+\\$\\s?([\\d.,]+)\\s+'
+                          + pct + '\\s+([\\d.,]+)\\s?%\\s+' + pct + '\\s+([\\d.,]+)\\s?%\\s+(.+)$');
+      P[iViejo].split('\n').forEach(l => {
+        const m = l.trim().match(re);
+        if(!m || m[1] === 'TOTAL') return;
+        const ns = m[2].match(SECTOR);
+        R.usa.push({ticker: m[1], nombre: ns ? ns[1] : m[2], sector: ns ? ns[2] : '',
+                    zonaDesde: numReporte(m[3]), zonaHasta: numReporte(m[4]), stop: numReporte(m[5]),
+                    ahora: numReporte(m[6]), antes: numReporte(m[7]), accion: m[8].trim()});
+      });
+      const tx = plano(P[iViejo]);
+      R.usaComprar = listaTrasEtiqueta(tx, 'Comprar');
+      R.usaVender = listaTrasEtiqueta(tx, 'Vender');
+      R.usaSubirStop = listaTrasEtiqueta(tx, 'Sube tu stop');
+      if(!R.usa.length) R.avisos.push('Encontré la tabla vieja de acciones de EE.UU., pero no pude leer sus filas.');
+    } else {
+      R.avisos.push('No encontré la tabla "Cartera Acciones USA".');
+    }
   }
 
   // ---- Chile ----
@@ -17268,12 +17605,17 @@ function parsearReporte(paginas, archivo){
     const mx = tx.match(/Exposición máxima de (\d+)\s?% \((\d+)\s?% en caja\)/i);
     if(mx) R.reglas.chileExposicionMax = +mx[1];
     P[iChi].split('\n').forEach(l => {
-      const m = l.trim().match(/^([A-Z][A-Z0-9_\-]{1,14})\s+(.+?)\s+([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s+(\d+)\s?%$/);
-      if(m && m[1] !== 'CAJA') R.chile.push({ticker: normTickerReporte(m[1]), nombre: m[2],
+      // El nombre puede faltar: en los reportes viejos, cuando parte en dos
+      // líneas ("Parque / Arauco"), la fila queda solo con ticker y números.
+      const m = l.trim().match(/^([A-Z][A-Z0-9_\-]{1,14})\s+(?:(.+?)\s+)?([\d.,]+)\s+([\d.,]+)\s+([\d.,]+)\s+(\d+)\s?%$/);
+      if(m && m[1] !== 'CAJA') R.chile.push({ticker: normTickerReporte(m[1]), nombre: m[2] || normTickerReporte(m[1]),
         zonaDesde: numReporte(m[3]), zonaHasta: numReporte(m[4]), stop: numReporte(m[5]), ahora: +m[6]});
     });
     R.chileComprar = listaTrasEtiqueta(tx, 'Comprar');
-    R.chileVender = listaTrasEtiqueta(tx, 'Vender');
+    // Sin "CAJA", y con el ticker de la tabla: el 23-sep vende "SQM" y la
+    // tabla dice "SQM-B".
+    R.chileVender = listaTrasEtiqueta(tx, 'Vender').filter(t => t !== 'CAJA')
+      .map(t => R.chile.some(c2 => c2.ticker === t) ? t : ((R.chile.find(c2 => c2.ticker.split('-')[0] === t) || {}).ticker || t));
     // Los comentarios de Chile nombran la acción por su nombre ("Las Andina",
     // "Mal las Ripley"), no por el ticker: se cruzan por la primera palabra.
     const claves = {};
@@ -17289,7 +17631,9 @@ function parsearReporte(paginas, archivo){
     }
     R.chile.forEach(c2 => {
       if(R.chileTextos[c2.ticker]) c2.texto = R.chileTextos[c2.ticker];
-      c2.idea = R.chileComprar.includes(c2.ticker) ? 'Comprar' : 'Mantener';
+      // En los reportes viejos la que se vende sigue en la tabla con 0 %.
+      c2.idea = R.chileComprar.includes(c2.ticker) ? 'Comprar'
+        : (c2.ahora === 0 || R.chileVender.includes(c2.ticker)) ? 'Vender' : 'Mantener';
       const pr = (c2.texto || '').match(/cierran en ([\d.,]+)/i);
       if(pr) c2.precioReporte = numReporte(pr[1]);
     });
@@ -17318,9 +17662,10 @@ function parsearReporte(paginas, archivo){
   }
 
   // ---- sumas de control ----
-  const suma = l => l.reduce((a, x) => a + (x.ahora || 0), 0);
-  if(R.etf.length && suma(R.etf) !== 100) R.avisos.push(`ETF: los pesos suman ${suma(R.etf)} %, no 100 %.`);
-  if(R.usa.length && suma(R.usa) !== 100) R.avisos.push(`EE.UU.: los pesos suman ${suma(R.usa)} %, no 100 %.`);
+  const suma = l => Math.round(l.reduce((a, x) => a + (x.ahora || 0), 0) * 10) / 10;
+  const avisoSuma = (n, l) => { const x = suma(l); if(Math.abs(x - 100) > 0.5) R.avisos.push(`${n}: los pesos suman ${x} %${x < 100 ? ' (el resto es caja)' : ', más de 100 %'}.`); };
+  if(R.etf.length) avisoSuma('ETF', R.etf);
+  if(R.usa.length) avisoSuma('EE.UU.', R.usa);
   return R;
 }
 
@@ -17359,10 +17704,13 @@ function guardarReporte(){
 function guardarExcluidosReporte(){
   try { localStorage.setItem(REPORTE_EXCL_KEY, JSON.stringify([...reporteExcluidos])); } catch(e){}
 }
+function guardarHistorialReporte(){
+  try { localStorage.setItem(REPORTE_HIST_KEY, JSON.stringify(reporteHistorial)); } catch(e){}
+}
 // Para el respaldo: con try porque construirRespaldoUnificado() puede
 // llamarse antes de que este bloque termine de cargar.
 function reporteParaRespaldo(){
-  try { return {reporte: reporteIns, excluidos: [...reporteExcluidos]}; } catch(e){ return undefined; }
+  try { return {reporte: reporteIns, excluidos: [...reporteExcluidos], historial: reporteHistorial}; } catch(e){ return undefined; }
 }
 
 const MESES_CORTOS_REP = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -17386,8 +17734,13 @@ function stockRep(tk){ return todosLosStocks().find(x => x.ticker === tk) || nul
 // Comprar · Aumentar · Subir stop.
 function ideaNormalRep(it){
   const id = String(it.idea || it.accion || '').toLowerCase();
-  if(/vend/.test(id)) return 'Vender';
-  if(/subir stop/.test(id)) return 'Subir stop';
+  // Orden importa (6-nov-2026, formato viejo): "Subir stop · opcional vender ⅓"
+  // es subir stop; "Mantener (comprada a $52)" es mantener; "Venta parcial" y
+  // "Recortar a la mitad" bajan el peso pero no venden todo.
+  if(/subir stop|sube tu stop/.test(id)) return 'Subir stop';
+  if(/^mantener/.test(id)) return 'Mantener';
+  if(/parcial|recort|reduc|a la mitad/.test(id)) return 'Reducir';
+  if(/vend|venta|sale de la lista/.test(id)) return (typeof it.ahora === 'number' && it.ahora > 0) ? 'Reducir' : 'Vender';
   if(/aument/.test(id)) return 'Aumentar';
   if(/compr/.test(id)) return 'Comprar';
   if(it.ahora === 0 && it.antes > 0) return 'Vender';
@@ -17442,6 +17795,7 @@ function corregirNumerosReporte(R){
 async function leerReporteArchivo(file){
   if(!file) return;
   reporteError = null;
+  reporteAviso = null;
   reporteBorrador = null;
   reporteLeyendo = {pag: 0, total: null, archivo: file.name};
   renderAmbienteReporte();
@@ -17547,6 +17901,204 @@ async function esperarDesdeReporte(tk, btn){
   renderAmbienteReporte();
 }
 
+// ---- Comparar, A seguir y registro (6-nov-2026) ------------------------------
+function fechaRegistroRep(iso){
+  const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}-${MESES_CORTOS_REP[+m[2] - 1]}-${m[1].slice(2)}` : '';
+}
+
+// Qué cambió del reporte A (el que tenías aplicado) al R (el nuevo).
+function diferenciasReporte(R, A){
+  const porTk = X => { const o = {}; itemsReporte(X).forEach(it => { o[it.tk] = it; }); return o; };
+  const n = porTk(R), a = porTk(A);
+  const peso = it => (it && it.idea !== 'Vender' && typeof it.d.ahora === 'number') ? it.d.ahora : 0;
+  const igual = (x, y) => (typeof x === 'number' && typeof y === 'number') ? Math.abs(x - y) <= 1e-9 * Math.max(1, Math.abs(y)) : (x == null && y == null);
+  const entran = [], salen = [], pesos = [], niveles = [];
+  new Set(Object.keys(n).concat(Object.keys(a))).forEach(tk => {
+    const pn = peso(n[tk]), pa = peso(a[tk]), it = n[tk] || a[tk];
+    const nom = tk.replace(/-USD$/, '');
+    if(pa === 0 && pn > 0) entran.push(`${nom} ${pctTxtRep(pn)} %`);
+    else if(pa > 0 && pn === 0) salen.push(nom);
+    else if(pa > 0 && pn > 0 && pa !== pn) pesos.push(`${nom} ${pctTxtRep(pa)}→${pctTxtRep(pn)} %`);
+    if(n[tk] && a[tk] && pn > 0){
+      const dn = n[tk].d, da = a[tk].d, c = [];
+      if(dn.zonaDesde > 0 && da.zonaDesde > 0 && (!igual(dn.zonaDesde, da.zonaDesde) || !igual(dn.zonaHasta || null, da.zonaHasta || null)))
+        c.push(`zona ${fmtRep(da.zonaDesde, it)}–${fmtRep(da.zonaHasta, it)} → ${fmtRep(dn.zonaDesde, it)}–${fmtRep(dn.zonaHasta, it)}`);
+      if(dn.stop > 0 && da.stop > 0 && !igual(dn.stop, da.stop)) c.push(`stop ${fmtRep(da.stop, it)} → ${fmtRep(dn.stop, it)}`);
+      if(dn.piso > 0 && da.piso > 0 && !igual(dn.piso, da.piso)) c.push(`piso ${fmtRep(da.piso, it)} → ${fmtRep(dn.piso, it)}`);
+      if(c.length) niveles.push(`${nom}: ${c.join(' · ')}`);
+    }
+  });
+  return {entran, salen, pesos, niveles};
+}
+
+// Pesos con coma decimal, como el resto de la app (los reportes viejos traen 10,2 %).
+function pctTxtRep(v){ return (typeof v === 'number' && isFinite(v)) ? fmtNum(v, Number.isInteger(v) ? 0 : 1) : String(v == null ? '' : v); }
+
+// Lo que el propio PDF dice que cambió contra su edición anterior (sus
+// columnas antes → ahora). Para "Solo agregarlo al registro".
+function difPropiaReporte(R){
+  const entran = [], salen = [], pesos = [];
+  itemsReporte(R).forEach(it => {
+    const d = it.d, nom = it.tk.replace(/-USD$/, '');
+    const a = typeof d.antes === 'number' ? d.antes : null;
+    const n = typeof d.ahora === 'number' ? d.ahora : null;
+    if(it.idea === 'Vender') salen.push(nom);
+    else if((a === 0 && n > 0) || (a === null && it.idea === 'Comprar')) entran.push(n ? `${nom} ${pctTxtRep(n)} %` : nom);
+    else if(a !== null && n !== null && a !== n) pesos.push(`${nom} ${pctTxtRep(a)}→${pctTxtRep(n)} %`);
+  });
+  return {entran, salen, pesos, niveles: []};
+}
+
+function registrarEnHistorial(R, A, dif, opc){
+  const n = t => itemsReporte(R).filter(it => it.tipo === t).length;
+  const e = {fecha: R.fecha || null, fechaTexto: R.fechaTexto || null, archivo: R.archivo || null, paginas: R.paginas || null,
+             cargado: R.cargado || new Date().toISOString(),
+             n: {etf: n('etf'), usa: n('usa'), chile: n('chile'), cripto: n('cripto')},
+             contra: (A && A.fecha && A.fecha !== R.fecha) ? A.fecha : null,
+             dif: dif ? {entran: dif.entran, salen: dif.salen, pesos: dif.pesos.length, niveles: dif.niveles.length} : null,
+             masViejo: !!(A && A.fecha && R.fecha && R.fecha < A.fecha),
+             soloRegistro: !!(opc && opc.propia), difPropia: !!(opc && opc.propia)};
+  const i = reporteHistorial.findIndex(x => x.fecha && x.fecha === e.fecha);
+  if(i >= 0){
+    const v = reporteHistorial[i];
+    e.veces = (v.veces || 1) + 1;
+    if(!e.dif){ e.dif = v.dif || null; e.contra = v.contra || null; }
+    reporteHistorial[i] = e;
+  } else {
+    e.veces = 1;
+    reporteHistorial.push(e);
+  }
+  guardarHistorialReporte();
+}
+// El reporte que ya estaba cargado antes de existir el registro entra solo.
+function asegurarHistorialInicial(){
+  if(reporteIns && reporteIns.fecha && !reporteHistorial.some(x => x.fecha === reporteIns.fecha)){
+    registrarEnHistorial(reporteIns, null, null);
+  }
+}
+
+// "Cargar registro" (6-nov-2026): varios reportes ya leídos, en un .json
+// ('ipsa-reportes-1'). Los que falten entran al registro como "solo en el
+// registro"; el más nuevo queda aplicado si es más nuevo que el que tienes.
+// No toca "no lo sigo", avisos ni A seguir. Cargarlo dos veces no duplica.
+function importarRegistroReportes(obj){
+  if(!obj || obj.formato !== 'ipsa-reportes-1' || !Array.isArray(obj.reportes))
+    throw new Error('el archivo no es un registro de reportes de esta app.');
+  const ok = R => R && typeof R === 'object' && /^\d{4}-\d{2}-\d{2}$/.test(R.fecha || '')
+                  && Array.isArray(R.etf) && Array.isArray(R.usa) && Array.isArray(R.chile);
+  const rs = obj.reportes.filter(ok).sort((a, b) => a.fecha.localeCompare(b.fecha));
+  if(!rs.length) throw new Error('el archivo no trae ningún reporte.');
+  asegurarHistorialInicial();
+  const ahora = new Date().toISOString();
+  const nuevo = rs[rs.length - 1];
+  const anterior = reporteIns;
+  const aplicar = !anterior || !anterior.fecha || nuevo.fecha > anterior.fecha;
+  const agregados = [];
+  rs.forEach(R => {
+    if(aplicar && R === nuevo) return;
+    if(reporteHistorial.some(x => x.fecha === R.fecha)) return;
+    const C = Object.assign({}, R, {cargado: ahora});
+    registrarEnHistorial(C, null, difPropiaReporte(C), {propia: true});
+    agregados.push(R.fecha);
+  });
+  if(aplicar){
+    const dif = (anterior && anterior.fecha !== nuevo.fecha) ? diferenciasReporte(nuevo, anterior) : null;
+    reporteIns = Object.assign({}, nuevo, {cargado: ahora});
+    registrarEnHistorial(reporteIns, anterior, dif);
+    guardarReporte();
+    // El piso de los ETF que tienes puede haber cambiado: el servidor lo usa al cierre.
+    try { sincronizarAlertasPrecio(); } catch(e){}
+  }
+  const t = [];
+  if(agregados.length) t.push(agregados.length === 1 ? `agregué el del ${fechaRegistroRep(agregados[0])} al registro`
+                                                    : `agregué ${agregados.length} reportes al registro`);
+  if(aplicar) t.push(`dejé aplicado el del ${fechaRegistroRep(nuevo.fecha)}`
+                     + (anterior && anterior.fecha ? ` (antes tenías el del ${fechaRegistroRep(anterior.fecha)})` : ''));
+  else if(reporteIns && reporteIns.fecha > nuevo.fecha) t.push(`el que tienes aplicado (del ${fechaRegistroRep(reporteIns.fecha)}) es más nuevo y se queda`);
+  return t.length ? 'Registro cargado: ' + t.join(' y ') + '.' : 'Ese registro ya lo tenías completo: no cambié nada.';
+}
+
+function historialReporteHTML(){
+  if(!reporteHistorial.length) return '';
+  let abierto = true;
+  try { abierto = localStorage.getItem('ipsa_reporte_hist_abierto') !== 'cerrado'; } catch(e){}
+  const filas = reporteHistorial.slice().sort((a, b) =>
+    String(b.fecha || '').localeCompare(String(a.fecha || '')) || String(b.cargado || '').localeCompare(String(a.cargado || '')));
+  const actual = reporteIns && reporteIns.fecha;
+  const cuando = iso => { try { return new Date(iso).toLocaleString('es-CL', {day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit'}); } catch(e){ return ''; } };
+  const corto = s => { s = String(s || ''); return s.length > 34 ? s.slice(0, 33) + '…' : s; };
+  const lista = (xs, tope) => xs.length <= tope ? xs.map(escEsp).join(', ') : xs.slice(0, tope).map(escEsp).join(', ') + ` y ${xs.length - tope} más`;
+  const cambios = e => {
+    if(!e.dif) return '';
+    const t = [e.dif.entran.length ? 'entran ' + lista(e.dif.entran, 6) : '',
+               e.dif.salen.length ? 'salen ' + lista(e.dif.salen, 6) : '',
+               e.dif.pesos ? `${e.dif.pesos} cambian de peso` : '',
+               e.dif.niveles ? `${e.dif.niveles} cambian zona/stop/piso` : ''].filter(Boolean);
+    return `<div class="rep-hist-l3">${e.difPropia ? 'Según el PDF, contra su edición anterior: ' : (e.contra ? `Contra el del ${fechaRegistroRep(e.contra)}: ` : '')}${t.join(' · ') || 'sin cambios'}</div>`;
+  };
+  return `<details class="plat-block rep-historial" ${abierto ? 'open' : ''}>
+    <summary>Registro de reportes cargados · ${filas.length}</summary>
+    ${filas.map(e => { const n = e.n || {}; const esActual = !!(e.fecha && e.fecha === actual); return `<div class="rep-hist-fila ${esActual ? 'actual' : ''}">
+      <div class="rep-hist-l1"><b>${escEsp(fechaRegistroRep(e.fecha) || 'sin fecha')}</b>
+        ${esActual ? '<span class="rep-pill c">el aplicado</span>' : ''}${e.masViejo ? '<span class="rep-pill v">más viejo que el que había</span>' : ''}${e.soloRegistro && !esActual ? '<span class="rep-pill">solo en el registro</span>' : ''}
+        <span class="rep-sub">cargado ${cuando(e.cargado)}${(e.veces || 1) > 1 ? ` · ${e.veces} veces` : ''}</span></div>
+      <div class="rep-hist-l2">ETF ${n.etf || 0} · EE.UU. ${n.usa || 0} · Chile ${n.chile || 0}${n.cripto ? ' · cripto ' + n.cripto : ''}
+        <span title="${escEsp(e.archivo || '')}"> · ${escEsp(corto(e.archivo))}</span></div>
+      ${cambios(e)}
+    </div>`; }).join('')}
+    <p class="rep-sub" style="margin:6px 0 0;">Uno por reporte: si cargas el mismo dos veces, se suma. Los cambios son contra el que tenías
+      aplicado en ese momento. Viaja en el respaldo y entre tus equipos.</p>
+    <div class="rep-btns">${inputRegistroRepHTML()}<span class="rep-sub">varios reportes de una vez, desde un .json</span></div>
+  </details>`;
+}
+
+// ¿El reporte cargado movió la zona o el stop de una acción que esperas
+// desde un reporte anterior? Solo si el cargado es MÁS NUEVO que el de la espera.
+function esperaDifiereDelReporte(tk){
+  const reg = espera[tk];
+  if(!reg || !reg.reporte || !reporteIns || !reporteIns.fecha || !(reporteIns.fecha > (reg.reporte.fecha || ''))) return null;
+  const it = itemReporte(tk);
+  if(!it || it.idea === 'Vender' || !(it.d.zonaDesde > 0)) return null;
+  const d = it.d;
+  const igual = (x, y) => (typeof x === 'number' && typeof y === 'number') ? Math.abs(x - y) <= 1e-9 * Math.max(1, Math.abs(y)) : (x == null && y == null);
+  const hastaN = d.zonaHasta > d.zonaDesde ? d.zonaHasta : null;
+  const hastaV = (typeof reg.zonaHasta === 'number') ? reg.zonaHasta : null;
+  const zona = !igual(reg.maxPrevio, d.zonaDesde) || !igual(hastaV, hastaN);
+  const stop = d.stop > 0 && !igual(typeof reg.reporte.stop === 'number' ? reg.reporte.stop : null, d.stop);
+  if(!zona && !stop) return null;
+  const t = [];
+  if(zona) t.push(`la zona de ${fmtRep(reg.maxPrevio, it)} – ${fmtRep(hastaV, it)} a ${fmtRep(d.zonaDesde, it)} – ${fmtRep(hastaN, it)}`);
+  if(stop) t.push(`el stop de ${fmtRep(reg.reporte.stop, it)} a ${fmtRep(d.stop, it)}`);
+  return {texto: t.join(' y '), fecha: reporteIns.fecha};
+}
+
+function actualizarEsperaDesdeReporte(tk){
+  const reg = espera[tk], it = itemReporte(tk);
+  if(!reg || !it || !reporteIns || !(it.d.zonaDesde > 0)) return;
+  const d = it.d;
+  // La condición escrita por el reporte se rehace; la tuya no se toca.
+  const auto = !reg.condicion || /^Comprar .* \(reporte [^)]*\)$/.test(reg.condicion);
+  reg.maxPrevio = d.zonaDesde;
+  reg.maxPrevioOrigen = 'reporte';
+  if(d.zonaHasta > d.zonaDesde) reg.zonaHasta = d.zonaHasta; else delete reg.zonaHasta;
+  reg.reporte = {fecha: reporteIns.fecha, stop: d.stop || null, toma1: d.toma1 || null, toma2: d.toma2 || null, peso: d.ahora || null};
+  if(auto) reg.condicion = `Comprar ${d.ahora || '?'} % si cierra en la zona (reporte ${fechaCortaRep(reporteIns.fecha)})`;
+  guardarEspera();
+  sincronizarAlertasPrecio();
+  if(ambienteActivo === 'seguir' && typeof renderAmbienteSeguir === 'function') renderAmbienteSeguir();
+  if(ambienteActivo === 'reporte') renderAmbienteReporte();
+}
+// Un solo oyente para todos los botones "actualizar a la del reporte" (A seguir
+// y pestaña Reporte): así no hay que tocar el cableado de cada pantalla.
+document.addEventListener('click', ev => {
+  const b = ev.target && ev.target.closest ? ev.target.closest('[data-esp-rep-actualizar]') : null;
+  if(!b) return;
+  ev.preventDefault();
+  ev.stopPropagation();
+  actualizarEsperaDesdeReporte(b.dataset.espRepActualizar);
+});
+
 // ---- Piezas que usan "A seguir" y "Mi Cartera" --------------------------------
 function chipReporteEsperaHTML(reg){
   if(!reg || !reg.reporte) return '';
@@ -17563,6 +18115,12 @@ function datosReporteEsperaHTML(tk, reg, moneda){
   if(r.stop) h += `<span>Stop del reporte</span><span class="zd-v">${fmtRep(r.stop, it)}${dist !== null ? ` · −${fmtNum(dist, 1)} %` : ''}</span>`;
   if(r.toma1) h += `<span>Tomas de 1/3</span><span class="zd-v">${fmtRep(r.toma1, it)}${r.toma2 ? ` · ${fmtRep(r.toma2, it)}` : ''}</span>`;
   if(r.peso) h += `<span>Peso en el reporte</span><span class="zd-v">${r.peso} %</span>`;
+  // El reporte nuevo movió la zona o el stop (6-nov-2026): se dice y se ofrece actualizar.
+  const dif = esperaDifiereDelReporte(tk);
+  if(dif){
+    h += `<span style="grid-column:1 / -1; color:var(--gold);">El reporte del ${fechaCortaRep(dif.fecha)} cambió ${escEsp(dif.texto)}.
+      <button type="button" class="esp-usar" data-esp-rep-actualizar="${tk}">Actualizar a la del reporte</button></span>`;
+  }
   // El reporte nuevo ya no la tiene (o la vende): se dice, no se saca sola.
   if(reporteIns && reporteIns.fecha && reporteIns.fecha > r.fecha){
     const ahora = itemReporte(tk);
@@ -17604,7 +18162,8 @@ function franjaReporteCarteraHTML(s, pos, obj){
   if(d.toma1 > 0 && (sube === null || Math.abs(sube - d.toma1) > 1e-9)){
     botones.push(`<button type="button" class="rep-btn r" data-rep-usar="${it.tk}" data-lado="sube" data-valor="${d.toma1}">${fmtRep(d.toma1, it)} en "Vta si sube"</button>`);
   }
-  const pesoTxt = it.idea === 'Aumentar' ? `sube a ${d.ahora} %` : (it.idea === 'Comprar' ? `entra con ${d.ahora} %` : `mantener ${d.ahora} %`);
+  const pesoTxt = it.idea === 'Aumentar' ? `sube a ${pctTxtRep(d.ahora)} %` : (it.idea === 'Comprar' ? `entra con ${pctTxtRep(d.ahora)} %`
+    : it.idea === 'Reducir' ? `baja a ${pctTxtRep(d.ahora)} %` : `mantener ${pctTxtRep(d.ahora)} %`);
   return `<div class="rep-franja"><span class="rep-franja-tit">Reporte ${f} · ${pesoTxt}</span>
     ${lineas.filter(Boolean).map(l => `<span>${l}</span>`).join('')}
     ${botones.length ? `<span class="rep-btns">${botones.join('')}</span>` : ''}</div>`;
@@ -17631,6 +18190,7 @@ function renderAmbienteReporte(desdeRefresco){
     if(a && viewEl.contains(a) && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)) return;
     if(reporteLeyendo || reporteBorrador) return;
   }
+  asegurarHistorialInicial();
   let cuerpo;
   if(reporteLeyendo) cuerpo = reporteLeyendoHTML();
   else if(reporteBorrador) cuerpo = reporteRevisionHTML(reporteBorrador);
@@ -17644,6 +18204,14 @@ function inputArchivoRepHTML(etiqueta, clase){
   return `<input type="file" id="repArchivo" accept="application/pdf,.pdf" style="display:none;">
     <label for="repArchivo" class="rep-btn ${clase || 'r'}" role="button" tabindex="0">${etiqueta}</label>`;
 }
+// Uno solo por pantalla: va en el registro, o en la pantalla vacía si no hay registro.
+function inputRegistroRepHTML(){
+  return `<input type="file" id="repRegistroArchivo" accept="application/json,.json" style="display:none;">
+    <label for="repRegistroArchivo" class="rep-btn" role="button" tabindex="0">Cargar registro (archivo)</label>`;
+}
+function avisoRepHTML(){
+  return reporteAviso ? `<p class="rep-aviso">${escEsp(reporteAviso)}</p>` : '';
+}
 
 function reporteVacioHTML(){
   return `<div class="plat-block">
@@ -17651,9 +18219,13 @@ function reporteVacioHTML(){
     <p class="rep-txt" style="margin:0 0 12px;">Sube el PDF tal como te llega. La app lo lee en este equipo (no se sube a ningún
       servidor), te muestra qué encontró y qué cambió, y recién ahí lo aplicas. Después cruza el reporte con lo que tienes:
       qué vender, qué avisos revisar y qué esperar para comprar.</p>
-    ${inputArchivoRepHTML('Cargar el reporte (PDF)', 'r')}
+    <div class="rep-btns">${inputArchivoRepHTML('Cargar el reporte (PDF)', 'r')}${reporteHistorial.length ? '' : inputRegistroRepHTML()}</div>
+    ${reporteHistorial.length ? '' : `<p class="rep-sub" style="margin:8px 0 0;">¿Tienes el registro de reportes en un archivo (.json)? Cárgalo y quedan
+      todos en el registro, con el más nuevo aplicado.</p>`}
     ${reporteError ? `<p class="rep-dudoso" style="margin-top:10px;">${escEsp(reporteError)}</p>` : ''}
-  </div>`;
+    ${avisoRepHTML()}
+  </div>
+  ${historialReporteHTML()}`;
 }
 
 function reporteLeyendoHTML(){
@@ -17675,12 +18247,33 @@ function reporteRevisionHTML(R){
   items.forEach(it => {
     const d = it.d;
     if(it.idea === 'Vender') salen.push(it.tk);
-    else if(it.idea === 'Comprar' || it.idea === 'Aumentar') entran.push(`${it.tk} ${d.antes > 0 ? `${d.antes}→` : ''}${d.ahora} %`);
+    else if(it.idea === 'Comprar' || it.idea === 'Aumentar') entran.push(`${it.tk} ${d.antes > 0 ? `${pctTxtRep(d.antes)}→` : ''}${pctTxtRep(d.ahora)} %`);
     else if(it.idea === 'Subir stop') suben.push(`${it.tk} → ${fmtRep(d.stop, it)}`);
   });
+  const masViejo = !!(reporteIns && reporteIns.fecha && R.fecha && R.fecha < reporteIns.fecha);
   const reemplaza = reporteIns
     ? (reporteIns.fecha === R.fecha ? 'Ya tenías cargado este mismo reporte: aplicarlo lo reemplaza.'
+       : masViejo ? `<b style="color:var(--copper);">Ojo: este reporte es MÁS VIEJO que el que tienes (del ${fechaRegistroRep(reporteIns.fecha)}).</b>
+           Si lo aplicas, la app vuelve a sus números. Te lo voy a preguntar antes.`
        : `Reemplaza al reporte del ${fechaCortaRep(reporteIns.fecha)}.`) : '';
+  // Contra el que tenías APLICADO (6-nov-2026), no contra lo que el PDF dice
+  // de su edición anterior: si te saltaste un reporte, esto igual lo cuenta.
+  const dif = (reporteIns && reporteIns.fecha !== R.fecha) ? diferenciasReporte(R, reporteIns) : null;
+  const segunPdf = `<p class="rep-sub" style="margin:0 0 4px;">Entran o suben</p><div class="rep-chips">${chipsRep(entran, 'c')}</div>
+      <p class="rep-sub" style="margin:8px 0 4px;">Salen</p><div class="rep-chips">${chipsRep(salen, 'v')}</div>
+      <p class="rep-sub" style="margin:8px 0 4px;">Suben el stop</p><div class="rep-chips">${chipsRep(suben, 'r')}</div>`;
+  const difHTML = dif ? `<div class="plat-block">
+      <p style="margin:0 0 8px; font-weight:600;">Qué cambió contra el que tenías (del ${fechaRegistroRep(reporteIns.fecha)})</p>
+      <p class="rep-sub" style="margin:0 0 4px;">Entran</p><div class="rep-chips">${chipsRep(dif.entran, 'c')}</div>
+      <p class="rep-sub" style="margin:8px 0 4px;">Salen</p><div class="rep-chips">${chipsRep(dif.salen, 'v')}</div>
+      <p class="rep-sub" style="margin:8px 0 4px;">Cambian de peso</p><div class="rep-chips">${chipsRep(dif.pesos, 'r')}</div>
+      <p class="rep-sub" style="margin:8px 0 4px;">Cambian zona, stop o piso</p>
+      ${dif.niveles.length ? dif.niveles.map(x => `<p class="rep-txt" style="margin:0 0 3px;">· ${escEsp(x)}</p>`).join('') : '<span class="rep-sub">—</span>'}
+      <details class="rep-segunpdf"><summary>Lo que dice el PDF contra su propia edición anterior</summary>${segunPdf}</details>
+    </div>` : `<div class="plat-block">
+      <p style="margin:0 0 8px; font-weight:600;">Qué cambió según el reporte (contra su edición anterior)</p>
+      ${segunPdf}
+    </div>`;
   const grupos = [['ETF', 'etf'], ['EE.UU.', 'usa'], ['Chile', 'chile'], ['Cripto', 'cripto']].map(([tit, tipo]) => {
     const g = items.filter(it => it.tipo === tipo);
     if(!g.length) return '';
@@ -17699,12 +18292,7 @@ function reporteRevisionHTML(R){
       </ul>
       ${reemplaza ? `<p class="rep-sub" style="margin:8px 0 0;">${reemplaza}</p>` : ''}
     </div>
-    <div class="plat-block">
-      <p style="margin:0 0 8px; font-weight:600;">Qué cambió desde el reporte anterior</p>
-      <p class="rep-sub" style="margin:0 0 4px;">Entran o suben</p><div class="rep-chips">${chipsRep(entran, 'c')}</div>
-      <p class="rep-sub" style="margin:8px 0 4px;">Salen</p><div class="rep-chips">${chipsRep(salen, 'v')}</div>
-      <p class="rep-sub" style="margin:8px 0 4px;">Suben el stop</p><div class="rep-chips">${chipsRep(suben, 'r')}</div>
-    </div>
+    ${difHTML}
     ${avisos.length || (R.sinPrecio || []).length ? `<div class="plat-block rep-ojo">
       <p style="margin:0 0 6px; font-weight:600; color:var(--gold);">Revisa antes de aplicar</p>
       ${avisos.map(a => `<p class="rep-txt" style="margin:0 0 4px;">· ${escEsp(a)}</p>`).join('')}
@@ -17716,10 +18304,12 @@ function reporteRevisionHTML(R){
       ${grupos}
     </div>
     <div class="rep-btns">
+      ${masViejo ? `<button type="button" class="rep-btn c rep-btn-grande" data-rep-accion="registrar">Solo agregarlo al registro</button>` : ''}
       <button type="button" class="rep-btn r rep-btn-grande" data-rep-accion="aplicar">Aplicar el reporte</button>
       <button type="button" class="rep-btn" data-rep-accion="cancelar">Cancelar</button>
     </div>
-    <p class="rep-sub" style="margin:8px 0 0;">Aplicar guarda el reporte y arma la lista de qué te toca. No mueve tus avisos ni registra compras: eso lo decides tú, fila por fila.</p>`;
+    <p class="rep-sub" style="margin:8px 0 0;">Aplicar guarda el reporte y arma la lista de qué te toca. No mueve tus avisos ni registra compras: eso lo decides tú, fila por fila.${
+      masViejo ? ' <b>Solo agregarlo al registro</b> lo anota en el registro de reportes sin tocar el que tienes aplicado.' : ''}</p>`;
 }
 
 // Precio para mostrar: el de la app; si no está en la grilla, el del reporte.
@@ -17803,7 +18393,8 @@ function filaRevisarRep(it, pos){
   if(d.toma1 > 0 && (sube === null || Math.abs(sube - d.toma1) > 1e-9)){
     btns.push(`<button type="button" class="rep-btn r" data-rep-usar="${it.tk}" data-lado="sube" data-valor="${d.toma1}">${fmtRep(d.toma1, it)} en "Vta si sube"</button>`);
   }
-  const peso = it.idea === 'Aumentar' ? `sube a ${d.ahora} %` : (it.idea === 'Subir stop' ? `sube el stop · ${d.ahora} %` : `${d.ahora} %`);
+  const peso = it.idea === 'Aumentar' ? `sube a ${pctTxtRep(d.ahora)} %` : (it.idea === 'Subir stop' ? `sube el stop · ${pctTxtRep(d.ahora)} %`
+    : it.idea === 'Reducir' ? `baja a ${pctTxtRep(d.ahora)} %` : `${pctTxtRep(d.ahora)} %`);
   return `<div class="rep-fila">
     <div class="rep-head"><span class="rep-tk" data-rep-abrir="${it.tk}">${it.tk}</span><span class="rep-nom">${escEsp(nombreRep(it))} · ${peso}</span></div>
     <div class="rep-txt" style="margin-top:3px;">${regla}</div>
@@ -17842,8 +18433,11 @@ function tarjetaComprarRep(it, glob){
     </div>
     ${estadoTxt ? `<div class="rep-txt">${estadoTxt}</div>` : ''}
     ${d.dudoso ? '<div class="rep-dudoso">Los números de esta fila no calzan con el precio de hoy: revísalos en el PDF.</div>' : ''}
+    ${yaEspera && esperaDifiereDelReporte(it.tk) ? `<div class="rep-txt" style="color:var(--gold);">Tu espera en A seguir es de un reporte anterior: este cambió ${escEsp(esperaDifiereDelReporte(it.tk).texto)}.</div>` : ''}
     <div class="rep-btns">
-      ${yaEspera ? `<button type="button" class="rep-btn" data-rep-esperar="${it.tk}">Ya está en A seguir · ver</button>`
+      ${yaEspera && esperaDifiereDelReporte(it.tk) ? `<button type="button" class="rep-btn r" data-esp-rep-actualizar="${it.tk}">Actualizar tu espera a esta zona</button>
+          <button type="button" class="rep-btn" data-rep-esperar="${it.tk}">Ver en A seguir</button>`
+        : yaEspera ? `<button type="button" class="rep-btn" data-rep-esperar="${it.tk}">Ya está en A seguir · ver</button>`
                  : `<button type="button" class="rep-btn c" data-rep-esperar="${it.tk}">Esperar en A seguir</button>`}
       ${botonNoSigoHTML(it.tk)}
     </div></div>`;
@@ -17951,6 +18545,72 @@ function cuadreEtfRep(R){
   </div>`;
 }
 
+// ---- Cabecera y tabla resumen (6-nov-2026) ---------------------------------
+// Cristian pidió ver de un vistazo QUÉ quedó cargado y DE QUÉ FECHA es el
+// reporte. La tabla trae todo, también lo que no sigue (atenuado, no
+// escondido): sirve además para comprobar que el PDF se leyó bien.
+function edadReporteHTML(R){
+  if(!R || !/^\d{4}-\d{2}-\d{2}$/.test(R.fecha || '')) return '';
+  const dias = Math.round((Date.parse(hoyISO() + 'T00:00:00Z') - Date.parse(R.fecha + 'T00:00:00Z')) / 864e5);
+  if(!isFinite(dias)) return '';
+  const txt = dias <= 0 ? 'de hoy' : (dias === 1 ? 'de ayer' : `de hace ${dias} días`);
+  // Sale cada ~2 semanas: con más de 16 días probablemente ya hay uno nuevo.
+  const vieja = dias > 16;
+  return `<span class="rep-edad ${vieja ? 'vieja' : ''}">Es ${txt}${vieja ? ' · sale cada dos semanas: revisa si llegó uno nuevo' : ''}</span>`;
+}
+
+function resumenReporteHTML(R, posDe){
+  const items = itemsReporte(R);
+  if(!items.length) return '';
+  let abierto = true;
+  try { abierto = localStorage.getItem('ipsa_reporte_resumen') !== 'cerrado'; } catch(e){}
+  const PILL = {Comprar: 'c', Aumentar: 'c', Vender: 'v', 'Subir stop': 'r', Reducir: 'r'};
+  const peso = d => {
+    const a = typeof d.antes === 'number' ? d.antes : null;
+    const n = typeof d.ahora === 'number' ? d.ahora : null;
+    if(n === null) return '—';
+    return (a !== null && a !== n) ? `${pctTxtRep(a)}→${pctTxtRep(n)} %` : `${pctTxtRep(n)} %`;
+  };
+  const zona = it => {
+    const d = it.d;
+    if(it.tipo === 'etf') return d.sinPiso ? 'sin piso' : (d.piso > 0 ? `${fmtRep(d.piso, it)}${d.pisoSemanal ? ' vie' : ''}` : '—');
+    // <wbr>: en un teléfono la zona baja a dos líneas y así caben las cinco columnas.
+    if(d.zonaDesde > 0) return `${fmtRep(d.zonaDesde, it)}–<wbr>${fmtRep(d.zonaHasta, it)}`;
+    return '—';
+  };
+  const tu = it => {
+    const t = [];
+    if(posDe(it)) t.push('la tienes');
+    if(espera[it.tk]) t.push('en A seguir');
+    if(!sigueReporte(it.tk)) t.push('no la sigues');
+    return t.join(' · ');
+  };
+  const GRUPOS = [['ETF', 'etf'], ['EE.UU.', 'usa'], ['Chile', 'chile'], ['Cripto', 'cripto']];
+  const cuenta = tipo => items.filter(it => it.tipo === tipo).length;
+  const filas = GRUPOS.map(([tit, tipo]) => {
+    const g = items.filter(it => it.tipo === tipo);
+    if(!g.length) return '';
+    return `<tr class="rep-res-g"><td colspan="5">${tit} · ${g.length}</td></tr>` + g.map(it => { const t = tu(it); return `
+      <tr class="${sigueReporte(it.tk) ? '' : 'rep-res-off'}">
+        <td><b data-rep-abrir="${it.tk}" title="${escEsp(nombreRep(it))}">${escEsp(it.tk.replace(/-USD$/, ''))}</b>${t ? `<span class="rep-res-tu">${t}</span>` : ''}</td>
+        <td><span class="rep-pill ${PILL[it.idea] || ''}">${escEsp(it.idea)}</span></td>
+        <td>${peso(it.d)}</td>
+        <td class="rep-res-z">${zona(it)}${it.d.dudoso ? ' ⚠' : ''}</td>
+        <td>${(it.tipo === 'usa' || it.tipo === 'chile') && it.d.stop > 0 ? fmtRep(it.d.stop, it) : '—'}</td>
+      </tr>`; }).join('');
+  }).join('');
+  const partes = GRUPOS.filter(([, t]) => cuenta(t)).map(([tit, t]) => `${tit} ${cuenta(t)}`).join(' · ');
+  return `<details class="plat-block rep-resumen" ${abierto ? 'open' : ''}>
+    <summary>Lo que está cargado · ${items.length}<span class="rep-sub">${partes}</span></summary>
+    <div class="rep-res-wrap"><table class="rep-res-tabla">
+      <thead><tr><th>Ticker</th><th>Idea</th><th>Peso</th><th>Zona / piso</th><th>Stop</th></tr></thead>
+      <tbody>${filas}</tbody></table></div>
+    <p class="rep-sub" style="margin:6px 0 0;">Peso: antes→ahora en la cartera del reporte. En los ETF la columna es el piso
+      (vie = al cierre del viernes). ⚠ = un número que no calza con el precio de hoy: revísalo en el PDF.
+      Bajo el ticker: si la tienes, si la esperas en A seguir o si no la sigues. Toca un ticker para abrir su ficha.</p>
+  </details>`;
+}
+
 function reportePrincipalHTML(R){
   const portUsd = calcularPortafolio('USD');
   const portClp = calcularPortafolio('CLP');
@@ -17993,14 +18653,17 @@ function reportePrincipalHTML(R){
     const extra = !z || !z.estado ? '' : (z.estado === 'dentro' ? fmtRep(v, it)
       : (z.estado === 'sobre' ? `+${fmtNum(pctRep(v, z.zona.hasta), 1)} %` : `−${fmtNum(-pctRep(v, z.zona.desde), 1)} %`));
     return `<div class="rep-mini"><b data-rep-abrir="${it.tk}">${it.tk}</b><span>${fmtRep(it.d.zonaDesde, it)} – ${fmtRep(it.d.zonaHasta, it)}</span><span class="mono">${extra}</span>
-      ${!espera[it.tk] && it.d.zonaDesde > 0 ? `<button type="button" class="rep-btn" data-rep-esperar="${it.tk}">Esperar</button>` : '<span class="rep-sub">en A seguir</span>'}</div>`;
+      ${!espera[it.tk] ? (it.d.zonaDesde > 0 ? `<button type="button" class="rep-btn" data-rep-esperar="${it.tk}">Esperar</button>` : '<span></span>')
+        : esperaDifiereDelReporte(it.tk) ? `<button type="button" class="rep-btn r" data-esp-rep-actualizar="${it.tk}" title="${escEsp(esperaDifiereDelReporte(it.tk).texto)}">Actualizar zona</button>`
+        : '<span class="rep-sub">en A seguir</span>'}</div>`;
   };
 
   return `<div class="plat-block">
       <div class="rep-cab">
         <div class="rep-cab-tit">
-          <div class="rep-fecha">${escEsp(R.fechaTexto || R.fecha || '')}</div>
-          <span class="rep-sub">${cargado ? `Cargado ${cargado}` : ''}${R.archivo ? ` · ${escEsp(R.archivo)}` : ''}</span></div>
+          <div class="rep-fecha">${R.fechaTexto ? `Reporte del ${escEsp(R.fechaTexto)}` : (R.fecha ? `Reporte del ${escEsp(R.fecha)}` : 'Reporte sin fecha')}</div>
+          ${edadReporteHTML(R)}
+          <span class="rep-sub">${cargado ? `Cargado ${cargado}` : ''}${R.archivo ? ` · ${escEsp(R.archivo)}` : ''}${R.paginas ? ` · ${R.paginas} págs.` : ''}</span></div>
         ${inputArchivoRepHTML('Cargar otro', 'r')}
       </div>
       <div class="rep-cont">
@@ -18009,7 +18672,9 @@ function reportePrincipalHTML(R){
         <div class="rep-c-c"><b>${comprar.length + comprarEtf.length}</b><span>compras posibles</span></div>
       </div>
       ${reporteError ? `<p class="rep-dudoso">${escEsp(reporteError)}</p>` : ''}
+      ${avisoRepHTML()}
     </div>
+    ${resumenReporteHTML(R, posDe)}
     ${franjaChileRep(R)}
     ${vender.length ? `<p class="rep-sec v">Vender · las tienes</p>${vender.map(({it, pos}) => tarjetaVenderRep(it, pos)).join('')}` : ''}
     ${revisar.length ? `<p class="rep-sec r">Las tienes · revisa tu aviso de venta</p>
@@ -18034,6 +18699,7 @@ function reportePrincipalHTML(R){
       ${noSigo.map(it => `<div class="rep-mini"><b>${it.tk}</b><span>${escEsp(it.idea)}${it.d.ahora !== undefined ? ` · ${it.d.ahora} %` : ''}</span><span></span>
         <button type="button" class="rep-btn" data-rep-incl="${it.tk}">Volver a seguir</button></div>`).join('')}
     </details>` : ''}
+    ${historialReporteHTML()}
     <p class="rep-sub" style="margin:14px 0 0;"><button type="button" class="rep-nosigo" style="margin:0;" data-rep-accion="borrar">Quitar el reporte cargado</button></p>`;
 }
 
@@ -18042,18 +18708,54 @@ function cablearReporte(viewEl){
   if(inp) inp.addEventListener('change', () => { const f = inp.files && inp.files[0]; inp.value = ''; leerReporteArchivo(f); });
   const lab = viewEl.querySelector('label[for="repArchivo"]');
   if(lab) lab.addEventListener('keydown', ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); if(inp) inp.click(); } });
+  const inpReg = viewEl.querySelector('#repRegistroArchivo');
+  if(inpReg) inpReg.addEventListener('change', async () => {
+    const f = inpReg.files && inpReg.files[0];
+    inpReg.value = '';
+    if(!f) return;
+    try {
+      let obj;
+      try { obj = JSON.parse(await f.text()); } catch(e){ throw new Error('el archivo no es un registro de reportes (.json).'); }
+      reporteAviso = importarRegistroReportes(obj);
+      reporteError = null;
+    } catch(e){
+      reporteAviso = null;
+      reporteError = 'No pude cargar el registro: ' + ((e && e.message) || String(e));
+    }
+    renderAmbienteReporte();
+    try { window.scrollTo({top: 0, behavior: 'smooth'}); } catch(e){}
+  });
+  const labReg = viewEl.querySelector('label[for="repRegistroArchivo"]');
+  if(labReg) labReg.addEventListener('keydown', ev => { if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); if(inpReg) inpReg.click(); } });
   viewEl.querySelectorAll('[data-rep-accion]').forEach(b => b.addEventListener('click', () => {
     const a = b.dataset.repAccion;
     if(a === 'cancelar'){ reporteBorrador = null; renderAmbienteReporte(); }
+    else if(a === 'registrar' && reporteBorrador){
+      // Un reporte viejo, solo para el registro: el aplicado no se toca.
+      const R = Object.assign({}, reporteBorrador, {cargado: new Date().toISOString()});
+      registrarEnHistorial(R, null, difPropiaReporte(R), {propia: true});
+      reporteBorrador = null;
+      reporteError = null;
+      renderAmbienteReporte();
+      try { window.scrollTo({top: 0, behavior: 'smooth'}); } catch(e){}
+    }
     else if(a === 'aplicar' && reporteBorrador){
+      if(reporteIns && reporteIns.fecha && reporteBorrador.fecha && reporteBorrador.fecha < reporteIns.fecha
+         && !confirm(`Este reporte (del ${fechaRegistroRep(reporteBorrador.fecha)}) es MÁS VIEJO que el que tienes `
+                     + `(del ${fechaRegistroRep(reporteIns.fecha)}).\n\nSi lo aplicas, la app vuelve a sus números. ¿Aplicarlo igual?`)) return;
       viewEl.querySelectorAll('[data-rep-sigo]').forEach(chk => {
         if(chk.checked) reporteExcluidos.delete(chk.dataset.repSigo); else reporteExcluidos.add(chk.dataset.repSigo);
       });
+      const anterior = reporteIns;
+      const dif = (anterior && anterior.fecha !== reporteBorrador.fecha) ? diferenciasReporte(reporteBorrador, anterior) : null;
       reporteIns = Object.assign({}, reporteBorrador, {cargado: new Date().toISOString()});
+      registrarEnHistorial(reporteIns, anterior, dif);
       reporteBorrador = null;
       reporteError = null;
       guardarReporte();
       guardarExcluidosReporte();
+      // El piso de los ETF que tienes puede haber cambiado: el servidor lo usa al cierre.
+      try { sincronizarAlertasPrecio(); } catch(e){}
       renderAmbienteReporte();
       try { window.scrollTo({top: 0, behavior: 'smooth'}); } catch(e){}
     }
@@ -18073,6 +18775,14 @@ function cablearReporte(viewEl){
   }));
   const det = viewEl.querySelector('details.rep-nosigues');
   if(det) det.addEventListener('toggle', () => { reporteNoSigoAbierto = det.open; });
+  const hist = viewEl.querySelector('details.rep-historial');
+  if(hist) hist.addEventListener('toggle', () => {
+    try { localStorage.setItem('ipsa_reporte_hist_abierto', hist.open ? 'abierto' : 'cerrado'); } catch(e){}
+  });
+  const res = viewEl.querySelector('details.rep-resumen');
+  if(res) res.addEventListener('toggle', () => {
+    try { localStorage.setItem('ipsa_reporte_resumen', res.open ? 'abierto' : 'cerrado'); } catch(e){}
+  });
   viewEl.querySelectorAll('[data-rep-esperar]').forEach(b => b.addEventListener('click', () => esperarDesdeReporte(b.dataset.repEsperar, b)));
   viewEl.querySelectorAll('[data-rep-ir]').forEach(b => b.addEventListener('click', () => {
     const tk = b.dataset.repIr;
