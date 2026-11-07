@@ -8736,7 +8736,7 @@ function estadoDeAccion(ticker){
     const gan = (costo !== null && precio !== null && costo > 0) ? (precio / costo - 1) * 100 : null;
     return {
       clase: 'tienes', etiqueta: 'La tienes',
-      detalle: `${pos.netoQ} ${pos.netoQ === 1 ? 'título' : 'títulos'}`
+      detalle: `${fmtCantidad(pos.netoQ, moneda, ticker)} ${pos.netoQ === 1 ? 'título' : 'títulos'}`
         + (costo !== null ? ` a ${fmtMoneda2(costo, moneda)} promedio` : '')
         + (gan !== null ? ` · ${gan >= 0 ? '+' : ''}${fmtNum(gan, 1)}%` : ''),
       pendiente, urgencia,
@@ -10830,25 +10830,38 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta, det){
   const norm = x => {
     if(x.t){
       return {t:x.t, n:x.n, se:x.se, ind:x['in'], p:x.p, c50:x.c50, cB:x.cB, gB:x.gB, gV:x.gV, v:x.v,
-              mo:explMonto(x), dm:x.dm, de:x.de, ent:(explEntradaM2(x) || {}).tit || '',
+              mo:explMonto(x), dm:x.dm, de:x.de, ent:(explEntradaM2(x) || {}).tit || '', mx:x.mx,
               f:x.f, cf:x.cf, sc:x.sc, fr:x.fr, mf:x.mf, x30:x.x30, m10:x.m10, rp:x.rp, rpS:x.rpS, estado:x._estado};
     }
     const fr = x.fuerzaRelativa || {}, pr = x.proximoReporte || {};
     return {t:x.ticker, n:x.nombre, se:x.sector, ind:x.industria, p:x.precio, c50:x.sma50, cB:x.capB,
-            gB:x.crecBpa, gV:x.crecVentas, v:x.volM, mo:x.montoM, dm:x.distMax, de:x.distEMA21, f:x.fase, cf:x.confirmaciones, sc:x.score,
+            gB:x.crecBpa, gV:x.crecVentas, v:x.volM, mo:x.montoM, dm:x.distMax, de:x.distEMA21, f:x.fase, cf:x.confirmaciones, sc:x.score, mx:x.max52,
             fr: fr.disponible ? (fr.pendientePositiva ? 1 : 0) : null, mf:x.mansfield,
             x30:x.maximo30sem, m10:x.min10, rp:pr.fecha || null, rpS:pr.sinReporteHasta || null,
             faltan:x.faltan, estado:'a mano'};
   };
 
-  // El stop de la clase si la entrada fuera justo el máximo de 30 semanas.
-  // Si el mínimo de 10 sesiones ya quedó sobre ese máximo (la acción se fue
-  // lejos), entrar ahí no tiene sentido: se deja vacío.
+  // El stop de la clase si la entrada fuera justo el máximo de 30 semanas: el
+  // mayor entre el mínimo de 10 sesiones y la entrada −7 %. Si ese mínimo ya
+  // quedó sobre el máximo (la acción se fue lejos), la regla dice entrada
+  // −7 % (antes la celda quedaba vacía y el prompt la leía como dato faltante).
   const stopClase = (x30, m10) => {
     if(x30 === null) return null;
-    const st = Math.max(m10 !== null ? m10 : 0, x30 * 0.93);
-    return st < x30 ? r2(st) : null;
+    const tope = x30 * (1 - RIESGO_MAX_PCT / 100);
+    return r2(Math.max((m10 !== null && m10 < x30) ? m10 : 0, tope));
   };
+  // La misma regla con la entrada al precio actual (retroceso, o ya dentro de
+  // la zona). Redondeo hacia arriba al centavo, igual que stopClaseHoy().
+  const stopHoy = c => {
+    if(!c.q || num(c.q.price) === null || !(c.q.price > 0)) return null;
+    const p = c.q.price, tope = p * (1 - RIESGO_MAX_PCT / 100);
+    return Math.ceil(Math.max((c.m10 !== null && c.m10 < p) ? c.m10 : 0, tope) * 100) / 100;
+  };
+  // "Estado en la app" solo cuenta lo TUYO. Que sea candidata lo dice la
+  // columna Estado: la franja de la app mira la lista del servidor y en el
+  // método 2 contradecía a la del teléfono.
+  const ESTADO_PROPIO = {tienes: 1, esperas: 1, vendida: 1};
+  const estPropio = c => (c.est && ESTADO_PROPIO[c.est.clase]) ? c.est : null;
 
   let portUSD = {};
   try { portUSD = calcularPortafolio('USD') || {}; } catch(e){}
@@ -10924,7 +10937,7 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta, det){
     ['Zona de compra hasta (+4 %)', 'Máx. 30 semanas + 4 %: la zona de compra va del máximo hasta acá. Sobre esto, no perseguir.', c => c.x30 !== null ? r2(c.x30 * (1 + ZONA_PCT / 100)) : null],
     ['Precio vs máx. 30 sem. %', 'Precio de la corrida contra el máx. de 30 semanas, en %. Entre 0 y +4 = dentro de la zona.', c => (c.x30 !== null && num(c.x.p) !== null) ? r2((c.x.p / c.x30 - 1) * 100) : null],
     ['Mín. 10 sesiones', 'Mínimo intradía de las últimas 10 sesiones (la parte "soporte" del stop de la clase).', c => r2(c.m10)],
-    ['Stop clase entrando en el máx. 30 sem.', 'Stop de la clase si se entrara justo en el máx. de 30 semanas: el mayor entre el mín. de 10 sesiones y la entrada −7 %. Vacío si ese mínimo ya quedó sobre el máximo.', c => stopClase(c.x30, c.m10)],
+    ['Stop clase entrando en el máx. 30 sem.', 'Stop de la clase si se entrara justo en el máx. de 30 semanas (la ruptura): el mayor entre el mín. de 10 sesiones y la entrada −7 %; si ese mínimo está sobre el máximo, entrada −7 %.', c => stopClase(c.x30, c.m10)],
     ['Próximos resultados', 'Fecha del próximo reporte trimestral, o "ninguno hasta …" si el calendario no lo muestra.', c => c.rp ? c.rp : (c.rpS ? 'ninguno hasta ' + c.rpS : '')],
     ['Días hábiles a resultados', 'Días hábiles desde hoy hasta los resultados. Regla: no comprar si faltan 5 o menos.', c => (c.dh !== null && c.dh >= 0) ? c.dh : null],
     ['Cap. B', 'Capitalización bursátil, en miles de millones de USD.', c => num(c.x.cB)],
@@ -10957,8 +10970,8 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta, det){
     ['Fuente ficha', 'SEC (10-K y 10-Q), TradingView o ambas.', c => c.ok ? ({sec:'SEC', 'sec+tradingview':'SEC + TradingView', tradingview:'TradingView'}[c.fi.fuente] || c.fi.fuente) : ''],
 
     // ---- Estado en la app ----------------------------------------------------
-    ['Estado en la app', 'La franja de la pantalla de la acción: la tienes, la estás esperando, candidata de Explorar, la vendiste o solo la miras, con su detalle.', c => c.est ? c.est.etiqueta + (c.est.detalle ? ' · ' + c.est.detalle : '') : ''],
-    ['Lo único pendiente', 'Lo que la app dice que falta hacer con esta acción.', c => c.est ? c.est.pendiente : ''],
+    ['Estado en la app', 'Tu relación con la acción: la tienes (títulos, costo promedio y resultado), la estás esperando (con su condición), la vendiste, o "sin posición ni espera". Que sea candidata de Explorar lo dice la columna Estado.', c => { const e = estPropio(c); return e ? e.etiqueta + (e.detalle ? ' · ' + e.detalle : '') : (c.pos ? 'La tienes' : 'sin posición ni espera'); }],
+    ['Lo único pendiente', 'Lo que la app dice que falta hacer con tu posición o tu espera (subir el stop, renovar la espera…). Vacío si no la tienes ni la esperas.', c => { const e = estPropio(c); return e ? e.pendiente : ''; }],
     ['Acciones tuyas en su sector', 'Cuántas acciones de este mismo sector tienes hoy en Mi Cartera (EE.UU.). 0 = sector nuevo para ti.', c => (sectCartera && c.x.se) ? (sectCartera[c.x.se] || 0) : null],
 
     // ---- Resumen de precios (hoy) ------------------------------------------
@@ -10975,6 +10988,10 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta, det){
     ['Monto transado hoy US$ M', 'Volumen × precio de la sesión, en millones de dólares (aprox.).', c => (c.q && num(c.q.montoTransado) !== null) ? r2(c.q.montoTransado / 1e6) : null],
     ['Precio actual vs máx. 30 sem. %', 'Precio actual contra el máx. de 30 semanas, en %. Entre 0 y +4 = hoy está en la zona de compra.', c => c.q ? pctEntre(c.q.price, c.x30) : null],
     ['Hoy en zona de compra', 'sí = el precio actual está entre el máx. de 30 semanas y +4 % (la clase da la compra por buena al cierre).', c => (c.q && c.x30 !== null && num(c.q.price) !== null) ? SI(c.q.price >= c.x30 && c.q.price <= c.x30 * (1 + ZONA_PCT / 100)) : ''],
+    ['Stop clase entrando hoy', 'La regla de la clase con la entrada al precio actual (retroceso, o ya dentro de la zona): el mayor entre el mín. de 10 sesiones y precio actual −7 %; si ese mínimo está sobre el precio, precio −7 %. Para la ruptura usar "Stop clase entrando en el máx. 30 sem.".', c => stopHoy(c)],
+    ['Distancia al stop entrando hoy %', 'Cuánto cae el precio actual hasta ese stop, en % (máximo 7 por la regla). Es el riesgo por acción de una entrada hoy.', c => { const st = stopHoy(c); return st !== null ? r2((c.q.price - st) / c.q.price * 100) : null; }],
+    ['Máx. 52 semanas', 'Máximo de 52 semanas al momento de la corrida (TradingView o Yahoo): referencia para la Salida 1 del prompt.', c => r2(num(c.x.mx))],
+    ['Precio actual vs máx. 52 sem. %', 'Precio actual contra ese máximo, en %. Positivo = ya lo superó.', c => c.q ? pctEntre(c.q.price, num(c.x.mx)) : null],
 
     // ---- Rentabilidad --------------------------------------------------------
     ['Rentabilidad 3 meses %', 'Cuánto subió (o bajó) en 3 meses, con cierres reales.', c => (c.q && num(c.q.ret3m) !== null) ? r2(c.q.ret3m * 100) : null],
@@ -11129,7 +11146,7 @@ function exportarExplorarExcel(finales, mano, etfs, fuera, meta, det){
       + (sinDiagTxt ? ' Sin análisis: ' + sinDiagTxt + '.' : '')],
     ['Ficha fundamental', 'Las 5 preguntas de la clase con estados de la SEC (10-K/10-Q), TradingView de respaldo. Sí = 1, A medias = ½, No = 0. 4 o más: calidad · 3 a 3,5: vigilar · menos de 3: fuera. En bancos, aseguradoras y financieras es orientativa.'],
     ['Zona de compra', `Hasta ${ZONA_PCT} % sobre el máximo intradía de las 30 semanas anteriores; la compra vale al cierre.`],
-    ['Stop de la clase', 'El mayor entre el mínimo intradía de las últimas 10 sesiones y la entrada −7 %. La columna lo calcula entrando justo en el máximo de 30 semanas.'],
+    ['Stop de la clase', 'El mayor entre el mínimo intradía de las últimas 10 sesiones y la entrada −7 % (si ese mínimo queda sobre la entrada, entrada −7 %). Dos columnas: "Stop clase entrando en el máx. 30 sem." para la ruptura y "Stop clase entrando hoy" para entrar al precio actual (retroceso o ya en la zona).'],
     ['Stop móvil', '7 % bajo el mayor entre la compra y el cierre más alto desde la compra; nunca baja.'],
     ['Riesgo', `Pérdida total aceptada ${perd !== null ? fmtNum(perd, 1) : '—'} % en ${nPos || '—'} posiciones = ${perd !== null && nPos ? fmtNum(perd / nPos, 2) : '—'} % por posición · tope por posición ${fmtNum(topePorPosicionPct(), 0)} % · fracciones hasta 6 decimales.`],
     ['Resultados', 'No se compra si la empresa reporta resultados en los próximos 5 días hábiles.'],
@@ -16883,7 +16900,12 @@ function descargarXlsx(nombreArchivo, hojas){
   URL.revokeObjectURL(url);
 }
 
-function _hoyArchivo(){ return new Date().toISOString().slice(0, 10); }
+// Fecha LOCAL del teléfono, no UTC: después de las 21:00 en Chile UTC ya es
+// mañana, y el Excel exportado el 6-nov a las 21:17 salía "…2026-11-07".
+function _hoyArchivo(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 
 // ---- Mis movimientos a Excel -------------------------------------------
 // El respaldo JSON sirve para RESTAURAR la app; esto sirve para MIRAR el
